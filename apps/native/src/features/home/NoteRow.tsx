@@ -25,6 +25,9 @@ const CAPSULE_HEIGHT = 31;
 const CAPTION_GAP = 6;
 const TRASH_GLYPH = 18;
 const ROW_HEIGHT = 52;
+// Half of #01's 8pt row gap on each side, inside the swipeable: the capsule and its caption (57pt)
+// are taller than the 52pt row and the swipeable clips its actions to its own frame.
+export const ROW_INSET = 4;
 const ROW_RADIUS = 12;
 const LONG_PRESS_MS = 500;
 
@@ -163,6 +166,10 @@ const styles = StyleSheet.create({
   },
   lines: { flex: 1, gap: sizes.cardLineGap },
   pressed: { opacity: PRESSED_OPACITY },
-  row: { backgroundColor: colors.bg.list, borderRadius: ROW_RADIUS },
+  row: {
+    backgroundColor: colors.bg.list,
+    borderRadius: ROW_RADIUS,
+    paddingVertical: ROW_INSET,
+  },
   rowPressed: { backgroundColor: colors.bg.tile },
 });

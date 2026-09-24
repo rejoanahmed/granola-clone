@@ -10,7 +10,7 @@ import { initialFor } from "@native/features/home/initial";
 import { type NoteDetail, noteQuery } from "@native/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 const ROW_HEIGHT = 64;
 
@@ -50,7 +50,7 @@ export default function AttendeesSheet() {
       title="Attendees"
     >
       {query.data ? (
-        <ScrollView>
+        <View>
           {callerFirst(query.data.attendees).map((attendee) => (
             <View key={attendee.id}>
               <View
@@ -71,7 +71,7 @@ export default function AttendeesSheet() {
               <View style={styles.divider} />
             </View>
           ))}
-        </ScrollView>
+        </View>
       ) : (
         <ActivityIndicator
           color={colors.text.secondary}

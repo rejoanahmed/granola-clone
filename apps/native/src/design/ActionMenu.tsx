@@ -58,6 +58,7 @@ const MENU_RADIUS = 26;
 const ITEM_HEIGHT = 50;
 const MENU_PADDING = 8;
 const SEPARATOR_SPACE = 9;
+const PREVIEW_RADIUS = 12;
 const LABEL_GAP = 58 - spacing.xl - sizes.glyph;
 
 const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
@@ -191,6 +192,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: PRESSED_OPACITY },
   preview: {
     backgroundColor: colors.bg.list,
+    borderRadius: PREVIEW_RADIUS,
+    overflow: "hidden",
     position: "absolute",
     transform: [{ scale: 1.03 }],
   },

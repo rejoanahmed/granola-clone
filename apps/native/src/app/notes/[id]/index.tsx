@@ -83,13 +83,19 @@ function BottomFade() {
   return (
     <Svg height="100%" width="100%">
       <Defs>
-        <LinearGradient id="fade" x1="0" x2="0" y1="0" y2="1">
+        <LinearGradient id="bottomGradient" x1="0" x2="0" y1="0" y2="1">
           <Stop offset="0" stopColor={colors.bg.app} stopOpacity={0} />
           <Stop offset="0.3" stopColor={colors.bg.app} stopOpacity={1} />
           <Stop offset="1" stopColor={colors.bg.app} stopOpacity={1} />
         </LinearGradient>
       </Defs>
-      <Rect fill="url(#fade)" height="100%" width="100%" x="0" y="0" />
+      <Rect
+        fill="url(#bottomGradient)"
+        height="100%"
+        width="100%"
+        x="0"
+        y="0"
+      />
     </Svg>
   );
 }

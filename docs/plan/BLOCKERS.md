@@ -38,3 +38,21 @@
   during the transition as well as after it, but Maestro samples the hierarchy, so a flash shorter
   than one sample can still pass. The spec now says so (§8, AC2). The splash hold is still checked
   by eye in the screenshots.
+
+## Phase 4 native notes
+
+- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@gcnotes.test` under a
+  better-auth id (phase 4).** The test-first run of `phase-4/empty-list.yaml` signed that address
+  up before `empty` was seeded, so better-auth created it with a random id. `stageUsers` inserts
+  `usr_e2e_empty` with `onConflictDoNothing()`, which swallows the email conflict, and the fixture
+  rows then fail their foreign key. Worked around on this machine by deleting that one row from the
+  local D1; a fresh local database never has it. The fix belongs in `E2eRepo.stageUsers` (clear a
+  same-email row with a different id before inserting), the API side's to make.
+- **The swipe action's row inset.** `ReanimatedSwipeable` clips its actions to the row, and the
+  #03 capsule plus caption (57pt) is taller than the 52pt row, so each row carries half of the 8pt
+  row gap inside itself (`ROW_INSET`) and the day header's gaps give it back. The pressed-row fill
+  is therefore 60pt tall rather than 52.
+- **The gallery's Menu and Toast sections sit after Sheets.** Placed before it, `phase-2/gallery-sheet.yaml`
+  could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
+  flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
+  found.

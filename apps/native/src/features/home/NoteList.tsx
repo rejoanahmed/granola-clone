@@ -22,11 +22,12 @@ import {
 } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { NoteRow } from "./NoteRow";
+import { NoteRow, ROW_INSET } from "./NoteRow";
 
-// #01's measured rhythm: 28 above a day header, 12 from it to its first row, 8 between rows.
-const HEADER_ABOVE = 28;
-const HEADER_BELOW = 12;
+// #01's measured rhythm: 28 above a day header, 12 from it to its first row, 8 between rows. Each
+// row carries half the row gap inside itself (ROW_INSET), so the header's gaps give that back.
+const HEADER_ABOVE = 28 - ROW_INSET;
+const HEADER_BELOW = 12 - ROW_INSET;
 const ROW_GAP = 8;
 const STATE_TOP = 64;
 const EMPTY_MAX_WIDTH = 300;
@@ -173,7 +174,6 @@ export function NoteList({ onLongPress, onOpen, onTrash }: Props) {
       contentContainerStyle={{
         paddingBottom: sizes.askPill + spacing.md + insets.bottom,
       }}
-      ItemSeparatorComponent={RowGap}
       keyExtractor={(note) => note.id}
       ListEmptyComponent={placeholder}
       ListFooterComponent={footer}
@@ -232,10 +232,6 @@ export function NoteList({ onLongPress, onOpen, onTrash }: Props) {
   );
 }
 
-function RowGap() {
-  return <View style={styles.rowGap} />;
-}
-
 const styles = StyleSheet.create({
   bar: { backgroundColor: colors.bg.tile, borderRadius: SKELETON_RADIUS },
   barTime: { height: 12, width: 64 },
@@ -264,7 +260,6 @@ const styles = StyleSheet.create({
   footer: { paddingVertical: spacing.md },
   list: { backgroundColor: colors.bg.list, flex: 1 },
   retry: { marginTop: spacing.md },
-  rowGap: { height: ROW_GAP },
   skeleton: {
     gap: ROW_GAP,
     paddingHorizontal: spacing.lg,

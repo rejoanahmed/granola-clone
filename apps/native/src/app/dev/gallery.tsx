@@ -241,6 +241,17 @@ export default function GalleryScreen() {
           </View>
         </Section>
 
+        <Section testID="gallery-sheets" title="Sheets">
+          <View style={styles.wrap}>
+            <PillButton
+              label="Open sheet"
+              onPress={() => router.push("/dev/sheet")}
+              testID="gallery-open-sheet"
+              tone="dark"
+            />
+          </View>
+        </Section>
+
         <Section testID="gallery-action-menu" title="Menu">
           <View collapsable={false} ref={menuButton} style={styles.wrap}>
             <PillButton
@@ -301,17 +312,6 @@ export default function GalleryScreen() {
                 })
               }
               testID="gallery-show-toast"
-              tone="dark"
-            />
-          </View>
-        </Section>
-
-        <Section testID="gallery-sheets" title="Sheets">
-          <View style={styles.wrap}>
-            <PillButton
-              label="Open sheet"
-              onPress={() => router.push("/dev/sheet")}
-              testID="gallery-open-sheet"
               tone="dark"
             />
           </View>
