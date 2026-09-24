@@ -1,0 +1,25 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "strictNullChecks": true,
+    // `src/index.ts` runs in the Worker, but the two client files are bundled into a browser and a
+    // React Native app and better-auth's client types reach for `document`/`fetch`/`Request`. One
+    // package, two runtimes: DOM has to be in `lib` or the client files stop typechecking.
+    "lib": ["ESNext", "DOM"]
+  },
+  // `src/index.ts` imports `@evb/db` (the `DB` type) and `@evb/db/schema/auth` (the generated
+  // tables). A composite project must reference every workspace project it reads, or `tsc -b`
+  // resolves those specifiers to `packages/db/src/*.ts` and pulls that source into *this*
+  // program — compiled without db's own `types: ["@cloudflare/workers-types","node"]`, so a db
+  // change surfaces here as an error in a file this package does not own. With the reference,
+  // TS builds db first and reads its emitted declarations instead. Same reason
+  // `packages/server/tsconfig.json` lists all four.
+  "references": [{ "path": "../db" }]
+}

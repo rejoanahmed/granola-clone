@@ -1,0 +1,32 @@
+{
+  "root": false,
+  "extends": "//",
+  "javascript": {
+    "globals": ["__DEV__"]
+  },
+  "linter": {
+    "rules": {
+      "correctness": {
+        "noGlobalDirnameFilename": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["test/**/*"],
+      "javascript": {
+        "globals": [
+          "afterAll",
+          "afterEach",
+          "beforeAll",
+          "beforeEach",
+          "describe",
+          "expect",
+          "it",
+          "jest",
+          "test"
+        ]
+      }
+    }
+  ]
+}

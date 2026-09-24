@@ -1,0 +1,23 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "strictNullChecks": true,
+    // `DOM` is what supplies `fetch`, `Request`, `Response`, `Headers`, `URL` and
+    // `RequestCredentials`. This package runs in a browser, in Hermes and in bun, and every one of
+    // those provides the same fetch surface, so the DOM lib is the portable spelling of it — not a
+    // claim that the code touches a document.
+    "lib": ["ESNext", "DOM"],
+    "types": ["bun-types"]
+  },
+  // `@evb/domain` only. This package must never reference `@evb/server` or `@evb/db`: the whole
+  // point of deriving the client from `<Ctx>/Contract.ts` is that `apps/web` and `apps/native`
+  // type-check against the API without depending on the Worker (R1).
+  "references": [{ "path": "../domain" }]
+}

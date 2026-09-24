@@ -1,0 +1,17 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    // `bun-types` carries `bun:test` and the Bun globals. `node` is listed explicitly because
+    // `time.test.ts` reads its own source with `node:fs`: bun-types happens to `/// <reference
+    // types="node" />` today, and a package should not typecheck by way of another package's
+    // internal reference.
+    "types": ["bun-types", "node"]
+  }
+}

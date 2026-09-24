@@ -1,0 +1,40 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "allowJs": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "target": "ESNext",
+
+    // `tsc --noEmit` is the type-check script, but say so here too: `tsc -b` in a package without
+    // this flag emits .js and .d.ts next to the sources, those shadow the real modules at
+    // resolution time, and the failure then looks like a stale cache rather than a build bug.
+    // The repo .gitignore has a block about exactly this.
+    "noEmit": true,
+
+    // The one line that makes a source-only workspace package resolve correctly on native. Every
+    // `@evb/*` package publishes TypeScript from `src/`; without the react-native condition,
+    // TypeScript picks whatever the "import"/"default" condition points at while Metro picks the
+    // react-native one, and the two disagree silently until a runtime "undefined is not a
+    // function".
+    "customConditions": ["react-native"],
+
+    "paths": {
+      "@native/*": ["./src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules", "test/**/*", "**/*.test.ts", "**/*.test.tsx"]
+}

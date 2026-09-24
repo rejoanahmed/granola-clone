@@ -1,0 +1,24 @@
+{
+  "name": "@evb/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "type-check": "tsc -b"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@evb/config": "workspace:*",
+    "vitest": "5.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "7.0.2"
+  }
+}

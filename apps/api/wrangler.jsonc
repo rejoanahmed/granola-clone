@@ -1,0 +1,264 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "eventsbd-api",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-04-24",
+  // better-auth and its drizzle adapter reach for `node:crypto` and `node:buffer`. Without this
+  // flag the bundle builds and then throws at the first sign-in, not at deploy time.
+  "compatibility_flags": ["nodejs_compat"],
+  // Secrets set in the dashboard survive a deploy that does not mention them. Without this,
+  // `wrangler deploy` prunes BKASH_* and BETTER_AUTH_SECRET and the next request 500s in
+  // `parseConfig` — which is the right failure, at the worst possible moment.
+  "keep_vars": true,
+
+  // ── The top level is LOCAL ONLY. Nothing deploys from it. ────────────────────────────────────
+  // `wrangler dev` reads this block; `scripts/deploy.sh` always passes `--env dev` or
+  // `--env production`. The ids below therefore stay zeroes forever — that is what makes a stray
+  // `wrangler deploy` with no `--env` fail at the API instead of publishing a Worker whose
+  // API_URL is http://localhost:3001.
+
+  // Non-secret configuration only. Everything here is readable by anyone with the repo, so the
+  // five bKash credentials and BETTER_AUTH_SECRET live in `.dev.vars` locally and in dashboard
+  // secrets in production — never here. See `.dev.vars.example`.
+  "vars": {
+    "API_URL": "http://localhost:3001",
+    "APP_URL": "http://localhost:3003",
+    "BETTER_AUTH_URL": "http://localhost:3001",
+    // Where bKash returns the payer's browser. It must be reachable from *their* device, so when
+    // you test on a phone this becomes the tunnel URL — which is what `scripts/dev.sh` rewrites.
+    "BKASH_CALLBACK_URL": "http://localhost:3001/payments/bkash/callback",
+    // `fake` selects `makeBkashFake` in container.ts — the same object graph with a scripted leaf,
+    // which is what local dev and the E2E path run against. Never `live` at the top level.
+    "BKASH_MODE": "fake",
+    // Arms the dev-only E2E harness (packages/server/src/E2E). Its secret is NOT here: set
+    // E2E_SECRET in `.dev.vars`, or the Worker refuses to start. Never added to `production`
+    // below — `parseConfig` fails startup if NODE_ENV=production sees this armed.
+    "E2E_HARNESS": "true",
+    // Flagship has no local store — `wrangler dev --local` binds no FLAGS at all — so `fake`
+    // selects `makeFeatureFlagsFake` in container.ts, the same port with an in-memory answer.
+    "FLAGS_MODE": "fake",
+    // Comma-separated flag keys the fake starts ON. This is how you work on a dark feature
+    // locally: add its key here, restart `wrangler dev`. Empty is what production looks like.
+    "FLAGS_ON": "",
+    "NATIVE_SCHEME": "eventsbd",
+    "NODE_ENV": "development"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "eventsbd-db-dev",
+      // Zeroes on purpose and permanently: `wrangler dev --local` never reads this id, and no
+      // deploy ever uses this block. The deployed environments carry named placeholders instead.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Migrations are generated into the db package, so `bun run db:generate` and
+      // `bun run local:db:apply` operate on one history rather than two.
+      "migrations_dir": "../../packages/db/d1-migrations"
+    }
+  ],
+
+  // Cloudflare Flagship: the runtime switch the release model rests on. Unfinished work merges to
+  // main and deploys dark; flipping a flag in the dashboard is rollback tier 1, seconds, no build.
+  // Zeroes here for the same reason as D1's: this block never deploys, and `FLAGS_MODE=fake` above
+  // means local dev never reads it.
+  "flagship": [
+    {
+      "binding": "FLAGS",
+      "app_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+
+  // The ONLY KV use in eventsbd: `makeBkashClient` caches the bKash `id_token` under
+  // `bkash:token` for 50 minutes (it lives an hour). No sessions, no cache-aside, no feature
+  // flags — if you find yourself adding a second key, ask whether it belongs in D1.
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+
+  // The outer `"enabled": false` with the nested blocks true looks wrong and is not: each nested
+  // block carries its own flag, and this shape is taken verbatim from a deployment where traces
+  // demonstrably appear. Do not "fix" the outer flag — verify it instead (D012), because this is
+  // what makes `traced()` in container.ts produce anything at all.
+  //
+  // This is the FULL block from that deployment. The snippet in docs/architecture/README.md §8.1
+  // is an abbreviation of it: §8.1 omits the top-level `head_sampling_rate` and `logs.persist`.
+  // Both are kept here, because §8.1's whole claim is "this exact shape is known to work" and the
+  // shape that was observed working is this one. Reconcile §8.1 to this — never the reverse.
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  },
+
+  // Every five minutes: sweep expired holds, re-query stale payments, cascade cancelled events.
+  // Five is chosen against the 30-minute hold — a sweep an order of magnitude finer than the
+  // window it enforces means a released seat is visible long before an attendee reloads.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
+
+  // Wrangler does NOT inherit top-level bindings into an `env` block: anything omitted here is
+  // simply absent at runtime, with no warning. That is why d1, kv, vars, observability and the
+  // cron are all repeated rather than referenced.
+  //
+  // ── The ids below are NAMED PLACEHOLDERS, not values. ────────────────────────────────────────
+  // D1 and KV ids are account-specific, so committing real ones points every clone at one
+  // person's data. `scripts/deploy.sh` substitutes each token from the matching `EVB_<token>`
+  // environment variable into a throwaway config and refuses to deploy if one is unset or
+  // malformed. A committed token cannot resolve to anyone's database by accident; an id that is
+  // never in git cannot leak into a fork. One-time setup is at the top of that script.
+  //
+  // `name` is stated in both environments rather than left to wrangler's `<name>-<env>` default,
+  // so the Worker a rollback names is the Worker you think it is.
+  "env": {
+    "dev": {
+      // The promotion gate: merge to main deploys here, the E2E suite runs against this Worker,
+      // and only a green run deploys production. Its data is disposable by design.
+      "name": "eventsbd-api-dev",
+      // No workers.dev: a second public hostname for the same Worker is a second surface to
+      // secure, and it bypasses anything bound to the custom domain.
+      "workers_dev": false,
+      "routes": [{ "pattern": "api-dev.eventsbd.com", "custom_domain": true }],
+      "vars": {
+        "API_URL": "https://api-dev.eventsbd.com",
+        "APP_URL": "https://dev.eventsbd.com",
+        "BETTER_AUTH_URL": "https://api-dev.eventsbd.com",
+        "BKASH_CALLBACK_URL": "https://api-dev.eventsbd.com/payments/bkash/callback",
+        // `fake` selects `makeBkashFake` — the real object graph with a scripted leaf. The E2E
+        // suite can therefore buy a ticket end to end without a merchant account or a real charge.
+        "BKASH_MODE": "fake",
+        // The reason this environment exists: reset, seed and sign-in for the suite that gates
+        // promotion. E2E_SECRET is a dashboard secret on this Worker, never a var.
+        "E2E_HARNESS": "true",
+        // Live, unlike bKash: the E2E suite runs against this Worker and must exercise the real
+        // Flagship path, because flipping a flag here is the rehearsal for flipping it in prod.
+        "FLAGS_MODE": "live",
+        "NATIVE_SCHEME": "eventsbd",
+        // `development` on a deployed Worker is deliberate: it is the only setting under which
+        // `otpEmail` logs the one-time code (middleware.ts), and the template ships no email
+        // provider — so it is the only way anything, E2E included, can sign in here. Never
+        // production: a live OTP in a log line is an OTP in everyone's log aggregator.
+        "NODE_ENV": "development"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          // Same name as the local database, different place: local is a miniflare file, this is
+          // remote D1. `bun run migrate:dev` is the only thing that writes to the remote one.
+          "database_name": "eventsbd-db-dev",
+          "database_id": "DEV_D1_DATABASE_ID",
+          "migrations_dir": "../../packages/db/d1-migrations"
+        }
+      ],
+      // A SEPARATE Flagship app from production's, and that separation is the point: one app for
+      // both would make every dev toggle a production release. Create one per environment in the
+      // dashboard (Workers & Pages -> Feature flags); `app_id` is on the app's own page.
+      "flagship": [
+        {
+          "binding": "FLAGS",
+          "app_id": "DEV_FLAGSHIP_APP_ID"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "DEV_KV_NAMESPACE_ID"
+        }
+      ],
+      "observability": {
+        "enabled": false,
+        "head_sampling_rate": 1,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+          "persist": true
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "persist": true
+        }
+      },
+      "triggers": {
+        "crons": ["*/5 * * * *"]
+      }
+    },
+    "production": {
+      "name": "eventsbd-api-prod",
+      "workers_dev": false,
+      "routes": [{ "pattern": "api.eventsbd.com", "custom_domain": true }],
+      "vars": {
+        "API_URL": "https://api.eventsbd.com",
+        "APP_URL": "https://eventsbd.com",
+        "BETTER_AUTH_URL": "https://api.eventsbd.com",
+        // `AppConfig` defaults BKASH_BASE_URL to the SANDBOX host on purpose, so a template one
+        // typo away from a real charge fails safe. Production is the one place that must say the
+        // live host out loud.
+        "BKASH_BASE_URL": "https://tokenized.pay.bka.sh/v1.2.0-beta",
+        "BKASH_CALLBACK_URL": "https://api.eventsbd.com/payments/bkash/callback",
+        "BKASH_MODE": "live",
+        // E2E_HARNESS is deliberately ABSENT and must stay so: wrangler does not inherit the top
+        // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
+        // pruned by removing it here, which is exactly why `parseConfig` refuses to start
+        // production with the harness armed instead of trusting this omission.
+        "FLAGS_MODE": "live",
+        "NATIVE_SCHEME": "eventsbd",
+        "NODE_ENV": "production"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "eventsbd-db-prod",
+          "database_id": "PROD_D1_DATABASE_ID",
+          "migrations_dir": "../../packages/db/d1-migrations"
+        }
+      ],
+      // Repeated, not inherited — see the note above `env`. Omit this block and `FLAGS` is simply
+      // undefined in production, which the client reads as every flag off, silently.
+      "flagship": [
+        {
+          "binding": "FLAGS",
+          "app_id": "PROD_FLAGSHIP_APP_ID"
+        }
+      ],
+      "kv_namespaces": [
+        {
+          "binding": "KV",
+          "id": "PROD_KV_NAMESPACE_ID"
+        }
+      ],
+      "observability": {
+        "enabled": false,
+        "head_sampling_rate": 1,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+          "persist": true
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "persist": true
+        }
+      },
+      "triggers": {
+        "crons": ["*/5 * * * *"]
+      }
+    }
+  }
+}

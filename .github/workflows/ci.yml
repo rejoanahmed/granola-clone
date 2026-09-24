@@ -1,0 +1,65 @@
+name: CI
+
+# The only gate a pull request has to pass.
+#
+# Everything here runs AGAIN in deploy.yml at the merge SHA. That is not redundancy: a green PR
+# proves the branch, not the merge result, and only deploy.yml's own verify job stands between a
+# merge commit and dev.
+#
+# Secrets: none. `deploy:check` dry-runs both environments — wrangler resolves the bindings against
+# the config and uploads nothing — so a fork PR runs the full gate with no credentials at all.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  # A superseded PR run protects nothing, so cancel it. deploy.yml is the opposite case.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          # Reads the `packageManager` field, so the runner's bun is whatever the repo pins.
+          bun-version-file: package.json
+
+      - name: Cache the bun install store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # ultracite -> syncpack -> check-architecture -> check-types. check-architecture is in this
+      # script and not in `bun run test`, which is why a query moved into a service passes every
+      # test and fails here.
+      - name: Check
+        run: bun run check
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+      # Dry-runs dev AND production for both apps. Wrangler inherits no bindings into an `env`
+      # block, so production can be missing one while dev is green — catching that in review is
+      # the whole point of running it on a PR.
+      - name: Dry-run both environments
+        run: bun run deploy:check

@@ -1,0 +1,10 @@
+# miniflare's local state, including the local D1 sqlite the seed and `db:studio` open
+.wrangler/
+
+dist/
+
+# local secrets. `.dev.vars.example` is the committed catalogue; this file is never committed.
+.dev.vars
+
+# written by `bun run cf-typegen`. Regenerate it rather than reading a stale copy.
+worker-configuration.d.ts

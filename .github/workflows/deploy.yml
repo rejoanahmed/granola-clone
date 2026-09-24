@@ -1,0 +1,326 @@
+name: Deploy
+
+# Trunk-based, one branch. Merge to main runs: verify -> deploy dev -> E2E against the deployed
+# dev Worker -> deploy prod. The E2E run is the promotion gate; if it is red, production is not
+# touched. Unfinished work merges dark behind a Cloudflare Flagship flag rather than waiting on a
+# branch, which is what makes shipping every merge safe.
+#
+# ── Required configuration ───────────────────────────────────────────────────────────────────────
+#
+# Repository secrets (values never appear in this file or in a log):
+#   CLOUDFLARE_API_TOKEN   Workers Scripts:Edit + D1:Edit
+#   CLOUDFLARE_ACCOUNT_ID
+#   E2E_SECRET             must equal the E2E_SECRET secret set on the eventsbd-api-dev Worker
+#                          (`wrangler secret put E2E_SECRET --env dev`); the suite sends it as
+#                          `x-e2e-secret`. Production has no harness and must never have one.
+#
+# Environment variables, on the `dev` and `prod` GitHub Environments respectively. These are ids,
+# not credentials — see apps/api/.deploy.env.example — but they are account-specific, so they are
+# configured rather than committed:
+#   dev    EVB_DEV_D1_DATABASE_ID   EVB_DEV_KV_NAMESPACE_ID   EVB_DEV_FLAGSHIP_APP_ID
+#   prod   EVB_PROD_D1_DATABASE_ID  EVB_PROD_KV_NAMESPACE_ID  EVB_PROD_FLAGSHIP_APP_ID
+#
+# The two Environments exist so prod can carry a protection rule later. None is set now: the user
+# asked for automatic promotion on a green E2E, so there is no manual approval step.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never cancel a deploy. A half-finished one — migrations applied, Worker not yet uploaded —
+  # is worse than a queue, and D1 has no rollback to undo the half that landed.
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Must stay equal to API_URL / APP_URL in the matching `env` block of apps/api/wrangler.jsonc and
+  # to the VITE_* values in apps/web/package.json's deploy scripts. The E2E suite talks to the dev
+  # pair; a mismatch here points the gate at the wrong Worker and still goes green.
+  DEV_API_URL: https://api-dev.eventsbd.com
+  DEV_APP_URL: https://dev.eventsbd.com
+  PROD_API_URL: https://api.eventsbd.com
+  PROD_APP_URL: https://eventsbd.com
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Cache the bun install store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # The same four gates as ci.yml, at the merge SHA. Nothing deploys that was not verified
+      # at the exact commit being deployed.
+      - name: Check
+        run: bun run check
+
+      - name: Test
+        run: bun run test
+
+      - name: Build
+        run: bun run build
+
+      - name: Dry-run both environments
+        run: bun run deploy:check
+
+  deploy-dev:
+    name: deploy dev
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: dev
+      url: ${{ env.DEV_APP_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Cache the bun install store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # scripts/deploy.sh applies the D1 migrations and only then uploads the Worker. That order
+      # is deliberate and expand/contract depends on it: a database ahead of its code still
+      # serves, code ahead of its schema does not.
+      - name: Migrate D1, then deploy the API Worker
+        working-directory: apps/api
+        run: bun run deploy:dev
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EVB_DEV_D1_DATABASE_ID: ${{ vars.EVB_DEV_D1_DATABASE_ID }}
+          EVB_DEV_KV_NAMESPACE_ID: ${{ vars.EVB_DEV_KV_NAMESPACE_ID }}
+          EVB_DEV_FLAGSHIP_APP_ID: ${{ vars.EVB_DEV_FLAGSHIP_APP_ID }}
+
+      # Holds no bindings and no secrets — it is a renderer. Its environment is baked in at build
+      # time by @cloudflare/vite-plugin, which is why the script sets CLOUDFLARE_ENV and not a
+      # `--env` flag.
+      - name: Deploy the web Worker
+        working-directory: apps/web
+        run: bun run deploy:dev
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # parseConfig fails the Worker at startup rather than serving half a configuration, so a
+      # bad binding uploads fine and 500s here. Catch it as a failed deploy, not as a failed E2E.
+      - name: Wait for the dev API to answer
+        run: |
+          for attempt in $(seq 1 30); do
+            body="$(curl -fsS --max-time 10 "$DEV_API_URL/" 2>/dev/null || true)"
+            case "$body" in
+              *'"ok":true'*)
+                echo "dev API healthy after ${attempt} attempt(s)"
+                exit 0
+                ;;
+            esac
+            sleep 5
+          done
+          echo "::error::$DEV_API_URL/ never returned a healthy body"
+          exit 1
+
+      - name: Rollback instructions
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+          ## Dev deploy failed — production was not touched
+
+          1. **Flip the Flagship flag** that gates the change, in the *dev* app. Seconds, no deploy.
+          2. **Roll the Worker back:**
+             ```
+             bunx wrangler rollback --name eventsbd-api-dev    # or, from apps/api: --env dev
+             bunx wrangler rollback --name eventsbd-web-dev
+             ```
+             `bunx wrangler versions list --name eventsbd-api-dev` picks a specific version-id.
+          3. **D1 has no rollback.** `wrangler d1 migrations` is create/list/apply and nothing
+             else. If a migration landed, roll forward with a new one.
+          MD
+
+  e2e:
+    name: e2e (promotion gate)
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    # The user budgeted 10 minutes and accepts it. The suite carries its own 9-minute deadline
+    # (E2E_DEADLINE_MS) so it reports which journey hung; 15 here is the outer stop, and it must
+    # fail rather than pass, because passing this job deploys production.
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Cache the bun install store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      # A missing suite must fail loudly here, never be skipped: skipping it promotes an ungated
+      # merge to production, which is the one failure this pipeline exists to prevent.
+      - name: The suite must exist
+        run: |
+          if [ -f packages/e2e/src/run.ts ]; then
+            exit 0
+          fi
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+          ## No E2E suite — production deploy blocked
+
+          `packages/e2e/src/run.ts` — the entry point `bun run e2e` invokes — does not exist, so
+          the promotion gate cannot run and production must not be deployed.
+
+          `docs/TESTING.md` §6 names the journey it has to walk, and the harness it walks it
+          against: `POST /e2e/reset`, `/e2e/seed` and `/e2e/session/:role` on `eventsbd-api-dev`, armed
+          by `E2E_HARNESS=true` and guarded by the `x-e2e-secret` header.
+
+          Do not work around this by removing the gate.
+          MD
+          exit 1
+
+      # `API_URL` and `E2E_SECRET` are the names packages/e2e/src/Env.ts reads; it refuses to send
+      # a request before both are present, because its first act is to truncate the dev database.
+      - name: Run the E2E suite against deployed dev
+        working-directory: packages/e2e
+        run: bun run e2e
+        env:
+          API_URL: ${{ env.DEV_API_URL }}
+          E2E_SECRET: ${{ secrets.E2E_SECRET }}
+
+      - name: Rollback instructions
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+          ## E2E failed — production was NOT deployed
+
+          Nothing reached production. The dev Workers are running this commit and are suspect.
+
+          1. **Flip the Flagship flag** that gates the change, in the *dev* app. Seconds, no deploy.
+          2. **Roll dev back** (only if dev needs to be usable again before the fix):
+             ```
+             bunx wrangler rollback --name eventsbd-api-dev    # or, from apps/api: --env dev
+             bunx wrangler rollback --name eventsbd-web-dev
+             ```
+          3. **D1 has no rollback.** Roll forward with a new migration — and keep it backward
+             compatible with the Worker that is deployed, since that is the one still serving.
+          MD
+
+  deploy-prod:
+    name: deploy prod
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: prod
+      url: ${{ env.PROD_APP_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version-file: package.json
+
+      - name: Cache the bun install store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Migrate D1, then deploy the API Worker
+        working-directory: apps/api
+        run: bun run deploy:prod
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EVB_PROD_D1_DATABASE_ID: ${{ vars.EVB_PROD_D1_DATABASE_ID }}
+          EVB_PROD_KV_NAMESPACE_ID: ${{ vars.EVB_PROD_KV_NAMESPACE_ID }}
+          EVB_PROD_FLAGSHIP_APP_ID: ${{ vars.EVB_PROD_FLAGSHIP_APP_ID }}
+
+      - name: Deploy the web Worker
+        working-directory: apps/web
+        run: bun run deploy:prod
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Wait for the production API to answer
+        run: |
+          for attempt in $(seq 1 30); do
+            body="$(curl -fsS --max-time 10 "$PROD_API_URL/" 2>/dev/null || true)"
+            case "$body" in
+              *'"ok":true'*)
+                echo "production API healthy after ${attempt} attempt(s)"
+                exit 0
+                ;;
+            esac
+            sleep 5
+          done
+          echo "::error::$PROD_API_URL/ never returned a healthy body"
+          exit 1
+
+      - name: Rollback instructions
+        if: failure()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
+          ## Production deploy failed
+
+          Reach for these in order. Do not start with the Worker rollback.
+
+          1. **Flip the Flagship flag** that gates the change, in the *production* app. Seconds,
+             no build, no deploy — and it is the only tier that needs nothing from this runner.
+          2. **Roll the Worker back:**
+             ```
+             bunx wrangler rollback --name eventsbd-api-prod   # or, from apps/api: --env production
+             bunx wrangler rollback --name eventsbd-web-prod
+             ```
+             `bunx wrangler versions list --name eventsbd-api-prod` picks a specific version-id;
+             `wrangler rollback <version-id>` takes it.
+          3. **D1 has no rollback.** If the API step got as far as applying a migration, the
+             schema is ahead of whatever Worker you roll back to — which serves, because every
+             migration here is expand/contract. Fix forward with a new migration; never hand-edit
+             production D1.
+          MD

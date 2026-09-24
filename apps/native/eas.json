@@ -1,0 +1,54 @@
+{
+  "cli": {
+    "version": ">= 17.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "dev": {
+      "extends": "production",
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "dev",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "dev"
+      },
+      "android": { "gradleCommand": ":app:assembleDebug" },
+      "ios": { "buildConfiguration": "Debug", "simulator": true }
+    },
+    "dev-device": {
+      "extends": "dev",
+      "distribution": "internal",
+      "channel": "dev-device",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "dev"
+      },
+      "ios": { "buildConfiguration": "Debug", "simulator": false }
+    },
+    "internal": {
+      "extends": "production",
+      "autoIncrement": true,
+      "distribution": "internal",
+      "channel": "internal",
+      "env": {
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
+        "EXPO_PUBLIC_APP_ENV": "prod"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
+        "EXPO_PUBLIC_APP_ENV": "prod"
+      }
+    }
+  },
+  "submit": {
+    "internal": {
+      "android": { "track": "internal", "releaseStatus": "completed" }
+    },
+    "production": {
+      "android": { "track": "production", "releaseStatus": "completed" }
+    }
+  }
+}

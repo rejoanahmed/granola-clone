@@ -1,0 +1,24 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "strictNullChecks": true,
+    "types": ["@cloudflare/workers-types"]
+  },
+  // Every workspace package this one imports. Without them `tsc -b` resolves
+  // `@evb/domain/Domain/Time` to the *source* `.ts`, which sits outside this project's `rootDir`,
+  // and fails with TS6307 — a composite project must reference the projects it reads, so TS reads
+  // their emitted declarations and builds them in order instead.
+  "references": [
+    { "path": "../auth" },
+    { "path": "../db" },
+    { "path": "../domain" },
+    { "path": "../shared" }
+  ]
+}

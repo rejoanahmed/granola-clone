@@ -1,0 +1,51 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "source": ["package.json", "apps/*/package.json", "packages/*/package.json"],
+  "semverGroups": [
+    {
+      "label": "Workspace packages are exact",
+      "packages": ["@evb/**"],
+      "range": ""
+    },
+    {
+      "label": "Overrides are exact",
+      "packages": ["**"],
+      "dependencyTypes": ["overrides"],
+      "range": ""
+    },
+    {
+      "label": "Everything else is exact — a range is how two copies of a library get installed",
+      "packages": ["**"],
+      "range": ""
+    }
+  ],
+  "versionGroups": [
+    {
+      "label": "Pin React to 19.2.3 (React Native 0.86 / Expo 57 compatibility)",
+      "dependencies": ["react", "react-dom"],
+      "pinVersion": "19.2.3"
+    },
+    {
+      "label": "Pin @types/react to 19.2.x (the one deliberate range in the repo)",
+      "dependencies": ["@types/react"],
+      "pinVersion": "~19.2.10"
+    },
+    {
+      "label": "Expo SDK 57 keeps TypeScript 6.x in native (TS 7 has no public API yet)",
+      "dependencies": ["typescript"],
+      "packages": ["native"],
+      "isIgnored": true
+    },
+    {
+      "label": "Expo owns its own version ranges — `expo install --fix` is the tool, not syncpack",
+      "dependencies": ["expo", "expo-*", "react-native", "react-native-*"],
+      "isIgnored": true
+    },
+    {
+      "label": "Local workspace packages use the workspace:* protocol",
+      "dependencies": ["@evb/**"],
+      "dependencyTypes": ["!local"],
+      "pinVersion": "workspace:*"
+    }
+  ]
+}

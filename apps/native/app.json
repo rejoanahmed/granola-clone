@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "eventsbd",
+    "slug": "eventsbd",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["ios", "android"],
+    "runtimeVersion": { "policy": "fingerprint" },
+
+    "scheme": "eventsbd",
+
+    "experiments": {
+      "tsconfigPaths": true,
+      "typedRoutes": true
+    },
+
+    "plugins": [
+      "expo-router",
+      "expo-build-properties",
+      "expo-font",
+      "expo-asset",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "dark": { "backgroundColor": "#0b0b0c" },
+          "resizeMode": "contain"
+        }
+      ]
+    ],
+
+    "assetBundlePatterns": ["**/*"],
+
+    "ios": {
+      "bundleIdentifier": "com.eventsbd.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+
+    "android": {
+      "package": "com.eventsbd.app",
+      "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize"
+    },
+
+    "extra": {
+      "router": { "origin": false }
+    }
+  }
+}

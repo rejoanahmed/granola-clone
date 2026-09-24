@@ -1,0 +1,28 @@
+{
+  "name": "@evb/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client-native": "./src/client-native.ts",
+    "./client-web": "./src/client-web.ts"
+  },
+  "scripts": {
+    "type-check": "tsc -b"
+  },
+  "dependencies": {
+    "@better-auth/core": "1.7.5",
+    "@better-auth/expo": "1.7.5",
+    "@evb/db": "workspace:*",
+    "better-auth": "1.7.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@evb/config": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/vitest"
+  ],
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "!**/dist",
+      "!**/.turbo",
+      "!**/.wrangler",
+      // wrangler.jsonc and the generated Worker types are owned by wrangler; formatting them
+      // produces a diff on every `cf-typegen`.
+      "!**/wrangler.jsonc",
+      "!**/worker-configuration.d.ts",
+      "!**/routeTree.gen.ts",
+      // drizzle-kit owns the migration snapshots and rewrites them on every `db:generate`.
+      // Formatting them here would put the formatter and the generator in a loop, each undoing
+      // the other. The migration `.sql` is reviewed; its `meta/` bookkeeping is not.
+      "!**/d1-migrations/meta",
+      "!**/.expo",
+      "!bun.lock"
+    ]
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        // Load-bearing, not cosmetic: the alphabetical key order the D1 schema files rely on is a
+        // lint result rather than a discipline, so a new column cannot land in the wrong place.
+        "useSortedKeys": "on"
+      }
+    }
+  },
+  "linter": {
+    "rules": {
+      "nursery": "off",
+      "complexity": {
+        // A long method is a smell, not an error — the template would rather show the whole
+        // reservation algorithm in one place than split it to satisfy a threshold.
+        "noExcessiveCognitiveComplexity": "warn",
+        // Conflicts with TypeScript TS7030 (all code paths must return a value).
+        "noUselessUndefined": "off"
+      },
+      "performance": {
+        "noAwaitInLoops": "warn",
+        // The barrels in this repo are deliberate and few: the schema barrel, the Testing barrel,
+        // and @evb/apiclient's index. Everything else imports by path.
+        "noBarrelFile": "off",
+        // An inline `onPress`/`onSubmit` closure is ordinary React, and hoisting every one of them
+        // into a `useCallback` to satisfy this rule costs more than the re-render it saves on a
+        // screen this size. Reach for memoisation when a profile says to, not when a lint does.
+        "noJsxPropsBind": "off",
+        // `import * as schema from "./schema"` is how drizzle takes a schema; there is no
+        // alternative spelling.
+        "noNamespaceImport": "off",
+        "useTopLevelRegex": "warn"
+      },
+      "style": {
+        // `for (let i = 0; i < n; i++)` is the spelling every algorithm in this repo is written in
+        // — the base32 codec, the seeded PRNG, the QR encoder — and `i += 1` reads as arithmetic
+        // where `i++` reads as "next". The hazard this rule guards against (`i++` used for its
+        // value) is caught by `noAssignInExpressions`, which stays on.
+        "noIncrementDecrement": "off",
+        "noNonNullAssertion": "warn",
+        // Method shorthand in a port or service type is deliberate and load-bearing twice over.
+        // §8 and §9 of the spec print `BkashPort`, `RegistrationFulfilment`, `Stage` and `Clock`
+        // verbatim with this syntax, and every area is told to assume exactly those signatures;
+        // and `QueryInvalidator.invalidateQueries` only accepts a real TanStack `QueryClient`
+        // because method parameters compare bivariantly, which the property form would lose. Left
+        // at warn rather than off so a new *data* type still gets nudged toward the property form.
+        "useConsistentMethodSignatures": "warn",
+        // Fires on reads that destructuring makes worse, not better: a property off a cast
+        // (`(caught as {details?: …}).details`), the last element of a chained `.sort()`, and a
+        // constant re-exported under the name it already has (`export const API_URL = Config.API_URL`).
+        "useDestructuring": "off",
+        // The cause channel exists and every `catch` that rethrows a domain error now uses it —
+        // `AppError`'s constructor is `(details, message, options)` and the caught error goes in
+        // `options.cause`. The rule only recognises `cause` in the constructor's SECOND argument
+        // (`new Error(message, { cause })`), and this API's second argument is the operator-facing
+        // message, so it cannot see a cause that is in fact being passed. Warn rather than off:
+        // it still catches a bare `throw new Error(...)` in a `catch`, which is its real target.
+        "useErrorCause": "warn",
+        // Files are named after the exported symbol (EventsRepo.ts, Http.ts), which is how the
+        // architecture doc addresses them.
+        "useFilenamingConvention": "off",
+        "useConsistentTypeDefinitions": {
+          "level": "warn",
+          "options": { "style": "type" }
+        }
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        // `== null` is intentional for `null | undefined`.
+        "noEqualsToNull": "off",
+        "noExplicitAny": "warn",
+        "noShadow": "warn",
+        // Biome 2.5.x type-aware analysis false-positives on legitimate `?.`/`??` over nullable
+        // bases (biomejs/biome#10940).
+        "noUnnecessaryConditions": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      // The only four files in the repo that do arithmetic on bits, and in all four the bits ARE
+      // the algorithm: Crockford base32's 5-bit regrouping, the ticket code's power-of-two
+      // alphabet mask, mulberry32/xmur3's avalanche, and the QR encoder's GF(256) field and BCH
+      // format code. `noBitwiseOperators` exists to catch `&` typed where `&&` was meant, which is
+      // a hazard in business logic and nowhere near these; scoped off rather than off globally, so
+      // a stray `|` in a handler is still an error.
+      "includes": [
+        "apps/web/src/components/ticket-qr.tsx",
+        "packages/db/src/seed/core/rng.ts",
+        "packages/server/src/Runtime/Ids.ts",
+        "packages/shared/src/crockford.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": { "noBitwiseOperators": "off" }
+        }
+      }
+    },
+    {
+      // `0x11D` is the QR primitive polynomial and `0x100` its degree marker; both are written
+      // exactly that way in ISO/IEC 18004 and in every reference implementation. `0x1_1d` would be
+      // unrecognisable to the one reader this file is written for.
+      "includes": ["apps/web/src/components/ticket-qr.tsx"],
+      "linter": {
+        "rules": {
+          "style": { "useNumericSeparators": "off" }
+        }
+      }
+    },
+    {
+      // A fake or a test double implements an interface whose methods return promises, so `async`
+      // is how it satisfies the signature — there is nothing for it to await. In real code an
+      // `async` with no `await` usually means a forgotten one, so the rule stays an error there.
+      "includes": [
+        "**/*.test.ts",
+        "**/*Fake.ts",
+        "packages/server/src/Testing/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": { "useAwait": "off" }
+        }
+      }
+    },
+    {
+      "includes": [
+        "packages/server/src/**/*Service.ts",
+        "packages/server/src/**/Policy.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@evb/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
+                  "drizzle-orm": "Services never touch the database. Put the query in <Plural>Repo.ts.",
+                  "hono": "Services are framework-free. Take the value as a parameter."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/server/src/**/Http.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@evb/db": "Handlers read c.var.svc, never the database."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

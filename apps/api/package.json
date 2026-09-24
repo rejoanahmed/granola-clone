@@ -1,0 +1,35 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cf-typegen": "bunx wrangler types --env-interface CloudflareBindings",
+    "deploy:check": "bash scripts/deploy.sh check",
+    "deploy:dev": "bash scripts/deploy.sh dev",
+    "deploy:prod": "bash scripts/deploy.sh production",
+    "dev": "bash scripts/dev.sh",
+    "dev:raw": "bunx wrangler dev src/worker.ts --local --port 3001 --ip 0.0.0.0",
+    "local:db:apply": "bunx wrangler d1 migrations apply eventsbd-db-dev --local",
+    "migrate:dev": "bash scripts/deploy.sh dev --migrations-only",
+    "migrate:prod": "bash scripts/deploy.sh production --migrations-only",
+    "test": "vitest run",
+    "type-check": "tsc -b"
+  },
+  "dependencies": {
+    "@evb/domain": "workspace:*",
+    "@evb/server": "workspace:*",
+    "@hono/zod-openapi": "1.6.3",
+    "@scalar/hono-api-reference": "0.12.4",
+    "hono": "4.13.8",
+    "hono-rate-limiter": "0.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260922.1",
+    "@evb/config": "workspace:*",
+    "@types/node": "26.6.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1",
+    "wrangler": "4.136.3"
+  }
+}

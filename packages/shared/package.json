@@ -1,0 +1,22 @@
+{
+  "name": "@evb/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./bd": "./src/bd.ts",
+    "./crockford": "./src/crockford.ts",
+    "./money": "./src/money.ts",
+    "./time": "./src/time.ts"
+  },
+  "scripts": {
+    "test": "bun test src",
+    "type-check": "tsc -b"
+  },
+  "devDependencies": {
+    "@evb/config": "workspace:*",
+    "@types/node": "26.6.2",
+    "bun-types": "1.4.2",
+    "typescript": "7.0.2"
+  }
+}

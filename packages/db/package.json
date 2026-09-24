@@ -1,0 +1,36 @@
+{
+  "name": "@evb/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./schema/auth": "./src/schema/auth.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/seed/index.ts",
+    "db:studio": "DB=\"$(ls -t ../../apps/api/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/*.sqlite 2>/dev/null | grep -v '/metadata.sqlite$' | head -1)\" && if [ -z \"$DB\" ]; then echo 'No local D1 sqlite found under apps/api/.wrangler/state. Run the API or: cd apps/api && bun run local:db:apply' >&2; exit 1; fi && echo \"Using $DB\" && DATABASE_URL=\"file:${DB}\" drizzle-kit studio",
+    "type-check": "tsc -b"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260922.1",
+    "@evb/config": "workspace:*",
+    "@evb/shared": "workspace:*",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "26.6.2",
+    "better-sqlite3": "13.0.3",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15"
+  },
+  "peerDependencies": {
+    "@cloudflare/workers-types": "5.20260922.1",
+    "typescript": "7.0.2"
+  }
+}

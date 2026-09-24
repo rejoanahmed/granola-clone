@@ -1,0 +1,66 @@
+# deps
+node_modules/
+
+# build output
+dist/
+build/
+out/
+
+# turbo
+.turbo
+
+# wrangler / miniflare local state (includes the local D1 sqlite)
+.wrangler/
+
+# secrets — .dev.vars is the API's local secret file, .env the web/native one
+.dev.vars
+.env
+.env.local
+.env.*.local
+!.env.example
+!**/.dev.vars.example
+
+# deploy plumbing. `.deploy.env` holds the account-specific D1/KV/Flagship ids
+# `apps/api/scripts/deploy.sh` substitutes; `.wrangler.deploy.jsonc` is the config it generates
+# from them and deletes on exit. Neither is a secret and neither may ever be committed: a real id
+# in git points every clone at one person's data.
+.deploy.env
+.wrangler.deploy.jsonc
+
+# logs
+logs/
+*.log
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/launch.json
+
+# Claude Code local settings — machine-specific, not shared
+.claude/settings.local.json
+
+# type-check
+*.tsbuildinfo
+
+# tsc stray output. `tsc -b` in a package that is misconfigured emits JS and .d.ts next to the
+# source, those files then shadow the real ones at resolution time, and the failure looks like a
+# stale cache rather than a build bug. Ignoring them keeps the mistake out of git; deleting them
+# is what actually fixes it.
+*.d.ts.map
+*.js.map
+apps/*/src/**/*.js
+apps/*/src/**/*.d.ts
+apps/*/scripts/**/*.js
+apps/*/scripts/**/*.d.ts
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/vitest.config.js
+packages/*/vitest.config.d.ts
+
+# expo
+.expo/
+apps/native/ios/
+apps/native/android/
+apps/native/expo-env.d.ts
+*.aab

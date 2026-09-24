@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@evb/config/react-library.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "*.ts"],
+  "compilerOptions": {
+    // An app emits nothing: Vite owns the output, `tsc -b` only checks.
+    "noEmit": true,
+    "moduleDetection": "force",
+    // `vite/client` is what types `import.meta.env`; the typed shape itself is in
+    // src/vite-env.d.ts, which is the only place a new VITE_ variable has to be declared.
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@web/*": ["./src/*"]
+    }
+  }
+}

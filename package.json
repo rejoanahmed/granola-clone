@@ -1,0 +1,59 @@
+{
+  "name": "eventsbd",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ]
+  },
+  "scripts": {
+    "auth:generate-schema": "bunx auth@1.7.4 generate --config packages/auth/src/mock.ts --output packages/db/src/schema/auth.ts -y",
+    "build": "turbo build",
+    "check": "ultracite check --diagnostic-level=error && bun run syncpack:lint && node scripts/check-architecture.mjs && bun run check-types",
+    "check-types": "turbo type-check",
+    "cl-install": "find . -name 'node_modules' -type d -prune -exec rm -rf {} + && find . -name 'bun.lock' -type f -delete && bun install",
+    "db:generate": "turbo -F @evb/db db:generate",
+    "db:migrate": "turbo -F @evb/db db:migrate",
+    "db:seed": "turbo -F @evb/db db:seed",
+    "db:studio": "turbo -F @evb/db db:studio",
+    "deploy:check": "turbo deploy:check",
+    "deploy:dev": "turbo deploy:dev",
+    "deploy:prod": "turbo deploy:prod",
+    "dev": "turbo dev",
+    "dev:api": "turbo -F api dev",
+    "dev:native": "turbo -F native -F api dev",
+    "dev:web": "turbo -F web -F api dev",
+    "e2e": "bun packages/e2e/src/run.ts",
+    "fix": "bun run syncpack:fix && ultracite fix",
+    "migrate:dev": "turbo -F api migrate:dev",
+    "migrate:prod": "turbo -F api migrate:prod",
+    "prepare": "husky",
+    "syncpack:fix": "syncpack fix && syncpack format",
+    "syncpack:lint": "syncpack lint",
+    "test": "turbo test",
+    "update:all": "for file in package.json apps/*/package.json packages/*/package.json; do if [ -f \"$file\" ]; then reject='react,react-dom,@types/react'; case \"$file\" in apps/native/package.json) reject=\"$reject,typescript,@babel/core,react-native-worklets\";; esac; bunx npm-check-updates -u --packageFile \"$file\" --reject \"$reject\" || true; fi; done && bun install && (cd apps/native && echo 'y' | bunx expo install --fix || true) && bun install && bun run syncpack:fix"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,ts,tsx,json,jsonc,css,md,mdx}": [
+      "bun x ultracite fix"
+    ]
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-worklets": "0.10.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@types/node": "26.6.2",
+    "husky": "9.1.7",
+    "lint-staged": "17.5.1",
+    "syncpack": "15.3.3",
+    "turbo": "2.11.3",
+    "ultracite": "7.12.0"
+  },
+  "packageManager": "bun@1.4.2"
+}

@@ -1,0 +1,16 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "composite": true,
+    "strictNullChecks": true,
+    // `src/index.ts` is compiled for the Worker (D1Database), `src/seed/**` runs on node
+    // (node:fs, process.argv). Both global sets have to be in scope or one half stops typechecking.
+    "types": ["@cloudflare/workers-types", "node"]
+  }
+}

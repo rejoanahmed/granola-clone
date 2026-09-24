@@ -1,0 +1,10 @@
+{
+  "extends": "@evb/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    // Nothing is built: the suite is run from source by `bun`, exactly as CI runs it, so `tsc -b`
+    // here is a type check and must not leave a `dist` for a stray runner to discover.
+    "noEmit": true,
+    "types": ["bun-types", "node"]
+  }
+}
