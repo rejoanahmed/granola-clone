@@ -77,8 +77,15 @@
   is therefore 60pt tall rather than 52.
 - **The gallery's Menu and Toast sections sit after Sheets.** Placed before it, `phase-2/gallery-sheet.yaml`
   could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
-  flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
-  found.
+  flows (it passed alone). Moving the new sections below it restored the flow.
+  **Cause found in phase 5:** the id was never missing from the tree. `scrollUntilVisible` checks
+  only between swipes (~3.5s each on this simulator) and needs the target 100% on screen. The
+  palette grew by six tokens, the gallery reached five pages, and `gallery-open-sheet` needed a
+  sixth swipe that the 20s timeout expired during, before the check ran; the failure screenshot is
+  taken after that last swipe, so it shows the button. `gallery-surfaces` (565pt) had a 247pt
+  window in which it was whole, narrower than one swipe, so it was jumped over. The palette is now
+  a two-column grid and the fields sit in their own `gallery-fields` section. Keep a scrolled-to
+  container well under half a screen tall, and keep the gallery short.
 - **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), not
   reproduced.** Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was
   being pushed. No artefacts of that run survived, so no root cause was found. The review's
