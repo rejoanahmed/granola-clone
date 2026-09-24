@@ -111,8 +111,9 @@ a route in `Contract.ts`, an error class if it has a new failure, a repo method,
 one line in `Http.ts`, and a case in `<Plural>.test.ts`. Nothing in `apps/api` changes.
 
 A module that calls an outside provider (transcription, an LLM, a calendar) declares a port and
-gets a deterministic fake, selected by environment in `container.ts` — `Integrations/FeatureFlags`
-is the pattern in the tree today.
+gets a deterministic fake, selected by environment in `container.ts` — the rules are
+[docs/architecture/PROVIDER-FAKES.md](docs/architecture/PROVIDER-FAKES.md), and
+`Integrations/FeatureFlags` is the pattern in the tree today.
 
 ## Conventions you will get wrong if you guess
 

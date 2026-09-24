@@ -46,7 +46,7 @@ packages/
   e2e/       @gc/e2e        the promotion gate: HTTP journeys against deployed dev
   config/    @gc/config     the tsconfig presets every package extends
 docs/
-  architecture/        README (the spec), D1-NOTES, DEPLOYMENT
+  architecture/        README (the spec), D1-NOTES, DEPLOYMENT, PROVIDER-FAKES
   DECISIONS.md         numbered rulings; ambiguity is resolved here, not re-litigated in code
   TESTING.md           the SQLite harness, wire-shape tests, the E2E gate, and Maestro
 ```
@@ -135,6 +135,7 @@ anywhere but `container.ts`, the check says so with a file and a line.
 | [docs/architecture/README.md](docs/architecture/README.md) | The architecture, R1–R8, the import table, `traced()` |
 | [docs/architecture/D1-NOTES.md](docs/architecture/D1-NOTES.md) | Batch semantics and the bound-param arithmetic |
 | [docs/architecture/DEPLOYMENT.md](docs/architecture/DEPLOYMENT.md) | Trunk and flags, the pipeline, the rollback tiers, expand/contract, setup |
+| [docs/architecture/PROVIDER-FAKES.md](docs/architecture/PROVIDER-FAKES.md) | How transcription, LLM and calendar providers are faked by environment |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Numbered rulings |
 | [docs/TESTING.md](docs/TESTING.md) | The SQLite harness, wire-shape tests, the E2E gate, Maestro |
 | [AGENTS.md](AGENTS.md) | The import rules and the module recipe, for coding agents |
