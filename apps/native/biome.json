@@ -20,6 +20,7 @@
           "E2E_SECRET",
           "EMAIL",
           "MODE",
+          "ROLE",
           "http",
           "json",
           "output"

@@ -11,7 +11,7 @@ env:
 - runFlow:
     file: ../subflows/open-home-as.yaml
     env:
-      EMAIL: e2e-empty@gcnotes.test
+      ROLE: empty
 - extendedWaitUntil:
     visible:
       id: home-empty

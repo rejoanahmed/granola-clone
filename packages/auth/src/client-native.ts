@@ -2,6 +2,7 @@ import type { ExpoClientStorage } from "@better-auth/expo/client";
 import {
   expoClient,
   getCookie,
+  getSetCookie,
   storageAdapter,
 } from "@better-auth/expo/client";
 import { emailOTPClient } from "better-auth/client/plugins";
@@ -59,5 +60,26 @@ export const nativeCookieHeader = (storagePrefix: string): string => {
   }
   return getCookie(
     storageAdapter(jarStorage).getItem(cookieKey(storagePrefix))
+  );
+};
+
+/**
+ * Stores a `Set-Cookie` header in the jar exactly as `expoClient` stores one from a sign-in
+ * response: the library's own parser and merge, the library's own chunked adapter, the same key.
+ * The next `get-session` then carries it and the server decides whether it is a session.
+ *
+ * For the development-only E2E launch path (apps/native `lib/e2e-session.ts`), which adopts a
+ * session the harness minted. Synchronous so it can land before the first render asks who is
+ * signed in.
+ */
+export const storeSessionCookie = (
+  config: Pick<NativeAuthClientConfig, "storage" | "storagePrefix">,
+  setCookieHeader: string
+): void => {
+  const jar = storageAdapter(config.storage);
+  const key = cookieKey(config.storagePrefix);
+  jar.setItem(
+    key,
+    getSetCookie(setCookieHeader, jar.getItem(key) ?? undefined)
   );
 };

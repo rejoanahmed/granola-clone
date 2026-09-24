@@ -1,27 +1,31 @@
-# Clean launch, reset and seeded backend, then a real sign-in as EMAIL, ending on home. Every seeded
-# E2E person is onboarded, so a seeded sign-in goes straight home (docs/spec/phase-4.md §8).
+# Reset and seeded backend, then a clean launch already signed in as the seeded ROLE, ending on
+# home. Every seeded E2E person is onboarded, so the gate sends them straight home
+# (docs/spec/phase-4.md §8). The session is adopted at launch rather than typed
+# (`sign-in-fast.yaml`): no flow that opens home is a test of sign-in, and phase-3's are.
 #
 #   - runFlow:
 #       file: ../subflows/open-home-as.yaml
 #       env:
-#         EMAIL: e2e-empty@gcnotes.test
+#         ROLE: empty
 #         MIC: deny            # optional; the microphone permission, see launch-app.yaml
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
 ---
 - runFlow:
-    file: start-clean.yaml
+    file: sign-in-fast.yaml
     env:
+      ROLE: ${ROLE}
       MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
-- runFlow:
-    file: sign-in.yaml
-    env:
-      EMAIL: ${EMAIL}
+# The first launch after `clearState` bundles from Metro, which is what the 180 s covers — the same
+# allowance `start-clean.yaml` gives welcome. Welcome must never show on the way: the splash is held
+# until the adopted session and `GET /me` resolve.
 - extendedWaitUntil:
     visible:
       id: home-screen
-    timeout: 30000
+    timeout: 180000
+- assertNotVisible:
+    id: welcome-screen
 # Home appears before its list has answered. A flow that taps the shell straight away is tapping a
 # screen whose rows are still being laid in under it, and one full-suite run once found the note
 # detail pushed after a toolbar tap (docs/plan/BLOCKERS.md). So the list settles first: the

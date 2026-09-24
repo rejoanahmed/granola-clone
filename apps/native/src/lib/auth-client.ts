@@ -1,9 +1,12 @@
 import {
   createNativeAuthClient,
   nativeCookieHeader,
+  storeSessionCookie,
 } from "@gc/auth/client-native";
 import Config from "@native/config";
+import { launchSessionCookie } from "@native/lib/e2e-session";
 import * as SecureStore from "expo-secure-store";
+import { Settings } from "react-native";
 
 if (!Config.API_URL.trim()) {
   throw new Error(
@@ -27,6 +30,18 @@ export const authClient = createNativeAuthClient({
   storage: SecureStore,
   storagePrefix: AUTH_STORAGE_PREFIX,
 });
+
+// Development builds only, and before anything renders: the first `get-session` must already carry
+// the adopted cookie, or the gate paints welcome first. A Release build compiles the branch away.
+if (__DEV__) {
+  const adopted = launchSessionCookie((key) => Settings.get(key));
+  if (adopted !== null) {
+    storeSessionCookie(
+      { storage: SecureStore, storagePrefix: AUTH_STORAGE_PREFIX },
+      adopted
+    );
+  }
+}
 
 export type AuthClient = typeof authClient;
 

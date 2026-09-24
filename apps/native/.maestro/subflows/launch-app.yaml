@@ -19,6 +19,10 @@
 # state the primer card is for. It defaults in the expression, for the reason below. `all: allow`
 # first keeps every other permission where Maestro's own default puts it.
 #
+# E2E_SESSION is a Set-Cookie header for a session the harness minted, which a development build
+# adopts before its first render (`subflows/sign-in-fast.yaml`, `apps/native/src/lib/e2e-session.ts`).
+# Empty by default, which the app reads as none: a clean launch is signed out.
+#
 # The Metro URL defaults in the expression rather than in `env:`: a subflow's own `env:` default
 # wins over `-e DEV_SERVER_URL=…` from the command line, so a second Metro on another port (another
 # project already holding :8081) was silently ignored and the app loaded the wrong bundle.
@@ -37,3 +41,4 @@ env:
       -EXDevMenuIsOnboardingFinished: "YES"
       -EXDevMenuShowsAtLaunch: "NO"
       -EXDevMenuShowFloatingActionButton: "NO"
+      -gcE2eSession: "${typeof E2E_SESSION === 'undefined' ? '' : E2E_SESSION}"
