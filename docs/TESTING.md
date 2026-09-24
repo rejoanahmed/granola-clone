@@ -426,9 +426,20 @@ apps/native/.maestro/
   config.yaml            which directories are flows (smoke/*); subflows/ is deliberately not one
   subflows/
     launch-app.yaml      clean launch: clearState + clearKeychain, straight into the JS bundle
+    relaunch-app.yaml    stopApp + launchApp keeping app state and the Keychain (a real relaunch)
+    e2e-reset.yaml       POST /e2e/reset then /e2e/seed (scripts/e2e-reset.js); fails on non-200
+    start-clean.yaml     launch-app + e2e-reset, then wait for welcome-screen
+    request-code.yaml    EMAIL param: type the address, Continue, wait for the code step
+    enter-code.yaml      EMAIL param: GET /e2e/otp (scripts/read-otp.js), type it; digit 6 submits
+    sign-in.yaml         EMAIL param: request-code + enter-code; the caller asserts where it lands
+    open-home.yaml       start-clean + sign in as the seeded, onboarded e2e-person
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
+  phase-2/, phase-3/     tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
+
+The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
+passes `API_URL` (default `http://localhost:3001`) and reads `E2E_SECRET` from `apps/api/.dev.vars`.
 
 ### Rules for writing a flow
 
