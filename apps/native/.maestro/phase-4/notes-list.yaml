@@ -1,0 +1,57 @@
+# AC1 (docs/spec/phase-4.md §8): the list shows my notes, grouped by day, newest first, and nobody
+# else's. The seed (§6.7) gives `person` Sat 12 Sep (Launch planning review, then Weekly standup)
+# and Wed 5 Aug (Solo reflection thoughts); a trashed note and `other`'s note must never appear.
+# Day headers allow a trailing year so the suite survives New Year.
+appId: ${APP_ID}
+name: The home list shows my notes by day, newest first, and nobody else's
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 30000
+
+- assertVisible:
+    id: home-day-2026-09-12
+    text: "Sat 12 Sep( 2026)?"
+- assertVisible:
+    id: home-day-2026-08-05
+    text: "Wed 5 Aug( 2026)?"
+# The row is one accessibility element labelled "{title}, {time}" (§2.1).
+- assertVisible:
+    id: home-note-not_e2e_launch
+    text: "Launch planning review, .*"
+- assertVisible:
+    id: home-note-not_e2e_standup
+    text: "Weekly standup, .*"
+    below:
+      id: home-note-not_e2e_launch
+- assertVisible:
+    id: home-day-2026-08-05
+    below:
+      id: home-note-not_e2e_standup
+- assertVisible:
+    id: home-note-not_e2e_solo
+    text: "Solo reflection thoughts, .*"
+    below:
+      id: home-day-2026-08-05
+
+# Trashed, and somebody else's.
+- assertNotVisible:
+    id: home-note-not_e2e_archived
+- assertNotVisible:
+    id: home-note-not_e2e_other
+- assertNotVisible:
+    id: home-empty
+# The phase-2 band is still above the list.
+- assertVisible:
+    id: home-events-card
+- assertVisible:
+    id: home-list
+# Compared by eye against #01 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-4-home-list

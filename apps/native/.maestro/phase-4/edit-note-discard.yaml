@@ -1,0 +1,97 @@
+# AC4 (docs/spec/phase-4.md §8): closing a pristine editor asks nothing (#31); closing a dirty one
+# offers Discard or Keep editing, and discarding saves nothing. The keyboard toggle's label is the
+# only keyboard state a flow can read.
+appId: ${APP_ID}
+name: Closing the editor asks only when there are unsaved edits
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+
+# Pristine: Close goes straight back, and the discard menu never shows.
+- runFlow: ../subflows/open-editor.yaml
+- tapOn:
+    id: note-editor-close
+- assertNotVisible:
+    id: note-editor-discard-menu
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- assertNotVisible:
+    id: note-editor-screen
+- assertNotVisible:
+    id: note-editor-discard-menu
+
+# Dirty.
+- runFlow: ../subflows/open-editor.yaml
+- inputText: " draft"
+
+# The keyboard toggle hides and then restores the keyboard.
+- assertVisible:
+    id: note-editor-keyboard-toggle
+    text: Hide keyboard
+- tapOn:
+    id: note-editor-keyboard-toggle
+- extendedWaitUntil:
+    visible:
+      id: note-editor-keyboard-toggle
+      text: Show keyboard
+    timeout: 5000
+- tapOn:
+    id: note-editor-keyboard-toggle
+- extendedWaitUntil:
+    visible:
+      id: note-editor-keyboard-toggle
+      text: Hide keyboard
+    timeout: 5000
+
+- tapOn:
+    id: note-editor-close
+- extendedWaitUntil:
+    visible:
+      id: note-editor-discard-menu
+    timeout: 5000
+- assertVisible:
+    id: note-editor-discard
+- assertVisible:
+    id: note-editor-keep
+
+# Keep editing: the menu goes, the text stays.
+- tapOn:
+    id: note-editor-keep
+- extendedWaitUntil:
+    notVisible:
+      id: note-editor-discard-menu
+    timeout: 5000
+- assertVisible:
+    id: note-editor-screen
+- assertVisible:
+    id: note-editor-input
+    text: "(?s).* draft"
+
+# Discard: nothing was saved.
+- tapOn:
+    id: note-editor-close
+- extendedWaitUntil:
+    visible:
+      id: note-editor-discard-menu
+    timeout: 5000
+- tapOn:
+    id: note-editor-discard
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- assertNotVisible:
+    id: note-editor-screen
+- assertVisible:
+    id: note-block-0
+    text: Updates

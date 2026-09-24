@@ -1,0 +1,22 @@
+# On home, swipe the row NOTE_ID left until its trailing "Move to trash" action shows
+# (docs/spec/phase-4.md §2.2, #03). Leaves the action open; the caller taps it. A swipe that did
+# not open the action (it started mid-scroll, or the list was still settling) is retried once.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-note-${NOTE_ID}
+    timeout: 30000
+- retry:
+    maxRetries: 1
+    commands:
+      - swipe:
+          from:
+            id: home-note-${NOTE_ID}
+          direction: LEFT
+      - extendedWaitUntil:
+          visible:
+            id: home-note-${NOTE_ID}-trash
+          timeout: 5000

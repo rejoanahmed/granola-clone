@@ -1,0 +1,20 @@
+# Clean launch, reset and seeded backend, then a real sign-in as EMAIL, ending on home. Every seeded
+# E2E person is onboarded, so a seeded sign-in goes straight home (docs/spec/phase-4.md §8).
+#
+#   - runFlow:
+#       file: ../subflows/open-home-as.yaml
+#       env:
+#         EMAIL: e2e-empty@gcnotes.test
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: start-clean.yaml
+- runFlow:
+    file: sign-in.yaml
+    env:
+      EMAIL: ${EMAIL}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

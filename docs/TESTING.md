@@ -194,6 +194,45 @@ These must exist. The names are the specification; the phrasing in the test file
 - `POST /me/onboarding` takes no body and answers 200 with `onboardedAt` a number
 - `PATCH /me` and `POST /me/onboarding` with no actor are 401 without reaching the service
 
+### `Notes/Notes.test.ts` (phase 4)
+
+- `create` with no input: "Untitled note", body `""`, `startedAt` = now, `trashedAt: null`, one
+  attendee, the owner, `isMe: true` with the owner's name; the owner's row is position 0
+- `create` with attendees returns them after the owner, in input order, `isMe: false`
+- `get` returns what `create` returned, to its owner; an unknown id → `NoteNotFound`
+- B's `get`, `update`, `trash` and `restore` of A's note each → `NoteNotFound`, and A's rows are
+  byte-identical afterwards
+- B's error for A's id and for an id that never existed have the same `_tag`, `status` and
+  `details` shape, and `details` is only `{ id }`
+- B's `list` never contains A's notes, whatever cursor B sends (A's own included)
+- `list` orders `startedAt` desc then `id` desc, and a tie pages without loss or repetition
+- 25 notes at `limit: 10` page as 10, 10, 5 with a final `nextCursor: null`; exactly 20 at
+  `limit: 20` is `nextCursor: null` (the over-fetch)
+- a list item carries no body; `attendeeCount` includes the owner
+- keyset stability: an older note created after page 1 appears later, a newer one does not shift
+  page 2
+- `list` excludes trashed notes, and `restore` puts one back in place
+- a malformed cursor → `ValidationFailed` with `details.field: "cursor"`
+- `update` changes only the keys present; `{}` does not move `updatedAt`; a trashed note →
+  `NoteTrashed`
+- `trash` stamps once (the first `trashedAt` and `updatedAt` win); `get` still reads it
+- `restore` clears `trashedAt`, and is a no-op on a live note
+- a deleted owner cascades notes and attendees; a deleted non-owner attendee's `userId` is nulled
+  and the row kept; an attendee with neither name nor email fails the `CHECK`
+- renaming the owner's `user` row renames them on every note
+
+### `Notes/Notes.http.test.ts`, `Notes/Cursor.test.ts`, `Domain/Note.test.ts` (phase 4)
+
+- every notes route anonymous → 401 without reaching the service
+- `POST /notes` → 201 `Note`; `GET /notes` → 200 `PageOf(NoteSummary)` with no `bodyMarkdown`
+- `limit=0`, `limit=101`, `cursor=` → 422; a blank or 201-character title, an unknown key and an
+  empty attendee → 422 on create; an unknown key → 422 on patch
+- `NoteNotFound` → 404 naming only the id; `NoteTrashed` → 409; `/notes/not-an-id` → 422, not 404
+- the cursor round-trips, is base64url of `[startedAt, id]`, and every malformed shape decodes to
+  `null`
+- `NoteTitle` trims and rejects blank; `NoteCreate`/`NotePatch` reject unknown keys;
+  `AttendeeInput` needs a name or an email
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -211,6 +250,9 @@ These must exist. The names are the specification; the phrasing in the test file
 - the minted session cookie is one better-auth itself accepts
 - the cookie is named for the origin it was asked for (`__Secure-` over https)
 - an unknown role is `ValidationFailed`, never an invented user
+- (phase 4) the seed writes the five `E2E_NOTES` fixtures with their fixed ids and names them in
+  its answer; `person`'s list is exactly launch, standup, solo; `empty` is onboarded with no notes;
+  a reset leaves no `notes` or `note_attendees` rows and a re-seed restores a renamed fixture
 
 ### `Integrations/Email/Email.test.ts` and `AuthEmails/AuthEmails.test.ts`
 
@@ -444,11 +486,15 @@ apps/native/.maestro/
     request-code.yaml    EMAIL param: type the address, Continue, wait for the code step
     enter-code.yaml      EMAIL param: GET /e2e/otp (scripts/read-otp.js), type it; digit 6 submits
     sign-in.yaml         EMAIL param: request-code + enter-code; the caller asserts where it lands
-    open-home.yaml       start-clean + sign in as the seeded, onboarded e2e-person
+    open-home-as.yaml    EMAIL param: start-clean + sign in as a seeded, onboarded person, on home
+    open-home.yaml       open-home-as with e2e-person
+    open-note.yaml       NOTE_ID param: from home, wait for the row, open its detail
+    open-editor.yaml     from a detail, More → Edit notes, wait for the editor
+    swipe-to-trash.yaml  NOTE_ID param: swipe the row left until its trash action shows
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/, phase-3/     tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-4/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`

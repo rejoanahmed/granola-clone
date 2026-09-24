@@ -5,6 +5,7 @@ import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, type TestD1 } from "../Testing/Database";
 import type { E2eService } from "./E2eService";
+import { E2E_USERS } from "./Fixtures";
 
 const AUTH_SECRET = "auth-secret-32-characters-long-000000";
 
@@ -79,5 +80,131 @@ describe("the E2E harness", () => {
     await expect(
       harness.signIn("administrator", "http://localhost:3001")
     ).rejects.toMatchObject({ _tag: "ValidationFailed" });
+  });
+});
+
+// ── Phase 4: the notes fixtures and the `empty` person (docs/spec/phase-4.md §6.6, §7 cases 25–27) ──
+
+const FIXTURE_IDS = [
+  "not_e2e_archived",
+  "not_e2e_launch",
+  "not_e2e_other",
+  "not_e2e_solo",
+  "not_e2e_standup",
+];
+
+describe("the E2E harness, phase 4", () => {
+  let d1: TestD1;
+  let container: ReturnType<typeof buildContainer>;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    container = buildContainer(envOver(d1));
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const fresh = async () => {
+    await harness.reset();
+    return await harness.seed();
+  };
+
+  const countOf = async (table: string): Promise<number> =>
+    Number(await d1.prepare(`SELECT count(*) AS n FROM ${table}`).first("n"));
+
+  // §7 case 25
+  it("seeds the five fixtures with their fixed ids, and names them in its answer", async () => {
+    const seeded = await fresh();
+
+    const rows = await d1
+      .prepare("SELECT id FROM notes ORDER BY id")
+      .all<{ id: string }>();
+    expect(rows.results.map((row) => row.id)).toEqual(FIXTURE_IDS);
+    type Named = { id: string; ownerRole: string; title: string };
+    // @ts-expect-error phase 4: the seed does not answer its notes yet
+    const named: Named[] = seeded.notes;
+    expect([...named].sort((a, b) => a.id.localeCompare(b.id))).toEqual([
+      {
+        id: "not_e2e_archived",
+        ownerRole: "person",
+        title: "Archived kickoff",
+      },
+      {
+        id: "not_e2e_launch",
+        ownerRole: "person",
+        title: "Launch planning review",
+      },
+      {
+        id: "not_e2e_other",
+        ownerRole: "other",
+        title: "Other person\u2019s private note",
+      },
+      {
+        id: "not_e2e_solo",
+        ownerRole: "person",
+        title: "Solo reflection thoughts",
+      },
+      { id: "not_e2e_standup", ownerRole: "person", title: "Weekly standup" },
+    ]);
+  });
+
+  it("lists exactly person's three live notes, newest first", async () => {
+    await fresh();
+
+    // @ts-expect-error phase 4: the container has no notes service yet
+    const page = await container.notes.list(E2E_USERS.person, {
+      cursor: null,
+      limit: 20,
+    });
+
+    expect(page.items.map((item: { id: string }) => item.id)).toEqual([
+      "not_e2e_launch",
+      "not_e2e_standup",
+      "not_e2e_solo",
+    ]);
+  });
+
+  // §7 case 26
+  it("seeds an onboarded `empty` person who has no notes", async () => {
+    await fresh();
+    // @ts-expect-error phase 4: E2E_USERS has no `empty` person yet
+    const empty = E2E_USERS.empty;
+    expect(empty).toEqual({
+      email: "e2e-empty@gcnotes.test",
+      id: "usr_e2e_empty",
+      name: "E2E Empty",
+    });
+
+    // @ts-expect-error phase 4: the container has no notes service yet
+    const page = await container.notes.list(empty, { cursor: null, limit: 20 });
+    const profile = await container.profiles.me(empty);
+
+    expect(page).toEqual({ items: [], nextCursor: null });
+    expect(profile.onboardedAt).toEqual(expect.any(Number));
+  });
+
+  // §7 case 27
+  it("leaves no notes or attendees after a reset, and a re-seed restores a renamed fixture", async () => {
+    await fresh();
+    // @ts-expect-error phase 4: the container has no notes service yet
+    await container.notes.update(E2E_USERS.person, "not_e2e_launch", {
+      title: "Renamed by a journey",
+    });
+
+    await harness.reset();
+    expect(await countOf("notes")).toBe(0);
+    expect(await countOf("note_attendees")).toBe(0);
+
+    await harness.seed();
+    // @ts-expect-error phase 4: the container has no notes service yet
+    const restored = await container.notes.get(
+      E2E_USERS.person,
+      "not_e2e_launch"
+    );
+    expect(restored).toMatchObject({ title: "Launch planning review" });
+    expect(restored.attendees).toHaveLength(3);
   });
 });
