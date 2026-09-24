@@ -20,6 +20,31 @@
   `notes_owner_live_idx`. Unblocked by a phase that designs a trash screen and a retention period.
   The purge would be a cron calling a service method (R8), and the cascade on `note_attendees`
   already cleans up after it.
+- **No live transcription client (phase 5).** Recordings are transcribed through the
+  `Transcription` port, and the only implementation is `TranscriptionFake`, which never decodes the
+  audio: it answers a deterministic transcript seeded on the recording id and duration. `AppConfig`
+  refuses `TRANSCRIPTION_MODE=fake` under `NODE_ENV=production` and refuses `live` because there is
+  no client, so production (which sets `live`) fails at startup for this reason as well as
+  `EMAIL_MODE`'s. Stubbed: local and the deployed dev Worker run the fake, and the E2E harness's
+  `e2e_switches` row scripts it. Unblocked by a phase that picks a vendor, writes
+  `Integrations/Transcription/TranscriptionClient.ts` and its webhook route (a `RAW_ROUTE_PREFIXES`
+  entry, PROVIDER-FAKES.md rule 8), and adds the credential to `parseConfig`.
+- **The R2 buckets must exist before a deploy (phase 5).** `wrangler.jsonc` binds `AUDIO` to
+  `gcnotes-audio-dev` and `gcnotes-audio-prod`. They are created by the user
+  (`bunx wrangler r2 bucket create gcnotes-audio-dev`, and the same for prod), not by an agent or
+  by `deploy.sh`. `bun run deploy:check` resolves the binding but does not prove the bucket exists;
+  a missing one fails the real deploy. Stubbed: `wrangler dev --local` simulates the bucket, and the
+  audio store fails only the calls that need it when the binding is absent.
+- **Audio objects outlive a deleted user (phase 5).** Deleting a user cascades their notes,
+  recordings and segments in D1, but nothing deletes the R2 objects under
+  `recordings/<ownerId>/`. Discard deletes its own object; nothing else does. Stubbed: nothing.
+  Unblocked by a purge (a cron over a service method, R8) that runs with the phase-4 trash purge,
+  whenever that lands, and lists the owner's prefix.
+- **An abandoned upload never expires (phase 5).** A recording ended on a device that never comes
+  back stays `uploading` on the server forever, and one whose app was killed mid-recording stays
+  `recording` (the note page shows "This recording didn’t finish."). `sweep()` only polls
+  `transcribing` rows. Stubbed: nothing; the note can be trashed. Unblocked by giving the sweep an
+  age cutoff that fails such rows, once the client's resume-on-launch has had a release to settle.
 
 ## Deferred review items (phase 3)
 
