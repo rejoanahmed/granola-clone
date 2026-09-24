@@ -1,0 +1,53 @@
+# AC5 (docs/spec/phase-2.md §8): the demo SheetChrome presents from the gallery and dismisses both
+# by its close button and by the native swipe-down.
+appId: ${APP_ID}
+name: Sheet chrome presents and dismisses
+tags:
+  - phase-2
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-gallery.yaml
+- scrollUntilVisible:
+    element:
+      id: gallery-open-sheet
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: gallery-open-sheet
+- extendedWaitUntil:
+    visible:
+      id: sheet-demo
+    timeout: 10000
+- assertVisible:
+    id: sheet-demo-add
+- assertVisible:
+    id: sheet-demo-close
+- tapOn:
+    id: sheet-demo-close
+- extendedWaitUntil:
+    notVisible:
+      id: sheet-demo
+    timeout: 10000
+- assertVisible:
+    id: gallery-screen
+# Second presentation, dismissed by the gesture. The sheet opens at its 0.5 detent, so its top edge
+# (the grabber) sits just below mid-screen; the swipe starts there, not on the body, where it could
+# be read as a scroll of the sheet's content.
+- tapOn:
+    id: gallery-open-sheet
+- extendedWaitUntil:
+    visible:
+      id: sheet-demo
+    timeout: 10000
+- swipe:
+    start: 50%, 53%
+    end: 50%, 95%
+    duration: 400
+- extendedWaitUntil:
+    notVisible:
+      id: sheet-demo
+    timeout: 10000
+- assertVisible:
+    id: gallery-screen

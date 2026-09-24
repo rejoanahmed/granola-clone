@@ -13,16 +13,19 @@
 #                                  menu's first-run sheet, then the menu itself, then its floating
 #                                  button cover the app on every clean launch.
 # All are inert in a Release build, which has neither the launcher nor the menu.
+#
+# The Metro URL defaults in the expression rather than in `env:`: a subflow's own `env:` default
+# wins over `-e DEV_SERVER_URL=…` from the command line, so a second Metro on another port (another
+# project already holding :8081) was silently ignored and the app loaded the wrong bundle.
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
-  DEV_SERVER_URL: http://localhost:8081
 ---
 - launchApp:
     clearState: true
     clearKeychain: true
     arguments:
-      --initialUrl: ${DEV_SERVER_URL}
+      --initialUrl: "${typeof DEV_SERVER_URL === 'undefined' ? 'http://localhost:8081' : DEV_SERVER_URL}"
       -EXDevMenuIsOnboardingFinished: "YES"
       -EXDevMenuShowsAtLaunch: "NO"
       -EXDevMenuShowFloatingActionButton: "NO"

@@ -1,0 +1,43 @@
+# AC1 + AC2 (docs/spec/phase-2.md §8): the home shell (#01) exposes its whole toolbar, the
+# upcoming-events card, the list band, the Ask pill and the FAB.
+appId: ${APP_ID}
+name: Home shell exposes the toolbar, card, Ask pill and FAB
+tags:
+  - phase-2
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-dev-home.yaml
+# AC1
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-folders-button
+- assertVisible:
+    id: home-get-desktop-button
+- assertVisible:
+    id: home-phone-button
+- assertVisible:
+    id: home-search-button
+- assertVisible:
+    id: home-settings-button
+- assertVisible:
+    id: home-title
+# No session on /dev/home, so the avatar falls back to "N".
+- assertVisible:
+    id: home-avatar-initial
+    text: N
+# AC2
+- assertVisible:
+    id: home-events-card
+- assertVisible:
+    id: home-list
+- assertVisible:
+    id: home-ask-button
+- assertVisible:
+    id: home-new-note-button
+# id and text together: the selector is still the id, the text pins the copy.
+- assertVisible:
+    id: home-title
+    text: My notes

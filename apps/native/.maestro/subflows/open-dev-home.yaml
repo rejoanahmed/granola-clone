@@ -1,0 +1,18 @@
+# Clean launch, then the development-only "Preview home" link on welcome. Phase 2 has no scripted
+# sign-in (auth is phase 3), so `/dev/home` renders the real HomeShell with no session. Phase 3
+# replaces this entry with a sign-in subflow and rewrites the phase-2 flows onto it.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: launch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- tapOn:
+    id: welcome-dev-home
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

@@ -1,0 +1,59 @@
+# AC3 (docs/spec/phase-2.md §8): every shell control renders and gives press feedback but does not
+# navigate in phase 2. After each tap the shell is still there and the title has not scrolled away.
+appId: ${APP_ID}
+name: Home shell controls are inert and do not crash
+tags:
+  - phase-2
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-dev-home.yaml
+- tapOn:
+    id: home-folders-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-get-desktop-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-phone-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-search-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-settings-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-events-card
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-ask-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- tapOn:
+    id: home-new-note-button
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
