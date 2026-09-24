@@ -1,0 +1,34 @@
+# Start clean and already signed in as the seeded ROLE (`person`, `other` or `empty`), for every
+# flow whose subject is not sign-in itself (docs/TESTING.md §8, "Fast sign-in"). It replaces
+# `start-clean.yaml` + `sign-in.yaml`, and ends wherever the gate sends that account at launch —
+# home for every seeded person — so the caller asserts where it landed.
+#
+# The session is real: the harness mints a better-auth session row and signs its cookie, and a
+# development build launched with `-gcE2eSession` stores it in the same SecureStore jar a typed
+# code does. Only the typing is skipped. The flows that test the typing (phase-3/*) keep
+# `sign-in.yaml`.
+#
+# `stopApp` first: the previous flow's app may still be uploading or saving, and it must not write
+# into the world this reset builds. `start-clean.yaml` gets the same guarantee by launching (and so
+# killing it) before it resets.
+#
+#   - runFlow:
+#       file: ../subflows/sign-in-fast.yaml
+#       env:
+#         ROLE: person
+#         MIC: deny            # optional; the microphone permission, see launch-app.yaml
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- stopApp
+- runFlow: e2e-reset.yaml
+- runScript:
+    file: ../scripts/e2e-session.js
+    env:
+      ROLE: ${ROLE}
+- runFlow:
+    file: launch-app.yaml
+    env:
+      MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
+      E2E_SESSION: ${output.session}
