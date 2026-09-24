@@ -61,7 +61,7 @@ const META_GLYPH = 20;
 const MENU_GAP = 8;
 
 /**
- * The live card (#102–#104; docs/spec/phase-5.md §3.4–3.6). Everything it shows is the store's,
+ * The live card (screen 102–screen 104; docs/spec/phase-5.md §3.4–3.6). Everything it shows is the store's,
  * so Minimize can unmount it and the home pill bring it back as it was.
  */
 export default function RecordingScreen() {

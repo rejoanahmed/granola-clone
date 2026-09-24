@@ -44,7 +44,7 @@ const CONTENT = {
 } as const;
 
 /**
- * The mic primer (#100) and the denied card (designed), one component over one chrome: home stays
+ * The mic primer (screen 100) and the denied card (designed), one component over one chrome: home stays
  * visible under a half-black scrim, the card rises from the bottom, and the scrim closes it as the
  * Close glyph does. Neither creates a note.
  */

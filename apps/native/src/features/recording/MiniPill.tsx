@@ -5,7 +5,7 @@ import { formatTimer } from "./format";
 import { useLiveRecording } from "./liveRecording";
 import { Meter } from "./Meter";
 
-// The compact lime pill: the keyboard mini bar on the live card (#103) and, standing in for the
+// The compact lime pill: the keyboard mini bar on the live card (screen 103) and, standing in for the
 // + FAB, the home pill that returns to it (designed). The same meter and timer, no controls.
 export function MiniPill({
   accessibilityLabel,

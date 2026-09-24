@@ -93,7 +93,7 @@ function ThemedLayout() {
         />
         <Stack.Screen
           name="record/[id]"
-          // A full-height card over the dimmed home (#102). Swiping it down is a Minimize.
+          // A full-height card over the dimmed home (screen 102). Swiping it down is a Minimize.
           options={{ ...SHEET, sheetAllowedDetents: [1] }}
         />
         <Stack.Screen
