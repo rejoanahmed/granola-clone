@@ -56,3 +56,8 @@
   could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
   flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
   found.
+- **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), unexplained.**
+  Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was being pushed, as
+  if its home row had been tapped. It passed in the phase-2-only run before and in two runs alone
+  after. No home row sits under the toolbar, so this reads as a stray touch rather than a mis-aimed
+  one; watch for it recurring before treating it as the app's.
