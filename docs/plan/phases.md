@@ -79,8 +79,8 @@ menu, and the empty list; API tests for ownership (another user's note is not re
 ### 5 — Recording and transcript
 The + FAB starts a recording (expo-audio) → recording screen → stop → upload → fake transcriber →
 speaker-grouped transcript sheet (#13–14, `Speaker A`, yellow initial avatar, no timestamps).
-**The recording UI was not crawled** (it would have written to the real account), so it is our own
-design unless the user approves one real recording on a throwaway note (see BLOCKERS.md).
+The recording UI follows discovery #100–#107 (mic primer, live card with lime bar, Cancel→End pill,
+keyboard mini bar, Discard-only More menu, then Uploading → Generating → finished note).
 Test builds use a fake recorder, because a simulator mic cannot be scripted.
 **Exit:** flows for record → stop → transcript visible, cancelling a recording, and denying mic
 permission.
