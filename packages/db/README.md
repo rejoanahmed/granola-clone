@@ -8,9 +8,10 @@ Drizzle schema + D1 migrations. Schema: `src/schema/`. Migrations: `d1-migration
 | `gcnotes-db-prod` | Prod only (`--env production`) |
 | Local files | `apps/api/.wrangler/state/v3/d1/` |
 
-The schema today is better-auth's four tables — `user`, `session`, `account`, `verification` — and
-nothing else. The first domain table goes in its own file under `src/schema/`, is added to the
-schema barrel, and joins `RESET_ORDER`.
+The schema is better-auth's four tables — `user`, `session`, `account`, `verification` — plus the
+domain tables: `profiles` (the details better-auth's `user` row does not carry) and `email_outbox`
+(written only by the fake email provider). A new domain table goes in its own file under
+`src/schema/`, is added to the schema barrel, and joins `RESET_ORDER`.
 
 **Never** hand-edit `src/schema/auth.ts` — run `bun run auth:generate-schema` from the repo root.
 Anything you want alongside the better-auth tables (an extra index, a relation) goes in another
@@ -43,7 +44,7 @@ Repositories map rows to domain types; no row type crosses into a service (R2).
 ## `RESET_ORDER`
 
 `src/reset-order.ts` lists the domain tables children-before-parents, so the E2E reset and the
-seeder can delete with foreign keys on. It is empty until the first domain table exists. The
+seeder can delete with foreign keys on. The
 better-auth tables are deliberately **not** in it: the E2E reset path wants to wipe the domain and
 keep its signed-in sessions.
 
