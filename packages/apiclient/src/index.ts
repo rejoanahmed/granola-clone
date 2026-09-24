@@ -40,3 +40,4 @@ export {
   type QueryKey,
 } from "./query";
 export { invalidationKeys, queryDefaults, queryKeys } from "./query-keys";
+export { makeRecordingsApi, type UploadAudioInput } from "./recordings";

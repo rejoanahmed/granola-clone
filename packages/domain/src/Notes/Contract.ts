@@ -7,6 +7,7 @@ import {
   NoteSummary,
 } from "../Domain/Note";
 import { PageQuery } from "../Domain/Page";
+import { Transcript } from "../Domain/Recording";
 import {
   commonErrors,
   ErrorBody,
@@ -118,5 +119,26 @@ export const restoreNoteRoute = createRoute({
   },
   security: [{ sessionCookie: [] }],
   summary: "Restore a trashed note",
+  tags: ["Notes"],
+});
+
+// Here rather than in the Recordings contract because a client holds a note id, not a recording
+// id, when it opens the sheet. Served by the recordings service, which owns the segments.
+export const getNoteTranscriptRoute = createRoute({
+  description:
+    "The note's transcript, grouped into utterances: consecutive segments by one speaker are one utterance. Speakers are letters; the client draws the label. utterances is [] for a recording of silence. A trashed note's transcript is still readable.",
+  method: "get",
+  path: "/notes/{id}/transcript",
+  request: { params: NoteParams },
+  responses: {
+    200: json(Transcript, "The transcript"),
+    404: json(
+      ErrorBody,
+      "NoteNotFound (no such note, or not the caller's), or TranscriptNotFound (no recording, or not transcribed yet)"
+    ),
+    ...commonErrors,
+  },
+  security: [{ sessionCookie: [] }],
+  summary: "Read a note's transcript",
   tags: ["Notes"],
 });

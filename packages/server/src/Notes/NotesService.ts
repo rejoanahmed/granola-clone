@@ -55,6 +55,8 @@ const present = (note: Authorized<NoteRecord>, actor: Actor): Note => ({
   bodyMarkdown: note.bodyMarkdown,
   createdAt: note.createdAt,
   id: note.id,
+  // Contract stub: the note's recording is read with it once the phase-5 repository lands.
+  recording: null,
   source: note.source,
   startedAt: note.startedAt,
   title: note.title,

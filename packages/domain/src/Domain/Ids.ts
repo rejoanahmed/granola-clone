@@ -4,8 +4,7 @@ const ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Ids this API mints are `<prefix><nanoid(16)>`. `_brand` is a type carrier only — the string never
- * reaches the schema. Unused until the first context that owns a table of its own; it is kept so
- * that context brands its ids the same way instead of inventing a second scheme.
+ * reaches the schema.
  */
 export const branded = <B extends string>(_brand: B, prefix: string) =>
   z
@@ -24,3 +23,9 @@ export const UserId = z
   .regex(ID_PATTERN)
   .brand<"UserId">();
 export type UserId = z.infer<typeof UserId>;
+
+// Here rather than in `Note.ts`: a recording names its note and a note carries its recording, so
+// with the id in `Note.ts` the two modules would import each other and one would read the other's
+// schema before it was initialised.
+export const NoteId = branded("NoteId", "not_");
+export type NoteId = z.infer<typeof NoteId>;

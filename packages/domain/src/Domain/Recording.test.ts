@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 5: the recording vocabulary is specified (phase-5.md §6.2), not built
 import * as Rec from "./Recording";
 
 // docs/spec/phase-5.md §7 "Domain/Recording.test.ts". `groupUtterances` is pure and shared by the

@@ -6,11 +6,14 @@ export type ErrorStatus =
   | 404
   | 409
   | 410
+  | 413
+  | 415
   | 422
   | 429
   | 500
   | 502
-  | 503;
+  | 503
+  | 504;
 
 /**
  * `details` is serialised to the client verbatim — identifiers only, never prose. `message` is for

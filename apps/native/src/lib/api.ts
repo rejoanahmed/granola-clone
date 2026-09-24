@@ -217,6 +217,7 @@ const insertSummary = (queryClient: QueryClient, summary: NoteListItem) => {
 const toSummary = (note: NoteDetail): NoteListItem => ({
   attendeeCount: note.attendees.length,
   id: note.id,
+  recordingStatus: note.recording?.status ?? null,
   source: note.source,
   startedAt: note.startedAt,
   title: note.title,

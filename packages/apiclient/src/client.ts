@@ -9,6 +9,7 @@ import {
 import { networkError, unwrap } from "./errors";
 import { makeNotesApi } from "./notes";
 import { makeProfilesApi } from "./profiles";
+import { makeRecordingsApi } from "./recordings";
 
 // Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
 // router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
@@ -113,9 +114,16 @@ export type RequestOf<R> = Simplify<
   }
 >;
 
+/** A route whose only success is a 204 (a delete). It still fails through `unwrap`, unlike a raw one. */
+type IsNoContent<R> = R extends { responses: Record<204, unknown> }
+  ? true
+  : false;
+
 /** A route with no JSON success resolves to the raw `Response`, derived rather than special-cased. */
 export type ResultOf<R extends AnyRoute> = [SuccessSchema<R>] extends [never]
-  ? Response
+  ? IsNoContent<R> extends true
+    ? undefined
+    : Response
   : OutputOf<SuccessSchema<R>>;
 
 // Per-call escape hatches outside the contract. `body` is for a signed webhook-style route, where
@@ -135,7 +143,9 @@ export type Call<R extends AnyRoute> =
 // Required for a no-JSON route and rejected on any other, which is how `redirect: "manual"` stays
 // in step with `ResultOf` answering `Response`.
 type RawArg<R> = [SuccessSchema<R>] extends [never]
-  ? [raw: { readonly raw: true }]
+  ? IsNoContent<R> extends true
+    ? []
+    : [raw: { readonly raw: true }]
   : [];
 
 /** The route is an explicit type argument because no runtime value carries it. */
@@ -277,9 +287,11 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   return {
     ...makeNotesApi(endpoint),
     ...makeProfilesApi(endpoint),
+    ...makeRecordingsApi(endpoint),
   };
 };
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
 export type ApiClient = ReturnType<typeof makeNotesApi> &
-  ReturnType<typeof makeProfilesApi>;
+  ReturnType<typeof makeProfilesApi> &
+  ReturnType<typeof makeRecordingsApi>;

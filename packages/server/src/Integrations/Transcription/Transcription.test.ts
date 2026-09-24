@@ -1,4 +1,3 @@
-// @ts-expect-error phase 5: the transcription errors are specified (phase-5.md §6.4), not built
 import * as TxErrors from "@gc/domain/Transcription/Errors";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error phase 5: the fake is specified (phase-5.md §6.4), not built

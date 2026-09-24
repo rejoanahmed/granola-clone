@@ -156,6 +156,8 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
     return rows.map((row) => ({
       attendeeCount: Number(row.attendeeCount),
       id: NoteId.parse(row.id),
+      // Contract stub: the recordings join lands with the phase-5 repository.
+      recordingStatus: null,
       source: NoteSource.parse(row.source),
       startedAt: row.startedAt,
       title: row.title,

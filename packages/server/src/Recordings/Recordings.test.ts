@@ -1,5 +1,4 @@
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
-// @ts-expect-error phase 5: the recordings errors are specified (phase-5.md §11 API 2), not built
 import * as RecErrors from "@gc/domain/Recordings/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";

@@ -1,5 +1,4 @@
 import { isAppError } from "@gc/domain/Errors";
-// @ts-expect-error phase 5: the recordings errors are specified (phase-5.md §11 API 2), not built
 import * as RecErrors from "@gc/domain/Recordings/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { describe, expect, it } from "vitest";
