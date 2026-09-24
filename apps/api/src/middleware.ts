@@ -5,6 +5,7 @@ import {
   type Sessions,
   type SessionsConfig,
 } from "@gc/server/Auth/Sessions";
+import { parseConfig } from "@gc/server/Runtime/AppConfig";
 import { makeDrizzle } from "@gc/server/Runtime/Drizzle";
 import { logEvent } from "@gc/server/Runtime/Logger";
 import type { Handler, MiddlewareHandler } from "hono";
@@ -23,13 +24,13 @@ const onARawRoute = (path: string): boolean =>
   RAW_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 
 const AUTH_WINDOW_MS = 60_000;
-const AUTH_LIMIT = 20;
 const ANONYMOUS_CLIENT = "anonymous";
 
 // The default handler answers `text/plain`, which would make the 429 the one response in this API
 // that is not `ErrorBody`; throwing hands the status back to `on-error.ts` (R7). Headers the
 // library has already set survive onto the thrown response. The store is in-memory, so the budget
-// is per isolate rather than global.
+// is per isolate rather than global. The budget is `AUTH_RATE_LIMIT` (default 20): locally every
+// simulator request shares the key "anonymous", and one Maestro run spends twenty in minutes.
 //
 // Built on the FIRST REQUEST, never at module scope: `rateLimiter()` calls `store.init()`, which
 // arms a `setInterval`, and workerd refuses a timer in global scope outright — "Disallowed
@@ -38,16 +39,19 @@ const ANONYMOUS_CLIENT = "anonymous";
 let authLimiter: MiddlewareHandler<AppEnv> | undefined;
 
 export const authRateLimit = createMiddleware<AppEnv>(async (c, next) => {
-  authLimiter ??= rateLimiter<AppEnv>({
-    handler: () => {
-      throw new RateLimited({ limit: AUTH_LIMIT, windowMs: AUTH_WINDOW_MS });
-    },
-    keyGenerator: (ctx) =>
-      ctx.req.header("cf-connecting-ip") ?? ANONYMOUS_CLIENT,
-    limit: AUTH_LIMIT,
-    standardHeaders: "draft-6",
-    windowMs: AUTH_WINDOW_MS,
-  });
+  if (authLimiter === undefined) {
+    const limit = parseConfig(c.env).authRateLimit;
+    authLimiter = rateLimiter<AppEnv>({
+      handler: () => {
+        throw new RateLimited({ limit, windowMs: AUTH_WINDOW_MS });
+      },
+      keyGenerator: (ctx) =>
+        ctx.req.header("cf-connecting-ip") ?? ANONYMOUS_CLIENT,
+      limit,
+      standardHeaders: "draft-6",
+      windowMs: AUTH_WINDOW_MS,
+    });
+  }
   await authLimiter(c, next);
 });
 
@@ -90,18 +94,16 @@ export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
 
 type OtpEmail = Parameters<SessionsConfig["email"]["sendOtpEmail"]>[0];
 
-// The project ships no email provider yet, so the OTP is logged in development only — a one-time
-// password in a log line is one in everyone's log aggregator. Email sign-in therefore does not
-// work in production until a provider is wired in here.
+// better-auth decides when a code is sent; the container's `authEmails` renders and sends it
+// through whichever email provider `EMAIL_MODE` chose (only the fake exists, writing the outbox the
+// E2E harness reads). The log line never carries the code, in any environment: a one-time password
+// in a log line is one in everyone's log aggregator, and the outbox is where a developer reads it.
+// The container is built per send rather than captured, because the sessions below outlive the
+// request that created them.
 const otpEmail = (env: Env): SessionsConfig["email"] => ({
-  sendOtpEmail: ({ email, otp, type }: OtpEmail) => {
-    logEvent(
-      "auth.otp.issued",
-      env.NODE_ENV === "development"
-        ? { email, otp, type }
-        : { email, provider: "none", type }
-    );
-    return Promise.resolve();
+  sendOtpEmail: async ({ email, otp, type }: OtpEmail) => {
+    await buildContainer(env).authEmails.sendOtp({ email, otp, type });
+    logEvent("auth.otp.issued", { email, type });
   },
 });
 

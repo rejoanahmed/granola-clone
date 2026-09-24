@@ -50,7 +50,7 @@ describe("the worker's HTTP assembly", () => {
     const response = await app.request("/api/doc", {}, env);
     const doc = (await response.json()) as { paths: Record<string, unknown> };
 
-    expect(Object.keys(doc.paths)).toEqual(["/me"]);
+    expect(Object.keys(doc.paths)).toEqual(["/me", "/me/onboarding"]);
   });
 
   it("answers an unknown route in the same envelope as every other failure", async () => {
@@ -64,12 +64,8 @@ describe("the worker's HTTP assembly", () => {
 // §7 case 25 (docs/spec/phase-3.md §6.7). The limiter is built on the first `/api/auth/*` request
 // and kept for the isolate, so this is the only test in the file that may reach that prefix.
 // `/api/auth/ok` is better-auth's own liveness route: it answers without touching the inert D1.
-// `AUTH_RATE_LIMIT` is not on `Env` until phase 3 adds it, hence `Object.assign`.
 describe("the /api/auth rate limit", () => {
-  const PHASE_3_VARS: Readonly<Record<string, string>> = {
-    AUTH_RATE_LIMIT: "2",
-  };
-  const limited = { ...env, ...PHASE_3_VARS };
+  const limited = { ...env, AUTH_RATE_LIMIT: "2" } satisfies Env;
 
   it("reads its budget from AUTH_RATE_LIMIT, and answers the request past it with 429 RateLimited", async () => {
     const responses: Response[] = [];

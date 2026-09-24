@@ -89,19 +89,15 @@ afterAll(() => {
   d1.close();
 });
 
-// `NODE_ENV=development` on purpose: it is where today's `otpEmail` still logs the code, and
-// case 24 says the line drops it everywhere, dev included.
-const withDb = {
+// `NODE_ENV=development` on purpose: it is where `otpEmail` used to log the code, and case 24 says
+// the line drops it everywhere, dev included.
+const live = {
   ...armed,
   BETTER_AUTH_SECRET: AUTH_SECRET,
   DB: d1,
+  EMAIL_MODE: "fake",
   NODE_ENV: "development",
 } satisfies Env;
-
-// `EMAIL_MODE` is not on `Env` until phase 3 adds it; `Object.assign` keeps it out of an
-// excess-property check that would otherwise be the test's only failure.
-const PHASE_3_VARS: Readonly<Record<string, string>> = { EMAIL_MODE: "fake" };
-const live = { ...withDb, ...PHASE_3_VARS };
 
 const harness = (method: "GET" | "POST", path: string) =>
   app.request(path, { headers: { "x-e2e-secret": SECRET }, method }, live);
