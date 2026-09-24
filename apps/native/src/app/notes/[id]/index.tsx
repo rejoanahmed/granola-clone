@@ -15,7 +15,7 @@ import {
 } from "@native/design";
 import { formatPillDate } from "@native/features/notes/format";
 import { hasBlocks, NoteMarkdown } from "@native/features/notes/NoteMarkdown";
-import { noteShareText } from "@native/features/notes/share";
+import { noteShareText, SHARE_COPY } from "@native/features/notes/share";
 import { useShareNote } from "@native/features/notes/useShareNote";
 import {
   findNoteSummary,
@@ -49,12 +49,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-// #10's measurements: the bar 8 under the safe area, the title 20 under the bar, the pill 16 under
-// the title, the body 20 under the pill; the Ask pill 12 above the bottom safe area.
+// #10's measurements (source.xml): the bar 8 under the safe area, the title 20 under the bar, the
+// pill 12 under the title's last line, the body 16 under the pill; the Ask pill 12 above the bottom
+// safe area.
 const BAR_TOP = 8;
 const TITLE_GAP = 20;
-const META_GAP = 16;
-const BODY_GAP = 20;
+const META_GAP = 12;
+const BODY_GAP = 16;
 const ASK_GAP = 12;
 const FADE_HEIGHT = 32;
 const META_HEIGHT = 36;
@@ -319,7 +320,7 @@ export default function NoteScreen() {
             <PillButton
               label="Share"
               onPress={() => {
-                share(note).catch(() => undefined);
+                share(note);
               }}
               style={styles.share}
               testID="note-share"
@@ -385,7 +386,9 @@ export default function NoteScreen() {
                     closeMenu();
                     setStringAsync(noteShareText(note))
                       .then(() => toast.show({ message: NOTE_COPY.copied }))
-                      .catch(() => undefined);
+                      .catch(() =>
+                        toast.show({ message: SHARE_COPY.copyFailed })
+                      );
                   },
                   testID: "note-menu-copy",
                 },

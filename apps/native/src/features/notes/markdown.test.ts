@@ -149,10 +149,10 @@ describe("gapBefore", () => {
     const [heading, bullet, second, continuation, paragraph] =
       parseNoteMarkdown("### H\n- a\n- b\n  more\n\nplain");
     expect(gapBefore(undefined, heading as never)).toBe(0);
-    expect(gapBefore(heading, bullet as never)).toBe(8);
-    expect(gapBefore(bullet, second as never)).toBe(8);
+    expect(gapBefore(heading, bullet as never)).toBe(2);
+    expect(gapBefore(bullet, second as never)).toBe(4);
     expect(gapBefore(second, continuation as never)).toBe(4);
     expect(gapBefore(continuation, paragraph as never)).toBe(12);
-    expect(gapBefore(paragraph, heading as never)).toBe(24);
+    expect(gapBefore(paragraph, heading as never)).toBe(28);
   });
 });

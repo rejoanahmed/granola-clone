@@ -178,7 +178,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
                   label: "Share notes",
                   onPress: () => {
                     closeMenu();
-                    share(menu.note.id).catch(() => undefined);
+                    share(menu.note.id);
                   },
                   testID: "home-note-menu-share",
                 },
@@ -186,7 +186,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
             : []
         }
         onClose={closeMenu}
-        preview={menu ? <NoteRowContent note={menu.note} /> : null}
+        preview={menu ? <NoteRowContent flush note={menu.note} /> : null}
         reserveBottom={insets.bottom + BAR_GAP + sizes.askPill + BAR_GAP}
         testID="home-note-menu"
       />

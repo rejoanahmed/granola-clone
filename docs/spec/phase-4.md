@@ -56,7 +56,7 @@ the same rule phase 2 used for the toolbar.
 | --- | --- | --- | --- |
 | `app/index.tsx` | Home, now with the notes list | stack root | #01, #02, #03 |
 | `app/notes/[id]/index.tsx` | Note detail | push | #10, #11, #40 |
-| `app/notes/[id]/attendees.tsx` | Attendees sheet | `formSheet`, detent `[0.5]` | #16 |
+| `app/notes/[id]/attendees.tsx` | Attendees sheet | `formSheet`, detent `[0.7]` | #16 |
 | `app/notes/[id]/edit.tsx` | Markdown editor | `fullScreenModal`, gesture dismiss off | #31 |
 | `app/notes/[id]/rename.tsx` | Edit title sheet | `formSheet`, `fitToContents` | *(ours)*, #16 chrome |
 
@@ -89,7 +89,7 @@ so a page boundary inside a day extends that day's section rather than repeating
   9:39 AM"). 20 gutter, 52 tall, 8 between rows. Contents: a 44pt `IconTile` (`bg.tile`, 1px
   `border.hairline`, radius 10) holding a lucide `Smartphone` glyph for `source: "phone"`, then 12
   gap, then two lines: the **title** (`rowTitle`, 1 line, tail-truncated) and the **time**
-  (`secondary`, format `h:mm a`, "9:39 AM"). Tap pushes `notes/[id]`. Pressed state: the row's
+  (`caption`, 15pt `text.secondary`, format `h:mm a`, "9:39 AM"; #01's source.xml puts it 20 below the title's top, so the two line boxes touch). Tap pushes `notes/[id]`. Pressed state: the row's
   background is `bg.tile` at the row's full width with radius 12.
 - Because the row is one accessibility element, its title and time are not separately reachable.
   Flows assert the row's text, which is its label, with a regex (`"Renamed by Maestro, .*"`).
@@ -142,10 +142,15 @@ Trashing from the swipe, from the detail's More menu or anywhere else goes throu
 1. The note is removed from the cached list at once (optimistic). The section disappears when it
    empties, and the list falls to its empty state when the last note goes.
 2. `POST /notes/{id}/trash`.
-3. A **toast** shows "Moved to trash" with the action **"Undo"** (§2.9). Undo calls
-   `POST /notes/{id}/restore` and puts the row back where the order says it goes.
-4. On failure the row returns and the toast reads "Couldn’t move to trash. Try again.", with no
-   action.
+3. Once the request has landed, a **toast** shows "Moved to trash" with the action **"Undo"**
+   (§2.9). It waits for the trash so an Undo can never reach the server first, where the restore
+   would be a no-op and the trash would then land after it. Undo calls `POST /notes/{id}/restore`
+   and puts the row back where the order says it goes; a row older than everything loaded is left
+   for the next page to bring rather than appended. Undo is not tied to the screen that trashed the
+   note, so it works after the detail's More menu has popped to home. A failed restore toasts
+   "Couldn’t restore the note. Try again."
+4. On failure only that row returns (never a snapshot of the whole list, which would undo a second
+   trash that succeeded), and the toast reads "Couldn’t move to trash. Try again.", with no action.
 
 There is **no confirmation dialog**. Discovery never pressed Move to trash, an iOS alert has no
 testID, and Undo is the safety net instead.
@@ -163,7 +168,7 @@ scrolls under the floating controls, which have no bar background (#11).
 2. **Title** `note-title`: `display` (serif 40/46), 24 left and right inset, wrapping with no line
    limit, 20 below the top bar. It is a header for accessibility. A note whose title is empty
    cannot exist (§6.2), so there is no placeholder here. New notes are "Untitled note" (phase 5).
-3. **Metadata row**, 16 below the title, 20 left inset:
+3. **Metadata row**, 12 below the title, 20 left inset:
    - The pill `note-meta-pill`: 36 tall, radius pill, 1px `border.hairline`, no fill, 14
      horizontal padding. It holds a lucide `Calendar` glyph (20pt), 6 gap, the date in `body`
      (`text.primary`), format `MMM d h:mm a` ("Sep 12 9:39 AM"), then 16 gap, a `Users` glyph, 6
@@ -171,7 +176,7 @@ scrolls under the floating controls, which have no bar background (#11).
      accessibility label is `"{date}, +{count}"`. Tap presents `notes/[id]/attendees`.
    - 8 to its right, the circular **Add to folder** button `note-add-to-folder`: 36pt, 1px
      `border.hairline`, no fill, `FolderPlus` glyph, label "Add to folder". Inert (phase 9).
-4. **Body** `note-body`, 20 below the metadata row, 24 inset each side: the note's markdown
+4. **Body** `note-body`, 16 below the metadata row, 24 inset each side: the note's markdown
    rendered by `NoteMarkdown` (§2.5). Each top-level block carries `note-block-<n>` (0-based). A
    zero-height `note-body-end` sentinel follows the last block, so a flow can scroll to the end
    (#11). The content's bottom inset is 64 + 24 + the bottom safe area. #11 shows no footer after
@@ -205,7 +210,7 @@ brings its own styling to undo.
 
 | Source | Block | Style (from #10) |
 | --- | --- | --- |
-| `#`, `##`, `###` + text | heading | `rowTitle` (17 semibold), 24 above (0 for block 0), 8 below |
+| `#`, `##`, `###` + text | heading | `rowTitle` (17 semibold), 28 above (0 for block 0), 2 below |
 | `- ` or `* ` at indent 0 | bullet, level 0 | 6pt filled dot in `text.secondary` at x 10, text at x 24 |
 | the same at indent 2 (or a tab) | bullet, level 1 | 6pt hollow circle (1.5pt stroke, `text.secondary`) at x 34, text at x 48 |
 | deeper | level 1 | clamped. #10 never goes deeper. |
@@ -221,7 +226,7 @@ literal text in a paragraph. Nothing is dropped, and nothing throws.
 
 ### 2.6 Attendees sheet (#16)
 
-`notes/[id]/attendees`, a `formSheet` at the half detent, drawn with the phase-2 `SheetChrome`
+`notes/[id]/attendees`, a `formSheet` at the 0.7 detent (#16's grabber sits at y 270 of 926, so its sheet is not iOS's half), drawn with the phase-2 `SheetChrome`
 (`bg.sheet`, top radius 40, the grabber). Root `attendees-sheet`.
 
 - Header: the left slot holds the **"Add"** pill `attendees-add` (the borderless `bg.sheetControl`
@@ -272,16 +277,23 @@ Behaviour:
   `note-editor-discard-menu`, left-aligned to it. It has two items: `Trash2` **"Discard changes"**
   `note-editor-discard` in `destructive`, which closes without saving, and `Pencil` **"Keep
   editing"** `note-editor-keep`, which dismisses the menu. Tapping the scrim is "Keep editing".
-- A 409 `NoteTrashed` (trashed on another device mid-edit) closes the editor and pops to home with
-  the toast "This note was moved to trash."
+- A 409 `NoteTrashed` (trashed on another device mid-edit), or a 404 `NoteNotFound`, closes the
+  editor and pops to home with the toast "This note was moved to trash."
+- The input is not rendered until the note has loaded (a spinner, `note-editor-loading`, stands in
+  on a deep link or a cold cache): text typed before the body arrived would stop it loading, and
+  Save would replace the body with only that text.
+- The caret tint is applied once the input is focused: set at mount, it misses an autofocused
+  caret, which stays system blue.
 
 ### 2.8 Share and copy text
 
 `Share notes` (row menu), the `Share` pill and `Copy notes` all use one pure function,
 `noteShareText(note) = "# {title}\n\n{bodyMarkdown}"`, trimmed. Share uses React Native's built-in
 `Share.share({ message, title })` (no new dependency). From the row menu the note's detail is read
-from the cache, or fetched when absent, and the sheet opens once it resolves. The iOS share sheet is
-system-owned and has no testID, so **no flow asserts it** (§9).
+from the cache, or fetched when absent, and the sheet opens once it resolves. A fetch that fails
+toasts "Couldn’t share this note. Try again.", and a failed copy "Couldn’t copy the notes. Try
+again.", so neither tap silently does nothing. The iOS share sheet is system-owned and has no
+testID, so **no flow asserts it** (§9).
 
 ### 2.9 Toast *(ours)*
 
@@ -312,7 +324,9 @@ toast at a time, and a new one replaces the old one):
 - Success: `PATCH /notes/{id}` `{ title }`. The list and detail caches take the new title and the
   sheet closes.
 - Failure: `rename-error`, a `caption` line in `destructive` 8 under the field: "Couldn’t rename
-  this note. Try again."
+  this note. Try again." A `NoteTrashed` or `NoteNotFound` (trashed or gone on another device) is
+  not a failure a retry can fix: the sheet closes to home with the toast "This note was moved to
+  trash.", as the editor does (§2.7, which treats a 404 the same way as the 409).
 
 ## 3. States
 
@@ -841,7 +855,9 @@ asserted with the regex `Sat 12 Sep( 2026)?`, so the suite survives New Year.
 - When they tap `note-more`, then `note-menu-trash`
 - Then `home-screen` is visible, `home-note-not_e2e_solo` is not, `home-day-2026-08-05` is gone
   (its only note left), and `toast-message` reads "Moved to trash"
-- When the app is relaunched
+- When they tap `toast-action` (the detail that started the trash has unmounted by now)
+- Then `home-note-not_e2e_solo` and `home-day-2026-08-05` are back
+- When they open it again and trash it from `note-menu-trash`, then relaunch the app
 - Then `home-note-not_e2e_solo` is still not visible.
 
 **AC8. The empty list.** `phase-4/empty-list.yaml`

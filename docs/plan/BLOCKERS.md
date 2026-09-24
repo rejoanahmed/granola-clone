@@ -42,12 +42,10 @@
 ## Phase 4 native notes
 
 - **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@gcnotes.test` under a
-  better-auth id (phase 4).** The test-first run of `phase-4/empty-list.yaml` signed that address
-  up before `empty` was seeded, so better-auth created it with a random id. `stageUsers` inserts
-  `usr_e2e_empty` with `onConflictDoNothing()`, which swallows the email conflict, and the fixture
-  rows then fail their foreign key. Worked around on this machine by deleting that one row from the
-  local D1; a fresh local database never has it. The fix belongs in `E2eRepo.stageUsers` (clear a
-  same-email row with a different id before inserting), the API side's to make.
+  better-auth id (phase 4) — fixed in review.** `E2eRepo.stageUsers` now deletes a same-email row
+  under any other id before inserting the fixed one, so `onConflictDoNothing()` can no longer
+  swallow the email conflict. Pinned by "seeds over an address better-auth already signed up under
+  another id" in `E2E/E2E.test.ts`.
 - **The swipe action's row inset.** `ReanimatedSwipeable` clips its actions to the row, and the
   #03 capsule plus caption (57pt) is taller than the 52pt row, so each row carries half of the 8pt
   row gap inside itself (`ROW_INSET`) and the day header's gaps give it back. The pressed-row fill
@@ -56,8 +54,38 @@
   could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
   flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
   found.
-- **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), unexplained.**
-  Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was being pushed, as
-  if its home row had been tapped. It passed in the phase-2-only run before and in two runs alone
-  after. No home row sits under the toolbar, so this reads as a stray touch rather than a mis-aimed
-  one; watch for it recurring before treating it as the app's.
+- **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), not
+  reproduced.** Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was
+  being pushed. No artefacts of that run survived, so no root cause was found. The review's
+  reading was a tap landing while the list laid its rows in under a freshly shown home, so
+  `subflows/open-home-as.yaml` now waits for `home-list-loading` to go and for the screen to stop
+  moving before a flow touches home. Since then the whole suite (smoke, phase-2, phase-3, phase-4:
+  23 flows) passed clean. One earlier full run in the same session lost its last seven flows to the
+  Maestro XCTest driver crashing ("Failed to resolve remote element" on a status-bar query, in the
+  run's `xctest_runner_*.log`); each of those failed in 1–3 s before touching the app. That is the
+  driver, not the app, and the rerun was clean. Watch for the push recurring.
+
+## Deferred review items (phase 4)
+
+- **Designed states no flow reaches.** `home-list-loading`, `home-list-error`/`home-list-retry`,
+  `home-list-more`/`home-list-more-retry`, `note-loading`, `note-error`, `note-body-empty`,
+  `note-editor-loading`, `note-editor-error`, the editor's and rename's 409/404 close-to-home path
+  with its toast, `rename-error`, "Couldn’t move to trash", "Couldn’t restore the note", and the
+  share and copy failure toasts are built but unflowed. Each needs a failure (or a delay) the flows
+  cannot cause on demand, and the seed holds three notes, so `onEndReached` never pages on device.
+  It is the same seam the phase-3 deferral names: a harness switch, behind `E2E_HARNESS`, that
+  scripts the next response of a named route, plus a larger fixture for paging. `note-not-found`
+  is now covered, by `phase-4/note-not-found.yaml` deep-linking to the trashed `not_e2e_archived`.
+- **The #40 italic is asserted by text only.** Maestro reads no font attributes, so
+  `open-note.yaml` proves the second paragraph's words and the italic rests on
+  `markdown.test.ts` and the screenshot. The pristine-close check in `edit-note-discard.yaml` runs
+  straight after the tap; it is kept because a second `notVisible` check follows once
+  `note-screen` is back, which is the one that could not pass on a menu that flashed up late.
+- **The row menu's horizontal position differs from #02.** It now anchors on the row's content
+  frame inside the 20pt gutter, so the lifted preview rests where the row does and the menu's right
+  edge sits on the content's right edge (20 in). #02's native menu sat about 90pt in from the right,
+  placed from the touch point by UIKit; a drawn menu has no such anchor, and the spec keeps its
+  right-aligned rule.
+- **`FormRow`'s caret tint (phase 3).** The caret fix (tint applied once focused) was made in the
+  note editor and `TextField`. `FormRow` sets its tint at mount the old way; it is not
+  autofocused, which is the case that showed blue, so it was left alone.

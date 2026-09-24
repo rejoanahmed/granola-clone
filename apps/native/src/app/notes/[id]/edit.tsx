@@ -11,11 +11,15 @@ import {
   Text,
   useToast,
 } from "@native/design";
-import { hasTag, noteQuery, useUpdateNote } from "@native/lib/api";
+import {
+  GONE_FOR_EDITING,
+  isGoneForEditing,
+} from "@native/features/notes/gone";
+import { noteQuery, useUpdateNote } from "@native/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Check, Keyboard, Pencil, Trash2, X } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -39,7 +43,7 @@ export const EDITOR_COPY = {
   hideKeyboard: "Hide keyboard",
   keep: "Keep editing",
   showKeyboard: "Show keyboard",
-  trashed: "This note was moved to trash.",
+  trashed: GONE_FOR_EDITING,
 } as const;
 
 // The raw markdown editor (#31; docs/spec/phase-4.md §2.7). Closing a pristine editor asks nothing,
@@ -55,17 +59,11 @@ export default function NoteEditor() {
   const close = useRef<View>(null);
 
   const original = query.data?.bodyMarkdown;
-  const [value, setValue] = useState<string | null>(original ?? null);
+  const [value, setValue] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
   const [discardFrame, setDiscardFrame] = useState<Frame | null>(null);
 
-  useEffect(() => {
-    if (value === null && original !== undefined) {
-      setValue(original);
-    }
-  }, [original, value]);
-
-  const text = value ?? "";
+  const text = value ?? original ?? "";
   const dirty = original !== undefined && text !== original;
   const saving = update.isPending;
 
@@ -88,7 +86,7 @@ export default function NoteEditor() {
       { bodyMarkdown: text },
       {
         onError: (error) => {
-          if (hasTag(error, "NoteTrashed")) {
+          if (isGoneForEditing(error)) {
             router.dismissTo("/");
             toast.show({ message: EDITOR_COPY.trashed });
           }
@@ -107,31 +105,43 @@ export default function NoteEditor() {
   };
 
   const top = insets.top + BAR_TOP;
-  const failed = update.isError && !hasTag(update.error, "NoteTrashed");
+  const failed = update.isError && !isGoneForEditing(update.error);
 
   return (
     <View style={styles.screen} testID="note-editor-screen">
-      <TextInput
-        autoCorrect
-        autoFocus
-        cursorColor={colors.accent.lime}
-        editable={!saving}
-        keyboardAppearance="dark"
-        multiline
-        onBlur={() => setFocused(false)}
-        onChangeText={setValue}
-        onFocus={() => setFocused(true)}
-        ref={input}
-        scrollEnabled
-        selectionColor={colors.accent.lime}
-        style={[
-          styles.input,
-          { paddingTop: top + sizes.iconButton + TEXT_GAP },
-        ]}
-        testID="note-editor-input"
-        textAlignVertical="top"
-        value={text}
-      />
+      {/* Not rendered until the note is here: text typed into an input the body has not reached
+          yet would stop the body from ever loading, and Save would replace it with only that. */}
+      {original === undefined ? (
+        <ActivityIndicator
+          color={colors.text.secondary}
+          style={{ marginTop: top + sizes.iconButton + TEXT_GAP }}
+          testID="note-editor-loading"
+        />
+      ) : (
+        <TextInput
+          autoCorrect
+          autoFocus
+          editable={!saving}
+          keyboardAppearance="dark"
+          multiline
+          onBlur={() => setFocused(false)}
+          onChangeText={setValue}
+          onFocus={() => setFocused(true)}
+          ref={input}
+          scrollEnabled
+          // Set only once focused: UIKit draws an autofocused caret before the tint set at mount
+          // reaches it, and it stayed system blue (seen on the iOS 26 simulator). A tint that
+          // arrives while the input is first responder recolours the caret.
+          selectionColor={focused ? colors.accent.lime : undefined}
+          style={[
+            styles.input,
+            { paddingTop: top + sizes.iconButton + TEXT_GAP },
+          ]}
+          testID="note-editor-input"
+          textAlignVertical="top"
+          value={text}
+        />
+      )}
 
       <View pointerEvents="box-none" style={[styles.bar, { top }]}>
         <View collapsable={false} ref={close}>

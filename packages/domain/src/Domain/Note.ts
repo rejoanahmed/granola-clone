@@ -13,8 +13,12 @@ export type AttendeeId = z.infer<typeof AttendeeId>;
 export const NoteSource = z.enum(["phone"]);
 export type NoteSource = z.infer<typeof NoteSource>;
 
+// A named constant because the rename sheet caps its field at it: a client-side copy would drift,
+// and a title the field allowed would come back as a 422.
+export const NOTE_TITLE_MAX = 200;
+
 // Trimmed before the length check, so "   " is empty rather than a three-character title.
-export const NoteTitle = z.string().trim().min(1).max(200);
+export const NoteTitle = z.string().trim().min(1).max(NOTE_TITLE_MAX);
 export type NoteTitle = z.infer<typeof NoteTitle>;
 
 export const NoteBody = z.string().max(100_000);

@@ -21,12 +21,6 @@ const displayName = (attendee: Attendee): string => {
   return attendee.isMe ? `${name} (me)` : name;
 };
 
-// The API already puts the owner first; sorting again keeps "me" on top should that ever change.
-const callerFirst = (attendees: readonly Attendee[]): Attendee[] => [
-  ...attendees.filter((a) => a.isMe),
-  ...attendees.filter((a) => !a.isMe),
-];
-
 // #16: the note's attendees in the phase-2 sheet chrome. Rows are not pressable, as #16 showed;
 // Add renders and does nothing until people exist (phase 8).
 export default function AttendeesSheet() {
@@ -51,7 +45,8 @@ export default function AttendeesSheet() {
     >
       {query.data ? (
         <View>
-          {callerFirst(query.data.attendees).map((attendee) => (
+          {/* In the API's order, which the contract fixes: the caller first, then by position. */}
+          {query.data.attendees.map((attendee) => (
             <View key={attendee.id}>
               <View
                 accessibilityLabel={displayName(attendee)}

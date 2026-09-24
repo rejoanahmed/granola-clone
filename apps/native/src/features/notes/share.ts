@@ -4,3 +4,8 @@ export const noteShareText = (note: {
   readonly bodyMarkdown: string;
   readonly title: string;
 }): string => `# ${note.title.trim()}\n\n${note.bodyMarkdown.trim()}`.trim();
+
+export const SHARE_COPY = {
+  copyFailed: "Couldn’t copy the notes. Try again.",
+  failed: "Couldn’t share this note. Try again.",
+} as const;

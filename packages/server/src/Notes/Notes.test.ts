@@ -536,6 +536,62 @@ describe("NotesService.update", () => {
     });
   });
 
+  // The branch where the read saw a live note and the write's guard did not: the only path that
+  // turns a lost race into NoteTrashed, or into NoteNotFound through the read that follows it.
+  const racedService = (between: () => Promise<unknown>) => {
+    const repo = makeNotesRepo(makeDrizzle(d1));
+    return makeNotesService({
+      clock,
+      ids,
+      repo: {
+        ...repo,
+        update: async (...args: Parameters<typeof repo.update>) => {
+          await between();
+          return repo.update(...args);
+        },
+      },
+      uow: makeUnitOfWork(d1),
+    });
+  };
+
+  it("is NoteTrashed for a note trashed between the read and the write, and changes nothing", async () => {
+    const note = await service().create(actor(), { title: "Racing" });
+
+    const error = await caught(() =>
+      racedService(() => service().trash(actor(), note.id)).update(
+        actor(),
+        note.id,
+        { title: "Lost the race" }
+      )
+    );
+
+    expect(error).toBeInstanceOf(NoteTrashed);
+    await expect(service().get(actor(), note.id)).resolves.toMatchObject({
+      title: "Racing",
+    });
+  });
+
+  it("is NoteNotFound for a note deleted between the read and the write", async () => {
+    const note = await service().create(actor(), { title: "Vanishing" });
+
+    const error = await caught(() =>
+      racedService(() =>
+        d1.prepare("delete from notes where id = ?").bind(note.id).run()
+      ).update(actor(), note.id, { title: "Nobody home" })
+    );
+
+    expect(error).toBeInstanceOf(NoteNotFound);
+  });
+
+  it("is NoteTrashed for an empty patch on a trashed note: the trash check comes first", async () => {
+    const note = await service().create(actor(), { title: "Gone" });
+    await service().trash(actor(), note.id);
+
+    await expect(service().update(actor(), note.id, {})).rejects.toBeInstanceOf(
+      NoteTrashed
+    );
+  });
+
   it("is NoteNotFound for an id that does not exist", async () => {
     await expect(
       service().update(actor(), MISSING_ID, { title: "Nobody" })

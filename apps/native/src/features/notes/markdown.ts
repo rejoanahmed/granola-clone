@@ -206,9 +206,9 @@ export function parseNoteMarkdown(source: string): Block[] {
 
 // The vertical rhythm measured off #10, as the gap above each block.
 export const BLOCK_GAP = {
-  afterHeading: 8,
-  beforeHeading: 24,
-  betweenBullets: 8,
+  afterHeading: 2,
+  beforeHeading: 28,
+  betweenBullets: 4,
   betweenParagraphs: 12,
   continuation: 4,
 } as const;

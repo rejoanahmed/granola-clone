@@ -182,6 +182,30 @@ describe("the E2E harness, phase 4", () => {
     expect(profile.onboardedAt).toEqual(expect.any(Number));
   });
 
+  it("seeds over an address better-auth already signed up under another id", async () => {
+    await harness.reset();
+    await d1
+      .prepare("DELETE FROM user WHERE id = ?")
+      .bind(E2E_USERS.empty.id)
+      .run();
+    await d1
+      .prepare(
+        "INSERT INTO user (id, name, email, email_verified, created_at, updated_at) VALUES (?, ?, ?, 1, 0, 0)"
+      )
+      .bind("usr_signed_up_by_a_flow", "Stray", E2E_USERS.empty.email)
+      .run();
+
+    await harness.seed();
+
+    const rows = await d1
+      .prepare("SELECT id FROM user WHERE email = ?")
+      .bind(E2E_USERS.empty.email)
+      .all<{ id: string }>();
+    expect(rows.results.map((row) => row.id)).toEqual([E2E_USERS.empty.id]);
+    const profile = await container.profiles.me(E2E_USERS.empty);
+    expect(profile.onboardedAt).toEqual(expect.any(Number));
+  });
+
   // §7 case 27
   it("leaves no notes or attendees after a reset, and a re-seed restores a renamed fixture", async () => {
     await fresh();

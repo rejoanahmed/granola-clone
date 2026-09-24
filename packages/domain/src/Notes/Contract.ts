@@ -74,7 +74,7 @@ export const getNoteRoute = createRoute({
 
 export const patchNoteRoute = createRoute({
   description:
-    "Edits the title and/or the markdown body. Only the keys sent change, and {} is a no-op that returns the note without moving updatedAt. Last write wins. A trashed note is a 409 until it is restored.",
+    "Edits the title and/or the markdown body. Only the keys sent change, and {} is a no-op that returns the note without moving updatedAt. Last write wins. A trashed note is a 409 until it is restored, and that check comes first: {} on a trashed note is a 409, not a no-op.",
   method: "patch",
   path: "/notes/{id}",
   request: { body: jsonBody(NotePatch), params: NoteParams },

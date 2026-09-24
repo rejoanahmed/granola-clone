@@ -89,12 +89,10 @@ export const makeNotesService = (deps: NotesDeps) => {
     return ensure(policy, note, actor);
   };
 
+  // Every write answers through this, so the answer to an edit can never be a read that skipped
+  // the read policy.
   const get = async (actor: Actor, id: NoteRef): Promise<Note> =>
     present(await visible(canReadNote, actor, id), actor);
-
-  // After a write, the note is read back through the read policy, so the answer to an edit can
-  // never be a read that skipped its check.
-  const reread = (actor: Actor, id: NoteRef): Promise<Note> => get(actor, id);
 
   return {
     create: async (actor: Actor, input: NewNoteInput): Promise<Note> => {
@@ -132,7 +130,7 @@ export const makeNotesService = (deps: NotesDeps) => {
           [owner, ...guests]
         )
       );
-      return reread(actor, id);
+      return get(actor, id);
     },
 
     get,
@@ -163,18 +161,19 @@ export const makeNotesService = (deps: NotesDeps) => {
     restore: async (actor: Actor, id: NoteRef): Promise<Note> => {
       const note = await visible(canEditNote, actor, id);
       await deps.repo.restore(note.id, deps.clock.now());
-      return reread(actor, id);
+      return get(actor, id);
     },
 
     // Idempotent: the repo stamps only a live note, so a second trash keeps the first stamp.
     trash: async (actor: Actor, id: NoteRef): Promise<Note> => {
       const note = await visible(canEditNote, actor, id);
       await deps.repo.trash(note.id, deps.clock.now());
-      return reread(actor, id);
+      return get(actor, id);
     },
 
-    // `{}` writes nothing and does not move `updatedAt`. A trashed note is a 409 rather than a
-    // silent restore; the repo's guard catches one trashed between this read and the write.
+    // A trashed note is a 409 rather than a silent restore, checked before `{}` is recognised, so a
+    // no-op patch on a trashed note is a 409 too. `{}` on a live note writes nothing and does not
+    // move `updatedAt`. The repo's guard catches a note trashed between this read and the write.
     update: async (
       actor: Actor,
       id: NoteRef,
@@ -188,11 +187,11 @@ export const makeNotesService = (deps: NotesDeps) => {
         hasChanges(patch) &&
         !(await deps.repo.update(note.id, patch, deps.clock.now()))
       ) {
-        // Gone since the read (the reread answers NoteNotFound) or trashed since it.
-        await reread(actor, id);
+        // Gone since the read (`get` answers NoteNotFound) or trashed since it.
+        await get(actor, id);
         throw new NoteTrashed({ id });
       }
-      return reread(actor, id);
+      return get(actor, id);
     },
   };
 };

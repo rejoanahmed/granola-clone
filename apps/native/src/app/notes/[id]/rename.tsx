@@ -1,3 +1,4 @@
+import { NOTE_TITLE_MAX } from "@gc/domain/Domain/Note";
 import {
   colors,
   PillButton,
@@ -5,15 +6,18 @@ import {
   spacing,
   Text,
   TextField,
+  useToast,
 } from "@native/design";
+import {
+  GONE_FOR_EDITING,
+  isGoneForEditing,
+} from "@native/features/notes/gone";
 import { findNoteSummary, noteQuery, useUpdateNote } from "@native/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const MAX_TITLE = 200;
 
 export const RENAME_COPY = {
   error: "Couldn’t rename this note. Try again.",
@@ -33,6 +37,7 @@ export default function RenameSheet() {
   const current = summary?.title ?? query.data?.title ?? "";
   const [value, setValue] = useState<string | null>(null);
   const update = useUpdateNote(id);
+  const toast = useToast();
 
   const text = value ?? current;
   const trimmed = text.trim();
@@ -42,7 +47,18 @@ export default function RenameSheet() {
     if (!canSave || update.isPending) {
       return;
     }
-    update.mutate({ title: trimmed }, { onSuccess: () => router.back() });
+    update.mutate(
+      { title: trimmed },
+      {
+        onError: (error) => {
+          if (isGoneForEditing(error)) {
+            router.dismissTo("/");
+            toast.show({ message: GONE_FOR_EDITING });
+          }
+        },
+        onSuccess: () => router.back(),
+      }
+    );
   };
 
   return (
@@ -58,7 +74,7 @@ export default function RenameSheet() {
       >
         <TextField
           autoFocus
-          maxLength={MAX_TITLE}
+          maxLength={NOTE_TITLE_MAX}
           onChangeText={setValue}
           onSubmitEditing={save}
           returnKeyType="done"
@@ -67,7 +83,7 @@ export default function RenameSheet() {
           testID="rename-input"
           value={text}
         />
-        {update.isError ? (
+        {update.isError && !isGoneForEditing(update.error) ? (
           <Text
             color={colors.destructive}
             style={styles.error}

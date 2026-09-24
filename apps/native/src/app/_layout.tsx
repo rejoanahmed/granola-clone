@@ -13,6 +13,8 @@ import { useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
+const ATTENDEES_DETENT = 0.7;
+
 /**
  * Built through `useState(factory)`: a module constant survives Fast Refresh wired to a dead tree,
  * and constructing in the render body makes a new cache every render. `retry: 1` because the API's
@@ -50,7 +52,8 @@ function ThemedLayout() {
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
         <Stack.Screen
           name="notes/[id]/attendees"
-          options={{ ...SHEET, sheetAllowedDetents: [0.5] }}
+          // #16's grabber sits at y 270 of 926, so its sheet is ~0.7 of the screen, not iOS's half.
+          options={{ ...SHEET, sheetAllowedDetents: [ATTENDEES_DETENT] }}
         />
         <Stack.Screen
           name="notes/[id]/rename"

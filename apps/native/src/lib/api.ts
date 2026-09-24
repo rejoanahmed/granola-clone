@@ -180,7 +180,10 @@ const mapItems = (
 const comesBefore = (a: NoteListItem, b: NoteListItem): boolean =>
   a.startedAt === b.startedAt ? a.id > b.id : a.startedAt > b.startedAt;
 
-// Puts a restored row back where the order says it goes, in the page that holds its neighbours.
+// Puts a row back where the order says it goes, in the page that holds its neighbours. A row older
+// than everything loaded belongs on the last page only when that page is the list's end: while a
+// next page exists, its cursor sits above the row, so the fetch would bring the row a second time
+// and the list would draw it twice. There the next page is left to bring it.
 const insertSummary = (queryClient: QueryClient, summary: NoteListItem) => {
   queryClient.setQueryData<NotesCache>(keys.notes.list(), (data) => {
     if (!data || data.pages.length === 0) {
@@ -202,7 +205,11 @@ const insertSummary = (queryClient: QueryClient, summary: NoteListItem) => {
         return { ...data, pages };
       }
     }
-    pages.at(-1)?.items.push(summary);
+    const last = pages.at(-1);
+    if (!last || last.nextCursor !== null) {
+      return data;
+    }
+    last.items.push(summary);
     return { ...data, pages };
   });
 };
@@ -238,53 +245,75 @@ export function useUpdateNote(id: string) {
   });
 }
 
-export function useRestoreNote() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => client.restoreNote({ params: { id } }),
-    onSuccess: (note) => {
-      insertSummary(queryClient, toSummary(note));
-      return settleNote(
-        queryClient,
-        note,
-        invalidationKeys.restoreNote(note.id)
-      );
-    },
-  });
-}
-
 export const TRASH_COPY = {
   failed: "Couldn’t move to trash. Try again.",
   moved: "Moved to trash",
+  restoreFailed: "Couldn’t restore the note. Try again.",
   undo: "Undo",
 } as const;
 
-type TrashContext = { readonly previous: NotesCache | undefined };
+type Toasts = ReturnType<typeof useToast>;
+
+// Not a hook: Undo outlives the screen that trashed the note (the detail's More menu pops to home
+// before the toast is tapped), so nothing here may belong to a component that has unmounted.
+const restoreNote = async (
+  queryClient: QueryClient,
+  toast: Toasts,
+  id: string
+): Promise<void> => {
+  let note: NoteDetail;
+  try {
+    note = await client.restoreNote({ params: { id } });
+  } catch {
+    toast.show({ message: TRASH_COPY.restoreFailed });
+    return;
+  }
+  // A list refetch the trash started may still be in flight, and it would answer without the row.
+  await queryClient.cancelQueries({ queryKey: keys.notes.list() });
+  insertSummary(queryClient, toSummary(note));
+  await settleNote(queryClient, note, invalidationKeys.restoreNote(note.id));
+};
+
+type TrashContext = { readonly removed: NoteListItem | null };
 
 /**
  * The one way a note is trashed (docs/spec/phase-4.md §2.3): gone from the list at once, the
  * request, then a toast whose Undo restores it. No confirmation dialog — Undo is the safety net.
+ *
+ * The toast waits for the trash to land. Offered sooner, an Undo could reach the server before the
+ * trash did: the restore is then a no-op on a live note, the trash lands after it, and the note
+ * stays trashed while the list shows it back.
  */
 export function useTrashNote() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const restore = useRestoreNote();
   return useMutation<NoteDetail, unknown, string, TrashContext>({
     mutationFn: (id) => client.trashNote({ params: { id } }),
+    // Only the failed row comes back. Restoring a snapshot of the whole list would also undo a
+    // second trash that started after this one and succeeded.
     onError: (_error, _id, context) => {
-      queryClient.setQueryData(keys.notes.list(), context?.previous);
+      if (context?.removed) {
+        insertSummary(queryClient, context.removed);
+      }
       toast.show({ message: TRASH_COPY.failed });
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: keys.notes.list() });
-      const previous = readList(queryClient);
+      const removed = findNoteSummary(queryClient, id);
       mapItems(queryClient, (items) => items.filter((item) => item.id !== id));
+      return { removed };
+    },
+    onSuccess: (note) => {
       toast.show({
-        action: { label: TRASH_COPY.undo, onPress: () => restore.mutate(id) },
+        action: {
+          label: TRASH_COPY.undo,
+          onPress: () => {
+            restoreNote(queryClient, toast, note.id).catch(() => undefined);
+          },
+        },
         message: TRASH_COPY.moved,
       });
-      return { previous };
+      return settleNote(queryClient, note, [keys.notes.list()]);
     },
-    onSuccess: (note) => settleNote(queryClient, note, [keys.notes.list()]),
   });
 }

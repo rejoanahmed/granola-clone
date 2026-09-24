@@ -1,6 +1,8 @@
 import {
+  and,
   eq,
   inArray,
+  ne,
   noteAttendees,
   notes,
   profiles,
@@ -173,13 +175,22 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
   },
 
   // `onConflictDoNothing` rather than an upsert: the ids are fixed, so a second seed is a no-op
-  // and the sessions already minted against these users stay valid.
+  // and the sessions already minted against these users stay valid. That conflict would also
+  // swallow the email's unique index, though: an address a flow once signed up through better-auth
+  // holds a random id, the fixed id is then never written, and every fixture row naming it fails
+  // its foreign key. So a same-email row under any other id is deleted first (its sessions and
+  // profile cascade with it).
   stageUsers: (
     stage: Stage,
     users: readonly E2eUser[],
     now: Timestamp
   ): void => {
     for (const person of users) {
+      stage.add({
+        query: db
+          .delete(user)
+          .where(and(eq(user.email, person.email), ne(user.id, person.id))),
+      });
       stage.add({
         query: db
           .insert(user)

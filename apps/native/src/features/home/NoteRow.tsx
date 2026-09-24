@@ -4,7 +4,6 @@ import {
   IconTile,
   PRESSED_OPACITY,
   radii,
-  sizes,
   spacing,
   Text,
 } from "@native/design";
@@ -36,16 +35,26 @@ export const TRASH_LABEL = "Move to trash";
 export const rowLabel = (note: NoteListItem): string =>
   `${note.title}, ${formatRowTime(note.startedAt)}`;
 
-/** The row's face without its gestures: the list draws it, and so does the menu's lifted preview. */
-export function NoteRowContent({ note }: { readonly note: NoteListItem }) {
+/**
+ * The row's face without its gestures: the list draws it, and so does the menu's lifted preview.
+ * The preview is `flush`: it is drawn at the frame inside the gutter, so the gutter is not padded
+ * in a second time.
+ */
+export function NoteRowContent({
+  flush = false,
+  note,
+}: {
+  readonly flush?: boolean;
+  readonly note: NoteListItem;
+}) {
   return (
-    <View style={styles.content}>
+    <View style={[styles.content, flush ? styles.flush : null]}>
       <IconTile icon={Smartphone} />
       <View style={styles.lines}>
         <Text numberOfLines={1} variant="rowTitle">
           {note.title}
         </Text>
-        <Text numberOfLines={1} variant="secondary">
+        <Text numberOfLines={1} variant="caption">
           {formatRowTime(note.startedAt)}
         </Text>
       </View>
@@ -74,9 +83,16 @@ export function NoteRow({
   const swipeable = useRef<SwipeableMethods>(null);
   const row = useRef<View>(null);
 
+  // The frame inside the gutter, not the full-width row: #02 lifts the row where it rests, and
+  // lines the menu up with the content rather than with the screen's edge.
   const openMenu = () => {
     row.current?.measureInWindow((x, y, width, height) =>
-      onLongPress(note, { height, width, x, y })
+      onLongPress(note, {
+        height: height - ROW_INSET * 2,
+        width: width - spacing.lg * 2,
+        x: x + spacing.lg,
+        y: y + ROW_INSET,
+      })
     );
   };
 
@@ -164,7 +180,10 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT,
     paddingHorizontal: spacing.lg,
   },
-  lines: { flex: 1, gap: sizes.cardLineGap },
+  flush: { paddingHorizontal: 0 },
+  // #01's source.xml: the time is 15pt (21 tall) and starts 20 below the title's top, so the two
+  // line boxes touch rather than sitting a card's line gap apart.
+  lines: { flex: 1 },
   pressed: { opacity: PRESSED_OPACITY },
   row: {
     backgroundColor: colors.bg.list,

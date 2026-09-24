@@ -1,0 +1,44 @@
+# §3 "Detail, Not found" (docs/spec/phase-4.md): a link to a trashed note — the seeded
+# not_e2e_archived — opens the not-available state, with Share and More hidden, and its button
+# goes back to the list. No AC names it; it is the one designed failure state a flow can reach
+# without a harness switch that scripts a failing response (docs/plan/BLOCKERS.md).
+appId: ${APP_ID}
+name: A link to a trashed note shows it is not available
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 30000
+
+- openLink: gcnotes://notes/not_e2e_archived
+# iOS may ask before handing a custom-scheme link to the app. That sheet is the system's and has
+# no testID, so it is the one place a flow taps by text.
+- runFlow:
+    when:
+      visible: Open
+    commands:
+      - tapOn: Open
+- extendedWaitUntil:
+    visible:
+      id: note-not-found
+    timeout: 15000
+- assertNotVisible:
+    id: note-share
+- assertNotVisible:
+    id: note-more
+- assertNotVisible:
+    id: note-body
+- takeScreenshot: phase-4-note-not-found
+
+- tapOn:
+    id: note-not-found-back
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 15000

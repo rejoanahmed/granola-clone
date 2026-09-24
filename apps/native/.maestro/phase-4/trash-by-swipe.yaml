@@ -21,9 +21,12 @@ env:
     notVisible:
       id: home-note-not_e2e_standup
     timeout: 5000
-- assertVisible:
-    id: toast-message
-    text: Moved to trash
+# The toast waits for the trash request to land, so its Undo can never race it.
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Moved to trash
+    timeout: 10000
 - assertVisible:
     id: toast-action
     text: Undo
