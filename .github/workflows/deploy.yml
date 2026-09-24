@@ -38,13 +38,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # Must stay equal to API_URL / APP_URL in the matching `env` block of apps/api/wrangler.jsonc and
-  # to the VITE_* values in apps/web/package.json's deploy scripts. The E2E suite talks to the dev
-  # pair; a mismatch here points the gate at the wrong Worker and still goes green.
+  # Must stay equal to API_URL in the matching `env` block of apps/api/wrangler.jsonc. The E2E
+  # suite talks to the dev URL; a mismatch here points the gate at the wrong Worker and still goes
+  # green.
   DEV_API_URL: https://api-dev.gcnotes.example.com
-  DEV_APP_URL: https://dev.gcnotes.example.com
   PROD_API_URL: https://api.gcnotes.example.com
-  PROD_APP_URL: https://gcnotes.example.com
 
 jobs:
   verify:
@@ -91,7 +89,7 @@ jobs:
     timeout-minutes: 20
     environment:
       name: dev
-      url: ${{ env.DEV_APP_URL }}
+      url: ${{ env.DEV_API_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -124,16 +122,6 @@ jobs:
           EVB_DEV_KV_NAMESPACE_ID: ${{ vars.EVB_DEV_KV_NAMESPACE_ID }}
           EVB_DEV_FLAGSHIP_APP_ID: ${{ vars.EVB_DEV_FLAGSHIP_APP_ID }}
 
-      # Holds no bindings and no secrets — it is a renderer. Its environment is baked in at build
-      # time by @cloudflare/vite-plugin, which is why the script sets CLOUDFLARE_ENV and not a
-      # `--env` flag.
-      - name: Deploy the web Worker
-        working-directory: apps/web
-        run: bun run deploy:dev
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
       # parseConfig fails the Worker at startup rather than serving half a configuration, so a
       # bad binding uploads fine and 500s here. Catch it as a failed deploy, not as a failed E2E.
       - name: Wait for the dev API to answer
@@ -161,7 +149,6 @@ jobs:
           2. **Roll the Worker back:**
              ```
              bunx wrangler rollback --name gcnotes-api-dev    # or, from apps/api: --env dev
-             bunx wrangler rollback --name gcnotes-web-dev
              ```
              `bunx wrangler versions list --name gcnotes-api-dev` picks a specific version-id.
           3. **D1 has no rollback.** `wrangler d1 migrations` is create/list/apply and nothing
@@ -231,13 +218,12 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<'MD'
           ## E2E failed — production was NOT deployed
 
-          Nothing reached production. The dev Workers are running this commit and are suspect.
+          Nothing reached production. The dev Worker is running this commit and are suspect.
 
           1. **Flip the Flagship flag** that gates the change, in the *dev* app. Seconds, no deploy.
           2. **Roll dev back** (only if dev needs to be usable again before the fix):
              ```
              bunx wrangler rollback --name gcnotes-api-dev    # or, from apps/api: --env dev
-             bunx wrangler rollback --name gcnotes-web-dev
              ```
           3. **D1 has no rollback.** Roll forward with a new migration — and keep it backward
              compatible with the Worker that is deployed, since that is the one still serving.
@@ -250,7 +236,7 @@ jobs:
     timeout-minutes: 20
     environment:
       name: prod
-      url: ${{ env.PROD_APP_URL }}
+      url: ${{ env.PROD_API_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -280,13 +266,6 @@ jobs:
           EVB_PROD_KV_NAMESPACE_ID: ${{ vars.EVB_PROD_KV_NAMESPACE_ID }}
           EVB_PROD_FLAGSHIP_APP_ID: ${{ vars.EVB_PROD_FLAGSHIP_APP_ID }}
 
-      - name: Deploy the web Worker
-        working-directory: apps/web
-        run: bun run deploy:prod
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
       - name: Wait for the production API to answer
         run: |
           for attempt in $(seq 1 30); do
@@ -315,7 +294,6 @@ jobs:
           2. **Roll the Worker back:**
              ```
              bunx wrangler rollback --name gcnotes-api-prod   # or, from apps/api: --env production
-             bunx wrangler rollback --name gcnotes-web-prod
              ```
              `bunx wrangler versions list --name gcnotes-api-prod` picks a specific version-id;
              `wrangler rollback <version-id>` takes it.

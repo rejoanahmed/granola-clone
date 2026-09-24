@@ -1,8 +1,0 @@
-# The public feed and event pages are meant to be indexed. Everything else is either private to a
-# signed-in user or a machine endpoint, and crawling it produces nothing but 401s in the logs.
-User-agent: *
-Allow: /
-Disallow: /organiser
-Disallow: /me
-Disallow: /registrations
-Disallow: /payment

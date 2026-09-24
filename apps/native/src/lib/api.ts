@@ -17,7 +17,6 @@ import { createURL } from "expo-linking";
 export { ApiError, hasTag } from "@gc/apiclient";
 
 export const API_URL = Config.API_URL;
-export const WEB_URL = Config.WEB_URL;
 
 /**
  * A native app has no browser origin: the API rewrites it from this header, and dropping it throws

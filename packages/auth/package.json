@@ -5,8 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client-native": "./src/client-native.ts",
-    "./client-web": "./src/client-web.ts"
+    "./client-native": "./src/client-native.ts"
   },
   "scripts": {
     "type-check": "tsc -b"

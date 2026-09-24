@@ -15,7 +15,6 @@
       // produces a diff on every `cf-typegen`.
       "!**/wrangler.jsonc",
       "!**/worker-configuration.d.ts",
-      "!**/routeTree.gen.ts",
       // drizzle-kit owns the migration snapshots and rewrites them on every `db:generate`.
       // Formatting them here would put the formatter and the generator in a loop, each undoing
       // the other. The migration `.sql` is reviewed; its `meta/` bookkeeping is not.
@@ -111,7 +110,6 @@
       // a hazard in business logic and nowhere near these; scoped off rather than off globally, so
       // a stray `|` in a handler is still an error.
       "includes": [
-        "apps/web/src/components/ticket-qr.tsx",
         "packages/db/src/seed/core/rng.ts",
         "packages/server/src/Runtime/Ids.ts",
         "packages/shared/src/crockford.ts"
@@ -119,17 +117,6 @@
       "linter": {
         "rules": {
           "suspicious": { "noBitwiseOperators": "off" }
-        }
-      }
-    },
-    {
-      // `0x11D` is the QR primitive polynomial and `0x100` its degree marker; both are written
-      // exactly that way in ISO/IEC 18004 and in every reference implementation. `0x1_1d` would be
-      // unrecognisable to the one reader this file is written for.
-      "includes": ["apps/web/src/components/ticket-qr.tsx"],
-      "linter": {
-        "rules": {
-          "style": { "useNumericSeparators": "off" }
         }
       }
     },

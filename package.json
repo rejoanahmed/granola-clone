@@ -25,7 +25,6 @@
     "dev": "turbo dev",
     "dev:api": "turbo -F api dev",
     "dev:native": "turbo -F native -F api dev",
-    "dev:web": "turbo -F web -F api dev",
     "e2e": "bun packages/e2e/src/run.ts",
     "fix": "bun run syncpack:fix && ultracite fix",
     "migrate:dev": "turbo -F api migrate:dev",

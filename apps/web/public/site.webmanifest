@@ -1,9 +1,0 @@
-{
-  "name": "gcnotes",
-  "short_name": "gcnotes",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#fbfbfd",
-  "theme_color": "#4b3ca8",
-  "icons": [{ "src": "/favicon.ico", "sizes": "16x16", "type": "image/x-icon" }]
-}

@@ -18,5 +18,5 @@ export const auth = createAuth({
   google: { clientId: "generate-only", clientSecret: "generate-only" },
   nativeScheme: "gcnotes",
   secret: "generate-only-never-signs-anything",
-  trustedOrigins: ["http://localhost:3003"],
+  trustedOrigins: [],
 });

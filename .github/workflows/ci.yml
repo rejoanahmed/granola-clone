@@ -58,7 +58,7 @@ jobs:
       - name: Build
         run: bun run build
 
-      # Dry-runs dev AND production for both apps. Wrangler inherits no bindings into an `env`
+      # Dry-runs dev AND production for the API Worker. Wrangler inherits no bindings into an `env`
       # block, so production can be missing one while dev is green — catching that in review is
       # the whole point of running it on a PR.
       - name: Dry-run both environments

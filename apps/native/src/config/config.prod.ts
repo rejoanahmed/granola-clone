@@ -2,5 +2,4 @@
 // override is absent from the store build.
 export default {
   API_URL: "https://api.gcnotes.example.com",
-  WEB_URL: "https://gcnotes.example.com",
 } as const;
