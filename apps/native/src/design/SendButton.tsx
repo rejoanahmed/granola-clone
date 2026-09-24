@@ -1,6 +1,13 @@
 import { ArrowUp, Mic } from "lucide-react-native";
 import { Pressable, StyleSheet } from "react-native";
-import { colors, ICON_STROKE, PRESSED_OPACITY, radii, sizes } from "./tokens";
+import {
+  colors,
+  ICON_STROKE,
+  ICON_STROKE_BOLD,
+  PRESSED_OPACITY,
+  radii,
+  sizes,
+} from "./tokens";
 
 type Props = {
   readonly onPress?: () => void;
@@ -31,8 +38,8 @@ export function SendButton({ onPress, state, testID }: Props) {
     >
       <Icon
         color={active ? colors.text.primary : colors.text.onLight}
-        size={20}
-        strokeWidth={active ? 2.25 : ICON_STROKE}
+        size={sizes.sendGlyph}
+        strokeWidth={active ? ICON_STROKE_BOLD : ICON_STROKE}
       />
     </Pressable>
   );

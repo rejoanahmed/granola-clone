@@ -41,3 +41,6 @@ env:
 - assertVisible:
     id: home-title
     text: My notes
+# Compared by eye against #01 in the phase loop (docs/TESTING.md §8, "Visual check"): no flow
+# assertion notices a fallback font or a drifted colour.
+- takeScreenshot: phase-2-home

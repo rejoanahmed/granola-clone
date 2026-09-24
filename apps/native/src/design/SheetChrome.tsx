@@ -5,9 +5,11 @@ import { IconButton } from "./IconButton";
 import { Text } from "./Text";
 import { colors, radii, sizes, spacing } from "./tokens";
 
+// Wide enough for the #16 "Add" pill, and the same on both sides so the title stays centred.
+const SIDE_WIDTH = 88;
+
 type Props = {
   readonly children: ReactNode;
-  /** The id of the close button; the sheet root is `testID`. */
   readonly closeTestID: string;
   readonly left?: ReactNode;
   readonly onClose: () => void;
@@ -16,8 +18,9 @@ type Props = {
 };
 
 // The body of a route presented as `formSheet`. UISheetPresentationController owns the detents,
-// the scrim and the swipe-down; this draws what sits inside it. The grabber is drawn here rather
-// than by `sheetGrabberVisible` so it takes the token colour and the #16 geometry.
+// the dimming and the swipe-down; this draws what sits inside it. The grabber is drawn here rather
+// than by `sheetGrabberVisible` so it takes the token colour and the #16 geometry, and so a flow
+// has an element (`<testID>-grabber`) to anchor the swipe on.
 export function SheetChrome({
   children,
   closeTestID,
@@ -28,10 +31,15 @@ export function SheetChrome({
 }: Props) {
   return (
     <View style={styles.sheet} testID={testID}>
-      <View style={styles.grabber} />
+      <View style={styles.grabber} testID={`${testID}-grabber`} />
       <View style={styles.header}>
         <View style={styles.side}>{left}</View>
-        <Text accessibilityRole="header" numberOfLines={1} variant="title">
+        <Text
+          accessibilityRole="header"
+          numberOfLines={1}
+          style={styles.title}
+          variant="title"
+        >
           {title}
         </Text>
         <View style={[styles.side, styles.right]}>
@@ -39,6 +47,7 @@ export function SheetChrome({
             accessibilityLabel="Close"
             icon={X}
             onPress={onClose}
+            onSheet
             testID={closeTestID}
           />
         </View>
@@ -77,5 +86,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.sheet,
     flex: 1,
   },
-  side: { minWidth: 88 },
+  side: { minWidth: SIDE_WIDTH },
+  title: { flexShrink: 1, textAlign: "center" },
 });

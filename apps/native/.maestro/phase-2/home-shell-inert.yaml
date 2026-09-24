@@ -1,5 +1,5 @@
 # AC3 (docs/spec/phase-2.md §8): every shell control renders and gives press feedback but does not
-# navigate in phase 2. After each tap the shell is still there and the title has not scrolled away.
+# navigate in phase 2. After each tap the shell is still there, unobstructed: no sheet came up over it.
 appId: ${APP_ID}
 name: Home shell controls are inert and do not crash
 tags:
@@ -11,49 +11,25 @@ env:
 - runFlow: ../subflows/open-dev-home.yaml
 - tapOn:
     id: home-folders-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-get-desktop-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-phone-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-search-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-settings-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-events-card
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-ask-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-new-note-button
-- assertVisible:
-    id: home-screen
-- assertVisible:
-    id: home-title
+- runFlow: ../subflows/assert-home-unobstructed.yaml

@@ -6,7 +6,9 @@ import {
   IconTile,
   ListRow,
   PillButton,
+  radii,
   SendButton,
+  sizes,
   spacing,
   Text,
   ToolbarCapsule,
@@ -50,6 +52,9 @@ const flatten = (node: object, prefix = ""): [string, string][] =>
   );
 
 const SWATCHES = flatten(colors);
+
+// Clears the home indicator with room to spare, so the last section scrolls fully into view.
+const BOTTOM_CLEARANCE = 120;
 
 function Section({
   children,
@@ -210,8 +215,8 @@ export default function GalleryScreen() {
 }
 
 const styles = StyleSheet.create({
-  cardLines: { flex: 1, gap: 2 },
-  content: { gap: spacing.xxl, paddingBottom: 120 },
+  cardLines: { flex: 1, gap: sizes.cardLineGap },
+  content: { gap: spacing.xxl, paddingBottom: BOTTOM_CLEARANCE },
   list: {
     backgroundColor: colors.bg.list,
     borderRadius: spacing.md,
@@ -222,10 +227,10 @@ const styles = StyleSheet.create({
   section: { gap: spacing.sm, paddingHorizontal: spacing.md },
   swatch: {
     borderColor: colors.border.hairline,
-    borderRadius: 10,
-    borderWidth: 1,
-    height: 44,
-    width: 44,
+    borderRadius: radii.tile,
+    borderWidth: sizes.hairline,
+    height: sizes.listTile,
+    width: sizes.listTile,
   },
   swatchRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
   title: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },

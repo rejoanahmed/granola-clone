@@ -50,8 +50,3 @@ jest.mock("expo-splash-screen", () => ({
   hideAsync: jest.fn(async () => undefined),
   preventAutoHideAsync: jest.fn(async () => undefined),
 }));
-
-/** Android-only; `useThemedNavigation` calls it inside a `Platform.OS` guard that jest ignores. */
-jest.mock("expo-navigation-bar", () => ({
-  setStyle: jest.fn(),
-}));

@@ -11,8 +11,8 @@ import {
   type TypeVariant,
 } from "./tokens";
 
-export type PillTone = "dark" | "light" | "glass";
-export type PillSize = "sm" | "md" | "lg";
+export type PillTone = "dark" | "light" | "glass" | "sheet";
+export type PillSize = "md" | "lg";
 
 type Props = {
   readonly accessibilityLabel?: string;
@@ -40,7 +40,7 @@ const TONE = {
   glass: {
     surface: {
       backgroundColor: colors.ask.pill,
-      borderColor: colors.border.hairline,
+      borderColor: colors.ask.pillEdge,
       borderWidth: sizes.hairline,
     },
     text: colors.text.primary,
@@ -49,12 +49,17 @@ const TONE = {
     surface: { backgroundColor: colors.button.light },
     text: colors.text.onLight,
   },
+  // Inside a sheet header (#16) the controls are plain filled shapes: the hairline that separates a
+  // dark pill from the app background would only add noise against the lighter sheet.
+  sheet: {
+    surface: { backgroundColor: colors.bg.sheetControl },
+    text: colors.text.primary,
+  },
 } as const;
 
 const HEIGHT: Record<PillSize, number> = {
   lg: sizes.pillLarge,
   md: sizes.iconButton,
-  sm: sizes.iconButton,
 };
 
 export function PillButton({

@@ -1,0 +1,20 @@
+# After a tap on an inert shell control: nothing was presented over the shell. Today a modal
+# formSheet hides the presenting screen from the accessibility tree, so `home-screen` alone already
+# fails (proved in the phase-2 review by pointing the FAB at /dev/sheet). That is UIKit behaviour,
+# not a guarantee: a sheet with an undimmed detent leaves the screen behind it reachable. So the
+# known sheet roots are named outright, and the bottom band a half-height sheet would cover is
+# checked too. A phase that wires a sheet adds its root here.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-title
+- assertNotVisible:
+    id: sheet-demo
+- assertVisible:
+    id: home-ask-button
+- assertVisible:
+    id: home-new-note-button

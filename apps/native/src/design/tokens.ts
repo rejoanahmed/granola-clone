@@ -11,13 +11,14 @@ export const colors = {
     olive: "#677B00",
     oliveDark: "#424625",
   },
-  ask: { pill: "#525252D9" },
+  ask: { pill: "#525252D9", pillEdge: "#717171" },
   bg: {
     app: "#262626",
     iconButton: "#1E1E1E",
     list: "#1A1A1A",
     scrim: "#00000073",
     sheet: "#2A2A2A",
+    sheetControl: "#222222",
     sheetTall: "#252525",
     tile: "#282828",
     tileRaised: "#333333",
@@ -43,7 +44,6 @@ export const colors = {
 // name, not under the file name.
 export const fonts = {
   serif: "Newsreader16pt-Regular",
-  serifItalic: "Newsreader16pt-Italic",
 } as const;
 
 export const typography = {
@@ -129,6 +129,9 @@ export const radii = {
 
 export const sizes = {
   askPill: 64,
+  attendeeAvatar: 40,
+  avatar: 36,
+  cardLineGap: 2,
   fab: 64,
   glyph: 22,
   glyphLarge: 24,
@@ -139,7 +142,10 @@ export const sizes = {
   listTile: 44,
   pillLarge: 56,
   sendButton: 36,
+  sendGlyph: 20,
 } as const;
 
 export const ICON_STROKE = 1.75;
+// The Send arrow is drawn heavier than every other glyph, so it reads at 20pt on the olive fill.
+export const ICON_STROKE_BOLD = 2.25;
 export const PRESSED_OPACITY = 0.6;

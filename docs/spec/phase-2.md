@@ -43,10 +43,11 @@ literal outside `tokens.ts` fails review.**
 | `bg.list` | `#1A1A1A` | the home list band, cards, the composer, the search field |
 | `bg.sheet` | `#2A2A2A` | sheets (`#252525` for full-height sheets, `bg.sheetTall`) |
 | `bg.sheetTall` | `#252525` | full-height sheets (#04, #51) |
+| `bg.sheetControl` | `#222222` | the borderless Add pill and close circle in a sheet header (#16) |
 | `bg.iconButton` | `#1E1E1E` | circular icon buttons, the toolbar capsule, dark pills |
 | `bg.tile` | `#282828` | list icon tiles |
 | `bg.tileRaised` | `#333333` | settings icon tiles |
-| `bg.scrim` | `#000000` at 45% | behind a presented sheet |
+| `bg.scrim` | `#000000` at 45% | reserved for an overlay we draw ourselves (none yet). A presented `formSheet` uses UIKit's own dimming, which react-native-screens does not let us recolour; see `SheetChrome` in section 3 |
 | `border.hairline` | `#333333` | 1px borders on buttons, cards and tiles |
 | `text.primary` | `#FCFDF8` | titles and body |
 | `text.secondary` | `#A8AAA1` | dates, subtitles, the "Sign up" line |
@@ -62,6 +63,8 @@ literal outside `tokens.ts` fails review.**
 | `button.light` | `#EAEBE4` | primary light pill ("Sign up with work email", "Get Started") |
 | `button.lightAlt` | `#D2D2D2` | the Share pill |
 | `ask.pill` | `#525252` at 85% | the home "Ask anything" glass pill |
+| `ask.pillEdge` | `#717171` | the glass pill's 1px edge, lighter than its fill (sampled from #01) |
+| `grabber` | `#5A5A5A` | the sheet grabber |
 | `hero.pink` | `#E78BCE` | the Get desktop hero |
 | `tile.share` | `#ADC06F` | Get desktop share circle |
 | `tile.remind` | `#8EBCEC` | Get desktop remind circle |
@@ -92,12 +95,20 @@ never clip.
 
 ### 2.3 Spacing, radii, sizes
 
-- Spacing scale: `4, 8, 12, 16, 20, 24, 32`. Screen gutter 16 for cards, rows and the toolbar; 24
-  for the display title.
+- Spacing scale: `4, 8, 12, 16, 20, 24, 32`. Screen gutter 16 for the toolbar; 20 for cards and
+  rows (#01 `source.xml` puts the events card and the note rows at x=20, width 388); 24 for the
+  display title and the floating bottom bar. The discovery README's "x16–412" for the card
+  contradicts the source; the source geometry wins.
 - Radii: `pill` = 999; `card` = 24; `sheet` = 40 (top corners only); `tile` = 10; `fab` = 32.
-- Sizes: `iconButton` 44; `listTile` 44; `fab` 64; `askPill` height 64; icon glyph 22 (toolbar),
-  24 (FAB and pill).
-- Hairline border: 1px `border.hairline` on icon buttons, the toolbar capsule, cards and tiles.
+- Sizes: `iconButton` 44; `listTile` 44; `fab` 64; `askPill` height 64; `avatar` 36 (inside the
+  44pt hit area); `attendeeAvatar` 40; `sendButton` 36 with a 20pt glyph (`sendGlyph`); icon glyph 22
+  (toolbar), 24 (FAB and pill); `cardLineGap` 2 between the two lines of a card or row.
+- Hairline border: 1px `border.hairline` on icon buttons, the toolbar capsule, cards and tiles —
+  but not on controls inside a sheet header, which are plain `bg.sheetControl` fills (#16), and
+  not on the glass pill, whose edge is `ask.pillEdge`.
+- A layout number that is one screen's measured gap rather than a step on the scale (#01's 6pt
+  toolbar gap, 12pt bar gap, 40pt header band bottom) is a named constant in that screen's file,
+  never a bare literal.
 - Icons: `lucide-react-native` (already a dependency), stroke width 1.75, colour `text.primary`
   (`text.onLight` on the FAB).
 
@@ -111,19 +122,23 @@ Each one is a component, and each one appears in the gallery.
 | Component | Spec | Props |
 | --- | --- | --- |
 | `Text` | Applies a type style from 2.2 | `variant`, `color?`, `testID?` |
-| `IconButton` | 44×44 circle, `bg.iconButton`, hairline border, centred 22pt glyph. Pressed state: opacity 0.6. Hit slop 0 (it is already 44). | `icon`, `accessibilityLabel` (required), `testID`, `onPress?` |
+| `IconButton` | 44×44 circle, `bg.iconButton`, hairline border, centred 22pt glyph. `onSheet`: `bg.sheetControl`, no border. Pressed state: opacity 0.6. Hit slop 0 (it is already 44). | `icon`, `accessibilityLabel` (required), `testID`, `onPress?`, `onSheet?` |
 | `ToolbarCapsule` | One pill (`bg.iconButton`, hairline) holding 2–3 `IconButton`s edge to edge; the inner buttons drop their own fill and border | `children` |
-| `PillButton` | Fully rounded, height 44 (`size="md"`) or 56 (`size="lg"`, full width), optional leading icon, 16 horizontal padding. `tone`: `dark` (`bg.iconButton` + hairline, `text.primary`), `light` (`button.light`, `text.onLight`), `glass` (`ask.pill`, `text.primary`, height 64) | `tone`, `size`, `label`, `icon?`, `testID`, `accessibilityLabel?`, `onPress?`, `disabled?` |
+| `PillButton` | Fully rounded, height 44 (`size="md"`) or 56 (`size="lg"`, full width), optional leading icon, 16 horizontal padding. `tone`: `dark` (`bg.iconButton` + hairline, `text.primary`), `light` (`button.light`, `text.onLight`), `glass` (`ask.pill` with a 1px `ask.pillEdge`, `text.primary`, height 64), `sheet` (`bg.sheetControl`, no border, `text.primary`) | `tone`, `size`, `label`, `icon?`, `testID`, `accessibilityLabel?`, `onPress?`, `disabled?` |
 | `Fab` | 64pt circle, `accent.lime`, black 24pt `Plus` glyph, no border | `testID`, `accessibilityLabel`, `onPress?` |
 | `SendButton` | 36pt circle. `idle`: `accent.limePale` with a mic glyph, label "Hold to dictate". `active`: `accent.olive` with an arrow-up glyph, label "Send". | `state`, `testID` |
 | `IconTile` | 44×44, radius 10, `bg.tile`, hairline, centred glyph | `icon`, `testID?` |
 | `Card` | `bg.list`, radius 24, hairline, 16 padding. It is pressable when given `onPress`, and then it is one button with one accessibility label. | `children`, `onPress?`, `accessibilityLabel?`, `testID?` |
 | `ListRow` | `IconTile` + title (`rowTitle`) + subtitle (`secondary`), 12 gap, height 52 | `icon`, `title`, `subtitle`, `testID` |
-| `SheetChrome` | Grabber (36×5, radius 3, `#5A5A5A`, 8 from top), top radius 40, `bg.sheet`. Header row: optional left pill, centred `title`, right `IconButton` with an `X` glyph, label "Close". It is presented over `bg.scrim`, and swiping down dismisses it. | `title`, `onClose`, `left?`, `children`, `testID` |
+| `SheetChrome` | Grabber (36×5, radius 3, `grabber` `#5A5A5A`, 8 from top, testID `<testID>-grabber`), top radius 40, `bg.sheet`. Header row: optional left pill, centred `title` (truncates rather than pushing the sides), right `IconButton` `onSheet` with an `X` glyph, label "Close". Swiping down dismisses it. | `title`, `onClose`, `left?`, `children`, `testID`, `closeTestID` |
 
 `SheetChrome` is built on expo-router's `formSheet` presentation (native `UISheetPresentationController`,
-grabber visible, detents `[0.5, 1]`). The sheet body inside it uses the tokens. This keeps
-swipe-down dismiss native, which is what #16 and #51 do.
+detents `[0.5, 1]`). This keeps swipe-down dismiss native, which is what #16 and #51 do. Two
+deliberate departures from a stock sheet: the **grabber is drawn by `SheetChrome`**, with
+`sheetGrabberVisible: false`, so it takes the token colour and #16's geometry and gives a Maestro
+flow an element to anchor the swipe on; and the **dimming behind it is UIKit's own**, not
+`bg.scrim`, because react-native-screens exposes no dim colour for a `formSheet` and a hand-drawn
+scrim under a native sheet would double-dim.
 
 ## 4. Screens
 
@@ -140,11 +155,14 @@ not a copy of it.
    - Left: `IconButton` Folders (lucide `Folder`), then 6pt gap, then a `PillButton` `tone=dark`
      `size=md` with a `Laptop` glyph and the label **"Get desktop"** (about 148 wide).
    - Right: one `ToolbarCapsule` holding Phone (`Phone`), Search (`Search`) and the Settings avatar.
-     The avatar is a 44pt circle showing the first letter of the signed-in user's `name`, taken
+     The avatar is a 36pt circle (`sizes.avatar`) inside the 44pt hit area, as #01's photo is,
+     showing the first letter of the signed-in user's `name`, taken
      from the better-auth session already in memory. It is `rowTitle` on `bg.tileRaised`, and it
-     falls back to **"N"** when there is no session (the dev preview). No photo in this phase.
+     falls back to **"N"** when there is no session (the dev preview), when the name is empty (as
+     email-OTP sign-up leaves it) or only spaces. That rule is `initialFor` in
+     `features/home/initial.ts`, unit-tested beside it. No photo in this phase.
 3. **Title** "My notes", `display`, 24 left inset, 20 below the toolbar.
-4. **Upcoming-events card**, 16 gutter, 20 below the title, height ~81: `Card` holding an
+4. **Upcoming-events card**, 20 gutter, 20 below the title, height ~81: `Card` holding an
    `IconTile` (lucide `CalendarDays`, tile fill `bg.app`) then two lines, 12 gap:
    - **"No upcoming events"** (`rowTitle`)
    - **"Sign up with your work email."** (`caption` at 17pt, `text.secondary`), with "Sign up"
@@ -155,7 +173,8 @@ not a copy of it.
    below it fills the rest of the screen on `bg.list`, with a flat top edge and no radius. It is a
    `ScrollView` with no rows in this phase and a bottom content inset of 64 + 16 + the safe area, so
    phase 4 rows will clear the floating bar.
-6. **Floating bottom bar**, 16 gutter, 12 above the bottom safe area, 12 gap:
+6. **Floating bottom bar**, 24 gutter (#01: pill x24–328, FAB x340–404 on 428), 12 above the
+   bottom safe area, 12 gap:
    - `PillButton` `tone=glass`, flex 1, height 64, a `MessageCircle` glyph (filled `text.primary`)
      and **"Ask anything"** (`askLabel`), centred. Accessibility label **"Chat with Notes"**.
    - `Fab`, accessibility label **"New note"**.
@@ -187,7 +206,7 @@ and a 16 gutter. It is a vertical `ScrollView`, root testID `gallery-screen`.
 | `gallery-sheets` | Sheets | A dark pill **"Open sheet"** (`gallery-open-sheet`) presenting a demo `SheetChrome` |
 
 **Demo sheet** (`apps/native/src/app/dev/sheet.tsx`, `formSheet`): root `sheet-demo`, title
-**"Attendees"**, left `PillButton` dark sm **"Add"** (`sheet-demo-add`, inert), close button
+**"Attendees"**, left `PillButton` `tone=sheet` **"Add"** (`sheet-demo-add`, inert), close button
 `sheet-demo-close` labelled "Close", one `ListRow`-style row with a 40pt initial avatar and
 "E2E Person (me)". This mirrors #16's chrome. Close and swipe-down both return to the gallery.
 
@@ -273,7 +292,7 @@ discovery identifier each one replaces is given for traceability.
 | `home-ask-button` | Ask anything pill | `homeChatInputButton` |
 | `home-new-note-button` | + FAB | `plus` |
 | `gallery-screen` and the section and control ids in 4.2 | Gallery | |
-| `sheet-demo`, `sheet-demo-add`, `sheet-demo-close` | Demo sheet | `attendeeListSheetAddButton`, `xmark` |
+| `sheet-demo`, `sheet-demo-add`, `sheet-demo-close`, `sheet-demo-grabber` | Demo sheet | `attendeeListSheetAddButton`, `xmark` |
 | `welcome-dev-home`, `welcome-dev-gallery` | Dev entry links | |
 
 ## 7. API
@@ -311,7 +330,10 @@ call. `config.yaml` adds `phase-2/*` to `flows`. A shared `subflows/open-dev-hom
 - When the user taps each of `home-folders-button`, `home-get-desktop-button`, `home-phone-button`,
   `home-search-button`, `home-settings-button`, `home-events-card`, `home-ask-button` and
   `home-new-note-button` in turn
-- Then after every tap `home-screen` is still visible and `home-title` has not moved off screen.
+- Then after every tap `home-screen` is still visible and `home-title` has not moved off screen
+- And no sheet came up: `sheet-demo` is not visible, and `home-ask-button` and
+  `home-new-note-button` (the band a half-height sheet would cover) are still visible
+  (`subflows/assert-home-unobstructed.yaml`; a phase that wires a sheet adds its root there).
 
 **AC4. The gallery renders every section.** `phase-2/gallery.yaml`
 - Given a clean launch of a development build
@@ -326,8 +348,9 @@ call. `config.yaml` adds `phase-2/*` to `flows`. A shared `subflows/open-dev-hom
 - When the user scrolls to and taps `gallery-open-sheet`
 - Then `sheet-demo`, `sheet-demo-add` and `sheet-demo-close` are visible
 - When the user taps `sheet-demo-close`
-- Then `sheet-demo` is not visible and `gallery-screen` is visible
-- When the user opens the sheet again and swipes down from the sheet's top
+- Then `sheet-demo` is not visible (the assertion that matters: `gallery-screen` being visible
+  proves nothing about dismissal)
+- When the user opens the sheet again and swipes down from `sheet-demo-grabber`
 - Then `sheet-demo` is not visible.
 
 **AC6. The signed-out launch is unchanged.** `smoke/launch.yaml` (existing, tag `smoke`)
@@ -358,7 +381,7 @@ None. Phase 2 changes no contract, route, table or client.
 
 ### Native (`apps/native`)
 
-1. Add Newsreader (Regular, Italic) TTFs and `OFL.txt` under `assets/fonts/`, and register them in
+1. Add the Newsreader Regular TTF and `OFL.txt` (the italic cut is bundled by the phase that first uses it) under `assets/fonts/`, and register them in
    the `expo-font` plugin entry in `app.json`.
 2. Set `app.json` to `userInterfaceStyle: "dark"` and the splash background to `#262626`.
 3. `src/design/tokens.ts`: colour, type, spacing, radii and size tokens (section 2), plus
@@ -369,7 +392,8 @@ None. Phase 2 changes no contract, route, table or client.
    content.
 6. `src/features/home/HomeShell.tsx`: the section 4.1 layout with every testID. The avatar initial
    comes from `useAuth().session?.user.name`, falling back to "N".
-7. Replace `src/app/index.tsx` with `HomeShell`, dropping `meQuery` and the sign-out button.
+7. Replace `src/app/index.tsx` with `HomeShell`, dropping `meQuery` (deleted from `lib/api.ts`,
+   along with the now-unused `hasTag` re-export; phase 3 re-adds what it reads) and the sign-out button.
    Sign-out comes back with settings. Record this in `docs/plan/BLOCKERS.md` as a known gap
    until phase 3 or 10 restores it.
 8. `src/app/dev/_layout.tsx` (redirects when `!__DEV__`), `dev/home.tsx`, `dev/gallery.tsx`, and

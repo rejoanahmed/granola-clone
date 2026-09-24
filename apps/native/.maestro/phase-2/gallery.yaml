@@ -14,6 +14,8 @@ env:
     id: gallery-screen
 - assertVisible:
     id: gallery-colors
+# Compared by eye in the phase loop (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-2-gallery
 - scrollUntilVisible:
     element:
       id: gallery-type

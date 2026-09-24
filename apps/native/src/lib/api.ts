@@ -9,7 +9,7 @@ import Config from "@native/config";
 import { authClient, EXPO_AUTH_SCHEME } from "@native/lib/auth-client";
 import { createURL } from "expo-linking";
 
-export { ApiError, hasTag } from "@gc/apiclient";
+export { ApiError } from "@gc/apiclient";
 
 export const API_URL = Config.API_URL;
 
@@ -54,9 +54,6 @@ export const apiConfig: ApiClientConfig = {
 // that package would be a second cache. This app owns the only `QueryClient` (`app/_layout.tsx`).
 export const client = makeApiClient(apiConfig);
 export const api = makeQueryApi(client);
-
-export const meQuery = () =>
-  api.query(queryKeys.me.profile(), () => client.getMe());
 
 // Re-exported rather than imported by screens, so `@gc/apiclient` has exactly one call site.
 export {

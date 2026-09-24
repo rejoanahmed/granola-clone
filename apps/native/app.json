@@ -21,10 +21,7 @@
       [
         "expo-font",
         {
-          "fonts": [
-            "./assets/fonts/Newsreader-Regular.ttf",
-            "./assets/fonts/Newsreader-Italic.ttf"
-          ]
+          "fonts": ["./assets/fonts/Newsreader-Regular.ttf"]
         }
       ],
       "expo-asset",

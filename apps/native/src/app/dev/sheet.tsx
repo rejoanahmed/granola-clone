@@ -1,4 +1,11 @@
-import { colors, PillButton, SheetChrome, spacing, Text } from "@native/design";
+import {
+  colors,
+  PillButton,
+  SheetChrome,
+  sizes,
+  spacing,
+  Text,
+} from "@native/design";
 import { useRouter } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
@@ -8,9 +15,7 @@ export default function DevSheetScreen() {
   return (
     <SheetChrome
       closeTestID="sheet-demo-close"
-      left={
-        <PillButton label="Add" size="sm" testID="sheet-demo-add" tone="dark" />
-      }
+      left={<PillButton label="Add" testID="sheet-demo-add" tone="sheet" />}
       onClose={() => router.back()}
       testID="sheet-demo"
       title="Attendees"
@@ -32,14 +37,14 @@ const styles = StyleSheet.create({
   avatar: {
     alignItems: "center",
     backgroundColor: colors.speaker.avatar,
-    borderRadius: 20,
-    height: 40,
+    borderRadius: sizes.attendeeAvatar / 2,
+    height: sizes.attendeeAvatar,
     justifyContent: "center",
-    width: 40,
+    width: sizes.attendeeAvatar,
   },
   divider: {
     backgroundColor: colors.border.hairline,
-    height: 1,
+    height: sizes.hairline,
     marginHorizontal: spacing.xl,
   },
   row: {

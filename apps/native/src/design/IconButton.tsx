@@ -11,6 +11,8 @@ type Props = {
   /** Set by `ToolbarCapsule`: inside the capsule the button drops its own fill and border. */
   readonly bare?: boolean;
   readonly onPress?: () => void;
+  /** Inside a sheet header: the #16 close circle is a plain fill with no hairline. */
+  readonly onSheet?: boolean;
   readonly testID: string;
 };
 
@@ -20,8 +22,10 @@ export function IconButton({
   children,
   icon: Icon,
   onPress,
+  onSheet = false,
   testID,
 }: Props) {
+  const surface = onSheet ? styles.sheet : styles.filled;
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
@@ -29,7 +33,7 @@ export function IconButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        bare ? null : styles.filled,
+        bare ? null : surface,
         pressed ? styles.pressed : null,
       ]}
       testID={testID}
@@ -60,4 +64,5 @@ const styles = StyleSheet.create({
     borderWidth: sizes.hairline,
   },
   pressed: { opacity: PRESSED_OPACITY },
+  sheet: { backgroundColor: colors.bg.sheetControl },
 });

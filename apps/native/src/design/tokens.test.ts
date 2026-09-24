@@ -14,11 +14,13 @@ const SPEC_COLORS: Record<string, string> = {
   "accent.olive": "#677B00",
   "accent.oliveDark": "#424625",
   "ask.pill": "#525252D9",
+  "ask.pillEdge": "#717171",
   "bg.app": "#262626",
   "bg.iconButton": "#1E1E1E",
   "bg.list": "#1A1A1A",
   "bg.scrim": "#00000073",
   "bg.sheet": "#2A2A2A",
+  "bg.sheetControl": "#222222",
   "bg.sheetTall": "#252525",
   "bg.tile": "#282828",
   "bg.tileRaised": "#333333",
@@ -27,6 +29,7 @@ const SPEC_COLORS: Record<string, string> = {
   "button.lightAlt": "#D2D2D2",
   "calendar.bar": "#DB35F2",
   destructive: "#FE4346",
+  grabber: "#5A5A5A",
   "hero.pink": "#E78BCE",
   "speaker.avatar": "#E4CD75",
   "switch.on": "#30D159",
@@ -81,19 +84,27 @@ describe("type tokens", () => {
   }
 
   it("sets the serif display face on the two display styles only", () => {
-    expect(typography.display.fontFamily).toMatch(/Newsreader/);
-    expect(typography.displaySheet.fontFamily).toMatch(/Newsreader/);
-    expect(
-      (typography.body as { fontFamily?: string }).fontFamily ?? ""
-    ).not.toMatch(/Newsreader/);
+    const serif = Object.entries(typography)
+      .filter(([, style]) =>
+        /Newsreader/.test((style as { fontFamily?: string }).fontFamily ?? "")
+      )
+      .map(([name]) => name)
+      .sort();
+    expect(serif).toEqual(["display", "displaySheet"]);
   });
 });
 
 describe("spacing, radii and sizes", () => {
   it("uses the spec's spacing scale", () => {
-    expect(Object.values(spacing)).toEqual(
-      expect.arrayContaining([4, 8, 12, 16, 20, 24, 32])
-    );
+    expect(spacing).toEqual({
+      lg: 20,
+      md: 16,
+      sm: 12,
+      xl: 24,
+      xs: 8,
+      xxl: 32,
+      xxs: 4,
+    });
   });
 
   it("uses the spec's radii", () => {

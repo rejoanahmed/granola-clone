@@ -23,16 +23,20 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import { initialFor } from "./initial";
 
 const EVENTS_LABEL = "No upcoming events, Sign up with your work email.";
+// Off the spacing scale on purpose: these are #01's measured gaps (source.xml), not a rhythm.
 const BAR_GAP = 12;
+const TOOLBAR_GAP = 6;
+const HEADER_BAND_BOTTOM = 40;
 
 // #01 with every destination still to come: each control renders, is labelled and gives press
 // feedback, and none navigates until the phase that owns it. `name` is the session user's, so the
 // dev preview (no session) shows the fallback initial.
 export function HomeShell({ name }: { readonly name?: string | null }) {
   const insets = useSafeAreaInsets();
-  const initial = name?.trim().charAt(0).toUpperCase() || "N";
+  const initial = initialFor(name);
 
   return (
     <View style={styles.screen} testID="home-screen">
@@ -139,24 +143,24 @@ const styles = StyleSheet.create({
   avatar: {
     alignItems: "center",
     backgroundColor: colors.bg.tileRaised,
-    borderRadius: sizes.iconButton / 2,
-    height: sizes.iconButton - spacing.xs,
+    borderRadius: sizes.avatar / 2,
+    height: sizes.avatar,
     justifyContent: "center",
-    width: sizes.iconButton - spacing.xs,
+    width: sizes.avatar,
   },
   bar: {
     alignItems: "center",
     flexDirection: "row",
     gap: BAR_GAP,
-    left: spacing.md,
+    left: spacing.xl,
     position: "absolute",
-    right: spacing.md,
+    right: spacing.xl,
   },
-  card: { marginHorizontal: spacing.md, marginTop: spacing.lg },
-  cardLines: { flex: 1, gap: 2 },
+  card: { marginHorizontal: spacing.lg, marginTop: spacing.lg },
+  cardLines: { flex: 1, gap: sizes.cardLineGap },
   header: {
     backgroundColor: colors.bg.app,
-    paddingBottom: 40,
+    paddingBottom: HEADER_BAND_BOTTOM,
   },
   list: { backgroundColor: colors.bg.list, flex: 1 },
   screen: { backgroundColor: colors.bg.list, flex: 1 },
@@ -167,6 +171,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: spacing.md,
   },
-  toolbarSide: { alignItems: "center", flexDirection: "row", gap: 6 },
+  toolbarSide: { alignItems: "center", flexDirection: "row", gap: TOOLBAR_GAP },
   underline: { textDecorationLine: "underline" },
 });
