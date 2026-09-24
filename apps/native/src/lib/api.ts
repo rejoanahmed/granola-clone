@@ -1,5 +1,7 @@
 import {
   type ApiClientConfig,
+  invalidate,
+  invalidationKeys,
   makeApiClient,
   makeQueryApi,
   queryDefaults,
@@ -7,9 +9,14 @@ import {
 } from "@gc/apiclient";
 import Config from "@native/config";
 import { authClient, EXPO_AUTH_SCHEME } from "@native/lib/auth-client";
+import {
+  type QueryClient,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createURL } from "expo-linking";
 
-export { ApiError } from "@gc/apiclient";
+export { ApiError, hasTag } from "@gc/apiclient";
 
 export const API_URL = Config.API_URL;
 
@@ -54,6 +61,45 @@ export const apiConfig: ApiClientConfig = {
 // that package would be a second cache. This app owns the only `QueryClient` (`app/_layout.tsx`).
 export const client = makeApiClient(apiConfig);
 export const api = makeQueryApi(client);
+
+export const meQuery = () =>
+  api.query(queryKeys.me.profile(), ({ signal }) =>
+    client.getMe(undefined, { signal })
+  );
+
+export type Me = Awaited<ReturnType<typeof client.getMe>>;
+export type MePatch = NonNullable<
+  NonNullable<Parameters<typeof client.updateMe>[0]>["body"]
+>;
+
+// The response is the whole profile, so it is written straight into the cache — the gate reads
+// `onboardedAt` from there, and waiting for a refetch would hold a screen on a stale answer — and
+// then invalidated, so the server's copy still wins.
+const settleMe = async (
+  queryClient: QueryClient,
+  me: Me,
+  keys: readonly (readonly unknown[])[]
+) => {
+  queryClient.setQueryData(queryKeys.me.profile(), me);
+  await invalidate(queryClient, keys);
+};
+
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: MePatch) => client.updateMe({ body }),
+    onSuccess: (me) => settleMe(queryClient, me, invalidationKeys.updateMe()),
+  });
+}
+
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => client.completeOnboarding(),
+    onSuccess: (me) =>
+      settleMe(queryClient, me, invalidationKeys.completeOnboarding()),
+  });
+}
 
 // Re-exported rather than imported by screens, so `@gc/apiclient` has exactly one call site.
 export {

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The module under test calls `SplashScreen.preventAutoHideAsync()` at import and builds the auth
-// client; neither can load on node, and neither is what these guards decide.
+// The module under test calls `SplashScreen.preventAutoHideAsync()` at import, builds the auth
+// client and reaches the API client and SecureStore; none can load on node, and none is what these
+// guards decide.
 vi.mock("expo-router", () => ({
   SplashScreen: { hideAsync: vi.fn(), preventAutoHideAsync: vi.fn() },
   useGlobalSearchParams: vi.fn(),
@@ -10,6 +11,9 @@ vi.mock("expo-router", () => ({
   useSegments: vi.fn(),
 }));
 vi.mock("@native/lib/auth-client", () => ({ authClient: {} }));
+vi.mock("@native/lib/api", () => ({ hasTag: vi.fn(), meQuery: vi.fn() }));
+vi.mock("@native/features/auth/signOut", () => ({ useSignOut: vi.fn() }));
+vi.mock("@tanstack/react-query", () => ({ useQuery: vi.fn() }));
 
 const { isPublicNativeRoute, sanitizeReturnPath } = await import(
   "./auth-provider"

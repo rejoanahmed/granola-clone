@@ -1,4 +1,8 @@
+import { gateFor } from "@native/features/auth/gate";
+import { useSignOut } from "@native/features/auth/signOut";
+import { hasTag, type Me, meQuery } from "@native/lib/api";
 import { authClient } from "@native/lib/auth-client";
+import { useQuery } from "@tanstack/react-query";
 import type { Href } from "expo-router";
 import {
   SplashScreen,
@@ -18,17 +22,32 @@ const PUBLIC_SCREENS = new Set(["welcome"]);
 
 type SessionData = typeof authClient.$Infer.Session;
 
+/** `error` is only a failure worth a screen: the ones that mean "signed out" never reach it. */
+export type ProfileState =
+  | { readonly status: "idle" | "loading"; readonly profile: null }
+  | { readonly status: "ready"; readonly profile: Me }
+  | { readonly status: "error"; readonly profile: null };
+
 type AuthContextValue = {
   readonly isPending: boolean;
+  readonly me: ProfileState;
+  readonly refetchMe: () => Promise<unknown>;
   readonly refetchSession: () => Promise<unknown>;
   readonly session: SessionData | null;
 };
 
 const AuthContext = createContext<AuthContextValue>({
   isPending: true,
+  me: { profile: null, status: "idle" },
+  refetchMe: () => Promise.resolve(),
   refetchSession: () => Promise.resolve(),
   session: null,
 });
+
+// A 404 means the account is gone and a 401 that the server no longer honours the session; either
+// way the stored credential is dead, so the app signs out rather than offering a retry.
+const meansSignedOut = (error: unknown) =>
+  hasTag(error, "ProfileNotFound") || hasTag(error, "Unauthorized");
 
 export function useAuth(): AuthContextValue {
   return useContext(AuthContext);
@@ -52,7 +71,12 @@ export function sanitizeReturnPath(path: string | undefined): string {
   const pathOnly = trimmed.split("?")[0] ?? "";
   // Extend this list with each new top-level route; an unlisted one returns home after sign-in.
   // `/dev/*` is deliberately never on it: a development screen is reached by tapping, not by a link.
-  const allowed = pathOnly === "/" || pathOnly.startsWith("/screens/");
+  // Nor is `/onboarding/*`: the gate owns it, and a link into it could skip or re-enter a step.
+  const allowed =
+    pathOnly === "/" ||
+    pathOnly.startsWith("/screens/") ||
+    pathOnly === "/settings" ||
+    pathOnly.startsWith("/settings/");
   return allowed ? trimmed : fallback;
 }
 
@@ -97,62 +121,118 @@ export function isPublicNativeRoute(segments: readonly string[]): boolean {
 }
 
 // No cached user of its own: `authClient.useSession()` is already a subscription, and a second copy
-// would be a second thing to invalidate after sign-out.
+// would be a second thing to invalidate after sign-out. The profile is React Query's, because
+// `onboardedAt` is what chooses between home and onboarding.
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending, refetch } = authClient.useSession();
+  const signedIn = session?.user != null;
+  const signOut = useSignOut();
 
+  const query = useQuery({
+    ...meQuery(),
+    enabled: signedIn,
+    retry: (failures, error) => !meansSignedOut(error) && failures < 1,
+  });
+
+  const signedOutByServer =
+    signedIn && query.isError && meansSignedOut(query.error);
   useEffect(() => {
-    if (!isPending) {
+    if (signedOutByServer) {
+      signOut();
+    }
+  }, [signedOutByServer, signOut]);
+
+  let me: ProfileState = { profile: null, status: "idle" };
+  if (signedIn) {
+    if (query.data) {
+      me = { profile: query.data, status: "ready" };
+    } else if (query.isError && !signedOutByServer) {
+      me = { profile: null, status: "error" };
+    } else {
+      me = { profile: null, status: "loading" };
+    }
+  }
+
+  // Held until the gate can choose: without the profile, a signed-in launch would paint home and
+  // then jump to onboarding (or the reverse).
+  const bootResolved = !isPending && me.status !== "loading";
+  useEffect(() => {
+    if (bootResolved) {
       SplashScreen.hideAsync();
     }
-  }, [isPending]);
+  }, [bootResolved]);
 
   return (
     <AuthContext.Provider
-      value={{ isPending, refetchSession: refetch, session: session ?? null }}
+      value={{
+        isPending,
+        me,
+        refetchMe: query.refetch,
+        refetchSession: refetch,
+        session: session ?? null,
+      }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
 
-// Convenience, not security — every screen's API call authorises server-side. Gated on `isPending`
-// because redirecting before the session resolves bounces every cold start through welcome.
+// Convenience, not security — every screen's API call authorises server-side. Waits for the session
+// and the profile, because redirecting before either resolves bounces every cold start.
 export function useProtectedRoute(): void {
-  const { session, isPending } = useAuth();
+  const { session, isPending, me } = useAuth();
   const segments = useSegments();
   const pathname = usePathname();
   const params = useGlobalSearchParams();
   const router = useRouter();
+  // Primitives, not `me`: that object is rebuilt every render, and an effect keyed on it would
+  // re-issue a replace while the previous one is still landing.
+  const status = me.status;
+  const onboardedAt = me.profile?.onboardedAt;
 
   useEffect(() => {
-    if (isPending) {
+    if (isPending || status === "loading") {
       return;
     }
     const segs = segments as string[];
-
-    if (session?.user) {
-      if (segs[0] === "screens" && segs[1] === "welcome") {
-        const returnTo = params.returnTo;
-        const target = sanitizeReturnPath(
-          typeof returnTo === "string" ? returnTo : undefined
-        );
-        router.replace(target as Href);
-      }
+    const signedIn = session?.user != null;
+    if (!signedIn && isPublicNativeRoute(segs)) {
       return;
     }
 
-    if (isPublicNativeRoute(segs)) {
-      return;
-    }
+    const gate = gateFor({
+      profile: onboardedAt === undefined ? null : { onboardedAt },
+      segments: segs,
+      session: signedIn ? session : null,
+    });
 
-    router.replace(
-      welcomeHrefWithReturn(
-        buildSafeReturnTo(
-          pathname,
-          params as Record<string, string | string[] | undefined>
+    if (gate === "welcome") {
+      router.replace(
+        welcomeHrefWithReturn(
+          buildSafeReturnTo(
+            pathname,
+            params as Record<string, string | string[] | undefined>
+          )
         )
-      )
-    );
-  }, [session, isPending, segments, pathname, params, router]);
+      );
+    } else if (gate === "onboarding") {
+      router.replace("/onboarding/name");
+    } else if (gate === "home") {
+      const returnTo = segs[0] === "screens" ? params.returnTo : undefined;
+      router.replace(
+        sanitizeReturnPath(
+          typeof returnTo === "string" ? returnTo : undefined
+        ) as Href
+      );
+    }
+  }, [
+    session,
+    isPending,
+    status,
+    onboardedAt,
+    segments,
+    pathname,
+    params,
+    router,
+  ]);
 }
