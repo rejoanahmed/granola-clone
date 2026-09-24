@@ -1,5 +1,8 @@
 import { ValidationFailed } from "@gc/domain/Errors";
+import { z } from "zod";
+import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import type { LatestOtp, OutboxRepo } from "../Outbox/OutboxRepo";
+import type { RecordingsService } from "../Recordings/RecordingsService";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
@@ -9,6 +12,7 @@ import {
   E2E_NEWCOMER,
   E2E_NOTES,
   E2E_PROFILES,
+  E2E_RECORDINGS,
   E2E_USERS,
   type E2eRole,
   type E2eUser,
@@ -20,6 +24,19 @@ import { secretMatches, sessionCookieFor } from "./Secret";
 // outlive the run for no gain.
 const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 
+// The `e2e_switches` row the fake transcriber's `readMode` reads (container.ts).
+export const TRANSCRIPTION_SWITCH = "transcription";
+
+const TranscriptionModeInput = z.enum(["auto", "fail", "hold", "silent"]);
+
+// Anything the table holds that is not a mode reads as auto: a stray value must not wedge a run.
+export const transcriptionModeOf = (
+  value: string | null
+): TranscriptionMode => {
+  const parsed = TranscriptionModeInput.safeParse(value);
+  return parsed.success ? parsed.data : "auto";
+};
+
 export type E2eDeps = {
   /** Signs the session cookie better-auth will verify — not the harness's own secret. */
   readonly authSecret: string;
@@ -27,6 +44,8 @@ export type E2eDeps = {
   readonly ids: Ids;
   /** The fake email provider's mailbox, where `latestOtp` reads a sign-in code. */
   readonly outbox: OutboxRepo;
+  /** Only the sweep: releasing a held transcription is the cron's work, run on demand. */
+  readonly recordings: Pick<RecordingsService, "sweep">;
   readonly repo: E2eRepo;
   readonly secret: string;
   readonly uow: UnitOfWork;
@@ -47,6 +66,13 @@ export const makeE2eService = (deps: E2eDeps) => ({
       throw new NoOutboxMail({ email });
     }
     return mail;
+  },
+
+  // Switch back to auto, then run the sweep a cron would, so a flow waiting on "Uploading
+  // transcript..." sees it finish now rather than at the next two-minute tick.
+  releaseTranscription: async () => {
+    await deps.repo.setSwitch(TRANSCRIPTION_SWITCH, "auto");
+    return await deps.recordings.sweep();
   },
 
   // Every domain table, the outbox included, plus the newcomer's account — and nothing else of
@@ -100,6 +126,24 @@ export const makeE2eService = (deps: E2eDeps) => ({
           trashedAt: note.trashedAt,
         }))
       );
+      deps.repo.stageRecordings(
+        stage,
+        E2E_RECORDINGS.map((recording) => {
+          const note = E2E_NOTES.find((row) => row.id === recording.noteId);
+          if (note === undefined) {
+            throw new Error(`E2E recording ${recording.id} names no note`);
+          }
+          return {
+            ...recording,
+            ownerId: E2E_USERS[note.ownerRole].id,
+            segments: recording.segments.map((segment, index) => ({
+              ...segment,
+              id: `seg_${recording.id.slice("rec_".length)}_${String(index).padStart(2, "0")}`,
+            })),
+            startedAt: note.startedAt,
+          };
+        })
+      );
     });
     return {
       newcomer: E2E_NEWCOMER,
@@ -110,6 +154,15 @@ export const makeE2eService = (deps: E2eDeps) => ({
       })),
       users: E2E_USERS,
     };
+  },
+
+  setTranscriptionMode: async (mode: unknown) => {
+    const parsed = TranscriptionModeInput.safeParse(mode);
+    if (!parsed.success) {
+      throw new ValidationFailed({ mode }, "Unknown transcription mode");
+    }
+    await deps.repo.setSwitch(TRANSCRIPTION_SWITCH, parsed.data);
+    return { mode: parsed.data };
   },
 
   // `origin` comes from the request, not from config: better-auth builds its cookie name from the

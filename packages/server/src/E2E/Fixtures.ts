@@ -176,3 +176,70 @@ export const E2E_NOTES: readonly E2eNote[] = [
     trashedAt: null,
   },
 ];
+
+export type E2eSegment = {
+  readonly endMs: number;
+  readonly speaker: "A" | "B";
+  readonly startMs: number;
+  readonly text: string;
+};
+
+export type E2eRecording = {
+  readonly durationMs: number;
+  readonly id: string;
+  readonly noteId: string;
+  readonly segments: readonly E2eSegment[];
+};
+
+// Ten turns, A first and strictly alternating, so every turn is its own utterance and the sheet is
+// long enough to scroll to its pinned header (phase-5.md §8 AC10).
+const LAUNCH_TURNS = [
+  "Let's start with the beta cohort. We confirmed forty teams across three regions.",
+  "That's more than we planned for. Do the support macros cover the common questions?",
+  "They cover the five we see most. The pricing page is the bigger worry.",
+  "Legal still hasn't signed off on the annual discount wording, right?",
+  "Right, and I'd take the comparison table down until the numbers are final.",
+  "Agreed. What about sync on the very large workspaces?",
+  "It can lag. The plan is to batch the writes behind a queue before launch.",
+  "Then we need a progress indicator for the first sync, or people will think it's stuck.",
+  "Good point. I'll add that, and load-test the queue against the largest beta workspace.",
+  "Great. So we ship to the cohort on the 21st and hold the press until the second week.",
+] as const;
+
+const TURN_MS = 30_000;
+
+const turns = (texts: readonly string[]): readonly E2eSegment[] =>
+  texts.map((text, index) => ({
+    endMs: (index + 1) * TURN_MS,
+    speaker: index % 2 === 0 ? "A" : "B",
+    startMs: index * TURN_MS,
+    text,
+  }));
+
+// `standup` has no recording: its More menu has no View transcript, which a flow asserts. `other`'s
+// is there for the ownership journeys.
+export const E2E_RECORDINGS: readonly E2eRecording[] = [
+  {
+    durationMs: LAUNCH_TURNS.length * TURN_MS,
+    id: "rec_e2e_launch",
+    noteId: "not_e2e_launch",
+    segments: turns(LAUNCH_TURNS),
+  },
+  {
+    durationMs: 4000,
+    id: "rec_e2e_solo",
+    noteId: "not_e2e_solo",
+    segments: [
+      { endMs: 2000, speaker: "A", startMs: 0, text: "Hello. How are you?" },
+    ],
+  },
+  {
+    durationMs: 2 * TURN_MS,
+    id: "rec_e2e_other",
+    noteId: "not_e2e_other",
+    segments: turns([
+      "This is the other person's recording.",
+      "Nobody else should be able to read it.",
+    ]),
+  },
+];
