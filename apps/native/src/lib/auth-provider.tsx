@@ -51,6 +51,7 @@ export function sanitizeReturnPath(path: string | undefined): string {
   }
   const pathOnly = trimmed.split("?")[0] ?? "";
   // Extend this list with each new top-level route; an unlisted one returns home after sign-in.
+  // `/dev/*` is deliberately never on it: a development screen is reached by tapping, not by a link.
   const allowed = pathOnly === "/" || pathOnly.startsWith("/screens/");
   return allowed ? trimmed : fallback;
 }
@@ -85,6 +86,10 @@ export function welcomeHrefWithReturn(returnPath: string): Href {
 export function isPublicNativeRoute(segments: readonly string[]): boolean {
   const root = segments[0];
   // Decides what we render, never what is allowed — the server authorises regardless.
+  // Read at call time, not captured at import, so the Release answer is testable on node.
+  if (root === "dev") {
+    return __DEV__ === true;
+  }
   if (root === "screens") {
     return typeof segments[1] === "string" && PUBLIC_SCREENS.has(segments[1]);
   }
