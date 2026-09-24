@@ -1,6 +1,5 @@
 import * as TxErrors from "@gc/domain/Transcription/Errors";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 5: the fake is specified (phase-5.md §6.4), not built
 import * as Fake from "./TranscriptionFake";
 
 // docs/spec/phase-5.md §6.4 and §7 "Transcription.test.ts". The fake stands in for a vendor in every
@@ -28,7 +27,7 @@ type TranscriptionFake = {
   readonly calls: readonly Call[];
   poll: (jobId: string) => Promise<Answer>;
   submit: (input: {
-    audio: unknown;
+    audio: { readonly key: string };
     durationMs: number;
     key: string;
   }) => Promise<Answer>;
