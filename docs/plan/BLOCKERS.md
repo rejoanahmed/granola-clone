@@ -12,6 +12,14 @@
   substance: before phase 3, production email sign-in silently logged `provider: "none"` and sent
   nothing. Stubbed: local and the deployed dev Worker run the fake. Unblocked by a phase that picks
   a provider, writes `Integrations/Email/EmailClient.ts`, and adds its credential to `parseConfig`.
+- **No trash viewer or purge (phase 4, deferred).** Trash is a soft delete (`notes.trashed_at`),
+  and a trashed note can be brought back only through the Undo toast or
+  `POST /notes/{id}/restore`. Discovery showed no trash screen, so none is designed. Nothing purges
+  a trashed row either: it is kept indefinitely, and `GET /notes/{id}` still returns it with
+  `trashedAt`. Stubbed: nothing. The list excludes trashed notes through the partial index
+  `notes_owner_live_idx`. Unblocked by a phase that designs a trash screen and a retention period.
+  The purge would be a cron calling a service method (R8), and the cascade on `note_attendees`
+  already cleans up after it.
 
 ## Deferred review items (phase 3)
 
@@ -30,3 +38,54 @@
   during the transition as well as after it, but Maestro samples the hierarchy, so a flash shorter
   than one sample can still pass. The spec now says so (§8, AC2). The splash hold is still checked
   by eye in the screenshots.
+
+## Phase 4 native notes
+
+- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@gcnotes.test` under a
+  better-auth id (phase 4) — fixed in review.** `E2eRepo.stageUsers` now deletes a same-email row
+  under any other id before inserting the fixed one, so `onConflictDoNothing()` can no longer
+  swallow the email conflict. Pinned by "seeds over an address better-auth already signed up under
+  another id" in `E2E/E2E.test.ts`.
+- **The swipe action's row inset.** `ReanimatedSwipeable` clips its actions to the row, and the
+  #03 capsule plus caption (57pt) is taller than the 52pt row, so each row carries half of the 8pt
+  row gap inside itself (`ROW_INSET`) and the day header's gaps give it back. The pressed-row fill
+  is therefore 60pt tall rather than 52.
+- **The gallery's Menu and Toast sections sit after Sheets.** Placed before it, `phase-2/gallery-sheet.yaml`
+  could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
+  flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
+  found.
+- **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), not
+  reproduced.** Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was
+  being pushed. No artefacts of that run survived, so no root cause was found. The review's
+  reading was a tap landing while the list laid its rows in under a freshly shown home, so
+  `subflows/open-home-as.yaml` now waits for `home-list-loading` to go and for the screen to stop
+  moving before a flow touches home. Since then the whole suite (smoke, phase-2, phase-3, phase-4:
+  23 flows) passed clean. One earlier full run in the same session lost its last seven flows to the
+  Maestro XCTest driver crashing ("Failed to resolve remote element" on a status-bar query, in the
+  run's `xctest_runner_*.log`); each of those failed in 1–3 s before touching the app. That is the
+  driver, not the app, and the rerun was clean. Watch for the push recurring.
+
+## Deferred review items (phase 4)
+
+- **Designed states no flow reaches.** `home-list-loading`, `home-list-error`/`home-list-retry`,
+  `home-list-more`/`home-list-more-retry`, `note-loading`, `note-error`, `note-body-empty`,
+  `note-editor-loading`, `note-editor-error`, the editor's and rename's 409/404 close-to-home path
+  with its toast, `rename-error`, "Couldn’t move to trash", "Couldn’t restore the note", and the
+  share and copy failure toasts are built but unflowed. Each needs a failure (or a delay) the flows
+  cannot cause on demand, and the seed holds three notes, so `onEndReached` never pages on device.
+  It is the same seam the phase-3 deferral names: a harness switch, behind `E2E_HARNESS`, that
+  scripts the next response of a named route, plus a larger fixture for paging. `note-not-found`
+  is now covered, by `phase-4/note-not-found.yaml` deep-linking to the trashed `not_e2e_archived`.
+- **The #40 italic is asserted by text only.** Maestro reads no font attributes, so
+  `open-note.yaml` proves the second paragraph's words and the italic rests on
+  `markdown.test.ts` and the screenshot. The pristine-close check in `edit-note-discard.yaml` runs
+  straight after the tap; it is kept because a second `notVisible` check follows once
+  `note-screen` is back, which is the one that could not pass on a menu that flashed up late.
+- **The row menu's horizontal position differs from #02.** It now anchors on the row's content
+  frame inside the 20pt gutter, so the lifted preview rests where the row does and the menu's right
+  edge sits on the content's right edge (20 in). #02's native menu sat about 90pt in from the right,
+  placed from the touch point by UIKit; a drawn menu has no such anchor, and the spec keeps its
+  right-aligned rule.
+- **`FormRow`'s caret tint (phase 3).** The caret fix (tint applied once focused) was made in the
+  note editor and `TextField`. `FormRow` sets its tint at mount the old way; it is not
+  autofocused, which is the case that showed blue, so it was left alone.

@@ -48,9 +48,20 @@ describe("the worker's HTTP assembly", () => {
 
   it("publishes the contract's routes in the OpenAPI document", async () => {
     const response = await app.request("/api/doc", {}, env);
-    const doc = (await response.json()) as { paths: Record<string, unknown> };
+    const doc = (await response.json()) as {
+      paths: Record<string, unknown>;
+      tags: { name: string }[];
+    };
 
-    expect(Object.keys(doc.paths)).toEqual(["/me", "/me/onboarding"]);
+    expect(Object.keys(doc.paths)).toEqual([
+      "/me",
+      "/me/onboarding",
+      "/notes",
+      "/notes/{id}",
+      "/notes/{id}/trash",
+      "/notes/{id}/restore",
+    ]);
+    expect(doc.tags.map((tag) => tag.name)).toEqual(["Profile", "Notes"]);
   });
 
   it("answers an unknown route in the same envelope as every other failure", async () => {

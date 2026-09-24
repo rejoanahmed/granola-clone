@@ -1,0 +1,72 @@
+# AC6 (docs/spec/phase-4.md §8): swiping a row left reveals Move to trash (#03); trashing shows an
+# Undo toast; Undo puts the row back in its place; a second trash survives a relaunch.
+appId: ${APP_ID}
+name: Trashing a note by swipe, with Undo
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/swipe-to-trash.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- takeScreenshot: phase-4-swipe
+
+- tapOn:
+    id: home-note-not_e2e_standup-trash
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-not_e2e_standup
+    timeout: 5000
+# The toast waits for the trash request to land, so its Undo can never race it.
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Moved to trash
+    timeout: 10000
+- assertVisible:
+    id: toast-action
+    text: Undo
+
+# Undo: the row comes back where the order puts it.
+- tapOn:
+    id: toast-action
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 10000
+- assertVisible:
+    id: home-note-not_e2e_standup
+    below:
+      id: home-note-not_e2e_launch
+
+# Trash it again and let the toast go, so nothing can undo it.
+- runFlow:
+    file: ../subflows/swipe-to-trash.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- tapOn:
+    id: home-note-not_e2e_standup-trash
+- extendedWaitUntil:
+    visible:
+      id: toast
+    timeout: 5000
+- extendedWaitUntil:
+    notVisible:
+      id: toast
+    timeout: 15000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 180000
+- assertNotVisible:
+    id: home-note-not_e2e_standup
+# Launch planning review still holds that day.
+- assertVisible:
+    id: home-day-2026-09-12
+    text: "Sat 12 Sep( 2026)?"

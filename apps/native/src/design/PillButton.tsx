@@ -16,7 +16,13 @@ import {
   type TypeVariant,
 } from "./tokens";
 
-export type PillTone = "dark" | "light" | "glass" | "sheet";
+export type PillTone =
+  | "ask"
+  | "dark"
+  | "glass"
+  | "light"
+  | "lightAlt"
+  | "sheet";
 export type PillSize = "md" | "lg";
 
 type Props = {
@@ -36,6 +42,15 @@ type Props = {
 };
 
 const TONE = {
+  // The detail's Ask pill (#10): the dark surface at the glass pill's size and type.
+  ask: {
+    surface: {
+      backgroundColor: colors.bg.iconButton,
+      borderColor: colors.border.hairline,
+      borderWidth: sizes.hairline,
+    },
+    text: colors.text.primary,
+  },
   dark: {
     surface: {
       backgroundColor: colors.bg.iconButton,
@@ -54,6 +69,11 @@ const TONE = {
   },
   light: {
     surface: { backgroundColor: colors.button.light },
+    text: colors.text.onLight,
+  },
+  // The detail's Share pill (#10), a shade darker than the welcome screen's light pill.
+  lightAlt: {
+    surface: { backgroundColor: colors.button.lightAlt },
     text: colors.text.onLight,
   },
   // Inside a sheet header (#16) the controls are plain filled shapes: the hairline that separates a
@@ -83,7 +103,7 @@ export function PillButton({
   tone,
 }: Props) {
   const palette = TONE[tone];
-  const isGlass = tone === "glass";
+  const isGlass = tone === "glass" || tone === "ask";
   const variant: TypeVariant = isGlass ? "askLabel" : "pillLabel";
   const glyph = isGlass ? sizes.glyphLarge : sizes.glyph;
 

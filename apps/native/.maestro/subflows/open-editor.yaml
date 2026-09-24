@@ -1,0 +1,20 @@
+# From a note's detail, open the markdown editor through More → Edit notes (docs/spec/phase-4.md
+# §2.4, §2.7) and wait for it.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- tapOn:
+    id: note-menu-edit
+- extendedWaitUntil:
+    visible:
+      id: note-editor-screen
+    timeout: 10000
+- assertVisible:
+    id: note-editor-input

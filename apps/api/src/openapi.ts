@@ -8,7 +8,14 @@ export const API_REFERENCE_PATH = "/api/reference";
 
 // Order here is Scalar's sidebar order. A name that does not match one in a `Contract.ts`
 // silently creates a second, empty group, so these are copied from the contracts.
-const TAGS = [{ description: "The signed-in person.", name: "Profile" }];
+const TAGS = [
+  { description: "The signed-in person.", name: "Profile" },
+  {
+    description:
+      "The signed-in person's meeting notes: list, read, edit, trash and restore. Another person's note answers exactly as one that does not exist.",
+    name: "Notes",
+  },
+];
 
 export const OPENAPI_DOCUMENT = {
   info: {

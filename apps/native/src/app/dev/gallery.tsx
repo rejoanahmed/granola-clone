@@ -1,12 +1,15 @@
 import {
+  ActionMenu,
   Card,
   colors,
   Fab,
   FormDivider,
   FormRow,
+  type Frame,
   IconButton,
   IconTile,
   ListRow,
+  MENU_SEPARATOR,
   PillButton,
   radii,
   SendButton,
@@ -14,22 +17,27 @@ import {
   spacing,
   Text,
   TextField,
+  Toast,
   ToolbarCapsule,
   type TypeVariant,
   typography,
+  useToast,
 } from "@native/design";
 import { useRouter } from "expo-router";
 import {
   CalendarDays,
+  Copy,
   Folder,
   Laptop,
   MessageCircle,
+  NotebookPen,
   Phone,
   Search,
   Settings,
   Smartphone,
+  Trash2,
 } from "lucide-react-native";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -82,6 +90,10 @@ export default function GalleryScreen() {
   const router = useRouter();
   const [field, setField] = useState("");
   const [row, setRow] = useState("");
+  const [menuFrame, setMenuFrame] = useState<Frame | null>(null);
+  const menuButton = useRef<View>(null);
+  const toast = useToast();
+  const closeMenu = () => setMenuFrame(null);
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <ScrollView
@@ -235,6 +247,71 @@ export default function GalleryScreen() {
               label="Open sheet"
               onPress={() => router.push("/dev/sheet")}
               testID="gallery-open-sheet"
+              tone="dark"
+            />
+          </View>
+        </Section>
+
+        <Section testID="gallery-action-menu" title="Menu">
+          <View collapsable={false} ref={menuButton} style={styles.wrap}>
+            <PillButton
+              label="Open menu"
+              onPress={() =>
+                menuButton.current?.measureInWindow((x, y, width, height) =>
+                  setMenuFrame({ height, width, x, y })
+                )
+              }
+              testID="gallery-open-menu"
+              tone="dark"
+            />
+          </View>
+          <ActionMenu
+            anchor={
+              menuFrame ? { align: "left", frame: menuFrame, gap: 8 } : null
+            }
+            entries={[
+              {
+                icon: NotebookPen,
+                label: "Edit notes",
+                onPress: closeMenu,
+                testID: "gallery-menu-edit",
+              },
+              {
+                icon: Copy,
+                label: "Copy notes",
+                onPress: closeMenu,
+                testID: "gallery-menu-copy",
+              },
+              MENU_SEPARATOR,
+              {
+                destructive: true,
+                icon: Trash2,
+                label: "Move to trash",
+                onPress: closeMenu,
+                testID: "gallery-menu-trash",
+              },
+            ]}
+            onClose={closeMenu}
+            testID="gallery-menu"
+          />
+        </Section>
+
+        <Section testID="gallery-toast" title="Toast">
+          <Toast
+            action={{ label: "Undo", onPress: () => undefined }}
+            message="Moved to trash"
+            testID="gallery-toast-sample"
+          />
+          <View style={styles.wrap}>
+            <PillButton
+              label="Show toast"
+              onPress={() =>
+                toast.show({
+                  action: { label: "Undo", onPress: () => undefined },
+                  message: "Moved to trash",
+                })
+              }
+              testID="gallery-show-toast"
               tone="dark"
             />
           </View>

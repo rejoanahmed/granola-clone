@@ -11,6 +11,8 @@ const SIDE_WIDTH = 88;
 type Props = {
   readonly children: ReactNode;
   readonly closeTestID: string;
+  /** Sized to its content (a `fitToContents` sheet) rather than filling its detent. */
+  readonly fit?: boolean;
   readonly left?: ReactNode;
   readonly onClose: () => void;
   readonly testID: string;
@@ -24,13 +26,14 @@ type Props = {
 export function SheetChrome({
   children,
   closeTestID,
+  fit = false,
   left,
   onClose,
   testID,
   title,
 }: Props) {
   return (
-    <View style={styles.sheet} testID={testID}>
+    <View style={[styles.sheet, fit ? null : styles.fill]} testID={testID}>
       <View style={styles.grabber} testID={`${testID}-grabber`} />
       <View style={styles.header}>
         <View style={styles.side}>{left}</View>
@@ -64,6 +67,7 @@ const styles = StyleSheet.create({
     height: sizes.hairline,
     marginHorizontal: spacing.xl,
   },
+  fill: { flex: 1 },
   grabber: {
     alignSelf: "center",
     backgroundColor: colors.grabber,
@@ -84,7 +88,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.sheet,
     borderTopLeftRadius: radii.sheet,
     borderTopRightRadius: radii.sheet,
-    flex: 1,
   },
   side: { minWidth: SIDE_WIDTH },
   title: { flexShrink: 1, textAlign: "center" },

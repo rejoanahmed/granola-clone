@@ -14,6 +14,10 @@ env:
     id: home-title
 - assertNotVisible:
     id: sheet-demo
+- assertNotVisible:
+    id: attendees-sheet
+- assertNotVisible:
+    id: rename-sheet
 - assertVisible:
     id: home-ask-button
 - assertVisible:

@@ -1,6 +1,10 @@
 import {
+  and,
   eq,
   inArray,
+  ne,
+  noteAttendees,
+  notes,
   profiles,
   RESET_ORDER,
   session,
@@ -12,6 +16,24 @@ import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { E2eProfileDetails, E2eUser } from "./Fixtures";
+
+export type E2eAttendeeRow = {
+  readonly email: string | null;
+  readonly id: string;
+  readonly name: string | null;
+  readonly position: number;
+  readonly userId: string | null;
+};
+
+export type E2eNoteRow = {
+  readonly attendees: readonly E2eAttendeeRow[];
+  readonly bodyMarkdown: string;
+  readonly id: string;
+  readonly ownerId: string;
+  readonly startedAt: Timestamp;
+  readonly title: string;
+  readonly trashedAt: Timestamp | null;
+};
 
 export type E2eSessionRow = {
   readonly expiresAt: Timestamp;
@@ -48,6 +70,48 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
         )
       ),
     });
+  },
+
+  // Upserts, so a re-seed restores a fixture a journey renamed, edited, trashed or restored. The
+  // fixtures' attendees are deleted and rewritten rather than upserted, so one a journey added
+  // cannot outlive the seed. Stamps are the note's own `startedAt` (the trash stamp, for a trashed
+  // one), never the clock: the seeded world is the same on every run.
+  stageNotes: (stage: Stage, rows: readonly E2eNoteRow[]): void => {
+    stage.add({
+      query: db.delete(noteAttendees).where(
+        inArray(
+          noteAttendees.noteId,
+          rows.map((row) => row.id)
+        )
+      ),
+    });
+    for (const row of rows) {
+      const columns = {
+        bodyMarkdown: row.bodyMarkdown,
+        createdAt: row.startedAt,
+        ownerId: row.ownerId,
+        source: "phone",
+        startedAt: row.startedAt,
+        title: row.title,
+        trashedAt: row.trashedAt,
+        updatedAt: row.trashedAt ?? row.startedAt,
+      };
+      stage.add({
+        query: db
+          .insert(notes)
+          .values({ ...columns, id: row.id })
+          .onConflictDoUpdate({ set: columns, target: notes.id }),
+      });
+      stage.add({
+        query: db.insert(noteAttendees).values(
+          row.attendees.map((attendee) => ({
+            ...attendee,
+            createdAt: row.startedAt,
+            noteId: row.id,
+          }))
+        ),
+      });
+    }
   },
 
   // An upsert, so re-seeding restores the fixture details a journey edited. `onboardedAt` keeps
@@ -111,13 +175,22 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
   },
 
   // `onConflictDoNothing` rather than an upsert: the ids are fixed, so a second seed is a no-op
-  // and the sessions already minted against these users stay valid.
+  // and the sessions already minted against these users stay valid. That conflict would also
+  // swallow the email's unique index, though: an address a flow once signed up through better-auth
+  // holds a random id, the fixed id is then never written, and every fixture row naming it fails
+  // its foreign key. So a same-email row under any other id is deleted first (its sessions and
+  // profile cascade with it).
   stageUsers: (
     stage: Stage,
     users: readonly E2eUser[],
     now: Timestamp
   ): void => {
     for (const person of users) {
+      stage.add({
+        query: db
+          .delete(user)
+          .where(and(eq(user.email, person.email), ne(user.id, person.id))),
+      });
       stage.add({
         query: db
           .insert(user)

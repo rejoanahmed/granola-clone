@@ -1,0 +1,86 @@
+# AC5 (docs/spec/phase-4.md §8): the row's long-press menu (#02) offers Edit title and Share
+# notes; the scrim dismisses it with no change; Edit title renames the note in the list and on
+# its detail.
+appId: ${APP_ID}
+name: Renaming a note from the row's long-press menu
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 30000
+
+- longPressOn:
+    id: home-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- assertVisible:
+    id: home-note-menu-edit-title
+- assertVisible:
+    id: home-note-menu-share
+- takeScreenshot: phase-4-row-menu
+
+# The scrim covers the whole screen and the menu sits over part of it, so the tap is aimed near
+# the scrim's top edge — still the scrim, never a menu item.
+- tapOn:
+    id: action-menu-scrim
+    point: "50%,12%"
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-menu
+    timeout: 5000
+- assertNotVisible:
+    id: rename-sheet
+- assertVisible:
+    id: home-note-not_e2e_launch
+    text: "Launch planning review, .*"
+
+- longPressOn:
+    id: home-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- tapOn:
+    id: home-note-menu-edit-title
+- extendedWaitUntil:
+    visible:
+      id: rename-sheet
+    timeout: 10000
+- assertVisible:
+    id: rename-input
+    text: Launch planning review
+
+# The field autofocuses with its text selected (§2.10), so erasing needs no tap.
+- eraseText: 60
+- assertVisible:
+    id: rename-save
+    enabled: false
+- inputText: Renamed by Maestro
+- assertVisible:
+    id: rename-save
+    enabled: true
+- tapOn:
+    id: rename-save
+- extendedWaitUntil:
+    notVisible:
+      id: rename-sheet
+    timeout: 10000
+- assertVisible:
+    id: home-note-not_e2e_launch
+    text: "Renamed by Maestro, .*"
+
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- assertVisible:
+    id: note-title
+    text: Renamed by Maestro

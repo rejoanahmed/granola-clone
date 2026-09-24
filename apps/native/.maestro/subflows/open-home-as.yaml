@@ -1,0 +1,30 @@
+# Clean launch, reset and seeded backend, then a real sign-in as EMAIL, ending on home. Every seeded
+# E2E person is onboarded, so a seeded sign-in goes straight home (docs/spec/phase-4.md §8).
+#
+#   - runFlow:
+#       file: ../subflows/open-home-as.yaml
+#       env:
+#         EMAIL: e2e-empty@gcnotes.test
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: start-clean.yaml
+- runFlow:
+    file: sign-in.yaml
+    env:
+      EMAIL: ${EMAIL}
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+# Home appears before its list has answered. A flow that taps the shell straight away is tapping a
+# screen whose rows are still being laid in under it, and one full-suite run once found the note
+# detail pushed after a toolbar tap (docs/plan/BLOCKERS.md). So the list settles first: the
+# skeleton gone, then no motion.
+- extendedWaitUntil:
+    notVisible:
+      id: home-list-loading
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000

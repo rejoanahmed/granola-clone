@@ -1,0 +1,127 @@
+# AC2 (docs/spec/phase-4.md §8): opening a note shows its title, the date and attendees pill, the
+# attendees sheet, the More menu without View transcript, Copy's toast, and the rendered body —
+# the long note (#10, #11) and the short one (#40).
+appId: ${APP_ID}
+name: Opening a note shows its title, metadata, attendees and body
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+
+- assertVisible:
+    id: note-title
+    text: Launch planning review
+# The caller plus two attendees; the time depends on the simulator's zone, the date does not.
+- assertVisible:
+    id: note-meta-pill
+    text: 'Sep 12 \d{1,2}:\d{2} [AP]M, \+3'
+- assertVisible:
+    id: note-block-0
+    text: Launch checklist
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more
+- assertVisible:
+    id: note-add-to-folder
+- assertVisible:
+    id: note-ask-button
+- takeScreenshot: phase-4-note-top
+
+# The body scrolls under controls that stay pinned (#11).
+- scrollUntilVisible:
+    element:
+      id: note-body-end
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: note-back
+- assertVisible:
+    id: note-ask-button
+- takeScreenshot: phase-4-note-bottom
+- scrollUntilVisible:
+    element:
+      id: note-meta-pill
+    direction: UP
+    timeout: 20000
+
+# Attendees (#16): three rows, the caller first and marked "(me)".
+- tapOn:
+    id: note-meta-pill
+- extendedWaitUntil:
+    visible:
+      id: attendees-sheet
+    timeout: 10000
+- assertVisible:
+    id: "attendees-row-.*"
+    index: 0
+    text: "E2E Person \\(me\\)"
+- assertVisible:
+    id: "attendees-row-.*"
+    index: 2
+- assertNotVisible:
+    id: "attendees-row-.*"
+    index: 3
+- assertVisible:
+    id: attendees-add
+- takeScreenshot: phase-4-attendees
+- tapOn:
+    id: attendees-close
+- extendedWaitUntil:
+    notVisible:
+      id: attendees-sheet
+    timeout: 10000
+
+# More (#12): Edit, Copy and Trash; no transcript until phase 5.
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-edit
+- assertVisible:
+    id: note-menu-copy
+- assertVisible:
+    id: note-menu-trash
+- assertNotVisible:
+    id: note-menu-transcript
+- takeScreenshot: phase-4-more-menu
+# Maestro cannot read the clipboard; the toast is the observable half (§9).
+- tapOn:
+    id: note-menu-copy
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Copied to clipboard
+    timeout: 5000
+
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+
+# The short note (#40): two paragraphs, the second italic.
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+- assertVisible:
+    id: note-title
+    text: Solo reflection thoughts
+- assertVisible:
+    id: note-block-0
+    text: "Not much to transcribe here\\..*"
+- assertVisible:
+    id: note-block-1
+    text: "Notes works best.*"

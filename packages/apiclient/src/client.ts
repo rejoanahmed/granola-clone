@@ -7,6 +7,7 @@ import {
   resolveFetch,
 } from "./config";
 import { networkError, unwrap } from "./errors";
+import { makeNotesApi } from "./notes";
 import { makeProfilesApi } from "./profiles";
 
 // Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
@@ -274,9 +275,11 @@ export const makeEndpoint = (config: ApiClientConfig): Endpoint => {
 export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   const endpoint = makeEndpoint(config);
   return {
+    ...makeNotesApi(endpoint),
     ...makeProfilesApi(endpoint),
   };
 };
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
-export type ApiClient = ReturnType<typeof makeProfilesApi>;
+export type ApiClient = ReturnType<typeof makeNotesApi> &
+  ReturnType<typeof makeProfilesApi>;

@@ -1,0 +1,60 @@
+# AC3 (docs/spec/phase-4.md §8): the editor shows the raw markdown, Save sends it, the detail
+# renders the new body, and a relaunch proves it reached the API rather than only the cache.
+appId: ${APP_ID}
+name: Editing and saving a note's body
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- assertVisible:
+    id: note-block-0
+    text: Updates
+- runFlow: ../subflows/open-editor.yaml
+
+# The source, not the rendering: the heading still carries its hashes.
+- assertVisible:
+    id: note-editor-input
+    text: "(?s)### Updates.*"
+- takeScreenshot: phase-4-editor
+
+# The caret starts at the end of the text (§2.7), so erasing needs no tap, and a tap could move it.
+- eraseText: 200
+- inputText: Edited from Maestro
+- tapOn:
+    id: note-editor-save
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- assertNotVisible:
+    id: note-editor-screen
+- assertVisible:
+    id: note-block-0
+    text: Edited from Maestro
+
+# Back home, relaunch with the session kept, and read it again.
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- assertVisible:
+    id: note-block-0
+    text: Edited from Maestro

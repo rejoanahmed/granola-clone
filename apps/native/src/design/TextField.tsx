@@ -31,7 +31,6 @@ export function TextField({ onBlur, onFocus, ref, style, ...rest }: Props) {
       maxFontSizeMultiplier={MAX_FONT_SCALE}
       placeholderTextColor={colors.text.tertiary}
       ref={ref}
-      selectionColor={colors.accent.lime}
       {...rest}
       onBlur={(event) => {
         setFocused(false);
@@ -41,6 +40,9 @@ export function TextField({ onBlur, onFocus, ref, style, ...rest }: Props) {
         setFocused(true);
         onFocus?.(event);
       }}
+      // Only once focused, as the note editor does: a tint set at mount misses an autofocused
+      // caret, which then stays system blue.
+      selectionColor={focused ? colors.accent.lime : undefined}
       style={[styles.field, focused ? styles.focused : null, style]}
     />
   );

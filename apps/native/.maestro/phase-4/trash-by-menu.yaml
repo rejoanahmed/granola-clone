@@ -1,0 +1,77 @@
+# AC7 (docs/spec/phase-4.md §8): Move to trash from the note's More menu pops back home, where the
+# row and — it being the day's only note — its day header are gone, and the Undo toast shows.
+# Its Undo is tapped once: the trash began on the detail, which has unmounted by then, so this is
+# the path where nothing the restore runs on may belong to that screen. Then the note is trashed
+# again and stays trashed across a relaunch.
+appId: ${APP_ID}
+name: Trashing a note from its More menu
+tags:
+  - phase-4
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- tapOn:
+    id: note-menu-trash
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: home-note-not_e2e_solo
+- assertNotVisible:
+    id: home-day-2026-08-05
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Moved to trash
+    timeout: 10000
+
+- tapOn:
+    id: toast-action
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_solo
+    timeout: 10000
+- assertVisible:
+    id: home-day-2026-08-05
+
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- tapOn:
+    id: note-menu-trash
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Moved to trash
+    timeout: 10000
+- assertNotVisible:
+    id: home-note-not_e2e_solo
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 180000
+- assertNotVisible:
+    id: home-note-not_e2e_solo

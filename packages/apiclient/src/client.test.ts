@@ -8,6 +8,8 @@ import {
   NETWORK_ERROR_TAG,
   UNEXPECTED_ERROR_TAG,
 } from "./errors";
+import { makeQueryApi } from "./query";
+import { invalidationKeys, queryKeys } from "./query-keys";
 
 const BASE_URL = "https://api.test";
 const NOTE_ID = "note_0123456789abcdef";
@@ -358,5 +360,175 @@ describe("the phase-3 profile endpoints", () => {
     expect(call.init.method).toBe("POST");
     expect(call.init.body ?? null).toBeNull();
     expect(result).toEqual(onboarded);
+  });
+});
+
+// §7 case 28 (docs/spec/phase-4.md §6.5).
+describe("the phase-4 notes endpoints", () => {
+  const ID = "not_0000000000000001";
+  const AT = 1_700_000_000_000;
+  const NOTE = {
+    attendees: [
+      {
+        email: "rita@example.test",
+        id: "att_0000000000000001",
+        isMe: true,
+        name: "Rita",
+      },
+    ],
+    bodyMarkdown: "### Updates",
+    createdAt: AT,
+    id: ID,
+    source: "phone",
+    startedAt: AT,
+    title: "Weekly standup",
+    trashedAt: null,
+    updatedAt: AT,
+  };
+  const PAGE = {
+    items: [
+      {
+        attendeeCount: 1,
+        id: ID,
+        source: "phone",
+        startedAt: AT,
+        title: "Weekly standup",
+      },
+    ],
+    nextCursor: "WzE3MDAwMDAwMDAwMDAsIm5vdF8xIl0",
+  };
+
+  it("sends GET /notes with cursor and limit as query strings, and hands back the page", async () => {
+    const { calls, stub } = recording(jsonResponse(PAGE));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.listNotes({
+      query: { cursor: "abc", limit: 5 },
+    });
+
+    const url = new URL(only(calls).url);
+    expect(url.pathname).toBe("/notes");
+    expect(url.searchParams.get("cursor")).toBe("abc");
+    expect(url.searchParams.get("limit")).toBe("5");
+    expect(only(calls).init.method).toBe("GET");
+    expect<unknown>(result).toEqual(PAGE);
+  });
+
+  it("sends POST /notes/{id}/trash with no body", async () => {
+    const trashed = { ...NOTE, trashedAt: AT };
+    const { calls, stub } = recording(jsonResponse(trashed));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.trashNote({ params: { id: ID } });
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/notes/${ID}/trash`);
+    expect(call.init.method).toBe("POST");
+    expect(call.init.body ?? null).toBeNull();
+    expect<unknown>(result).toEqual(trashed);
+  });
+
+  it("sends POST /notes/{id}/restore with no body", async () => {
+    const { calls, stub } = recording(jsonResponse(NOTE));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.restoreNote({ params: { id: ID } });
+
+    expect(only(calls).url).toBe(`${BASE_URL}/notes/${ID}/restore`);
+    expect(only(calls).init.method).toBe("POST");
+    expect<unknown>(result).toEqual(NOTE);
+  });
+
+  it("reads one note at GET /notes/{id}", async () => {
+    const { calls, stub } = recording(jsonResponse(NOTE));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.getNote({ params: { id: ID } });
+
+    expect(only(calls).url).toBe(`${BASE_URL}/notes/${ID}`);
+    expect(only(calls).init.method).toBe("GET");
+    expect<unknown>(result).toEqual(NOTE);
+  });
+
+  it("sends PATCH /notes/{id} with only the keys given", async () => {
+    const { calls, stub } = recording(jsonResponse(NOTE));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await client.updateNote({ body: { title: "New" }, params: { id: ID } });
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/notes/${ID}`);
+    expect(call.init.method).toBe("PATCH");
+    expect(JSON.parse(String(call.init.body))).toEqual({ title: "New" });
+  });
+
+  it("sends POST /notes with a JSON body and hands back the 201", async () => {
+    const { calls, stub } = recording(jsonResponse(NOTE, 201));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.createNote({
+      body: { title: "Weekly standup" },
+    });
+
+    expect(only(calls).url).toBe(`${BASE_URL}/notes`);
+    expect(only(calls).init.method).toBe("POST");
+    expect<unknown>(result).toEqual(NOTE);
+  });
+});
+
+describe("the phase-4 notes query keys", () => {
+  const ID = "not_0000000000000001";
+
+  it("nests list and detail under one notes prefix", () => {
+    const notes = queryKeys.notes;
+
+    expect(notes.all).toEqual(["notes"]);
+    expect(notes.list()).toEqual(["notes", "list"]);
+    expect(notes.detail(ID)).toEqual(["notes", "detail", ID]);
+  });
+
+  it("invalidates the detail and the list on every write to one note, and the list on create", () => {
+    const keys = invalidationKeys as unknown as Record<
+      string,
+      ((id?: string) => readonly unknown[]) | undefined
+    >;
+    const both = [
+      ["notes", "detail", ID],
+      ["notes", "list"],
+    ];
+
+    expect(keys.updateNote?.(ID)).toEqual(both);
+    expect(keys.trashNote?.(ID)).toEqual(both);
+    expect(keys.restoreNote?.(ID)).toEqual(both);
+    expect(keys.createNote?.()).toEqual([["notes", "list"]]);
+  });
+});
+
+describe("the infinite-query helper (phase 4)", () => {
+  it("returns plain options useInfiniteQuery accepts, paging on nextCursor from null", async () => {
+    const client = makeApiClient({
+      baseUrl: BASE_URL,
+      fetch: recording().stub,
+    });
+    const seen: unknown[] = [];
+
+    const options = makeQueryApi(client).infinite(
+      ["notes", "list"],
+      (cursor: string | null) => {
+        seen.push(cursor);
+        return Promise.resolve({ items: [], nextCursor: "next" });
+      }
+    );
+
+    expect(options.queryKey).toEqual(["notes", "list"]);
+    expect(options.initialPageParam).toBeNull();
+    expect(options.getNextPageParam({ items: [], nextCursor: "c2" })).toBe(
+      "c2"
+    );
+    expect(
+      options.getNextPageParam({ items: [], nextCursor: null })
+    ).toBeNull();
+    await options.queryFn({ pageParam: "c1" });
+    expect(seen).toEqual(["c1"]);
   });
 });

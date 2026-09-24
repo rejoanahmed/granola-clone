@@ -79,6 +79,7 @@ const API = "http://localhost:3001";
 const NEWCOMER = "e2e-newcomer@gcnotes.test";
 const PERSON = { email: "e2e-person@gcnotes.test", id: "usr_e2e_person" };
 const OTHER = { email: "e2e-other@gcnotes.test", id: "usr_e2e_other" };
+const EMPTY = { email: "e2e-empty@gcnotes.test", id: "usr_e2e_empty" };
 const SIX_DIGITS = /^\d{6}$/;
 const ANY_SIX_DIGITS = /\d{6}/;
 const SESSION_COOKIE = /better-auth\.session_token=/;
@@ -320,7 +321,12 @@ describe("POST /e2e/seed, phase 3", () => {
       "SELECT user_id, onboarded_at, job_title, company_name, user_type FROM profiles ORDER BY user_id"
     );
 
+    // phase 4 adds `empty` (docs/spec/phase-4.md §6.6), onboarded like the others.
     expect(profiles).toEqual([
+      expect.objectContaining({
+        onboarded_at: expect.any(Number),
+        user_id: EMPTY.id,
+      }),
       expect.objectContaining({
         onboarded_at: expect.any(Number),
         user_id: OTHER.id,
@@ -356,5 +362,110 @@ describe("the auth.otp.issued log line", () => {
       expect(JSON.parse(line)).not.toHaveProperty("otp");
       expect(line).not.toMatch(ANY_SIX_DIGITS);
     }
+  });
+});
+
+// ── Phase 4: the notes fixtures and `empty` (docs/spec/phase-4.md §6.6, §7 cases 25–27) ────────
+//
+// Over the real app, so each case also proves `/notes` is mounted behind the session middleware.
+
+const sessionFor = async (role: string): Promise<string> => {
+  const response = await harness("POST", `/e2e/session/${role}`);
+  if (response.status !== 200) {
+    throw new Error(`/e2e/session/${role} answered ${response.status}`);
+  }
+  const minted = (await response.json()) as {
+    cookie: { name: string; value: string };
+  };
+  return `${minted.cookie.name}=${minted.cookie.value}`;
+};
+
+const asRole = async (
+  role: string,
+  method: "GET" | "PATCH",
+  path: string,
+  body?: unknown
+) =>
+  app.request(
+    path,
+    {
+      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: {
+        cookie: await sessionFor(role),
+        origin: API,
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+      },
+      method,
+    },
+    live
+  );
+
+const listedIds = async (role: string): Promise<string[]> => {
+  const response = await asRole(role, "GET", "/notes");
+  if (response.status !== 200) {
+    throw new Error(`GET /notes as ${role} answered ${response.status}`);
+  }
+  const page = (await response.json()) as { items: { id: string }[] };
+  return page.items.map((item) => item.id);
+};
+
+describe("POST /e2e/seed, phase 4", () => {
+  // §7 case 25
+  it("names the five fixtures in its answer, and person's list is exactly their three live notes", async () => {
+    await harness("POST", "/e2e/reset");
+    const seeded = await harness("POST", "/e2e/seed");
+
+    expect(seeded.status).toBe(200);
+    const body = (await seeded.json()) as {
+      notes?: { id: string; ownerRole: string; title: string }[];
+    };
+    expect(body.notes?.map((note) => note.id).sort()).toEqual([
+      "not_e2e_archived",
+      "not_e2e_launch",
+      "not_e2e_other",
+      "not_e2e_solo",
+      "not_e2e_standup",
+    ]);
+    expect(await listedIds("person")).toEqual([
+      "not_e2e_launch",
+      "not_e2e_standup",
+      "not_e2e_solo",
+    ]);
+    expect(await listedIds("other")).toEqual(["not_e2e_other"]);
+  });
+
+  // §7 case 26
+  it("signs `empty` in to an onboarded profile and an empty list", async () => {
+    await freshWorld();
+
+    const me = await asRole("empty", "GET", "/me");
+    expect(me.status).toBe(200);
+    expect(await me.json()).toMatchObject({
+      email: EMPTY.email,
+      onboardedAt: expect.any(Number),
+    });
+    expect(await listedIds("empty")).toEqual([]);
+  });
+});
+
+describe("POST /e2e/reset, phase 4", () => {
+  // §7 case 27
+  it("leaves no notes or attendees, and a re-seed restores a fixture a journey renamed", async () => {
+    await freshWorld();
+    const renamed = await asRole("person", "PATCH", "/notes/not_e2e_launch", {
+      title: "Renamed by a journey",
+    });
+    expect(renamed.status).toBe(200);
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+    expect(await countOf("SELECT count(*) AS n FROM notes")).toBe(0);
+    expect(await countOf("SELECT count(*) AS n FROM note_attendees")).toBe(0);
+
+    expect((await harness("POST", "/e2e/seed")).status).toBe(200);
+    const reread = await asRole("person", "GET", "/notes/not_e2e_launch");
+    expect(reread.status).toBe(200);
+    expect(await reread.json()).toMatchObject({
+      title: "Launch planning review",
+    });
   });
 });

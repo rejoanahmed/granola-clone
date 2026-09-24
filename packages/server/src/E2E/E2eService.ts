@@ -7,6 +7,7 @@ import type { E2eRepo } from "./E2eRepo";
 import { NoOutboxMail } from "./Errors";
 import {
   E2E_NEWCOMER,
+  E2E_NOTES,
   E2E_PROFILES,
   E2E_USERS,
   type E2eRole,
@@ -72,8 +73,43 @@ export const makeE2eService = (deps: E2eDeps) => ({
         })),
         now
       );
+      deps.repo.stageNotes(
+        stage,
+        E2E_NOTES.map((note) => ({
+          attendees: [
+            {
+              email: null,
+              id: note.ownerAttendeeId,
+              name: null,
+              position: 0,
+              userId: E2E_USERS[note.ownerRole].id,
+            },
+            ...note.guests.map((guest, index) => ({
+              email: guest.email ?? null,
+              id: guest.id,
+              name: guest.name ?? null,
+              position: index + 1,
+              userId: null,
+            })),
+          ],
+          bodyMarkdown: note.bodyMarkdown,
+          id: note.id,
+          ownerId: E2E_USERS[note.ownerRole].id,
+          startedAt: note.startedAt,
+          title: note.title,
+          trashedAt: note.trashedAt,
+        }))
+      );
     });
-    return { newcomer: E2E_NEWCOMER, users: E2E_USERS };
+    return {
+      newcomer: E2E_NEWCOMER,
+      notes: E2E_NOTES.map(({ id, ownerRole, title }) => ({
+        id,
+        ownerRole,
+        title,
+      })),
+      users: E2E_USERS,
+    };
   },
 
   // `origin` comes from the request, not from config: better-auth builds its cookie name from the
