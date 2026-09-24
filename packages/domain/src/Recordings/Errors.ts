@@ -24,8 +24,15 @@ export class RecordingNotRetryable extends appError(
 ) {}
 
 // Decided on Content-Length before a byte is read, so an oversized body costs nothing to refuse.
-// A missing Content-Length is refused the same way: the bound cannot be checked without it.
 export class AudioTooLarge extends appError("AudioTooLarge", 413) {}
+
+// No usable Content-Length (a chunked upload, or garbage): the 100 MB bound cannot be checked, and
+// R2 cannot store a stream of unknown length.
+export class AudioLengthRequired extends appError("AudioLengthRequired", 411) {}
+
+// The body ended before, or ran past, the Content-Length it declared: a truncated upload, which the
+// client's retry sends again whole.
+export class AudioLengthMismatch extends appError("AudioLengthMismatch", 400) {}
 
 export class UnsupportedAudioType extends appError(
   "UnsupportedAudioType",

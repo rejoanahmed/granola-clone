@@ -1,12 +1,14 @@
-# On the live card: wait until the recorded time passes 10 s and Cancel becomes End
-# (docs/spec/phase-5.md §3.4). A wait, never a sleep: the flow is exactly as slow as the timer.
+# On the live card: pass the 10 s End threshold (docs/spec/phase-5.md §3.4). The fake recorder's
+# hidden skip moves the recorded time on, so the flow does not sit through ten real seconds.
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
 ---
+- tapOn:
+    id: recording-skip-ahead
 - extendedWaitUntil:
     visible:
       id: recording-end
-    timeout: 30000
+    timeout: 5000
 - assertNotVisible:
     id: recording-cancel

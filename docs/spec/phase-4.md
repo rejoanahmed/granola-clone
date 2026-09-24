@@ -171,7 +171,8 @@ scrolls under the floating controls, which have no bar background (#11).
 3. **Metadata row**, 12 below the title, 20 left inset:
    - The pill `note-meta-pill`: 36 tall, radius pill, 1px `border.hairline`, no fill, 14
      horizontal padding. It holds a lucide `Calendar` glyph (20pt), 6 gap, the date in `body`
-     (`text.primary`), format `MMM d h:mm a` ("Sep 12 9:39 AM"), then 16 gap, a `Users` glyph, 6
+     (`text.primary`), format `MMM d h:mm a` ("Sep 12 9:39 AM"), or "Today h:mm a" for a note started on the
+     local day (#105, phase 5), then 16 gap, a `Users` glyph, 6
      gap, and `+{attendee count}` ("+1" when the caller is the only attendee, as in #10). The
      accessibility label is `"{date}, +{count}"`. Tap presents `notes/[id]/attendees`.
    - 8 to its right, the circular **Add to folder** button `note-add-to-folder`: 36pt, 1px

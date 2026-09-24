@@ -11,6 +11,11 @@ export type Recorder = {
   readonly release: () => void;
   readonly resume: () => void;
   readonly start: () => Promise<void>;
+  /**
+   * The fake's alone: moves the recorded time on, so a flow reaches End without sitting through
+   * ten real seconds. The live card offers it only when the recorder has it.
+   */
+  readonly skipAhead?: (ms: number) => void;
   /** Stops for good and answers the file's URI. */
   readonly stop: () => Promise<string>;
 };

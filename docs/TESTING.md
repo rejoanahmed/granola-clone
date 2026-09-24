@@ -546,7 +546,7 @@ apps/native/.maestro/
     open-editor.yaml     from a detail, More → Edit notes, wait for the editor
     swipe-to-trash.yaml  NOTE_ID param: swipe the row left until its trash action shows
     start-recording.yaml tap + and wait for the live card (the mic must be allowed)
-    wait-for-end.yaml    wait until Cancel becomes End at 10 s of recorded time
+    wait-for-end.yaml    skip the fake recorder 10 s ahead, so Cancel becomes End at once
     set-transcription.yaml  MODE param: script the fake transcriber (scripts/e2e-transcription.js)
     release-transcription.yaml  switch back to auto and sweep once (scripts/e2e-release.js)
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB

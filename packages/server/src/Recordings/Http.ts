@@ -11,8 +11,7 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 
-// One expression per route (R6). The audio route hands the service the request exactly as it
-// arrived — the unread body stream and the two headers — so every rule about it (type, size,
+// The audio route hands the service the request exactly as it arrived — the unread body stream and the two headers — so every rule about it (type, size,
 // emptiness) is the service's, and it is not a raw route: it needs the session like any other.
 export const recordingsRouter = new OpenAPIHono<AppEnv>()
   .openapi(createRecordingRoute, async (c) =>

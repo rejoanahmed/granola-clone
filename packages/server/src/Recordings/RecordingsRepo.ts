@@ -3,6 +3,8 @@ import {
   asc,
   eq,
   isNotNull,
+  isNull,
+  lt,
   noteAttendees,
   notes,
   recordings,
@@ -20,12 +22,14 @@ import {
   SpeakerLetter,
 } from "@gc/domain/Domain/Recording";
 import type { Timestamp } from "@gc/domain/Domain/Time";
+import type { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage, StatementRef } from "../Runtime/UnitOfWork";
 
 // The recording plus what never reaches the wire: its owner (what the policy compares), the audio
 // object's key and the provider's job id.
 export type RecordingRecord = Recording & {
+  readonly attempt: number;
   readonly audioKey: string | null;
   readonly ownerId: UserId;
   readonly providerJobId: string | null;
@@ -49,12 +53,18 @@ export type NewRecording = {
   readonly startedAt: Timestamp;
 };
 
+// A `transcribing` row the sweep can poll: its job was accepted, so it has an id.
+export type SubmittedRecording = RecordingRecord & {
+  readonly providerJobId: string;
+};
+
 export type StoredSegment = Segment & { readonly id: string };
 
 // Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
 const SEGMENT_COLUMNS = 7;
 
 const toRecord = (row: typeof recordings.$inferSelect): RecordingRecord => ({
+  attempt: row.attempt,
   audioKey: row.audioKey,
   createdAt: row.createdAt,
   durationMs: row.durationMs,
@@ -72,6 +82,14 @@ const toRecord = (row: typeof recordings.$inferSelect): RecordingRecord => ({
 
 const isStatus = (status: RecordingStatus) => eq(recordings.status, status);
 
+// The job a writer read the row with. A settlement from one attempt's job must not land on the
+// next attempt, so every transition out of `transcribing` names it; `null` is a row whose submit
+// has not been answered yet.
+const holdsJob = (jobId: string | null) =>
+  jobId === null
+    ? isNull(recordings.providerJobId)
+    : eq(recordings.providerJobId, jobId);
+
 // Every status change is a claim: `WHERE status = <the state it leaves>`, answering whether it won.
 // Two requests (or two sweeps) racing for one transition therefore cannot both apply it, and the
 // loser learns so from `false` rather than from a second write landing on top of the first.
@@ -80,12 +98,19 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
   const claim = async (
     id: RecordingId,
     from: RecordingStatus,
-    set: Partial<typeof recordings.$inferInsert>
+    set: SQLiteUpdateSetSource<typeof recordings>,
+    jobId?: string | null
   ): Promise<boolean> => {
     const result = await db
       .update(recordings)
       .set(set)
-      .where(and(eq(recordings.id, id), isStatus(from)))
+      .where(
+        and(
+          eq(recordings.id, id),
+          isStatus(from),
+          jobId === undefined ? undefined : holdsJob(jobId)
+        )
+      )
       .run();
     return result.meta.changes > 0;
   };
@@ -109,10 +134,10 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       return row === undefined ? null : toRecord(row);
     },
 
-    // Only the transitions that leave `transcribing` race each other (an upload's answer and a
-    // sweep), so only they carry the job id in their guard as well as the status.
+    // Moves to the next attempt, so the retry reaches the vendor under a key of its own.
     claimRetry: (id: RecordingId, now: Timestamp): Promise<boolean> =>
       claim(id, "failed", {
+        attempt: sql`${recordings.attempt} + 1`,
         failure: null,
         providerJobId: null,
         status: "transcribing",
@@ -156,18 +181,52 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
 
     fail: async (
       id: RecordingId,
+      jobId: string | null,
       failure: RecordingFailure,
       now: Timestamp
     ): Promise<boolean> =>
-      claim(id, "transcribing", { failure, status: "failed", updatedAt: now }),
+      claim(
+        id,
+        "transcribing",
+        { failure, status: "failed", updatedAt: now },
+        jobId
+      ),
 
     // The sweep's work list, oldest first so a backlog drains in order.
-    listTranscribing: async (limit: number): Promise<RecordingRecord[]> => {
+    listTranscribing: async (limit: number): Promise<SubmittedRecording[]> => {
       const rows = await db
         .select()
         .from(recordings)
         .where(
           and(isStatus("transcribing"), isNotNull(recordings.providerJobId))
+        )
+        .orderBy(asc(recordings.updatedAt), asc(recordings.id))
+        .limit(limit)
+        .all();
+      return rows.flatMap((row) => {
+        const record = toRecord(row);
+        return record.providerJobId === null
+          ? []
+          : [{ ...record, providerJobId: record.providerJobId }];
+      });
+    },
+
+    // `transcribing` with no job, untouched since `before`: the Worker died between the claim and
+    // the vendor's answer, or the vendor rate-limited the submit. Nothing else ever moves such a
+    // row, so the sweep takes them up again once they are older than any upload still running.
+    listUnsubmitted: async (
+      before: Timestamp,
+      limit: number
+    ): Promise<RecordingRecord[]> => {
+      const rows = await db
+        .select()
+        .from(recordings)
+        .where(
+          and(
+            isStatus("transcribing"),
+            isNull(recordings.providerJobId),
+            lt(recordings.updatedAt, before)
+          )
         )
         .orderBy(asc(recordings.updatedAt), asc(recordings.id))
         .limit(limit)
@@ -187,11 +246,12 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
     // Undoes `claimUpload` when the object could not be stored, so the client's retry finds the
     // recording still waiting for its audio.
     releaseUpload: (id: RecordingId, now: Timestamp): Promise<boolean> =>
-      claim(id, "transcribing", {
-        audioKey: null,
-        status: "uploading",
-        updatedAt: now,
-      }),
+      claim(
+        id,
+        "transcribing",
+        { audioKey: null, status: "uploading", updatedAt: now },
+        null
+      ),
 
     savePrivateNotes: (
       id: RecordingId,
@@ -218,14 +278,13 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       }));
     },
 
-    setJob: async (id: RecordingId, jobId: string): Promise<boolean> => {
-      const result = await db
-        .update(recordings)
-        .set({ providerJobId: jobId })
-        .where(and(eq(recordings.id, id), isStatus("transcribing")))
-        .run();
-      return result.meta.changes > 0;
-    },
+    // Stamps `updatedAt` too, so the job's age is measured from its acceptance.
+    setJob: (
+      id: RecordingId,
+      jobId: string,
+      now: Timestamp
+    ): Promise<boolean> =>
+      claim(id, "transcribing", { providerJobId: jobId, updatedAt: now }, null),
 
     // The completion in one unit of work: the claim, the segments, and the note's body. The
     // segments are `on conflict do nothing` against the unique (recording, position), so an
@@ -235,6 +294,7 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
     stageComplete: (
       stage: Stage,
       id: RecordingId,
+      jobId: string | null,
       segments: readonly StoredSegment[],
       now: Timestamp
     ): StatementRef => {
@@ -242,7 +302,13 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         query: db
           .update(recordings)
           .set({ failure: null, status: "transcribed", updatedAt: now })
-          .where(and(eq(recordings.id, id), isStatus("transcribing"))),
+          .where(
+            and(
+              eq(recordings.id, id),
+              isStatus("transcribing"),
+              holdsJob(jobId)
+            )
+          ),
       });
       stage.addChunked(
         segments.map((segment, position) => ({ ...segment, position })),
@@ -316,6 +382,7 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       });
       stage.add({
         query: db.insert(recordings).values({
+          attempt: 0,
           audioKey: null,
           createdAt: recording.createdAt,
           durationMs: null,

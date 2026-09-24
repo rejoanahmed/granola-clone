@@ -38,7 +38,7 @@ export function NoteStatus({
         numberOfLines={2}
         style={styles.text}
         testID="note-status-text"
-        variant="rowTitle"
+        variant="secondary"
       >
         {row.text}
       </Text>

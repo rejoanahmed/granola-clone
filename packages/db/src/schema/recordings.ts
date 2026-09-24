@@ -5,9 +5,11 @@ import { notes } from "./notes";
 
 // One recording per note (the unique `note_id`), deleted with its note or its owner. `audio_key`
 // and `provider_job_id` stay server-side: the first names an R2 object, the second a vendor job.
+// `attempt` counts retries, so each one reaches the vendor under an idempotency key of its own.
 export const recordings = sqliteTable(
   "recordings",
   {
+    attempt: integer("attempt").notNull().default(0),
     audioKey: text("audio_key"),
     createdAt: integer("created_at").notNull(),
     durationMs: integer("duration_ms"),

@@ -16,11 +16,13 @@ import {
 import { RECORDING_COPY } from "@native/features/recording/copy";
 import { formatLiveStart } from "@native/features/recording/format";
 import {
+  canSkipAhead,
   discardRecording,
   dismissFailed,
   endRecording,
   flushNotes,
   setNotes,
+  skipAhead,
   togglePause,
   useLiveRecording,
 } from "@native/features/recording/liveRecording";
@@ -58,6 +60,9 @@ const MINI_GAP = 8;
 const MINI_HEIGHT = 48;
 const META_HEIGHT = 36;
 const META_GLYPH = 20;
+// The fake recorder's skip: one tap passes the 10 s End threshold (§3.4), so a flow never waits.
+const SKIP_AHEAD_MS = 10_000;
+const SKIP_AHEAD_SIZE = 16;
 const MENU_GAP = 8;
 
 /**
@@ -226,6 +231,15 @@ export default function RecordingScreen() {
 
   return (
     <View style={styles.screen} testID="recording-screen">
+      {canSkipAhead() ? (
+        <Pressable
+          accessibilityLabel="Skip ahead"
+          accessibilityRole="button"
+          onPress={() => skipAhead(SKIP_AHEAD_MS)}
+          style={styles.skipAhead}
+          testID="recording-skip-ahead"
+        />
+      ) : null}
       <View style={styles.top}>
         <IconButton
           accessibilityLabel={RECORDING_COPY.minimize}
@@ -429,6 +443,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.sheet,
     borderTopRightRadius: radii.sheet,
     flex: 1,
+  },
+  // Invisible and out of the way, in the card's top-left corner above the Minimize button.
+  skipAhead: {
+    height: SKIP_AHEAD_SIZE,
+    left: 0,
+    position: "absolute",
+    top: 0,
+    width: SKIP_AHEAD_SIZE,
+    zIndex: 1,
   },
   title: { marginTop: TITLE_GAP, paddingHorizontal: spacing.xl },
   top: {

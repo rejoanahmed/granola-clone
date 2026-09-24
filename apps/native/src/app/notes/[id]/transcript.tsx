@@ -32,11 +32,13 @@ import { Pressable, ScrollView, Share, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // #13's measurements (428pt): the heading at 52 and 34pt serif, two 46pt buttons at the right,
-// the avatar 44 at the gutter and the text column from x78; 24 between blocks.
+// the avatar 44 at the gutter and the text column from x78; 24 between blocks, and 44 from the
+// subtitle to the first block. The speaker name is regular weight, unlike the avatar's letter.
 const BUTTON = 46;
 const AVATAR = 44;
 const TEXT_LEFT = 78 - spacing.lg - AVATAR;
 const BLOCK_GAP = 24;
+const HEADER_TO_BODY = 44;
 const SKELETON_BLOCKS = 3;
 
 const isGone = (error: unknown): boolean =>
@@ -119,7 +121,11 @@ function Utterances({ transcript }: { readonly transcript: TranscriptDetail }) {
             </Text>
           </View>
           <View style={styles.column}>
-            <Text testID={`transcript-speaker-${index}`} variant="title">
+            <Text
+              style={styles.speaker}
+              testID={`transcript-speaker-${index}`}
+              variant="title"
+            >
               {speakerLabel(utterance.speaker)}
             </Text>
             <Text
@@ -266,7 +272,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.sheet,
     flexDirection: "row",
     gap: spacing.sm,
-    paddingBottom: spacing.xl,
+    paddingBottom: HEADER_TO_BODY,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl,
   },
@@ -298,6 +304,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   skeleton: { backgroundColor: colors.bg.tileRaised },
+  speaker: { fontWeight: "400" },
   state: { alignItems: "center", paddingTop: spacing.xxl },
   subtitle: { marginTop: spacing.xs, maxWidth: 260 },
   text: { lineHeight: 24 },

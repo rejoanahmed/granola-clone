@@ -62,6 +62,7 @@ const isFinal = (error: unknown): boolean =>
   hasTag(error, "NoteNotFound") ||
   hasTag(error, "UnsupportedAudioType") ||
   hasTag(error, "AudioTooLarge") ||
+  hasTag(error, "AudioLengthRequired") ||
   hasTag(error, "EmptyAudio");
 
 // End travels with the upload: both are idempotent, so a retry replays them together. An End that

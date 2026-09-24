@@ -19,6 +19,8 @@ import type { Timestamp } from "@gc/domain/Domain/Time";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import type { RecordingCreated } from "@gc/domain/Recordings/Contract";
 import {
+  AudioLengthMismatch,
+  AudioLengthRequired,
   AudioTooLarge,
   EmptyAudio,
   RecordingNotActive,
@@ -44,7 +46,11 @@ import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { AudioStore } from "./AudioStore";
 import { canEditRecording, canReadRecording } from "./Policy";
-import type { RecordingRecord, RecordingsRepo } from "./RecordingsRepo";
+import type {
+  RecordingRecord,
+  RecordingsRepo,
+  SubmittedRecording,
+} from "./RecordingsRepo";
 
 export type RecordingsDeps = {
   readonly audio: AudioStore;
@@ -78,10 +84,26 @@ type NoteRef = string;
 // the following runs, oldest first.
 const SWEEP_BATCH = 50;
 
+const MINUTE = 60_000;
+
+// A job-less `transcribing` row younger than this may be an upload still between its claim and
+// the vendor's answer, which takes seconds once the object is stored.
+const UNSUBMITTED_AFTER_MS = 5 * MINUTE;
+
+// A job-less row whose object never arrived is handed back to its upload only after this long:
+// a 100 MB put over a phone's uplink can outlast the shorter cutoff, and releasing it mid-put
+// would strand the upload it belongs to.
+const UPLOAD_ABANDONED_AFTER_MS = 30 * MINUTE;
+
 const DECLARED_LENGTH = /^\d+$/;
 
 const audioKeyOf = (ownerId: UserId, id: RecordingId): string =>
   `recordings/${ownerId}/${id}`;
+
+// The vendor's idempotency key. A retry is a new attempt and must not be answered with the job the
+// failed one got back; the first attempt keeps the bare id, so a replayed upload is still one job.
+const submissionKeyOf = (record: RecordingRecord): string =>
+  record.attempt === 0 ? record.id : `${record.id}:${record.attempt}`;
 
 // Named for what the user can do about it, and every one is answered by the same Retry. An error
 // the port did not classify is read as the provider being unavailable: the row must leave
@@ -96,7 +118,6 @@ const failureOf = (error: unknown): RecordingFailure => {
   return "transcription_unavailable";
 };
 
-// The wire shape: the owner, the audio key and the job id stay here.
 const present = (record: Authorized<RecordingRecord>): Recording => ({
   createdAt: record.createdAt,
   durationMs: record.durationMs,
@@ -116,17 +137,48 @@ const checkUpload = (id: RecordingRef, upload: AudioUpload) => {
   if (upload.contentType === null || !isAudioContentType(upload.contentType)) {
     throw new UnsupportedAudioType({ contentType: upload.contentType, id });
   }
-  const declared =
-    upload.contentLength !== null && DECLARED_LENGTH.test(upload.contentLength)
-      ? Number(upload.contentLength)
-      : null;
-  if (declared === null || declared > AUDIO_MAX_BYTES) {
+  if (
+    upload.contentLength === null ||
+    !DECLARED_LENGTH.test(upload.contentLength)
+  ) {
+    throw new AudioLengthRequired({ id });
+  }
+  const length = Number(upload.contentLength);
+  if (length > AUDIO_MAX_BYTES) {
     throw new AudioTooLarge({ id, maxBytes: AUDIO_MAX_BYTES });
   }
-  if (declared === 0 || upload.body === null) {
+  if (length === 0 || upload.body === null) {
     throw new EmptyAudio({ id });
   }
-  return { body: upload.body, contentType: upload.contentType };
+  return { body: upload.body, contentType: upload.contentType, length };
+};
+
+// The body as the store reads it, erroring the moment it runs past its declared length or ends
+// short of it. The store cannot say which of its own failures was the client's, so `mismatched`
+// is how the service tells a truncated upload (a 400) from the store being down (a 500).
+const measured = (body: ReadableStream<Uint8Array>, length: number) => {
+  let seen = 0;
+  let mismatched = false;
+  const stream = body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      flush: (controller) => {
+        if (seen !== length) {
+          mismatched = true;
+          controller.error(new Error("audio body ended short"));
+        }
+      },
+      transform: (chunk, controller) => {
+        seen += chunk.byteLength;
+        if (seen > length) {
+          mismatched = true;
+          controller.error(new Error("audio body ran past its length"));
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    })
+  );
+  return { mismatched: () => mismatched, stream };
 };
 
 export const makeRecordingsService = (deps: RecordingsDeps) => {
@@ -150,43 +202,105 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
   const notActive = (record: RecordingRecord): RecordingNotActive =>
     new RecordingNotActive({ id: record.id, status: record.status });
 
-  // The one place a provider answer becomes a row. Every write is a claim on `transcribing`, so an
-  // upload's answer and a sweep racing for the same recording settle it once.
+  // The one place a provider answer becomes a row. Every write is a claim on `transcribing` and on
+  // `jobId`, the job the caller read the row with, so an upload's answer and a sweep racing for the
+  // same recording settle it once, and a stale answer from an earlier attempt's job settles nothing.
   const settle = async (
     id: RecordingId,
+    jobId: string | null,
     answer: TranscriptionAnswer
   ): Promise<"completed" | "lost" | "pending"> => {
-    if (answer.status === "pending") {
-      await deps.repo.setJob(id, answer.jobId);
-      return "pending";
-    }
     const now = deps.clock.now();
+    if (answer.status === "pending") {
+      if (answer.jobId === jobId) {
+        return "pending";
+      }
+      return (await deps.repo.setJob(id, answer.jobId, now))
+        ? "pending"
+        : "lost";
+    }
     const segments = answer.segments.map((segment: Segment) => ({
       ...segment,
       id: deps.ids.generate("seg_"),
     }));
     const claimed = await deps.uow.commit((stage) =>
-      deps.repo.stageComplete(stage, id, segments, now)
+      deps.repo.stageComplete(stage, id, jobId, segments, now)
     );
     return claimed.changes > 0 ? "completed" : "lost";
   };
 
-  // Submits the stored audio, keyed on the recording id, and settles whatever comes back. Called
-  // with the row already claimed into `transcribing`.
+  // Submits the stored audio and settles whatever comes back, on a row already claimed into
+  // `transcribing` with no job. Only the vendor's failures fail the row: a database fault while
+  // settling is ours and propagates as one, and leaves the row job-less for the sweep to resubmit.
+  // A rate-limited submit is left the same way, as the sweep leaves a rate-limited poll.
   const transcribe = async (
     record: RecordingRecord,
     audioKey: string
-  ): Promise<void> => {
-    try {
-      const answer = await deps.transcription.submit({
+  ): Promise<"completed" | "failed" | "lost" | "pending"> => {
+    const submitted = await deps.transcription
+      .submit({
         audio: deps.audio.ref(audioKey),
         durationMs: record.durationMs ?? 0,
-        key: record.id,
-      });
-      await settle(record.id, answer);
-    } catch (error) {
-      await deps.repo.fail(record.id, failureOf(error), deps.clock.now());
+        key: submissionKeyOf(record),
+      })
+      .then(
+        (answer) => ({ answer, ok: true }) as const,
+        (error: unknown) => ({ error, ok: false }) as const
+      );
+    if (submitted.ok) {
+      return await settle(record.id, null, submitted.answer);
     }
+    if (submitted.error instanceof TranscriptionRateLimited) {
+      return "pending";
+    }
+    return (await deps.repo.fail(
+      record.id,
+      null,
+      failureOf(submitted.error),
+      deps.clock.now()
+    ))
+      ? "failed"
+      : "lost";
+  };
+
+  const poll = async (
+    row: SubmittedRecording
+  ): Promise<"completed" | "failed" | "lost" | "pending"> => {
+    try {
+      return await settle(
+        row.id,
+        row.providerJobId,
+        await deps.transcription.poll(row.providerJobId)
+      );
+    } catch (error) {
+      if (error instanceof TranscriptionRateLimited) {
+        return "pending";
+      }
+      return (await deps.repo.fail(
+        row.id,
+        row.providerJobId,
+        failureOf(error),
+        deps.clock.now()
+      ))
+        ? "failed"
+        : "lost";
+    }
+  };
+
+  // A job-less row whose object is stored is submitted again under the same key, which the vendor
+  // answers with the same job if the first submit did reach it. One whose object never arrived goes
+  // back to `uploading`, so the client's retry is taken rather than answered as a replay.
+  const recover = async (
+    row: RecordingRecord,
+    now: Timestamp
+  ): Promise<"completed" | "failed" | "lost" | "pending"> => {
+    if (row.audioKey !== null && (await deps.audio.exists(row.audioKey))) {
+      return await transcribe(row, row.audioKey);
+    }
+    if (row.updatedAt < now - UPLOAD_ABANDONED_AFTER_MS) {
+      await deps.repo.releaseUpload(row.id, now);
+    }
+    return "pending";
   };
 
   return {
@@ -303,38 +417,36 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         const now = await visible(canReadRecording, actor, id);
         throw new RecordingNotRetryable({ id: now.id, status: now.status });
       }
-      await transcribe(record, record.audioKey);
+      await transcribe(
+        { ...record, attempt: record.attempt + 1 },
+        record.audioKey
+      );
       return get(actor, id);
     },
 
-    // R8: the cron and the harness's release call this, with no actor. Each row is polled and
-    // settled on its own, so one provider error fails that recording and not the run. A
-    // rate-limited poll is left for the next run rather than failed: the job itself is fine.
+    // R8: the cron and the harness's release call this, with no actor. Each row is settled on its
+    // own, so one provider error fails that recording and not the run. A rate-limited call is left
+    // for the next run rather than failed: the job itself is fine. Rows a dead Worker left with no
+    // job are recovered after the polls, and a released one counts as pending: it waits on audio.
     sweep: async (): Promise<SweepResult> => {
-      const rows = await deps.repo.listTranscribing(SWEEP_BATCH);
+      const now = deps.clock.now();
       const counts = { completed: 0, failed: 0, pending: 0 };
-      for (const row of rows) {
-        if (row.providerJobId === null) {
-          continue;
+      const tally = (outcome: "completed" | "failed" | "lost" | "pending") => {
+        if (outcome !== "lost") {
+          counts[outcome] += 1;
         }
-        try {
-          // biome-ignore lint/performance/noAwaitInLoops: one provider call at a time, so a backlog cannot burst the vendor's rate limit
-          const outcome = await settle(
-            row.id,
-            await deps.transcription.poll(row.providerJobId)
-          );
-          if (outcome !== "lost") {
-            counts[outcome] += 1;
-          }
-        } catch (error) {
-          if (error instanceof TranscriptionRateLimited) {
-            counts.pending += 1;
-          } else if (
-            await deps.repo.fail(row.id, failureOf(error), deps.clock.now())
-          ) {
-            counts.failed += 1;
-          }
-        }
+      };
+      for (const row of await deps.repo.listTranscribing(SWEEP_BATCH)) {
+        // biome-ignore lint/performance/noAwaitInLoops: one provider call at a time, so a backlog cannot burst the vendor's rate limit
+        tally(await poll(row));
+      }
+      const unsubmitted = await deps.repo.listUnsubmitted(
+        now - UNSUBMITTED_AFTER_MS,
+        SWEEP_BATCH
+      );
+      for (const row of unsubmitted) {
+        // biome-ignore lint/performance/noAwaitInLoops: as above, one provider call at a time
+        tally(await recover(row, now));
       }
       return counts;
     },
@@ -376,15 +488,21 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
       if (record.status !== "uploading") {
         return present(record);
       }
-      const { body, contentType } = checkUpload(id, upload);
+      const { body, contentType, length } = checkUpload(id, upload);
       const key = audioKeyOf(record.ownerId, record.id);
       if (!(await deps.repo.claimUpload(record.id, key, deps.clock.now()))) {
         return get(actor, id);
       }
+      const audio = measured(body, length);
       try {
-        await deps.audio.put(key, body, contentType);
+        await deps.audio.put(key, audio.stream, contentType, length);
       } catch (error) {
         await deps.repo.releaseUpload(record.id, deps.clock.now());
+        if (audio.mismatched()) {
+          throw new AudioLengthMismatch({ id }, "audio body length mismatch", {
+            cause: error,
+          });
+        }
         throw error;
       }
       await transcribe(record, key);

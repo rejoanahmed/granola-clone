@@ -110,11 +110,14 @@ export function formatRowTime(
   return clock(partsOf(ms, timeZone));
 }
 
-/** `MMM d h:mm a`: "Sep 12 9:39 AM". */
+/** `MMM d h:mm a`: "Sep 12 9:39 AM", or "Today 1:25 PM" on the local day of `now` (discovery screen 105). */
 export function formatPillDate(
   ms: number,
-  timeZone: string = deviceTimeZone()
+  timeZone: string = deviceTimeZone(),
+  now: number = Date.now()
 ): string {
   const parts = partsOf(ms, timeZone);
-  return `${monthName(parts)} ${parts.day} ${clock(parts)}`;
+  return dayKey(ms, timeZone) === dayKey(now, timeZone)
+    ? `Today ${clock(parts)}`
+    : `${monthName(parts)} ${parts.day} ${clock(parts)}`;
 }

@@ -1,7 +1,9 @@
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import * as RecErrors from "@gc/domain/Recordings/Errors";
+import * as TxErrors from "@gc/domain/Transcription/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import type { TranscriptionPort } from "../Integrations/Transcription/Port";
 import * as TxFake from "../Integrations/Transcription/TranscriptionFake";
 import { makeNotesRepo } from "../Notes/NotesRepo";
 import { makeNotesService } from "../Notes/NotesService";
@@ -145,15 +147,24 @@ afterEach(() => {
   d1.close();
 });
 
-const service = (): RecordingsService =>
+const service = (
+  overrides: {
+    readonly transcription?: TranscriptionPort;
+    readonly uow?: ReturnType<typeof makeUnitOfWork>;
+  } = {}
+): RecordingsService =>
   Svc.makeRecordingsService({
     audio,
     clock,
     ids,
-    repo: Repo.makeRecordingsRepo(makeDrizzle(d1)),
-    transcription: fake,
-    uow: makeUnitOfWork(d1),
+    repo: repo(),
+    transcription: overrides.transcription ?? fake,
+    uow: overrides.uow ?? makeUnitOfWork(d1),
   });
+
+const repo = () => Repo.makeRecordingsRepo(makeDrizzle(d1));
+
+const MINUTE = 60 * SECOND;
 
 // Viewed through the phase-5 shape: until it lands, the notes service's own types carry neither
 // `recording` nor `recordingStatus`.
@@ -360,7 +371,12 @@ describe("RecordingsService.discard", () => {
   it("hard-deletes the note, the recording and the audio object of a live recording", async () => {
     const { note, recording } = await service().create(actor(), {});
     const key = audioKey(actor(), recording.id);
-    await audio.put(key, new Blob([SAMPLE]).stream(), "audio/mp4");
+    await audio.put(
+      key,
+      new Blob([SAMPLE]).stream(),
+      "audio/mp4",
+      SAMPLE.byteLength
+    );
 
     await service().discard(actor(), recording.id);
 
@@ -547,6 +563,101 @@ describe("RecordingsService.uploadAudio", () => {
     expect(fake.calls).toEqual([]);
   });
 
+  it.each([
+    ["no Content-Length", null],
+    ["a Content-Length that is not a number", "twelve"],
+  ])(
+    "is AudioLengthRequired, a 411, for %s, before anything is stored",
+    async (_what, contentLength) => {
+      const recording = await recordingAt("uploading");
+
+      const error = await caught(() =>
+        service().uploadAudio(
+          actor(),
+          recording.id,
+          upload(SAMPLE, "audio/mp4", contentLength)
+        )
+      );
+
+      expect(error).toBeInstanceOf(RecErrors.AudioLengthRequired);
+      expect(error).toMatchObject({ status: 411 });
+      expect(audio.objects.size).toBe(0);
+      expect(fake.calls).toEqual([]);
+    }
+  );
+
+  it.each([
+    ["ends short of", SAMPLE.byteLength + 4],
+    ["runs past", SAMPLE.byteLength - 4],
+  ])(
+    "is AudioLengthMismatch, a 400, for a body that %s its Content-Length, and leaves the recording uploading",
+    async (_what, declared) => {
+      const recording = await recordingAt("uploading");
+
+      const error = await caught(() =>
+        service().uploadAudio(
+          actor(),
+          recording.id,
+          upload(SAMPLE, "audio/mp4", String(declared))
+        )
+      );
+
+      expect(error).toBeInstanceOf(RecErrors.AudioLengthMismatch);
+      expect(error).toMatchObject({ status: 400 });
+      expect(fake.calls).toEqual([]);
+      await expect(service().get(actor(), recording.id)).resolves.toMatchObject(
+        { status: "uploading" }
+      );
+    }
+  );
+
+  // A fault writing the transcript is ours, not the vendor's: it propagates, and the row is left
+  // job-less for the sweep to resubmit rather than failed as `transcription_unavailable`.
+  it("propagates a database fault while settling, and does not fail the recording", async () => {
+    const recording = await recordingAt("uploading");
+    const broken = new Error("D1 is down");
+    const uow = {
+      ...makeUnitOfWork(d1),
+      commit: () => Promise.reject(broken),
+    } as ReturnType<typeof makeUnitOfWork>;
+
+    await expect(
+      service({ uow }).uploadAudio(actor(), recording.id, upload())
+    ).rejects.toBe(broken);
+
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      failure: null,
+      status: "transcribing",
+    });
+  });
+
+  it("leaves a rate-limited submit transcribing for the sweep, rather than failing it", async () => {
+    const recording = await recordingAt("uploading");
+    const limited: TranscriptionPort = {
+      poll: fake.poll,
+      submit: () =>
+        Promise.reject(new TxErrors.TranscriptionRateLimited({ key: "k" })),
+    };
+
+    await expect(
+      service({ transcription: limited }).uploadAudio(
+        actor(),
+        recording.id,
+        upload()
+      )
+    ).resolves.toMatchObject({ failure: null, status: "transcribing" });
+
+    now = AT + 6 * MINUTE;
+    await expect(service().sweep()).resolves.toEqual({
+      completed: 1,
+      failed: 0,
+      pending: 0,
+    });
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      status: "transcribed",
+    });
+  });
+
   it("is EmptyAudio, a 422, for a zero-byte upload", async () => {
     const recording = await recordingAt("uploading");
 
@@ -648,6 +759,90 @@ describe("RecordingsService.sweep", () => {
   });
 });
 
+// A Worker that dies between `claimUpload` and the vendor's answer leaves `transcribing` with no
+// job id. Nothing but the sweep can move such a row again.
+describe("RecordingsService.sweep over a row left with no job", () => {
+  const stranded = async (withObject: boolean): Promise<Recording> => {
+    const recording = await recordingAt("uploading");
+    const key = audioKey(actor(), recording.id);
+    if (!(await repo().claimUpload(recording.id as never, key, now))) {
+      throw new Error("the upload claim was refused");
+    }
+    if (withObject) {
+      await audio.put(
+        key,
+        new Blob([SAMPLE]).stream(),
+        "audio/mp4",
+        SAMPLE.byteLength
+      );
+    }
+    return recording;
+  };
+
+  it("resubmits one whose audio is stored, once it is older than an upload in flight", async () => {
+    const recording = await stranded(true);
+
+    now = AT + 2 * MINUTE;
+    await expect(service().sweep()).resolves.toEqual({
+      completed: 0,
+      failed: 0,
+      pending: 0,
+    });
+    expect(submits()).toEqual([]);
+
+    now = AT + 6 * MINUTE;
+    await expect(service().sweep()).resolves.toEqual({
+      completed: 1,
+      failed: 0,
+      pending: 0,
+    });
+    expect(submits()).toEqual([expect.objectContaining({ key: recording.id })]);
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      status: "transcribed",
+    });
+  });
+
+  it("fails one the vendor fails on resubmission", async () => {
+    const recording = await stranded(true);
+    mode = "fail";
+
+    now = AT + 6 * MINUTE;
+    await expect(service().sweep()).resolves.toEqual({
+      completed: 0,
+      failed: 1,
+      pending: 0,
+    });
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      failure: "transcription_unavailable",
+      status: "failed",
+    });
+  });
+
+  it("hands one whose audio never arrived back to its upload, but only after a long put could have finished", async () => {
+    const recording = await stranded(false);
+
+    now = AT + 6 * MINUTE;
+    await expect(service().sweep()).resolves.toEqual({
+      completed: 0,
+      failed: 0,
+      pending: 1,
+    });
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      status: "transcribing",
+    });
+
+    now = AT + 31 * MINUTE;
+    await service().sweep();
+    expect(submits()).toEqual([]);
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      status: "uploading",
+    });
+    await expect(
+      service().uploadAudio(actor(), recording.id, upload())
+    ).resolves.toMatchObject({ status: "transcribed" });
+  });
+});
+
 describe("RecordingsService.retry", () => {
   // §7 case 10
   it("fails with transcription_unavailable, and a retry with the fake back in auto ends transcribed", async () => {
@@ -675,7 +870,54 @@ describe("RecordingsService.retry", () => {
     await service().retry(actor(), recording.id);
 
     expect(submits()).toHaveLength(2);
-    expect(submits().every((call) => call.key === recording.id)).toBe(true);
+    expect(audio.objects.size).toBe(1);
+  });
+
+  // The first attempt's key would be answered with the first attempt's failed job.
+  it("submits each attempt under an idempotency key of its own", async () => {
+    const recording = await recordingAt("uploading");
+    mode = "fail";
+    await service().uploadAudio(actor(), recording.id, upload());
+    await service().retry(actor(), recording.id);
+    mode = "auto";
+
+    await service().retry(actor(), recording.id);
+
+    expect(submits().map((call) => call.key)).toEqual([
+      recording.id,
+      `${recording.id}:1`,
+      `${recording.id}:2`,
+    ]);
+  });
+
+  // A sweep that listed the row under the first attempt's job must not settle the second attempt.
+  it("lets no answer for an earlier attempt's job settle the current one", async () => {
+    const recording = await recordingAt("transcribing");
+    const [first] = await rowsOf(
+      "SELECT provider_job_id AS job FROM recordings WHERE id = ?",
+      recording.id
+    );
+    const staleJob = String((first as { job: string }).job);
+    mode = "fail";
+    await service().sweep();
+    mode = "hold";
+    await service().retry(actor(), recording.id);
+    const id = recording.id as never;
+
+    expect(
+      await repo().fail(id, staleJob, "transcription_unavailable", now)
+    ).toBe(false);
+    const staleDone = await makeUnitOfWork(d1).commit((stage) =>
+      repo().stageComplete(stage, id, staleJob, [], now)
+    );
+    expect(staleDone.changes).toBe(0);
+    await expect(service().get(actor(), recording.id)).resolves.toMatchObject({
+      failure: null,
+      status: "transcribing",
+    });
+
+    mode = "auto";
+    await expect(service().sweep()).resolves.toMatchObject({ completed: 1 });
   });
 
   it("is RecordingNotRetryable on a transcribed recording", async () => {

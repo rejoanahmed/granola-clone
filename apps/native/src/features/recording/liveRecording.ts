@@ -231,6 +231,17 @@ export function togglePause(): void {
   update({ elapsedMs: recorder.elapsedMs(), level: 0, paused: !live.paused });
 }
 
+/** Whether the recorder can skip ahead: true only for the fake recorder of a test build. */
+export const canSkipAhead = (): boolean => recorder?.skipAhead !== undefined;
+
+export function skipAhead(ms: number): void {
+  if (!(recorder?.skipAhead && live) || live.phase !== "live") {
+    return;
+  }
+  recorder.skipAhead(ms);
+  update({ elapsedMs: recorder.elapsedMs() });
+}
+
 export function setNotes(notes: string): void {
   update({ notes });
   clearAutosave();

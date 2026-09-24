@@ -6,10 +6,14 @@ export type AudioStore = {
   // Idempotent: deleting an absent key is not an error, so a discard retried after a lost
   // response succeeds.
   delete: (key: string) => Promise<void>;
+  // Whether a put finished: an object is visible only once it is whole.
+  exists: (key: string) => Promise<boolean>;
+  // `length` is the body's exact byte count, which the service has already checked it against.
   put: (
     key: string,
     body: ReadableStream<Uint8Array>,
-    contentType: string
+    contentType: string,
+    length: number
   ) => Promise<void>;
   ref: (key: string) => AudioRef;
 };

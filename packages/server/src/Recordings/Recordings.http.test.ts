@@ -334,6 +334,8 @@ describe("PUT /recordings/{id}/audio", () => {
 
   it.each([
     ["AudioTooLarge", 413],
+    ["AudioLengthRequired", 411],
+    ["AudioLengthMismatch", 400],
     ["UnsupportedAudioType", 415],
     ["EmptyAudio", 422],
     ["RecordingNotUploading", 409],

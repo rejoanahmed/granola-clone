@@ -40,6 +40,11 @@ export function makeFakeRecorder(now: Clock = Date.now): Recorder {
         since = now();
       }
     },
+    skipAhead: (ms) => {
+      if (!stopped) {
+        accumulated += ms;
+      }
+    },
     start: () => {
       since = now();
       return Promise.resolve();

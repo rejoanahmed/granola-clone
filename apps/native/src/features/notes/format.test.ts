@@ -47,6 +47,20 @@ describe("formatPillDate", () => {
   it("gives Sep 12 10:00 AM", () => {
     expect(formatPillDate(SEP_12_10AM_UTC, "UTC")).toBe("Sep 12 10:00 AM");
   });
+
+  it("says Today for the local day of now, as discovery screen 105 does", () => {
+    const later = SEP_12_10AM_UTC + 3 * 60 * 60 * 1000;
+    expect(formatPillDate(SEP_12_10AM_UTC, "UTC", later)).toBe(
+      "Today 10:00 AM"
+    );
+  });
+
+  it("gives the date again from the next local day", () => {
+    const nextDay = SEP_12_10AM_UTC + 24 * 60 * 60 * 1000;
+    expect(formatPillDate(SEP_12_10AM_UTC, "UTC", nextDay)).toBe(
+      "Sep 12 10:00 AM"
+    );
+  });
 });
 
 describe("dayKey", () => {

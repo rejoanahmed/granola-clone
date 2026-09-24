@@ -35,6 +35,9 @@ export const TRASH_LABEL = "Move to trash";
 export const rowLabel = (note: NoteListItem): string =>
   `${note.title}, ${formatRowTime(note.startedAt)}`;
 
+// The lime tile is drawn inside one accessibility element, so the label says what it shows.
+const LIVE_SUFFIX = ", recording";
+
 /**
  * The row's face without its gestures: the list draws it, and so does the menu's lifted preview.
  * The preview is `flush`: it is drawn at the frame inside the gutter, so the gutter is not padded
@@ -146,7 +149,9 @@ export function NoteRow({
       rightThreshold={ACTION_WIDTH / 2}
     >
       <Pressable
-        accessibilityLabel={rowLabel(note)}
+        accessibilityLabel={
+          live ? `${rowLabel(note)}${LIVE_SUFFIX}` : rowLabel(note)
+        }
         accessibilityRole="button"
         accessible
         delayLongPress={LONG_PRESS_MS}

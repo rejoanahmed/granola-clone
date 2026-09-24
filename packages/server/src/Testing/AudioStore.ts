@@ -12,6 +12,7 @@ export const makeMemoryAudioStore = () => {
       objects.delete(key);
       return Promise.resolve();
     },
+    exists: (key) => Promise.resolve(objects.has(key)),
     put: async (key, body, contentType) => {
       const bytes = new Uint8Array(await new Response(body).arrayBuffer());
       objects.set(key, { bytes, contentType });

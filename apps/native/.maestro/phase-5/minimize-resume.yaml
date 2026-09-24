@@ -1,6 +1,7 @@
 # AC9 (docs/spec/phase-5.md §8, §3.7): Minimize goes home, where the recording pill stands in for
-# the + FAB and the new "Untitled note" row is listed. The pill brings the live card back with the
-# typed notes intact; once the recording ends, the FAB returns.
+# the + FAB and the new "Untitled note" row is listed with its live (lime waveform) tile. The pill,
+# and then the row, bring the live card back with the typed notes intact; once the recording ends,
+# the FAB returns and the row is an ordinary one.
 appId: ${APP_ID}
 name: Minimising a recording and returning to it
 tags:
@@ -30,6 +31,7 @@ env:
 - extendedWaitUntil:
     visible:
       id: home-recording-pill
+      text: Return to recording
     timeout: 10000
 - assertNotVisible:
     id: home-new-note-button
@@ -38,11 +40,29 @@ env:
 - extendedWaitUntil:
     visible:
       id: "home-note-(?!not_e2e_).*"
-      text: "Untitled note, .*"
+      text: "Untitled note, .*, recording"
     timeout: 15000
 
 - tapOn:
     id: home-recording-pill
+- extendedWaitUntil:
+    visible:
+      id: recording-screen
+    timeout: 15000
+- assertVisible:
+    id: recording-notes-input
+    text: Kept across minimise
+
+# The live row reopens the card too, not only the pill.
+- tapOn:
+    id: recording-minimize
+- extendedWaitUntil:
+    visible:
+      id: home-recording-pill
+    timeout: 15000
+- tapOn:
+    id: "home-note-(?!not_e2e_).*"
+    text: "Untitled note, .*, recording"
 - extendedWaitUntil:
     visible:
       id: recording-screen
@@ -70,3 +90,5 @@ env:
     timeout: 10000
 - assertNotVisible:
     id: home-recording-pill
+- assertNotVisible:
+    text: "Untitled note, .*, recording"

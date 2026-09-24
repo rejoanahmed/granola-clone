@@ -141,3 +141,35 @@
 - **Upload-failed, start-failed, interrupted, transcript-empty/-error, and the discard- and
   share-failure toasts** are built and unit-tested (the status-row copy and backoff), and no flow
   reaches them — the scripted-response harness seam the phase-3 and phase-4 entries already defer.
+- **End dismisses the card and pushes the note page; it does not cross-fade (phase 5, deliberate).**
+  §3.8 first asked for `router.replace` to `/notes/[id]`, which cross-fades as #105 does. The
+  replaced page inherited the sheet's presentation, and a second menu opened on it vanished from the
+  accessibility tree, so from every flow. `end()` in `record/[id].tsx` now does `back()` then
+  `push()`: the sheet slides down, then the page pushes in. The spec records it as a deviation.
+  Restoring the cross-fade needs a transition that does not reuse the sheet's presentation.
+
+## Deferred review items (phase 5)
+
+- **Flows still sign in one by one.** Every flow runs `clearState` + reset + the OTP sign-in through
+  `open-home.yaml`, as the Maestro rules in `phases.md` require, so flows stay order-independent.
+  Sharing one sign-in across the flows that do not test sign-in would save more wall-clock than the
+  10 s End wait did (now removed by `recording-skip-ahead`). It is left for a decision about the
+  rule itself, not made inside one phase's review.
+- **"Disabled until `POST /recordings` answers" is not flowed.** The meta pill and Add to folder
+  carry `accessibilityState.disabled` until the note exists, but locally the POST answers before
+  Maestro's first assertion, so no flow can see the disabled window without the scripted-response
+  seam the phase-3 and phase-4 entries already defer. `record-transcript.yaml` now asserts the
+  paperclip's disabled state and the owner name in the pill's label.
+- **`canReadRecording` and `canEditRecording` share one predicate.** The split is a naming seam for
+  sharing (phase-level, not yet designed), and no test pins the two diverging, because nothing
+  makes them diverge yet. The test belongs to the phase that adds sharing.
+- **The phase-5 review read only part of the E2E module and the error mapping.** A follow-up read
+  of `E2eService`, `E2eRepo`, `E2E/Http.ts` and `TranscriptionFake.ts` found no factory
+  constructing its own dependency (R3) and no `Env` read outside `container.ts`/`Runtime` (R5).
+  `E2eService` throws a plain `Error` for a seeded recording that names no note, which is a fixture
+  invariant and a 500 by design. `on-error.ts` maps every `AppError` by its own status, so the new
+  `AudioLengthRequired` (411) and `AudioLengthMismatch` (400) need no case there.
+- **A job-less row whose audio never arrived waits 30 minutes, then goes back to `uploading`.** The
+  sweep resubmits a stranded `transcribing` row after 5 minutes when its object is stored, and
+  releases it only after 30 when it is not, so a slow 100 MB put is never cut off mid-stream. If the
+  client has already given up by then, the row joins the abandoned-upload entry above.

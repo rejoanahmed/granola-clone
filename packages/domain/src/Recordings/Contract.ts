@@ -129,15 +129,20 @@ export const uploadRecordingAudioRoute = createRoute({
   request: { body: audioBody, params: RecordingParams },
   responses: {
     200: json(Recording, "The recording, after the upload"),
+    400: json(
+      ErrorBody,
+      "AudioLengthMismatch: the body did not match its Content-Length"
+    ),
     404: notFound,
     409: json(
       ErrorBody,
       "RecordingNotUploading: the recording has not been ended yet"
     ),
-    413: json(
+    411: json(
       ErrorBody,
-      "AudioTooLarge: over 100 MB, or no Content-Length to check"
+      "AudioLengthRequired: no Content-Length, so the size cannot be checked"
     ),
+    413: json(ErrorBody, "AudioTooLarge: over 100 MB"),
     415: json(ErrorBody, "UnsupportedAudioType: not one of the audio types"),
     ...commonErrors,
     422: json(ErrorBody, "EmptyAudio (zero bytes), or validation failed"),

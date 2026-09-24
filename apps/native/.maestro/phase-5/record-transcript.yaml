@@ -23,7 +23,7 @@ env:
     text: Untitled note
 - assertVisible:
     id: recording-meta-pill
-    text: 'Today \d{1,2}:\d{2} [AP]M, .*'
+    text: 'Today \d{1,2}:\d{2} [AP]M, E2E Person'
 - assertVisible:
     id: recording-notes-input
     text: Write notes here\.\.\.
@@ -31,8 +31,10 @@ env:
     id: recording-minimize
 - assertVisible:
     id: recording-more
+# Drawn but inert this phase (§3.1).
 - assertVisible:
     id: recording-attach
+    enabled: false
 - assertVisible:
     id: recording-bar
 - assertVisible:
@@ -71,6 +73,10 @@ env:
     text: Untitled note
 - assertVisible:
     id: note-back
+# A note recorded today reads "Today", as #105 does, never the month and day.
+- assertVisible:
+    id: note-meta-pill
+    text: 'Today \d{1,2}:\d{2} [AP]M, \+1'
 - assertNotVisible:
     id: note-share
 - assertNotVisible:
@@ -133,12 +139,17 @@ env:
       id: home-screen
     timeout: 10000
 
-# The new row, above the seeded ones: today's group comes first.
+# The new row sits under today's header and above the seeded ones: today's group comes first.
 - extendedWaitUntil:
     visible:
       id: "home-note-(?!not_e2e_).*"
       text: "Untitled note, .*"
     timeout: 15000
+- runScript: ../scripts/today.js
+- assertVisible:
+    id: home-day-${output.today}
+    above:
+      id: "home-note-(?!not_e2e_).*"
 - assertVisible:
     id: "home-note-(?!not_e2e_).*"
     above:

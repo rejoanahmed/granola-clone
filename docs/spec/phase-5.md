@@ -162,13 +162,15 @@ background: the `UIBackgroundModes: audio` flag is set through the expo-audio pl
 timer kept running with the app backgrounded. Home then shows:
 
 - a **home recording pill** (`home-recording-pill`, a11y "Return to recording"): the §3.5 mini pill (lime, meter and timer), placed in the bottom bar **in place of the + FAB** at the same 64pt height. The Ask pill shrinks to make room. Tapping it reopens the live card with its state intact: timer, notes and paused state. The FAB comes back once the recording ends or is discarded, so only one recording can be live at a time.
-- the new note's **row** in today's group, titled "Untitled note". While the recording is live, its 44pt tile shows a lime `#B0BF40` waveform glyph instead of the phone glyph. Tapping the row reopens the live card, just like the pill.
+- the new note's **row** in today's group, titled "Untitled note". While the recording is live, its 44pt tile shows a lime `#B0BF40` waveform glyph instead of the phone glyph, and its a11y label gains ", recording" ("Untitled note, 1:25 PM, recording"), which is how a flow sees the tile inside the row's one accessibility element. Tapping the row reopens the live card, just like the pill.
 
 ### 3.8 Post-End note page (#105) — the phase-4 `note-screen`
 
 **End** stops the recorder, sends `POST /recordings/{id}/end` with the recorded duration, then
 uploads the audio (`PUT /recordings/{id}/audio`). The card becomes the ordinary note page:
-`router.replace` to `/notes/[id]`, which cross-fades rather than pushing. The phase-4 detail gains
+the sheet is dismissed and `/notes/[id]` is pushed *(a deliberate deviation from #105's cross-fade:
+`router.replace` swapped the page in with the sheet's presentation, and a second menu opened on it
+left the accessibility tree; see BLOCKERS.md)*. The phase-4 detail gains
 one row and two conditions:
 
 - **Status row** (`note-status`), between the metadata row and the body: full width, fill `#333333`, radius 24, 48pt tall. It holds a small spinner (`#8A8A8A`) and grey 17pt text (`note-status-text`). The text reads **"Uploading transcript..."** while the client is uploading **or** the server status is `uploading`/`transcribing`. (Phase 6 adds "Generating notes..." after that.) The body below is hidden while the row shows. As #106 notes, the typed line is not shown during processing.
@@ -294,15 +296,16 @@ identical to an absent one (D018). Timestamps are epoch ms (D003).
 | `PATCH /recordings/{id}` — `patchRecordingRoute` | `{ privateNotes: string ≤ 100 000 }` (strict) | 200 `Recording` | 404, 409 `RecordingNotActive` (status is not `recording`), 422 |
 | `DELETE /recordings/{id}` — `discardRecordingRoute` | — | **204**. Hard-deletes the note, the recording, its segments and its audio object | 404, 409 `RecordingNotActive` |
 | `POST /recordings/{id}/end` — `endRecordingRoute` | `{ durationMs: int 0..21 600 000 }` (strict) | 200 `Recording`, status `uploading`, `endedAt` = now. The same body replayed on an `uploading` row is a 200 no-op | 404, 409 `RecordingNotActive`, 422 |
-| `PUT /recordings/{id}/audio` — `uploadRecordingAudioRoute` | raw bytes, `Content-Type` one of `audio/mp4`, `audio/m4a`, `audio/x-m4a`, `audio/aac`, `audio/wav` | 200 `Recording`. Stores the object, then submits it to the transcriber with idempotency key = recording id. The status becomes `transcribing`, or `transcribed` when the provider answers at once, or `failed`. A replay on `transcribing`/`transcribed` is a 200 no-op that neither re-stores nor re-submits | 404, 409 `RecordingNotUploading` (still `recording`), 413 `AudioTooLarge` (> 100 MB), 415 `UnsupportedAudioType`, 422 `EmptyAudio` |
+| `PUT /recordings/{id}/audio` — `uploadRecordingAudioRoute` | raw bytes, `Content-Type` one of `audio/mp4`, `audio/m4a`, `audio/x-m4a`, `audio/aac`, `audio/wav` | 200 `Recording`. Stores the object, then submits it to the transcriber with idempotency key = recording id (a retry's attempt *n* uses `<id>:<n>`, so it is a new job rather than the failed one). The status becomes `transcribing`, or `transcribed` when the provider answers at once, or `failed`. A replay on `transcribing`/`transcribed` is a 200 no-op that neither re-stores nor re-submits | 404, 409 `RecordingNotUploading` (still `recording`), 400 `AudioLengthMismatch` (the body did not match its `Content-Length`), 411 `AudioLengthRequired` (no usable `Content-Length`), 413 `AudioTooLarge` (> 100 MB), 415 `UnsupportedAudioType`, 422 `EmptyAudio` |
 | `POST /recordings/{id}/retry` — `retryRecordingRoute` | — | 200 `Recording`. Re-submits the stored audio. The status becomes `transcribing`/`transcribed`/`failed` | 404, 409 `RecordingNotRetryable` (status is not `failed`) |
 | `GET /notes/{id}/transcript` — `getNoteTranscriptRoute` (in the Notes contract, served by the Recordings service) | — | 200 `Transcript` | 404 `NoteNotFound`, 404 `TranscriptNotFound` (no recording, or not yet `transcribed`) |
 
 `PUT …/audio` is a normal authenticated route, **not** a `RAW_ROUTE_PREFIXES` entry: raw routes
 skip the session lookup, and this route needs the session. The handler passes
 `c.req.raw.body` (a web `ReadableStream`), the content type and `Content-Length` to the service in
-one expression (R6). The service never sees Hono. A missing or oversized `Content-Length` is
-rejected before anything is read.
+one expression (R6). The service never sees Hono. A missing (411) or oversized (413) `Content-Length` is
+rejected before anything is read; a body that ends short of it or runs past it is a 400 and
+releases the claim, so the client's retry is taken.
 
 ### 6.2 Shapes (`packages/domain/src/Domain/Recording.ts`)
 
@@ -343,7 +346,7 @@ The native app derives "Speaker A" from the letter, so the label is never stored
 
 ### 6.3 Storage (`packages/db`)
 
-- `recordings`: `audio_key` text null, `created_at`, `duration_ms` int null, `ended_at` int null, `failure` text null, `id` pk, `note_id` text **unique** → `notes.id` on delete cascade, `owner_id` → `user.id` cascade, `private_notes` text not null default "", `provider_job_id` text null, `started_at`, `status` text not null, `updated_at`. Index `recordings_transcribing_idx` on (`status`, `updated_at`) where status = 'transcribing', for the sweep. There is one recording per note (the unique constraint).
+- `recordings`: `audio_key` text null, `created_at`, `duration_ms` int null, `ended_at` int null, `failure` text null, `id` pk, `note_id` text **unique** → `notes.id` on delete cascade, `owner_id` → `user.id` cascade, `private_notes` text not null default "", `provider_job_id` text null, `attempt` int not null default 0 (retries, migration `0004`), `started_at`, `status` text not null, `updated_at`. Index `recordings_transcribing_idx` on (`status`, `updated_at`) where status = 'transcribing', for the sweep. There is one recording per note (the unique constraint).
 - `transcript_segments`: `end_ms`, `id` pk (`seg_`), `position` int, `recording_id` → `recordings.id` cascade, `speaker` text, `start_ms`, `text`. Unique (`recording_id`, `position`). Segments are stored raw. Grouping happens at read time, so a later speaker-rename phase edits segments, not merged blobs.
 - `e2e_switches`: `name` text pk, `value` text. It is only written by the harness.
 - Keys inside each `sqliteTable` are alphabetical. `RESET_ORDER` gains `transcriptSegments`, `recordings` (both before `notes`) and `e2eSwitches`.
@@ -374,7 +377,7 @@ The native app derives "Speaker A" from the letter, so the label is never stored
   - `live` is refused, because no client exists yet.
   - When the E2E harness is armed, `readMode` reads `e2e_switches.transcription`. Otherwise it is `async () => "auto"`.
 - `AudioStore` port (`Recordings/AudioStore.ts` type, with the R2 implementation in `Runtime/`). It has `put(key, stream, contentType)`, `delete(key)` and `ref(key)`. The unit tests get an in-memory implementation.
-- **Sweep (R8).** `RecordingsService.sweep()` polls every `transcribing` row that has a `provider_job_id`, completes it (writes the segments, sets `transcribed`) or fails it, and returns `{ completed, failed, pending }`. It runs from a new `scheduled` handler in `apps/api` on `*/2 * * * *`, with the trigger in every env block. It is idempotent: completing claims the row with `UPDATE … WHERE status = 'transcribing'`, so two overlapping sweeps cannot both write segments.
+- **Sweep (R8).** `RecordingsService.sweep()` polls every `transcribing` row that has a `provider_job_id`, completes it (writes the segments, sets `transcribed`) or fails it, and returns `{ completed, failed, pending }`. It runs from a new `scheduled` handler in `apps/api` on `*/2 * * * *`, with the trigger in every env block. It is idempotent: completing claims the row with `UPDATE … WHERE status = 'transcribing' AND provider_job_id = <the job it polled>`, so two overlapping sweeps cannot both write segments, and a sweep holding an earlier attempt's job cannot settle the current attempt. After the polls it recovers `transcribing` rows with **no** job id (a Worker that died between the upload's claim and the vendor's answer, or a rate-limited submit) once they are over 5 minutes old: a stored object is resubmitted under the same key, and a missing one is released back to `uploading` after 30 minutes.
 - **E2E harness** (behind the existing `E2E_HARNESS` guard, plain Hono, not in OpenAPI):
   - `POST /e2e/transcription` `{ mode }` → 200 `{ mode }`;
   - `POST /e2e/transcription/release` sets `auto`, then calls `recordings.sweep()`, and returns its counts.
@@ -437,6 +440,10 @@ expression rather than in `env:`, for the reason that file already records. It i
 `EXPO_PUBLIC_RECORDER=fake` (the Maestro default in `config.dev.ts`) uses `FakeRecorder`:
 
 - the timer comes from the injected clock;
+- it can **skip ahead**: the live card then draws an invisible 16pt control in its top-left corner,
+  `recording-skip-ahead`, that adds 10 s of recorded time, and `subflows/wait-for-end.yaml` taps it
+  rather than waiting ten real seconds for End. The real recorder has no skip, so the control is
+  never drawn in a build that records the microphone;
 - the meter follows a deterministic sine;
 - on stop, it writes a bundled one-second `assets/e2e/sample.m4a` to the recording's path.
 
@@ -528,7 +535,7 @@ They belong to the same scripted-response harness seam that `BLOCKERS.md` alread
 8. Maestro:
    - add the `MIC` parameter to `launch-app.yaml`, and pass it through `open-home-as.yaml` and `open-home.yaml`;
    - add `scripts/e2e-transcription.js` and `scripts/e2e-release.js`;
-   - add the subflows `start-recording.yaml` (tap + and wait for `recording-screen`) and `wait-for-end.yaml` (`extendedWaitUntil recording-end`, 30 s);
+   - add the subflows `start-recording.yaml` (tap + and wait for `recording-screen`) and `wait-for-end.yaml` (tap `recording-skip-ahead`, then `extendedWaitUntil recording-end`, 5 s);
    - write the eleven `phase-5/*.yaml` flows in §8 and update `phase-4/open-note.yaml` (AC12);
    - update `TESTING.md` §8's layout list.
 9. Unit tests (vitest) for the timer format, the upload backoff, the choice of status-row copy, the utterance colour cycle and the transcript share text.
