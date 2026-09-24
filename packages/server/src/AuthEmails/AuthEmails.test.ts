@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 3: the fake is specified (phase-3.md §6.5), not built
 import { makeEmailFake } from "../Integrations/Email/EmailFake";
-// @ts-expect-error phase 3: the service is specified (phase-3.md §6.5), not built
 import { makeAuthEmailsService } from "./AuthEmailsService";
 
 // The copy is phase-3.md §4's, verbatim: the expiry it promises is `createAuth`'s 300 seconds, and

@@ -18,8 +18,7 @@ const base = {
   NODE_ENV: "test",
 } satisfies Env;
 
-// `Object.assign` rather than a literal: `EMAIL_MODE` is not on `Env` until phase 3 adds it, and a
-// fresh literal naming it would be an excess-property error rather than the test it is.
+// Loosely typed on purpose: the refusals under test include values `Env` does not admit ("smtp").
 const configWith = (settings: Readonly<Record<string, string>>) =>
   parseConfig({ ...base, ...settings });
 

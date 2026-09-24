@@ -14,6 +14,28 @@ export const E2E_USERS = {
   },
 } as const;
 
+// A third address that is NEVER seeded and is forgotten by every reset, so the sign-up flow always
+// meets an address with no account. Kept out of `E2E_USERS` because it has no fixed id: better-auth
+// mints one on the first verified code, which is the behaviour under test.
+export const E2E_NEWCOMER = { email: "e2e-newcomer@gcnotes.test" } as const;
+
+// What a seeded person's profile holds. Both are onboarded, so a seeded sign-in goes straight home
+// rather than through the first-run screens; `person` also carries work details for a flow to read.
+export const E2E_PROFILES = {
+  other: {},
+  person: {
+    companyName: "Notes E2E",
+    jobTitle: "Engineer",
+    userType: "startup_generalist",
+  },
+} as const satisfies Record<keyof typeof E2E_USERS, E2eProfileDetails>;
+
+export type E2eProfileDetails = {
+  readonly companyName?: string;
+  readonly jobTitle?: string;
+  readonly userType?: string;
+};
+
 export type E2eRole = keyof typeof E2E_USERS;
 export type E2eUser = (typeof E2E_USERS)[E2eRole];
 

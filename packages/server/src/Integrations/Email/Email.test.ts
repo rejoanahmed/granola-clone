@@ -1,6 +1,5 @@
 import { EmailUnavailable } from "@gc/domain/Email/Errors";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 3: the fake is specified (phase-3.md §6.5), not built
 import { makeEmailFake } from "./EmailFake";
 
 // The fake is what every local run, the E2E harness and each Maestro flow reads a sign-in code
