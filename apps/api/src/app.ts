@@ -3,6 +3,7 @@ import type { AppEnv } from "@gc/server";
 import { e2eRouter } from "@gc/server/E2E/Http";
 import { notesRouter } from "@gc/server/Notes/Http";
 import { profilesRouter } from "@gc/server/Profiles/Http";
+import { recordingsRouter } from "@gc/server/Recordings/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   authRateLimit,
@@ -42,6 +43,7 @@ app.get("/", (c) => c.json({ ok: true, service: "gcnotes-api" }));
 // desynchronise the served path from the documented one and from the derived client.
 app.route("/", profilesRouter);
 app.route("/", notesRouter);
+app.route("/", recordingsRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.
