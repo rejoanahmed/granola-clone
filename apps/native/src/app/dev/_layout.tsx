@@ -2,7 +2,7 @@ import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { Redirect, Stack } from "expo-router";
 
 // `__DEV__`, not an env var: a Release build compiles this branch to the redirect, so no deep link
-// can reach the gallery or the sessionless home preview in a shipped app.
+// can reach the gallery or the demo sheet in a shipped app.
 export default function DevLayout() {
   const { screenOptions } = useThemedNavigation();
   if (!__DEV__) {

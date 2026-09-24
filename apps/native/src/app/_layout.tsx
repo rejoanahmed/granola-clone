@@ -1,6 +1,11 @@
+import { BootError } from "@native/features/auth/BootError";
 import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { STALE_TIME_MS } from "@native/lib/api";
-import { AuthProvider, useProtectedRoute } from "@native/lib/auth-provider";
+import {
+  AuthProvider,
+  useAuth,
+  useProtectedRoute,
+} from "@native/lib/auth-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useState } from "react";
@@ -26,11 +31,15 @@ function ThemedLayout() {
   const { ThemedStatusBar, screenOptions } = useThemedNavigation();
   // Must be called under AuthProvider — it reads the session context.
   useProtectedRoute();
+  const { me } = useAuth();
 
   return (
     <>
       <ThemedStatusBar />
-      <Stack screenOptions={screenOptions} />
+      <Stack screenOptions={screenOptions}>
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+      </Stack>
+      {me.status === "error" ? <BootError /> : null}
     </>
   );
 }

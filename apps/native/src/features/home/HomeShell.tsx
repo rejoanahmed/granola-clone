@@ -10,6 +10,7 @@ import {
   Text,
   ToolbarCapsule,
 } from "@native/design";
+import { useRouter } from "expo-router";
 import {
   CalendarDays,
   Folder,
@@ -31,11 +32,12 @@ const BAR_GAP = 12;
 const TOOLBAR_GAP = 6;
 const HEADER_BAND_BOTTOM = 40;
 
-// #01 with every destination still to come: each control renders, is labelled and gives press
-// feedback, and none navigates until the phase that owns it. `name` is the session user's, so the
-// dev preview (no session) shows the fallback initial.
+// #01 with most destinations still to come: each control renders, is labelled and gives press
+// feedback, and none navigates until the phase that owns it — except the avatar, which opens
+// Settings (phase 3, for Sign out). `name` is the session user's.
 export function HomeShell({ name }: { readonly name?: string | null }) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const initial = initialFor(name);
 
   return (
@@ -71,6 +73,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
             <IconButton
               accessibilityLabel="Settings"
               bare
+              onPress={() => router.push("/settings")}
               testID="home-settings-button"
             >
               <View style={styles.avatar}>
