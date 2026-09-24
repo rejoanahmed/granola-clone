@@ -25,6 +25,13 @@
         }
       ],
       "expo-asset",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundRecording": true,
+          "microphonePermission": "Notes needs microphone access to transcribe your meeting"
+        }
+      ],
       "expo-secure-store",
       "expo-web-browser",
       [

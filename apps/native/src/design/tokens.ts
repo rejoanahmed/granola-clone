@@ -29,7 +29,15 @@ export const colors = {
   destructive: "#FE4346",
   grabber: "#5A5A5A",
   hero: { pink: "#E78BCE" },
-  speaker: { avatar: "#E4CD75" },
+  // The live card (discovery screens 100–105): the status-bar strip over the card, the olive pause circle, the
+  // meter's bars and the primer's half-black scrim.
+  recording: {
+    meter: "#262626",
+    pauseFill: "#656E2D",
+    scrim: "#00000080",
+    statusStrip: "#1B1B1B",
+  },
+  speaker: { avatar: "#E4CD75", text: "#E8E8E3" },
   switch: { on: "#30D159" },
   text: {
     onLight: "#1A1A1A",
@@ -39,6 +47,15 @@ export const colors = {
   },
   tile: { remind: "#8EBCEC", share: "#ADC06F" },
 } as const;
+
+// Transcript avatars by speaker (docs/spec/phase-5.md §3.10): A was seen (#13); B, C and D are
+// designed from the discovery palette, then the cycle repeats.
+export const speakerPalette = [
+  colors.speaker.avatar,
+  colors.tile.remind,
+  colors.tile.share,
+  colors.hero.pink,
+] as const;
 
 // The PostScript names of the bundled static cuts: iOS registers a font from UIAppFonts under that
 // name, not under the file name.
