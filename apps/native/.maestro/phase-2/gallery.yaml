@@ -1,0 +1,63 @@
+# AC4 (docs/spec/phase-2.md §8): the development-only gallery renders every section and the
+# controls a later phase will reuse. Each target is scrolled to rather than assumed on screen,
+# because the simulator (402pt) shows only the first section or two.
+appId: ${APP_ID}
+name: Component gallery renders every section
+tags:
+  - phase-2
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-gallery.yaml
+- assertVisible:
+    id: gallery-screen
+- assertVisible:
+    id: gallery-colors
+# Compared by eye in the phase loop (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-2-gallery
+- scrollUntilVisible:
+    element:
+      id: gallery-type
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-buttons
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-fab
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-send-idle
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-send-active
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-surfaces
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-card
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-row-1
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-sheets
+    direction: DOWN
+    timeout: 20000

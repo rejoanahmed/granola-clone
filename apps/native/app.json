@@ -4,7 +4,7 @@
     "slug": "gcnotes",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "platforms": ["ios"],
     "runtimeVersion": {
@@ -18,17 +18,19 @@
     "plugins": [
       "expo-router",
       "expo-build-properties",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": ["./assets/fonts/Newsreader-Regular.ttf"]
+        }
+      ],
       "expo-asset",
       "expo-secure-store",
       "expo-web-browser",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#0b0b0c"
-          },
+          "backgroundColor": "#262626",
           "resizeMode": "contain"
         }
       ]

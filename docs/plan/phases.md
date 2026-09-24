@@ -39,7 +39,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 |---|---|---|
 | 0 | Discovery | done |
 | 1 | Bootstrap | done |
-| 2 | Design system and app shell | todo |
+| 2 | Design system and app shell | done |
 | 3 | Auth and onboarding | todo |
 | 4 | Notes: list, detail, edit, trash | todo |
 | 5 | Recording and transcript | todo |
@@ -62,7 +62,11 @@ Home shell (#01) with static content: toolbar, serif "My notes", events card, As
 Email sign-in via better-auth (already in the template), with the email provider faked (the code
 is readable from the e2e harness). First-run onboarding is our own design, because the crawl could
 not see Granola's. Profile fields from #82–84 are created here.
-**Exit:** flows for sign up, sign in, sign out and a relaunch staying signed in.
+**Exit:** flows for sign up, sign in, sign out and a relaunch staying signed in. Sign-out closes
+the phase-2 gap (BLOCKERS.md, "No sign-out in the app"): `phase-3/sign-out.yaml` must start on
+`home-screen` as a signed-in user and reach `welcome-screen` through a control on home (the
+`home-settings-button` avatar, or whatever replaces it). A flow that clears the Keychain instead
+does not count, so the phase cannot exit while a signed-in user still has no way out.
 
 ### 4 — Notes: list, detail, edit, trash
 API: notes CRUD, markdown body, attendees, soft-delete trash, keyset-paginated list.

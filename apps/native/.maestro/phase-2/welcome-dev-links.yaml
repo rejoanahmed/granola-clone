@@ -1,0 +1,23 @@
+# AC6 (docs/spec/phase-2.md §8): the signed-out launch is unchanged, and a development build adds
+# the two dev entry links. Kept out of smoke/launch.yaml so smoke stays valid against Release.
+appId: ${APP_ID}
+name: Welcome shows the dev entry links in a development build
+tags:
+  - phase-2
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/launch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertVisible:
+    id: welcome-email
+- assertVisible:
+    id: welcome-submit
+- assertVisible:
+    id: welcome-dev-home
+- assertVisible:
+    id: welcome-dev-gallery

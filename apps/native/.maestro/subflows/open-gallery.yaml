@@ -1,0 +1,16 @@
+# Clean launch, then the development-only "Component gallery" link on welcome.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: launch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- tapOn:
+    id: welcome-dev-gallery
+- extendedWaitUntil:
+    visible:
+      id: gallery-screen
+    timeout: 30000

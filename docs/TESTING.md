@@ -388,7 +388,7 @@ apps/native/.maestro/
 
 - **Select by `id`, never by text.** Every screen root and every control a flow touches gets a
   `testID` named `<screen>-<thing>` (`welcome-screen`, `welcome-email`, `welcome-submit`,
-  `home-screen`, `home-sign-out`). Copy changes; ids do not. The one exception is a sheet the
+  `home-screen`, `home-settings-button`). Copy changes; ids do not. The one exception is a sheet the
   system owns, which has no id to select.
 - **No sleeps.** Wait for the thing you need with `extendedWaitUntil` (`visible: { id: … }`, a
   generous `timeout`); the flow is then exactly as slow as the app.
@@ -410,6 +410,17 @@ sheet **survives an app relaunch**, so one failed run leaves it covering the nex
 three dev-menu user defaults (`-EXDevMenuIsOnboardingFinished YES`, `-EXDevMenuShowsAtLaunch NO`,
 `-EXDevMenuShowFloatingActionButton NO`), without which the menu's first-run sheet and then the menu
 itself cover the app on every clean launch. All of them are inert in a Release build.
+
+### Visual check
+
+No assertion notices that Newsreader fell back to the system font or that a colour drifted, so the
+phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-gallery`
+(gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml). Run with
+`--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
+(`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
+before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or
+recorded in `docs/plan/BLOCKERS.md`. The comparison is by eye, deliberately: discovery was shot on
+a 428pt device and the simulator is 402pt, so a pixel diff would fail on width alone.
 
 If a smoke run fails on `welcome-screen is visible`, look at the simulator before the flow: a stale
 system sheet or Metro not running are the usual causes, and `scripts/maestro.sh` checks the second.
