@@ -642,5 +642,10 @@ before the phase's review step. Check the serif title, the gutters and the fills
 recorded in `docs/plan/BLOCKERS.md`. The comparison is by eye, deliberately: discovery was shot on
 a 428pt device and the simulator is 402pt, so a pixel diff would fail on width alone.
 
+If every phase-5 recording flow fails on "Couldn’t upload the recording." (`note-status` never
+goes), suspect a `wrangler dev` started before a binding was added: it hot-reloads code but not
+`wrangler.jsonc`, so a Worker running without `AUDIO` answers the audio PUT with a 500. Restart
+the API.
+
 If a smoke run fails on `welcome-screen is visible`, look at the simulator before the flow: a stale
 system sheet or Metro not running are the usual causes, and `scripts/maestro.sh` checks the second.
