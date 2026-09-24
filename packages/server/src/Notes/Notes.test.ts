@@ -181,6 +181,8 @@ describe("NotesService.create", () => {
       ],
       bodyMarkdown: "",
       createdAt: AT,
+      // Phase 6 (phase-6.md §6.2): nor a generation.
+      generation: null,
       id: expect.stringMatching(NOTE_ID),
       // Phase 5 (phase-5.md §6.2): a note typed by hand has no recording.
       recording: null,

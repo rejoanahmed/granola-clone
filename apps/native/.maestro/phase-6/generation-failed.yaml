@@ -1,0 +1,82 @@
+# AC3 (docs/spec/phase-6.md §8, §3.1, designed): with the LLM failing, the harness spends the three
+# attempts, and the page says "Couldn’t generate notes." with a Retry; the title stays "Untitled
+# note", and Share and More appear because the transcript exists. Retry, with the LLM released,
+# brings "Generating notes..." back and then the finished brief note.
+appId: ${APP_ID}
+name: A failed generation, retried
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: fail
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 30000
+
+# Three inline passes in `fail`, one attempt each; the third writes `failed` (§8 note 1).
+- runFlow:
+    file: ../subflows/run-llm.yaml
+    env:
+      TIMES: "3"
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Couldn.t generate notes\.
+    timeout: 30000
+- assertVisible:
+    id: note-status-retry
+    text: Retry
+- assertVisible:
+    id: note-title
+    text: Untitled note
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-transcript
+- tapOn:
+    id: action-menu-scrim
+- extendedWaitUntil:
+    notVisible:
+      id: note-menu
+    timeout: 5000
+
+- tapOn:
+    id: note-status-retry
+- runFlow: ../subflows/release-llm.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Brief check-in
+    timeout: 10000

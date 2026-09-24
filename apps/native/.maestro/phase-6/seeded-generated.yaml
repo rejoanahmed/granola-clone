@@ -1,0 +1,29 @@
+# AC5 (docs/spec/phase-6.md §8, §6.3): the seeded launch note's generation is `generated`, so it
+# opens with no status row, and its phase-4 body renders as before. A regression guard rather than a
+# test of new behaviour: "no generation row" also reads as finished (§3.1), so this passes before
+# phase 6 lands and must keep passing after it.
+appId: ${APP_ID}
+name: A seeded note reads as finished
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- assertVisible:
+    id: note-title
+    text: Launch planning review
+- assertNotVisible:
+    id: note-status
+- assertVisible:
+    id: note-block-0
+    text: Launch checklist
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more

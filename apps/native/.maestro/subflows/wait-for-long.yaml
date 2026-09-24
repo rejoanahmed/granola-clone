@@ -1,0 +1,21 @@
+# On the live card: pass 60 s of recorded time (docs/spec/phase-6.md §8), so the fake transcriber
+# answers at least four segments and the note is generated in full rather than as the brief body.
+# Six skips of 10 s each; the first also passes the 10 s End threshold.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- repeat:
+    times: 6
+    commands:
+      - tapOn:
+          id: recording-skip-ahead
+- extendedWaitUntil:
+    visible:
+      id: recording-end
+    timeout: 5000
+- assertNotVisible:
+    id: recording-cancel
+- assertVisible:
+    id: recording-timer
+    text: '01:\d{2}'
