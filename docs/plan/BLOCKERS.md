@@ -114,3 +114,30 @@
 - **`FormRow`'s caret tint (phase 3).** The caret fix (tint applied once focused) was made in the
   note editor and `TextField`. `FormRow` sets its tint at mount the old way; it is not
   autofocused, which is the case that showed blue, so it was left alone.
+
+## Phase 5 native
+
+- **The note page's More menu is drawn inline, not in a native modal.** On a recording's note page,
+  opening More, closing it, then tapping Retry (so the status row leaves the page) and opening More
+  again brought the menu up visibly but with nothing in the accessibility tree: every Maestro query
+  answered an empty hierarchy until it closed. Remounting the modal did not help; drawing the menu as
+  the screen's own top layer (`ActionMenu`'s `inline`) did, and `transcription-failed.yaml` passes.
+  Home and the live card still use the modal. The root cause (RN `Modal` on iOS 26 after a layout
+  change beneath a dismissed one) is not understood; if a second screen hits it, move `ActionMenu`
+  to inline everywhere.
+- **Sheets with a scroller must make it the screen's root.** react-native-screens sizes a
+  `formSheet`'s first-child `ScrollView` to the sheet and, when the scroller is nested, sets its
+  frame to the sheet's *window* frame (it ended up 735pt down, 54pt tall). The transcript sheet is
+  therefore a root `ScrollView` whose sticky first row is the header, which is how the header stays
+  pinned (#14). The sheet root's testID `transcript-sheet` is on that scroller, and
+  `transcript-scroll` names the body inside it.
+- **`measureInWindow` inside the live card's sheet is sheet-relative.** The live card adds the top
+  safe-area inset back when it anchors its More menu (discovery screen 104). A sheet presented at a
+  different offset would need the offset measured rather than assumed.
+- **The fake recorder writes a bundled one-second tone** (`assets/e2e/sample.m4a`) whatever the
+  timer says, so the fake transcriber's duration comes from `POST /recordings/{id}/end`, never from
+  the bytes. The real `ExpoAudioRecorder` has not been exercised on a device: the simulator
+  microphone cannot be scripted and the physical iPhone is off-limits to agents.
+- **Upload-failed, start-failed, interrupted, transcript-empty/-error, and the discard- and
+  share-failure toasts** are built and unit-tested (the status-row copy and backoff), and no flow
+  reaches them — the scripted-response harness seam the phase-3 and phase-4 entries already defer.
