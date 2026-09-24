@@ -40,7 +40,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 0 | Discovery | done |
 | 1 | Bootstrap | done |
 | 2 | Design system and app shell | done |
-| 3 | Auth and onboarding | todo |
+| 3 | Auth and onboarding | done |
 | 4 | Notes: list, detail, edit, trash | todo |
 | 5 | Recording and transcript | todo |
 | 6 | AI notes | todo |
