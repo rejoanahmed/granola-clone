@@ -1,0 +1,137 @@
+# Phase plan
+
+The autonomous loop reads this file, takes the first phase whose status is `todo`, runs it, and
+flips the status. A phase is `done` only when every exit criterion below holds on a clean tree.
+
+- **Spec source:** `~/personal/granola-clone-discovery/` (55 captured screens of Granola iOS 1.15.7).
+  Every screen reference below (`#10`, `#25`, …) is a directory under `screens/`. It stays
+  outside the repo because it is screenshots of someone else's product.
+- **Branding:** the app is "Notes". No Granola name, logo, copy that names Granola, or bundled
+  Granola asset. The serif display face is a free substitute (Newsreader or Instrument Serif),
+  not Tiempos.
+- **Providers:** every external dependency — transcription, LLM, calendar, email — is a fake
+  selected by environment (`docs/architecture/PROVIDER-FAKES.md`). No real key is required for any
+  phase to reach `done`.
+
+## Every phase, the same loop
+
+1. **Spec slice** — `docs/spec/<phase>.md`: the screens in scope, their states, and acceptance
+   criteria as Given/When/Then. Each criterion names the Maestro flow that proves it.
+2. **Tests first** — the Maestro flows and the API tests are written and fail for the right reason.
+3. **Build** — API (domain → repo → service → Http, per AGENTS.md) and native, in parallel worktrees.
+4. **Gate** — cache-busted `bun run check`, `bun test`, and `maestro test --include-tags=phase-N,smoke`
+   on the iPhone 17 Pro simulator. The *whole* suite for earlier phases must still pass.
+5. **Review** — an adversarial reviewer agent reads the diff against the spec and AGENTS.md;
+   findings are fixed or recorded in `docs/plan/BLOCKERS.md` with a reason.
+6. **Commit** — conventional commits, one PR-sized branch per phase merged to `main` locally.
+
+Maestro rules: select by `testID` only; one flow per journey; shared `subflows/` for launch,
+sign-in and seeding; tags `smoke`, `phase-N`, `regression`; no `sleep`, only `extendedWaitUntil`
+and assertions; every flow starts from `clearState` + `clearKeychain` + the e2e reset/seed
+endpoint, so flows are order-independent.
+
+A blocker never stops the loop: it is written to `BLOCKERS.md`, stubbed behind a fake, and the loop
+moves on. A phase that fails its own exit criteria gets three attempts, then is marked `blocked`.
+
+## Phases
+
+| # | Phase | Status |
+|---|---|---|
+| 0 | Discovery | done |
+| 1 | Bootstrap | done |
+| 2 | Design system and app shell | todo |
+| 3 | Auth and onboarding | todo |
+| 4 | Notes: list, detail, edit, trash | todo |
+| 5 | Recording and transcript | todo |
+| 6 | AI notes | todo |
+| 7 | Ask / chat | todo |
+| 8 | Search and people | todo |
+| 9 | Folders | todo |
+| 10 | Settings, profile and upsells | todo |
+| 11 | Upcoming events (fake calendar) | todo |
+| 12 | Parity pass and CI | todo |
+
+### 2 — Design system and app shell
+Tokens from `discovery/README.md` (dark only: `#262626` header, `#1A1A1A` list, `#B0BF40` lime
+FAB, `#677B00` send, `#FCFDF8` text, …), serif display + SF Pro, pill buttons, 44pt floating
+circular icon buttons, sheet chrome (top radius ~40). A component gallery screen behind a dev flag.
+Home shell (#01) with static content: toolbar, serif "My notes", events card, Ask pill, FAB.
+**Exit:** `phase-2/home-shell.yaml` asserts every toolbar/FAB/pill testID; gallery renders.
+
+### 3 — Auth and onboarding
+Email sign-in via better-auth (already in the template), with the email provider faked (the code
+is readable from the e2e harness). First-run onboarding is our own design, because the crawl could
+not see Granola's. Profile fields from #82–84 are created here.
+**Exit:** flows for sign up, sign in, sign out and a relaunch staying signed in.
+
+### 4 — Notes: list, detail, edit, trash
+API: notes CRUD, markdown body, attendees, soft-delete trash, keyset-paginated list.
+Native: home list grouped by day, newest first (#01), note detail with the date/attendees pill
+(#10–11), attendees sheet (#16), More menu (#12), the raw markdown editor with Save/Close (#31),
+edit title (#02), long-press menu (#02), swipe to trash (#03), and the empty state.
+**Exit:** flows for opening a note, editing and saving the body, renaming, trashing by swipe and by
+menu, and the empty list; API tests for ownership (another user's note is not reachable).
+
+### 5 — Recording and transcript
+The + FAB starts a recording (expo-audio) → recording screen → stop → upload → fake transcriber →
+speaker-grouped transcript sheet (#13–14, `Speaker A`, yellow initial avatar, no timestamps).
+**The recording UI was not crawled** (it would have written to the real account), so it is our own
+design unless the user approves one real recording on a throwaway note (see BLOCKERS.md).
+Test builds use a fake recorder, because a simulator mic cannot be scripted.
+**Exit:** flows for record → stop → transcript visible, cancelling a recording, and denying mic
+permission.
+
+### 6 — AI notes
+A fake LLM turns the transcript plus the user's notes into structured markdown (headings, bullets,
+bold next-step pairs, #10), generates the title, and gives short recordings the canned "Not much to
+transcribe here" body (#40). It is a queued job with an idempotent claim, the same shape as
+hono-port's summariser.
+**Exit:** flows for a recording producing a titled note with sections, and a short recording
+producing the canned body; unit tests for the output parser.
+
+### 7 — Ask / chat
+Three scopes: global (#70), note (#19) and person (#66). Empty states and suggestion chips (4
+global, 3 scoped); the composer with a rotating placeholder and a send/mic toggle; a model picker
+backed by a fake model list; a streamed answer from a fake LLM with tool-activity disclosure
+(#26–27), numbered citation chips that open a note preview (#28), Copy and thumbs actions; and chat
+history with search, pin and delete (#24, #72–74). Retrieval runs over the caller's own notes only.
+Out of scope: photo attachments, dictation, Copy as image.
+**Exit:** flows for each scope, a chip sending, citation → preview, history pin/delete/search; API
+tests that retrieval never crosses users.
+
+### 8 — Search and people
+Live search (#60–64): People and Previous meetings sections, matching titles and body text, and a
+no-results state. People are derived from note attendees. The person page (#65) lists their meetings
+by day and has a person-scoped Ask (reusing phase 7).
+**Exit:** flows for a title match, a body match, no results, and person → their meeting.
+
+### 9 — Folders
+Left-edge-swipe drawer (#50), create folder, add to folder from a note (#17–18), and the home list
+filtered by folder. The populated states were never seen, so they follow the empty state's visual
+language.
+**Exit:** flows for create → add a note → filter → remove.
+
+### 10 — Settings, profile and upsells
+The settings list (#80–81), profile edit and user type (#82–84), notifications (#85), chat (#86),
+report a bug (#90, faked sender), data & sharing, sign out, delete account, the Get desktop sheet
+(#51) and the work-email upsell (#04). Phone calls (#87), Watch (#88) and Subscription are shown as
+static "coming soon" pages.
+**Exit:** flows for editing the profile and relaunching (it persists), a toggle persisting, sign
+out, and delete account.
+
+### 11 — Upcoming events (fake calendar)
+A fake calendar provider seeds events. The home card lists upcoming meetings (magenta bar,
+`1:00 PM ‒ 2:00 PM`), and tapping one starts a note linked to that event. Real Google OAuth is a
+later, key-dependent phase outside this plan.
+**Exit:** flows for the card showing a seeded event and event → note carrying its title and
+attendees.
+
+### 12 — Parity pass and CI
+An agent screenshots every clone screen at the same state and compares it against the matching
+discovery shot; gaps become issues, which are fixed or deferred with a reason. Maestro runs in CI
+on a macOS runner. Pin Bun to the version in `packageManager`.
+**Exit:** a parity report with no open "must" gaps; CI green including Maestro.
+
+## Out of scope
+Phone-call recording, Apple Watch, the desktop app, real integrations (Google Calendar, real
+LLM/transcription keys), payments, sharing to other users, photo attachments in chat.
