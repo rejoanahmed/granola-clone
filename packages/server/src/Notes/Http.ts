@@ -1,6 +1,7 @@
 import {
   createNoteRoute,
   getNoteRoute,
+  getNoteTranscriptRoute,
   listNotesRoute,
   patchNoteRoute,
   restoreNoteRoute,
@@ -53,6 +54,17 @@ export const notesRouter = new OpenAPIHono<AppEnv>()
   .openapi(trashNoteRoute, async (c) =>
     c.json(
       await c.var.svc.notes.trash(
+        requireActor(c.var.actor),
+        c.req.valid("param").id
+      ),
+      200
+    )
+  )
+  // In the Notes contract because the sheet is reached from a note, and served by the recordings
+  // service because the transcript is a recording's.
+  .openapi(getNoteTranscriptRoute, async (c) =>
+    c.json(
+      await c.var.svc.recordings.transcript(
         requireActor(c.var.actor),
         c.req.valid("param").id
       ),

@@ -7,7 +7,6 @@ import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { notesRouter } from "../Notes/Http";
 import { actor } from "../Testing";
-// @ts-expect-error phase 5: the router is specified (phase-5.md §11 API 6), not built
 import * as RecHttp from "./Http";
 
 // docs/spec/phase-5.md §7 "Recordings.http.test.ts": the wire shape once per route. The status

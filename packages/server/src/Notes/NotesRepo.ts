@@ -9,6 +9,7 @@ import {
   noteAttendees,
   notes,
   or,
+  recordings,
   sql,
   user,
 } from "@gc/db";
@@ -22,6 +23,11 @@ import {
   type NoteSummary,
   type NoteTitle,
 } from "@gc/domain/Domain/Note";
+import {
+  type NoteRecording,
+  RecordingId,
+  RecordingStatus,
+} from "@gc/domain/Domain/Recording";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
@@ -43,6 +49,7 @@ export type NoteRecord = {
   readonly createdAt: Timestamp;
   readonly id: NoteId;
   readonly ownerId: UserId;
+  readonly recording: NoteRecording | null;
   readonly source: NoteSource;
   readonly startedAt: Timestamp;
   readonly title: NoteTitle;
@@ -50,7 +57,7 @@ export type NoteRecord = {
   readonly updatedAt: Timestamp;
 };
 
-export type NewNote = Omit<NoteRecord, "attendees" | "trashedAt">;
+export type NewNote = Omit<NoteRecord, "attendees" | "recording" | "trashedAt">;
 
 export type NewAttendee = {
   readonly email: string | null;
@@ -100,11 +107,24 @@ const columnsOf = (patch: NotePatch) =>
 // method takes the id it acts on and the time it stamps, and answers `null` or `false` for a row
 // it did not find.
 export const makeNotesRepo = (db: DrizzleClient) => ({
+  // The recording is joined rather than read by a second query: at most one row matches, because
+  // `recordings.note_id` is unique.
   byId: async (id: NoteId): Promise<NoteRecord | null> => {
-    const row = await db.select().from(notes).where(eq(notes.id, id)).get();
-    if (row === undefined) {
+    const joined = await db
+      .select({
+        note: notes,
+        recordingDurationMs: recordings.durationMs,
+        recordingId: recordings.id,
+        recordingStatus: recordings.status,
+      })
+      .from(notes)
+      .leftJoin(recordings, eq(recordings.noteId, notes.id))
+      .where(eq(notes.id, id))
+      .get();
+    if (joined === undefined) {
       return null;
     }
+    const row = joined.note;
     const attendees = await db
       .select(attendeeColumns)
       .from(noteAttendees)
@@ -123,6 +143,14 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
       createdAt: row.createdAt,
       id: NoteId.parse(row.id),
       ownerId: UserId.parse(row.ownerId),
+      recording:
+        joined.recordingId === null || joined.recordingStatus === null
+          ? null
+          : {
+              durationMs: joined.recordingDurationMs,
+              id: RecordingId.parse(joined.recordingId),
+              status: RecordingStatus.parse(joined.recordingStatus),
+            },
       source: NoteSource.parse(row.source),
       startedAt: row.startedAt,
       title: row.title,
@@ -144,11 +172,13 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
       .select({
         attendeeCount,
         id: notes.id,
+        recordingStatus: recordings.status,
         source: notes.source,
         startedAt: notes.startedAt,
         title: notes.title,
       })
       .from(notes)
+      .leftJoin(recordings, eq(recordings.noteId, notes.id))
       .where(position === null ? live : and(live, after(position)))
       .orderBy(desc(notes.startedAt), desc(notes.id))
       .limit(limit)
@@ -156,8 +186,10 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
     return rows.map((row) => ({
       attendeeCount: Number(row.attendeeCount),
       id: NoteId.parse(row.id),
-      // Contract stub: the recordings join lands with the phase-5 repository.
-      recordingStatus: null,
+      recordingStatus:
+        row.recordingStatus === null
+          ? null
+          : RecordingStatus.parse(row.recordingStatus),
       source: NoteSource.parse(row.source),
       startedAt: row.startedAt,
       title: row.title,

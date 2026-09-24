@@ -2,7 +2,6 @@ import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import * as RecErrors from "@gc/domain/Recordings/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
-// @ts-expect-error phase 5: the transcription fake is specified (phase-5.md §6.4), not built
 import * as TxFake from "../Integrations/Transcription/TranscriptionFake";
 import { makeNotesRepo } from "../Notes/NotesRepo";
 import { makeNotesService } from "../Notes/NotesService";
@@ -19,11 +18,8 @@ import {
   sequentialIds,
   type TestD1,
 } from "../Testing";
-// @ts-expect-error phase 5: the memory audio store is specified (phase-5.md §6.4), not built
 import * as MemoryAudio from "../Testing/AudioStore";
-// @ts-expect-error phase 5: the repository is specified (phase-5.md §11 API 6), not built
 import * as Repo from "./RecordingsRepo";
-// @ts-expect-error phase 5: the service is specified (phase-5.md §11 API 6), not built
 import * as Svc from "./RecordingsService";
 
 // docs/spec/phase-5.md §7 cases 1–16: the service over the real repository and the shipped
@@ -111,20 +107,8 @@ type RecordingsService = {
   transcript: (who: Actor, noteId: string) => Promise<Transcript>;
   uploadAudio: (who: Actor, id: string, upload: Upload) => Promise<Recording>;
 };
-type Fake = {
-  readonly calls: readonly { readonly key?: string; readonly method: string }[];
-};
-type MemoryStore = {
-  readonly objects: Map<
-    string,
-    { readonly bytes: Uint8Array; readonly contentType: string }
-  >;
-  put: (
-    key: string,
-    body: ReadableStream<Uint8Array>,
-    contentType: string
-  ) => Promise<void>;
-};
+type Fake = TxFake.TranscriptionFake;
+type MemoryStore = MemoryAudio.MemoryAudioStore;
 
 const userRow = (person: Actor): SeedRow => ({
   created_at: AT,
