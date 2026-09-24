@@ -54,6 +54,13 @@ export default function WelcomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [cooldown, startCooldown] = useCountdown();
 
+  // `autoFocus` alone loses the race with the email field's keyboard leaving as it unmounts.
+  useEffect(() => {
+    if (step === "code") {
+      codeRef.current?.focus();
+    }
+  }, [step]);
+
   const address = email.trim().toLowerCase();
   const emailValid = EMAIL_PATTERN.test(email.trim());
 

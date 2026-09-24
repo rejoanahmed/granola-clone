@@ -2,8 +2,8 @@ import { colors, IconButton, sizes, spacing } from "@native/design";
 import { PinnedFooter } from "@native/features/auth/PinnedFooter";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import type { ReactNode } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { type ReactNode, useEffect, useRef } from "react";
+import { Keyboard, ScrollView, StyleSheet, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,6 +16,12 @@ type Props = {
   readonly footer: ReactNode;
   /** Centred like #04 (step 3) rather than top-aligned like #82 (steps 1 and 2). */
   readonly centred?: boolean;
+  /**
+   * Scroll to the bottom whenever the keyboard arrives. For a form taller than the space the
+   * keyboard leaves: without it the rows under the focused field sit behind the pinned pill,
+   * where a tap lands on Continue instead.
+   */
+  readonly revealEndOnKeyboard?: boolean;
   readonly step: 1 | 2 | 3;
   readonly testID: string;
 };
@@ -45,10 +51,24 @@ export function StepScreen({
   centred = false,
   children,
   footer,
+  revealEndOnKeyboard = false,
   step,
   testID,
 }: Props) {
   const router = useRouter();
+  const scroll = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    if (!revealEndOnKeyboard) {
+      return;
+    }
+    // `didShow`, not `willShow`: by then the avoiding view has shrunk the scroll view, so "the end"
+    // is measured against the space that is actually left.
+    const subscription = Keyboard.addListener("keyboardDidShow", () =>
+      scroll.current?.scrollToEnd({ animated: true })
+    );
+    return () => subscription.remove();
+  }, [revealEndOnKeyboard]);
   return (
     <SafeAreaView edges={["top"]} style={styles.screen} testID={testID}>
       <View style={styles.topRow}>
@@ -70,7 +90,9 @@ export function StepScreen({
             styles.content,
             centred ? styles.centred : null,
           ]}
+          keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
+          ref={scroll}
           style={styles.fill}
         >
           {children}
@@ -83,7 +105,11 @@ export function StepScreen({
 
 const styles = StyleSheet.create({
   centred: { flexGrow: 1, justifyContent: "center" },
-  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl },
+  content: {
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+  },
   dot: {
     backgroundColor: colors.border.hairline,
     borderRadius: DOT / 2,

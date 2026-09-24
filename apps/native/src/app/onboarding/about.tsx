@@ -19,7 +19,7 @@ import { useUpdateMe } from "@native/lib/api";
 import { useAuth } from "@native/lib/auth-provider";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Dimensions, StyleSheet, View } from "react-native";
+import { Dimensions, Keyboard, StyleSheet, View } from "react-native";
 
 const FORM_RADIUS = 28;
 // The domain's limits, enforced here too, so a 422 is never what the user meets.
@@ -40,7 +40,7 @@ export default function OnboardingAboutScreen() {
   );
   const [anchor, setAnchor] = useState<Anchor | null>(null);
 
-  const openMenu = () => {
+  const measureAndOpen = () =>
     userTypeRow.current?.measureInWindow((x, y, width) => {
       // The menu's right edge lines up with the value, inside the row's 16pt padding.
       setAnchor({
@@ -48,6 +48,19 @@ export default function OnboardingAboutScreen() {
         top: y,
       });
     });
+
+  // Measured only once the keyboard has gone: the row moves as the form grows back into the space
+  // the keyboard held, and a menu anchored before that floats over the wrong row.
+  const openMenu = () => {
+    if (!Keyboard.isVisible()) {
+      measureAndOpen();
+      return;
+    }
+    const subscription = Keyboard.addListener("keyboardDidHide", () => {
+      subscription.remove();
+      requestAnimationFrame(measureAndOpen);
+    });
+    Keyboard.dismiss();
   };
 
   const next = () => router.push("/onboarding/ready");
@@ -84,6 +97,7 @@ export default function OnboardingAboutScreen() {
           />
         </>
       }
+      revealEndOnKeyboard
       step={2}
       testID="onboarding-about-screen"
     >
