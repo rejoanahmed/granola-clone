@@ -1,9 +1,9 @@
-import { ValidationFailed } from "@evb/domain/Errors";
-import type { AppEnv } from "@evb/server";
-import { e2eRouter } from "@evb/server/E2E/Http";
-import { eventsRouter } from "@evb/server/Events/Http";
-import { paymentsRouter } from "@evb/server/Payments/Http";
-import { ticketsRouter } from "@evb/server/Tickets/Http";
+import { ValidationFailed } from "@gc/domain/Errors";
+import type { AppEnv } from "@gc/server";
+import { e2eRouter } from "@gc/server/E2E/Http";
+import { eventsRouter } from "@gc/server/Events/Http";
+import { paymentsRouter } from "@gc/server/Payments/Http";
+import { ticketsRouter } from "@gc/server/Tickets/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   authRateLimit,
@@ -37,7 +37,7 @@ app.use("*", currentActor);
 app.use("/api/auth/*", authRateLimit);
 
 // Liveness, not readiness: reading D1 here would take the Worker out of rotation for a slow query.
-app.get("/", (c) => c.json({ ok: true, service: "eventsbd-api" }));
+app.get("/", (c) => c.json({ ok: true, service: "gcnotes-api" }));
 
 // Mounted at `/` because the paths in each `Contract.ts` are already absolute; a prefix here would
 // desynchronise the served path from the documented one and from the derived client.

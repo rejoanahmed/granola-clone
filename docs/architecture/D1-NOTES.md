@@ -7,7 +7,7 @@ not is the part this file is about, and it is one sentence:
 > compiled and sent before any of them runs. You cannot read a result and branch before writing the
 > next statement.
 
-Everything structural in eventsbd's server — the unit of work, the guarded `UPDATE`s, the
+Everything structural in gcnotes's server — the unit of work, the guarded `UPDATE`s, the
 compensating batch in `register`, the `ON CONFLICT DO NOTHING` idempotency — is a consequence of
 that sentence. `CONCURRENCY.md` catalogues the consequences; this file explains the machine.
 
@@ -20,7 +20,7 @@ const results = await d1.batch([stmt1, stmt2, stmt3]);
 // results[i].meta.changes  -- rows changed by statement i
 ```
 
-| Property | Holds? | Consequence for eventsbd |
+| Property | Holds? | Consequence for gcnotes |
 | --- | --- | --- |
 | All statements run in one implicit transaction | **yes** | Either all writes land or none do. No half-written registration. |
 | Statements run in array order | **yes** | `stageRegistration` before `stageItems` before the claims is a real ordering, not a hope. |
@@ -121,7 +121,7 @@ chunkForBoundParams<T>(rows, columnsPerRow, max = 100): T[][]
 chunkIds<T>(ids, max = 90): T[][]
 ```
 
-The two eventsbd multi-row inserts, and where their chunk sizes come from:
+The two gcnotes multi-row inserts, and where their chunk sizes come from:
 
 | Table | Columns written | Rows per statement | Why |
 | --- | --- | --- | --- |
@@ -151,7 +151,7 @@ discovered by an organiser doing something unusual, in production, at a venue.
 ## 4. Statement count, and the practical ceiling
 
 The documented per-batch statement limit is generous, but batch size is not free: the whole array
-is serialised into one RPC. eventsbd's largest single batch is `register` with the maximum
+is serialised into one RPC. gcnotes's largest single batch is `register` with the maximum
 registration — 1 registration insert + 1 items insert + 10 claims = **12 statements** — and its
 largest fan-out is `confirm` issuing 100 tickets as 9 chunked inserts plus 1 transition = **10
 statements**.
@@ -175,7 +175,7 @@ throughput rather than atomicity, you want a loop.
 | `db.transaction(async (tx) => …)` from Drizzle | Not available on the D1 driver | `Runtime/UnitOfWork`. `DrizzleClient` is `Omit<DB, "batch" \| "transaction">` so the temptation does not compile. |
 | `ilike` | SQLite has no `ILIKE` | `like` (SQLite's `LIKE` is already case-insensitive for ASCII), or `sql` |
 | `RETURNING` to get a value mid-batch | The value cannot be read before the flush | Compute the value first (deterministic ids), or split into two units of work |
-| Reading `last_insert_rowid()` | Meaningless across a batch boundary | Application-generated ids, always. Every eventsbd id comes from `Ids`. |
+| Reading `last_insert_rowid()` | Meaningless across a batch boundary | Application-generated ids, always. Every gcnotes id comes from `Ids`. |
 | A second connection for a "read replica" | One binding, one database | — |
 
 The `DrizzleClient` type is worth pausing on: repositories are handed a client with `batch` and
@@ -208,7 +208,7 @@ load-bearing. They are recorded as open items in `../DECISIONS.md`.
 
 ### V1 · Does `check()` emit a `CHECK`, and does `uniqueIndex().where()` emit a partial index? (D009)
 
-eventsbd's schema declares ten `CHECK` constraints and one partial unique index. If
+gcnotes's schema declares ten `CHECK` constraints and one partial unique index. If
 `drizzle-orm@0.45.2` does not emit them, the generated SQL is silently weaker than the schema
 file claims.
 
@@ -238,7 +238,7 @@ account for partial application, and it currently does not.
 
 ### V3 · Is `meta.changes` per statement, and correct for `ON CONFLICT DO NOTHING`?
 
-Every guard in eventsbd reads `changes` to decide what happened. Two cases need confirming with an
+Every guard in gcnotes reads `changes` to decide what happened. Two cases need confirming with an
 actual batch, because they are the ones the whole idempotency story rests on:
 
 - A guarded `UPDATE` that matches nothing reports `changes: 0` **and the batch still commits** —

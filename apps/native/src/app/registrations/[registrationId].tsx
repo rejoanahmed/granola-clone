@@ -1,7 +1,7 @@
-import type { RegistrationId } from "@evb/domain/Domain/Ids";
-import type { Ticket } from "@evb/domain/Domain/Ticket";
-import { formatPoisha } from "@evb/shared/money";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { RegistrationId } from "@gc/domain/Domain/Ids";
+import type { Ticket } from "@gc/domain/Domain/Ticket";
+import { formatPoisha } from "@gc/shared/money";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useThemeColors } from "@native/hooks/useThemedNavigation";
 import {
   cancelRegistrationMutation,
@@ -27,7 +27,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 /**
- * The deep-link target for the bKash return (`eventsbd://registrations/<id>`). Arriving here proves
+ * The deep-link target for the bKash return (`gcnotes://registrations/<id>`). Arriving here proves
  * nothing — the payment was decided server-side at `GET /payments/bkash/callback` — so the only
  * honest move on return is to re-read the registration, which is what `settling` below does.
  */

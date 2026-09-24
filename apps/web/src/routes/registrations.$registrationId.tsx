@@ -1,6 +1,6 @@
-import type { RegistrationId } from "@evb/domain/Domain/Ids";
-import { formatPoisha } from "@evb/shared/money";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { RegistrationId } from "@gc/domain/Domain/Ids";
+import { formatPoisha } from "@gc/shared/money";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { TicketCard } from "@web/components/ticket-qr";

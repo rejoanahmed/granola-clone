@@ -4,7 +4,7 @@ import type {
   createCheckoutRoute,
   getPaymentRoute,
   refundPaymentRoute,
-} from "@evb/domain/Payment/Contract";
+} from "@gc/domain/Payment/Contract";
 import type { Endpoint } from "./client";
 
 // Type-only imports, for the reason given in `events.ts`.

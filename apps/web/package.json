@@ -6,9 +6,9 @@
   "scripts": {
     "build": "vite build",
     "cf-typegen": "wrangler types",
-    "deploy:check": "CLOUDFLARE_ENV=production VITE_API_URL=https://api.eventsbd.com VITE_APP_URL=https://eventsbd.com bun run build && wrangler deploy --dry-run",
-    "deploy:dev": "CLOUDFLARE_ENV=dev VITE_API_URL=https://api-dev.eventsbd.com VITE_APP_URL=https://dev.eventsbd.com bun run build && wrangler deploy",
-    "deploy:prod": "CLOUDFLARE_ENV=production VITE_API_URL=https://api.eventsbd.com VITE_APP_URL=https://eventsbd.com bun run build && wrangler deploy",
+    "deploy:check": "CLOUDFLARE_ENV=production VITE_API_URL=https://api.gcnotes.example.com VITE_APP_URL=https://gcnotes.example.com bun run build && wrangler deploy --dry-run",
+    "deploy:dev": "CLOUDFLARE_ENV=dev VITE_API_URL=https://api-dev.gcnotes.example.com VITE_APP_URL=https://dev.gcnotes.example.com bun run build && wrangler deploy",
+    "deploy:prod": "CLOUDFLARE_ENV=production VITE_API_URL=https://api.gcnotes.example.com VITE_APP_URL=https://gcnotes.example.com bun run build && wrangler deploy",
     "dev": "vite dev --port 3003",
     "generate:types": "wrangler types",
     "preview": "bun run build && vite preview",
@@ -16,10 +16,10 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
-    "@evb/apiclient": "workspace:*",
-    "@evb/auth": "workspace:*",
-    "@evb/domain": "workspace:*",
-    "@evb/shared": "workspace:*",
+    "@gc/apiclient": "workspace:*",
+    "@gc/auth": "workspace:*",
+    "@gc/domain": "workspace:*",
+    "@gc/shared": "workspace:*",
     "@tanstack/react-devtools": "0.10.12",
     "@tanstack/react-query": "5.103.2",
     "@tanstack/react-query-devtools": "5.103.2",
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.57.3",
-    "@evb/config": "workspace:*",
+    "@gc/config": "workspace:*",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/router-plugin": "1.168.40",
     "@types/node": "26.6.2",

@@ -1,6 +1,6 @@
-import type { PaymentId, RegistrationId } from "@evb/domain/Domain/Ids";
-import type { PaymentStatus } from "@evb/domain/Domain/Payment";
-import { formatPoisha } from "@evb/shared/money";
+import type { PaymentId, RegistrationId } from "@gc/domain/Domain/Ids";
+import type { PaymentStatus } from "@gc/domain/Domain/Payment";
+import { formatPoisha } from "@gc/shared/money";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TicketCard } from "@web/components/ticket-qr";

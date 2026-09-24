@@ -4,26 +4,26 @@ import type {
   EventDetail,
   EventQuery,
   UpdateEvent,
-} from "@evb/domain/Domain/Event";
+} from "@gc/domain/Domain/Event";
 import {
   type EventId,
   ID_PREFIX,
   type TicketTypeId,
-} from "@evb/domain/Domain/Ids";
-import type { Page, PageQuery } from "@evb/domain/Domain/Page";
+} from "@gc/domain/Domain/Ids";
+import type { Page, PageQuery } from "@gc/domain/Domain/Page";
 import type {
   CreateTicketType,
   TicketType,
   TicketTypeAvailability,
   UpdateTicketType,
-} from "@evb/domain/Domain/TicketType";
-import { ValidationFailed } from "@evb/domain/Errors";
+} from "@gc/domain/Domain/TicketType";
+import { ValidationFailed } from "@gc/domain/Errors";
 import {
   EventNotEditable,
   EventNotFound,
   EventNotPublishable,
   QuantityBelowClaimed,
-} from "@evb/domain/Event/Errors";
+} from "@gc/domain/Event/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";

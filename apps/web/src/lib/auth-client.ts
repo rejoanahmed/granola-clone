@@ -1,4 +1,4 @@
-import { createWebAuthClient } from "@evb/auth/client-web";
+import { createWebAuthClient } from "@gc/auth/client-web";
 
 // Must match the origin better-auth is mounted on exactly — scheme, host and port — or the session
 // cookie is set for one origin and read from another, and every request looks signed-out.

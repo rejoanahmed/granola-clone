@@ -140,12 +140,12 @@ describe("makeApiClient", () => {
     const app = makeApiClient({
       baseUrl: BASE_URL,
       credentials: "omit",
-      expoOrigin: () => "eventsbd://",
+      expoOrigin: () => "gcnotes://",
       fetch: native.stub,
     });
     await app.listMyRegistrations();
     expect(only(native.calls).init.credentials).toBe("omit");
-    expect(headerOf(only(native.calls), "expo-origin")).toBe("eventsbd://");
+    expect(headerOf(only(native.calls), "expo-origin")).toBe("gcnotes://");
   });
 
   it("trims a trailing slash off the base URL", async () => {

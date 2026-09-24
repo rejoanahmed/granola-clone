@@ -18,8 +18,8 @@
       "name": "api",
       "version": "0.0.0",
       "dependencies": {
-        "@evb/domain": "workspace:*",
-        "@evb/server": "workspace:*",
+        "@gc/domain": "workspace:*",
+        "@gc/server": "workspace:*",
         "@hono/zod-openapi": "1.6.3",
         "@scalar/hono-api-reference": "0.12.4",
         "hono": "4.13.8",
@@ -27,7 +27,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "5.20260922.1",
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "@types/node": "26.6.2",
         "typescript": "7.0.2",
         "vitest": "5.0.1",
@@ -39,11 +39,11 @@
       "version": "0.0.0",
       "dependencies": {
         "@babel/core": "7.29.0",
-        "@evb/apiclient": "workspace:*",
-        "@evb/auth": "workspace:*",
-        "@evb/domain": "workspace:*",
-        "@evb/shared": "workspace:*",
         "@expo/vector-icons": "15.1.1",
+        "@gc/apiclient": "workspace:*",
+        "@gc/auth": "workspace:*",
+        "@gc/domain": "workspace:*",
+        "@gc/shared": "workspace:*",
         "@tanstack/react-query": "5.103.2",
         "babel-preset-expo": "57.0.12",
         "expo": "~57.0.24",
@@ -84,10 +84,10 @@
       "name": "web",
       "version": "1.0.0",
       "dependencies": {
-        "@evb/apiclient": "workspace:*",
-        "@evb/auth": "workspace:*",
-        "@evb/domain": "workspace:*",
-        "@evb/shared": "workspace:*",
+        "@gc/apiclient": "workspace:*",
+        "@gc/auth": "workspace:*",
+        "@gc/domain": "workspace:*",
+        "@gc/shared": "workspace:*",
         "@tanstack/react-devtools": "0.10.12",
         "@tanstack/react-query": "5.103.2",
         "@tanstack/react-query-devtools": "5.103.2",
@@ -103,7 +103,7 @@
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "1.57.3",
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "@tailwindcss/vite": "4.3.3",
         "@tanstack/router-plugin": "1.168.40",
         "@types/node": "26.6.2",
@@ -118,11 +118,11 @@
       },
     },
     "packages/apiclient": {
-      "name": "@evb/apiclient",
+      "name": "@gc/apiclient",
       "version": "0.0.0",
       "devDependencies": {
-        "@evb/config": "workspace:*",
-        "@evb/domain": "workspace:*",
+        "@gc/config": "workspace:*",
+        "@gc/domain": "workspace:*",
         "bun-types": "1.4.2",
         "hono": "4.13.8",
         "typescript": "7.0.2",
@@ -130,17 +130,17 @@
       },
     },
     "packages/auth": {
-      "name": "@evb/auth",
+      "name": "@gc/auth",
       "version": "0.0.0",
       "dependencies": {
         "@better-auth/core": "1.7.5",
         "@better-auth/expo": "1.7.5",
-        "@evb/db": "workspace:*",
+        "@gc/db": "workspace:*",
         "better-auth": "1.7.5",
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
       },
       "peerDependencies": {
         "react": "19.2.3",
@@ -148,19 +148,19 @@
       },
     },
     "packages/config": {
-      "name": "@evb/config",
+      "name": "@gc/config",
       "version": "0.0.0",
     },
     "packages/db": {
-      "name": "@evb/db",
+      "name": "@gc/db",
       "version": "0.0.0",
       "dependencies": {
         "drizzle-orm": "0.45.3",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "5.20260922.1",
-        "@evb/config": "workspace:*",
-        "@evb/shared": "workspace:*",
+        "@gc/config": "workspace:*",
+        "@gc/shared": "workspace:*",
         "@types/better-sqlite3": "9.6.0",
         "@types/node": "26.6.2",
         "better-sqlite3": "13.0.3",
@@ -173,14 +173,14 @@
       },
     },
     "packages/domain": {
-      "name": "@evb/domain",
+      "name": "@gc/domain",
       "version": "0.0.0",
       "dependencies": {
         "@hono/zod-openapi": "1.6.3",
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "vitest": "5.0.1",
       },
       "peerDependencies": {
@@ -188,27 +188,27 @@
       },
     },
     "packages/e2e": {
-      "name": "@evb/e2e",
+      "name": "@gc/e2e",
       "version": "0.0.0",
       "dependencies": {
-        "@evb/domain": "workspace:*",
+        "@gc/domain": "workspace:*",
         "zod": "4.6.5",
       },
       "devDependencies": {
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "@types/node": "26.6.2",
         "bun-types": "1.4.2",
         "typescript": "7.0.2",
       },
     },
     "packages/server": {
-      "name": "@evb/server",
+      "name": "@gc/server",
       "version": "0.0.0",
       "dependencies": {
-        "@evb/auth": "workspace:*",
-        "@evb/db": "workspace:*",
-        "@evb/domain": "workspace:*",
-        "@evb/shared": "workspace:*",
+        "@gc/auth": "workspace:*",
+        "@gc/db": "workspace:*",
+        "@gc/domain": "workspace:*",
+        "@gc/shared": "workspace:*",
         "@hono/zod-openapi": "1.6.3",
         "better-auth": "1.7.5",
         "drizzle-orm": "0.45.3",
@@ -218,7 +218,7 @@
       },
       "devDependencies": {
         "@cloudflare/workers-types": "5.20260922.1",
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "@types/better-sqlite3": "9.6.0",
         "@types/node": "26.6.2",
         "better-sqlite3": "13.0.3",
@@ -230,10 +230,10 @@
       },
     },
     "packages/shared": {
-      "name": "@evb/shared",
+      "name": "@gc/shared",
       "version": "0.0.0",
       "devDependencies": {
-        "@evb/config": "workspace:*",
+        "@gc/config": "workspace:*",
         "@types/node": "26.6.2",
         "bun-types": "1.4.2",
         "typescript": "7.0.2",
@@ -544,22 +544,6 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.12", "", { "os": "win32", "cpu": "x64" }, "sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA=="],
 
-    "@evb/apiclient": ["@evb/apiclient@workspace:packages/apiclient"],
-
-    "@evb/auth": ["@evb/auth@workspace:packages/auth"],
-
-    "@evb/config": ["@evb/config@workspace:packages/config"],
-
-    "@evb/db": ["@evb/db@workspace:packages/db"],
-
-    "@evb/domain": ["@evb/domain@workspace:packages/domain"],
-
-    "@evb/e2e": ["@evb/e2e@workspace:packages/e2e"],
-
-    "@evb/server": ["@evb/server@workspace:packages/server"],
-
-    "@evb/shared": ["@evb/shared@workspace:packages/shared"],
-
     "@expo-google-fonts/material-symbols": ["@expo-google-fonts/material-symbols@0.4.48", "", {}, "sha512-aZztj44PyA/sj3TXSwwpLJwqMlTUJ49okbZJYURzEcuERxMQB0KbX7RrLBi8WJnuWz5HFOLlTRxORrJfNnUPNQ=="],
 
     "@expo/cli": ["@expo/cli@57.0.26", "", { "dependencies": { "@expo/code-signing-certificates": "^0.0.6", "@expo/config": "~57.0.9", "@expo/config-plugins": "~57.0.9", "@expo/devcert": "^1.2.1", "@expo/env": "~2.4.3", "@expo/image-utils": "^0.11.5", "@expo/inline-modules": "^0.1.7", "@expo/json-file": "^11.0.1", "@expo/log-box": "^57.0.4", "@expo/metro": "~56.0.2", "@expo/metro-config": "~57.0.12", "@expo/metro-file-map": "^57.0.3", "@expo/osascript": "^2.7.1", "@expo/package-manager": "^1.13.1", "@expo/plist": "^0.8.1", "@expo/prebuild-config": "^57.0.16", "@expo/require-utils": "^57.0.5", "@expo/router-server": "^57.0.10", "@expo/schema-utils": "^57.0.2", "@expo/spawn-async": "^1.8.0", "@expo/ws-tunnel": "^2.0.0", "@expo/xcpretty": "^4.4.4", "@react-native/dev-middleware": "0.86.3", "accepts": "^1.3.8", "agent-cli-detector": "0.1.7", "arg": "^5.0.2", "bplist-creator": "0.1.0", "bplist-parser": "^0.3.1", "chalk": "^4.0.0", "ci-info": "^3.3.0", "compression": "^1.7.4", "connect": "^3.7.0", "debug": "^4.3.4", "dnssd-advertise": "^1.1.4", "expo-server": "^57.0.3", "fetch-nodeshim": "^0.4.10", "getenv": "^2.0.0", "glob": "^13.0.0", "lan-network": "^0.2.1", "multitars": "^1.0.2", "node-forge": "^1.3.3", "npm-package-arg": "^11.0.0", "ora": "^3.4.0", "picomatch": "^4.0.4", "pretty-format": "^29.7.0", "progress": "^2.0.3", "prompts": "^2.3.2", "resolve-from": "^5.0.0", "sandbox-cli-detector": "^0.2.0", "semver": "^7.6.0", "send": "^0.19.0", "slugify": "^1.3.4", "stacktrace-parser": "^0.1.10", "structured-headers": "^0.4.1", "terminal-link": "^2.1.1", "toqr": "^0.1.1", "wrap-ansi": "^7.0.0", "ws": "^8.12.1", "zod": "^3.25.76" }, "peerDependencies": { "expo": "*", "expo-router": "*", "react-native": "*" }, "optionalPeers": ["expo-router", "react-native"], "bin": { "expo-internal": "main.js" } }, "sha512-vm769xuEyHMToi3uY66JLzRA2GGK+3WzdH71HNn67FuVhry82dKTvMUoeHYtHiindyeieiWfEvHT8Kr1VyEVPQ=="],
@@ -635,6 +619,22 @@
     "@floating-ui/dom": ["@floating-ui/dom@1.8.0", "", { "dependencies": { "@floating-ui/core": "^1.8.0", "@floating-ui/utils": "^0.2.12" } }, "sha512-yXSrzeHZBTZadLOlfyhCkJHNeLJnHRnRInwdZ40L7ZiaAtrBwoYlsDrX3v5zB1Utk7CLfzcOVnVVWoXEky7Ceg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
+
+    "@gc/apiclient": ["@gc/apiclient@workspace:packages/apiclient"],
+
+    "@gc/auth": ["@gc/auth@workspace:packages/auth"],
+
+    "@gc/config": ["@gc/config@workspace:packages/config"],
+
+    "@gc/db": ["@gc/db@workspace:packages/db"],
+
+    "@gc/domain": ["@gc/domain@workspace:packages/domain"],
+
+    "@gc/e2e": ["@gc/e2e@workspace:packages/e2e"],
+
+    "@gc/server": ["@gc/server@workspace:packages/server"],
+
+    "@gc/shared": ["@gc/shared@workspace:packages/shared"],
 
     "@hono/zod-openapi": ["@hono/zod-openapi@1.6.3", "", { "dependencies": { "@asteasolutions/zod-to-openapi": "^9.1.0", "@hono/zod-validator": "^0.9.1", "openapi3-ts": "^4.5.0" }, "peerDependencies": { "hono": ">=4.10.0", "zod": "^4.0.0" } }, "sha512-VYR82Y60plu8g3pN60OUXMVKpmxh3R04Qs++3DY9vtwZ9/sA/BRY0PcRIR+Z37/3itWtM7pYwT9bKiH9JhqV6Q=="],
 

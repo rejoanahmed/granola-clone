@@ -1,11 +1,11 @@
 # Modular Hono — the file you read instead of guessing
 
-This is the architecture eventsbd exists to teach. Every other file in this repository is an
+This is the architecture gcnotes exists to teach. Every other file in this repository is an
 instance of it, and `bun run check` fails if any of them stops being one.
 
 It is short on philosophy because it is meant to be checkable. §1 is a table of what each file may
 import; §3 is eight rules; §7 is the lint rules and greps that make both mechanical.
-If you are adding code to eventsbd, §1 and §3 are the whole contract. If you are copying eventsbd
+If you are adding code to gcnotes, §1 and §3 are the whole contract. If you are copying gcnotes
 into a new product, read §0 first so you know which parts are load-bearing and which are taste.
 
 ---
@@ -16,7 +16,7 @@ The shape exists to prevent one specific thing: a handler that has no seam. It l
 and it is what an event-ticketing route becomes on its second week if nobody is watching.
 
 ```ts
-// The shape this document exists to prevent. eventsbd contains nothing like it.
+// The shape this document exists to prevent. gcnotes contains nothing like it.
 app.post("/events/:eventId/registrations", async (c) => {
   const db = drizzle(c.env.DB);
   const event = await db.select().from(events).where(eq(events.id, c.req.param("eventId"))).get();
@@ -63,7 +63,7 @@ generator, the events repository, the hold window, the unit of work — arrives 
 this architecture.** It is what an effect system gives you through its `R` channel, and it is
 reproducible in Hono for the price of an argument.
 
-The two things that are genuinely hard in eventsbd — D1 having no interactive transactions, and
+The two things that are genuinely hard in gcnotes — D1 having no interactive transactions, and
 bKash's `executePayment` not being idempotent — are hard regardless of architecture. What this
 shape buys is that both are solved in one file each, and that the solutions are testable in
 milliseconds — against an in-memory SQLite carrying the real migrations, with nothing deployed. See
@@ -102,13 +102,13 @@ The import rules are the whole architecture. They are worth more than the folder
 | --- | --- | --- |
 | `packages/domain/src/Domain/*.ts` | `zod`, other `Domain/*` | anything in `packages/server` |
 | `packages/domain/src/<Ctx>/Contract.ts` | `Domain/*`, `@hono/zod-openapi` | anything in `packages/server` |
-| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@evb/db`, `drizzle-orm`, `@evb/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
-| `packages/server/src/<Plural>/Policy.ts` | `@evb/domain/*`, `../Auth/Policy` | `@evb/db`, `drizzle-orm`, `hono` |
-| `packages/server/src/<Plural>/<Plural>Service.ts` | `@evb/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos allowed) | `@evb/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
-| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@evb/domain/<Ctx>/Contract`, `../AppEnv` | `@evb/db`, any `*Repo`, any other context |
+| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@gc/db`, `drizzle-orm`, `@gc/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
+| `packages/server/src/<Plural>/Policy.ts` | `@gc/domain/*`, `../Auth/Policy` | `@gc/db`, `drizzle-orm`, `hono` |
+| `packages/server/src/<Plural>/<Plural>Service.ts` | `@gc/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos allowed) | `@gc/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
+| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@gc/domain/<Ctx>/Contract`, `../AppEnv` | `@gc/db`, any `*Repo`, any other context |
 | `packages/server/src/container.ts` | everything | — |
 
-Two of those carry the design: **`@evb/db` appears only in `*Repo.ts`, and `hono` never appears in
+Two of those carry the design: **`@gc/db` appears only in `*Repo.ts`, and `hono` never appears in
 a service.** If both hold, the business logic is framework-free and database-free, which is the
 entire claim an effect system makes with its `R` channel. `scripts/check-architecture.mjs` (§7)
 fails `bun run check` if either breaks.
@@ -117,7 +117,7 @@ fails `bun run check` if either breaks.
 
 ## 2. Effect → Hono, term by term
 
-eventsbd contains no effect system and no `@effect/*` dependency. This table is here for two
+gcnotes contains no effect system and no `@effect/*` dependency. This table is here for two
 readers: someone arriving from an Effect codebase who wants the dictionary, and someone here
 wondering what was traded away (§6 answers the second question honestly).
 
@@ -152,7 +152,7 @@ staging buffer over `D1Database.batch` in either world. Nothing about it is effe
 
 Route definitions — method, path, params, responses, OpenAPI metadata — live in
 `packages/domain/src/<Ctx>/Contract.ts`. Keeping them in `packages/domain` is what lets
-`@evb/apiclient` be *derived* from the contract instead of hand-written, and what lets `apps/web`
+`@gc/apiclient` be *derived* from the contract instead of hand-written, and what lets `apps/web`
 and `apps/native` type-check against the API without depending on the Worker.
 
 ```ts
@@ -172,7 +172,7 @@ export const registerRoute = createRoute({
 ```
 
 Route constants are named `<verb><Noun>Route`. That name is the contract: `Http.ts` imports it,
-`@evb/apiclient` derives a method from it, and nothing renames it on the way through.
+`@gc/apiclient` derives a method from it, and nothing renames it on the way through.
 
 A contract file is worth nothing on its own — the first version of most projects has one and it
 does not help, because the handler still holds the logic. The split only pays off alongside R3.
@@ -269,7 +269,7 @@ Pure, synchronous, no I/O, no clock. `make` returns `Authorized<A>` — a brande
 fails to type-check where it passes the value on. That brand is the one piece of compile-time
 enforcement that survives having no effect system, and it costs four lines.
 
-Policy files never import `@evb/db` and never import `hono`. They take the subject they are
+Policy files never import `@gc/db` and never import `hono`. They take the subject they are
 deciding about as a plain domain value.
 
 ### R5 · One composition root, and `env` appears nowhere else
@@ -354,7 +354,7 @@ export const eventsRouter = new OpenAPIHono<AppEnv>()
 If a handler contains a conditional, the branch belongs in a service. The review test is whether
 the same operation could be invoked by a cron with no HTTP context — see R8.
 
-There is exactly one handler in eventsbd that does not return JSON: the bKash redirect callback
+There is exactly one handler in gcnotes that does not return JSON: the bKash redirect callback
 returns `c.redirect(...)`. It is still one expression, and the decision about *where* to redirect
 is made by the service, not by the handler.
 
@@ -409,7 +409,7 @@ cannot reach a use case, the use case is in the wrong file.
 
 Note also what the cron does *not* do: it never touches a repository, never opens a unit of work,
 and never reads `env` beyond handing it to `buildContainer`. It composes use cases. The
-`refundable` loop is the only place in eventsbd where two services are sequenced by a caller, and
+`refundable` loop is the only place in gcnotes where two services are sequenced by a caller, and
 it is three lines in the one file allowed to do it.
 
 ---
@@ -444,7 +444,7 @@ Three rules keep this honest:
 
 - **`Tickets.test.ts` imports `TicketsService`, not the router.** HTTP is covered once per context
   by a thin wire-shape test (`Tickets.http.test.ts`), not per rule.
-- **The seam is `deps`, not the thing behind it.** `TicketsService` still imports no `@evb/db` and
+- **The seam is `deps`, not the thing behind it.** `TicketsService` still imports no `@gc/db` and
   still cannot tell what its repo is backed by. Handing it the real repository changes what the
   assertion is worth, not whether the architecture holds.
 - **The guard under test is the statement that ships.** `expect(refs).toEqual([1, 0])` used to be a
@@ -460,7 +460,7 @@ Full detail, including the minimum scenario list every context must cover by nam
 
 ## 5. A new context, start to finish
 
-eventsbd ships three contexts: Events, Tickets, Payments. This section is the recipe for the
+gcnotes ships three contexts: Events, Tickets, Payments. This section is the recipe for the
 fourth. It is written as a worked example — **Notifications**, sending a ticket to the attendee's
 email — because that is the extension the template most obviously wants and deliberately does not
 ship (see the end of this section for why).
@@ -480,10 +480,10 @@ ship (see the end of this section for why).
    drizzle schema is a red test rather than a green suite and a broken deploy.
 5. **`packages/server/src/Notifications/NotificationsRepo.ts`** — Drizzle in, domain types out,
    `null` for absent, `stage*` methods for anything that must be atomic with another write. This is
-   the only file in the context allowed to import `@evb/db`.
+   the only file in the context allowed to import `@gc/db`.
 6. **`packages/server/src/Notifications/Policy.ts`** — pure predicates, branded results.
 7. **`packages/server/src/Notifications/NotificationsService.ts`** —
-   `makeNotificationsService(deps)`. No `hono`, no `@evb/db`, every dep `readonly`.
+   `makeNotificationsService(deps)`. No `hono`, no `@gc/db`, every dep `readonly`.
 8. **`packages/server/src/Notifications/Http.ts`** — one expression per route, exported as
    `notificationsRouter`.
 9. **Register in `container.ts`** — construct the repo, wrap both in `traced()`, add the service
@@ -580,7 +580,7 @@ Half of it is Biome, in `biome.jsonc`:
   {
     "includes": ["packages/server/src/**/*Service.ts", "packages/server/src/**/Policy.ts"],
     "linter": { "rules": { "style": { "noRestrictedImports": { "level": "error", "options": { "paths": {
-      "@evb/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
+      "@gc/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
       "drizzle-orm": "Services never touch the database. Put the query in <Plural>Repo.ts.",
       "hono": "Services are framework-free. Take the value as a parameter."
     } } } } } }
@@ -588,7 +588,7 @@ Half of it is Biome, in `biome.jsonc`:
   {
     "includes": ["packages/server/src/**/Http.ts"],
     "linter": { "rules": { "style": { "noRestrictedImports": { "level": "error", "options": { "paths": {
-      "@evb/db": "Handlers read c.var.svc, never the database."
+      "@gc/db": "Handlers read c.var.svc, never the database."
     } } } } } }
   }
 ]
@@ -637,7 +637,7 @@ call per service.**
 ```
 
 What is drawn in the dashboard is workerd's instrumentation of the invocation, its subrequests, and
-its D1 and KV calls. No SDK produces it, and no framework choice changes it. eventsbd ships no OTLP
+its D1 and KV calls. No SDK produces it, and no framework choice changes it. gcnotes ships no OTLP
 exporter and no `@opentelemetry/*` dependency; if you want one, §8.7.
 
 > The outer `"enabled": false` with nested blocks true is copied deliberately and is one of the
@@ -733,7 +733,7 @@ Four things follow, and the last is the reason this section is not a downgrade:
 1. **Every public method of every service and repository is spanned**, including the ones nobody
    would have remembered to annotate.
 2. **`<Module>.<method>` in the casing of the exported identifier** is produced mechanically. It
-   cannot drift, because there is no string to mistype. Module names in eventsbd are exactly
+   cannot drift, because there is no string to mistype. Module names in gcnotes are exactly
    `Events`, `EventsRepo`, `Tickets`, `TicketsRepo`, `Payments`, `PaymentsRepo`, and the wrapper is
    applied to those six objects and nothing else.
 3. **Repository spans come free**, so a slow endpoint decomposes into its queries without a second
@@ -783,7 +783,7 @@ Both are cheap, and neither is settled by reading types. They are D011 and D012 
 `@microlabs/otel-cf-workers` is the Workers-targeted SDK and auto-instruments fetch, KV and D1
 calls. The `traced` wrapper becomes a thin call into `@opentelemetry/api` instead of
 `cloudflare:workers`, and the `<Module>.<method>` naming is unchanged. Nothing in §1–§7 moves. It
-is not a dependency here because an unexported span is worth less than no span, and eventsbd has
+is not a dependency here because an unexported span is worth less than no span, and gcnotes has
 nowhere to export to.
 
 ---
@@ -795,7 +795,7 @@ arranged around, and they are not optional reading before changing anything in `
 
 | File | What it settles |
 | --- | --- |
-| `CONCURRENCY.md` | Every race in eventsbd, the exact SQL that resolves it, and what breaks if the guard is "simplified" away. Read it before touching a `WHERE` clause. |
+| `CONCURRENCY.md` | Every race in gcnotes, the exact SQL that resolves it, and what breaks if the guard is "simplified" away. Read it before touching a `WHERE` clause. |
 | `BKASH.md` | The payment state machine, the idempotency chokepoint, the fake's script vocabulary, and the sandbox recipe. |
 | `D1-NOTES.md` | Batch semantics, the bound-parameter arithmetic behind the chunk sizes, and what D1 will not do for you. |
 | `DEPLOYMENT.md` | One branch and why flags replace the others, the pipeline and its promotion gate, the three rollback tiers with their commands, and the expand/contract rules D1's missing rollback forces. Read it before writing a migration. |

@@ -1,4 +1,4 @@
-import type { RegistrationSummary } from "@evb/domain/Domain/Registration";
+import type { RegistrationSummary } from "@gc/domain/Domain/Registration";
 import { make } from "../Auth/Policy";
 
 // All three decide about a `RegistrationSummary`, never a `Payment`: loading an `Event` here would

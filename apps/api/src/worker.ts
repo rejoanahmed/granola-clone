@@ -1,4 +1,4 @@
-import { buildContainer, type Env } from "@evb/server";
+import { buildContainer, type Env } from "@gc/server";
 import { app } from "./app";
 
 export default {

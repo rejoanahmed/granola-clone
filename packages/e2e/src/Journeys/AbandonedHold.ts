@@ -1,4 +1,4 @@
-import { RegistrationDetail } from "@evb/domain/Domain/Registration";
+import { RegistrationDetail } from "@gc/domain/Domain/Registration";
 import { decode, expectStatus, tagOf, where } from "../Client";
 import { checkEqual } from "../Failure";
 import {

@@ -1,5 +1,5 @@
-import { Payment } from "@evb/domain/Domain/Payment";
-import { RegistrationDetail } from "@evb/domain/Domain/Registration";
+import { Payment } from "@gc/domain/Domain/Payment";
+import { RegistrationDetail } from "@gc/domain/Domain/Registration";
 import { decode, expectStatus, where } from "../Client";
 import { check, checkEqual, fail } from "../Failure";
 import {

@@ -23,7 +23,7 @@ every merge stops being reckless and a long-lived branch stops being useful.
 | CI | `.github/workflows/ci.yml`, on the PR | lint, syncpack, architecture, types, tests, build, both dry runs | the PR does not merge |
 | verify | `deploy.yml`, at the merge SHA | the same four gates against the merge result, not the branch | nothing deploys |
 | deploy dev | `apps/api/scripts/deploy.sh dev`, then `apps/web` | D1 migrations applied, both Workers uploaded, `GET /` healthy | dev is suspect; production untouched |
-| **E2E** | `packages/e2e`, HTTP against `eventsbd-api-dev` | a real deployed isolate serves four full journeys | **production is not deployed** |
+| **E2E** | `packages/e2e`, HTTP against `gcnotes-api-dev` | a real deployed isolate serves four full journeys | **production is not deployed** |
 | deploy prod | `scripts/deploy.sh production`, then `apps/web` | the same two uploads against production ids | reach for §3, in order |
 
 One branch (`main`), two deployed environments (`dev`, `production`), three rollback tiers, and no
@@ -160,7 +160,7 @@ first means choosing a fifteen-minute outage over a fifteen-second one.
 | Tier | Undoes | Command | Time | Does not cover |
 | --- | --- | --- | --- | --- |
 | **1 · Flag flip** | feature behaviour behind a flag | dashboard → Workers & Pages → Feature flags → *that environment's app* → toggle off | seconds | anything not behind a flag; the four failures in §6 |
-| **2 · Worker rollback** | the deployed code and the config baked into that version | `bunx wrangler rollback --name eventsbd-api-prod` | seconds | D1 schema and rows; a secret that was deleted |
+| **2 · Worker rollback** | the deployed code and the config baked into that version | `bunx wrangler rollback --name gcnotes-api-prod` | seconds | D1 schema and rows; a secret that was deleted |
 | **3 · D1** | **nothing. There is no rollback.** | — roll forward with a new migration — | a deploy | everything; this is why §4 exists |
 
 Tier 1 first, every time it applies. It needs no runner, no credentials on your laptop, and no
@@ -169,12 +169,12 @@ build, and it is the only tier that is reversible in both directions in seconds.
 Tier 2, in full:
 
 ```bash
-bunx wrangler versions list --name eventsbd-api-prod   # pick a version-id
-bunx wrangler rollback <version-id> --name eventsbd-api-prod
-bunx wrangler rollback --name eventsbd-web-prod        # the renderer, if it is the one at fault
+bunx wrangler versions list --name gcnotes-api-prod   # pick a version-id
+bunx wrangler rollback <version-id> --name gcnotes-api-prod
+bunx wrangler rollback --name gcnotes-web-prod        # the renderer, if it is the one at fault
 ```
 
-From `apps/api`, `--env production` names the same Worker as `--name eventsbd-api-prod`; `name` is
+From `apps/api`, `--env production` names the same Worker as `--name gcnotes-api-prod`; `name` is
 stated explicitly in both `env` blocks of `wrangler.jsonc` precisely so the Worker a rollback names
 is the Worker you think it is. Substitute `-dev` for the dev pair.
 
@@ -339,15 +339,15 @@ why ten minutes is a price worth paying to promote.
 Once per Cloudflare account:
 
 ```bash
-bunx wrangler d1 create eventsbd-db-dev
-bunx wrangler d1 create eventsbd-db-prod
-bunx wrangler kv namespace create eventsbd-tokens-dev
-bunx wrangler kv namespace create eventsbd-tokens-prod
+bunx wrangler d1 create gcnotes-db-dev
+bunx wrangler d1 create gcnotes-db-prod
+bunx wrangler kv namespace create gcnotes-tokens-dev
+bunx wrangler kv namespace create gcnotes-tokens-prod
 # dashboard -> Workers & Pages -> Feature flags: ONE Flagship app per environment
 ```
 
 **The zone has to be on the account before the first deploy.** Both API environments set
-`workers_dev: false` and claim a custom domain (`api-dev.eventsbd.com`, `api.eventsbd.com`), so
+`workers_dev: false` and claim a custom domain (`api-dev.gcnotes.example.com`, `api.gcnotes.example.com`), so
 there is no `*.workers.dev` fallback hostname to fall back to: a Worker deployed without its zone is
 a Worker nothing can reach, and the pipeline's health wait — and then the E2E gate — is what tells
 you so. The four hostnames must stay equal across `apps/api/wrangler.jsonc` (`API_URL` / `APP_URL`

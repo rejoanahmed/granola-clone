@@ -11,8 +11,8 @@ import { makeEventsApi } from "./events";
 import { makePaymentsApi } from "./payments";
 import { makeTicketsApi } from "./tickets";
 
-// Types are derived from the contract constants in `@evb/domain`, not from `hc<AppType>`: the
-// router type belongs to `apps/api`, so using it would drag `@evb/server`, `@evb/db` and
+// Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
+// router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
 // `drizzle-orm` into the type graph of both client bundles.
 
 /** `Record<never, never>` rather than `{}` — the same type, without the lint. */

@@ -1,12 +1,12 @@
-import { RateLimited } from "@evb/domain/Errors";
-import { type AppEnv, buildContainer, type Env } from "@evb/server";
+import { RateLimited } from "@gc/domain/Errors";
+import { type AppEnv, buildContainer, type Env } from "@gc/server";
 import {
   makeSessions,
   type Sessions,
   type SessionsConfig,
-} from "@evb/server/Auth/Sessions";
-import { makeDrizzle } from "@evb/server/Runtime/Drizzle";
-import { logEvent } from "@evb/server/Runtime/Logger";
+} from "@gc/server/Auth/Sessions";
+import { makeDrizzle } from "@gc/server/Runtime/Drizzle";
+import { logEvent } from "@gc/server/Runtime/Logger";
 import type { Handler, MiddlewareHandler } from "hono";
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
@@ -113,7 +113,7 @@ let sessions: Sessions | undefined;
 
 const sessionsFor = (env: Env): Sessions => {
   sessions ??= makeSessions({
-    // `makeDrizzle`, not `createDb`: `apps/api` must never import `@evb/db` (§9 C, enforced by
+    // `makeDrizzle`, not `createDb`: `apps/api` must never import `@gc/db` (§9 C, enforced by
     // `scripts/check-architecture.mjs`), and the adapter only needs the query builder.
     db: makeDrizzle(env.DB),
     email: otpEmail(env),

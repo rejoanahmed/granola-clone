@@ -25,7 +25,7 @@
     "noEmit": true,
 
     // The one line that makes a source-only workspace package resolve correctly on native. Every
-    // `@evb/*` package publishes TypeScript from `src/`; without the react-native condition,
+    // `@gc/*` package publishes TypeScript from `src/`; without the react-native condition,
     // TypeScript picks whatever the "import"/"default" condition points at while Metro picks the
     // react-native one, and the two disagree silently until a runtime "undefined is not a
     // function".

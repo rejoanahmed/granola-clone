@@ -1,8 +1,8 @@
 // Hand-rolled, no QR dependency: every constant below is hard-wired to a version-1 symbol at EC
 // level M, the only size a 10-character ticket code needs. Mask 0 is fixed rather than scored.
 
-import type { Ticket } from "@evb/domain/Domain/Ticket";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { Ticket } from "@gc/domain/Domain/Ticket";
+import { formatDhakaDateTime } from "@gc/shared/time";
 
 const SIZE = 21;
 const EC_CODEWORDS = 10;

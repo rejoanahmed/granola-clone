@@ -18,8 +18,8 @@ import {
   sql,
   type TicketRow,
   tickets,
-} from "@evb/db";
-import type { EventSummary } from "@evb/domain/Domain/Event";
+} from "@gc/db";
+import type { EventSummary } from "@gc/domain/Domain/Event";
 import type {
   EventId,
   RegistrationId,
@@ -27,10 +27,10 @@ import type {
   TicketId,
   TicketTypeId,
   UserId,
-} from "@evb/domain/Domain/Ids";
-import type { Poisha } from "@evb/domain/Domain/Money";
-import type { Page, PageQuery } from "@evb/domain/Domain/Page";
-import type { NewTicketRow } from "@evb/domain/Domain/Pricing";
+} from "@gc/domain/Domain/Ids";
+import type { Poisha } from "@gc/domain/Domain/Money";
+import type { Page, PageQuery } from "@gc/domain/Domain/Page";
+import type { NewTicketRow } from "@gc/domain/Domain/Pricing";
 import type {
   HoldRef,
   PricedLine,
@@ -39,13 +39,13 @@ import type {
   RegistrationStatus,
   RegistrationSummary,
   ReleaseReason,
-} from "@evb/domain/Domain/Registration";
+} from "@gc/domain/Domain/Registration";
 import type {
   AttendeeRow,
   Ticket,
   TicketWithEvent,
-} from "@evb/domain/Domain/Ticket";
-import type { Timestamp } from "@evb/domain/Domain/Time";
+} from "@gc/domain/Domain/Ticket";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import {
   chunkIds,

@@ -2,8 +2,8 @@
 # Deploy apps/api to one Cloudflare environment: D1 migrations first, then the Worker.
 #
 #   scripts/deploy.sh check                    # dry-run BOTH deployed environments, upload nothing
-#   scripts/deploy.sh dev                      # migrate + deploy eventsbd-api-dev
-#   scripts/deploy.sh production               # migrate + deploy eventsbd-api-prod
+#   scripts/deploy.sh dev                      # migrate + deploy gcnotes-api-dev
+#   scripts/deploy.sh production               # migrate + deploy gcnotes-api-prod
 #   scripts/deploy.sh dev --migrations-only    # D1 only, no Worker
 #
 # Migrations run BEFORE the Worker because D1 has no rollback — `wrangler d1 migrations` is
@@ -19,9 +19,9 @@
 #
 # ── One-time setup per Cloudflare account ────────────────────────────────────────────────────────
 #
-#   bunx wrangler d1 create eventsbd-db-dev        bunx wrangler d1 create eventsbd-db-prod
-#   bunx wrangler kv namespace create eventsbd-tokens-dev
-#   bunx wrangler kv namespace create eventsbd-tokens-prod
+#   bunx wrangler d1 create gcnotes-db-dev        bunx wrangler d1 create gcnotes-db-prod
+#   bunx wrangler kv namespace create gcnotes-tokens-dev
+#   bunx wrangler kv namespace create gcnotes-tokens-prod
 #   dashboard -> Workers & Pages -> Feature flags: one Flagship app per environment
 #
 # Every `DEV_*` / `PROD_*` placeholder in wrangler.jsonc wants the matching `EVB_`-prefixed

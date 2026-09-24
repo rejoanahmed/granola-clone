@@ -1,4 +1,4 @@
-import { Unauthorized } from "@evb/domain/Errors";
+import { Unauthorized } from "@gc/domain/Errors";
 import {
   cancelRegistrationRoute,
   checkInRoute,
@@ -6,7 +6,7 @@ import {
   listAttendeesRoute,
   listMyRegistrationsRoute,
   registerRoute,
-} from "@evb/domain/Ticket/Contract";
+} from "@gc/domain/Ticket/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

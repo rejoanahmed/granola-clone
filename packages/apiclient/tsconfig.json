@@ -1,5 +1,5 @@
 {
-  "extends": "@evb/config/base.json",
+  "extends": "@gc/config/base.json",
   "include": ["src"],
   "compilerOptions": {
     "declaration": true,
@@ -16,7 +16,7 @@
     "lib": ["ESNext", "DOM"],
     "types": ["bun-types"]
   },
-  // `@evb/domain` only. This package must never reference `@evb/server` or `@evb/db`: the whole
+  // `@gc/domain` only. This package must never reference `@gc/server` or `@gc/db`: the whole
   // point of deriving the client from `<Ctx>/Contract.ts` is that `apps/web` and `apps/native`
   // type-check against the API without depending on the Worker (R1).
   "references": [{ "path": "../domain" }]

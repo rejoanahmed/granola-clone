@@ -1,4 +1,4 @@
-import { UserId } from "@evb/domain/Domain/Ids";
+import { UserId } from "@gc/domain/Domain/Ids";
 import { z } from "zod";
 
 // Deliberately not better-auth's session type: a policy that took `Session` would drag the auth

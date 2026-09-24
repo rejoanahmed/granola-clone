@@ -1,4 +1,4 @@
-import type { Timestamp } from "@evb/domain/Domain/Time";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { Clock } from "../Runtime/Clock";
 
 export const fixedClock = (at: Timestamp): Clock => ({ now: () => at });

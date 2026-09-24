@@ -1,6 +1,6 @@
 {
-  "name": "eventsbd",
-  "short_name": "eventsbd",
+  "name": "gcnotes",
+  "short_name": "gcnotes",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#fbfbfd",

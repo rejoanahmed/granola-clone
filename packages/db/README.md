@@ -1,11 +1,11 @@
-# `@evb/db`
+# `@gc/db`
 
 Drizzle schema + D1 migrations. Schema: `src/schema/`. Migrations: `d1-migrations/`.
 
 | Name | What |
 |------|------|
-| `eventsbd-db-dev` | Remote + local Wrangler DB |
-| `eventsbd-db-prod` | Prod only (`--env production`) |
+| `gcnotes-db-dev` | Remote + local Wrangler DB |
+| `gcnotes-db-prod` | Prod only (`--env production`) |
 | Local files | `apps/api/.wrangler/state/v3/d1/` |
 
 **Never** hand-edit `src/schema/auth.ts` — run `bun run auth:generate-schema` from the repo root.
@@ -14,15 +14,15 @@ file under `src/schema/`, or the next regeneration silently deletes it.
 
 ## What this package exports (§9 C)
 
-`@evb/db` is consumed **only** by `packages/server/src/**/*Repo.ts`,
+`@gc/db` is consumed **only** by `packages/server/src/**/*Repo.ts`,
 `packages/server/src/Runtime/Drizzle.ts`, `packages/auth/src/index.ts`, and this package's own
 seed. Nothing else, ever — `biome.jsonc` fails the build if a service or a handler imports it.
 
 | From | What |
 |------|------|
-| `@evb/db` | `createDb(d1)`, `type DB`, `RESET_ORDER`, every table, every `*_STATUSES` / `*_SOURCES` / `*_OUTCOMES` const, every row type, and the curated `drizzle-orm` re-exports |
-| `@evb/db/schema` | the same tables and row types, without the drizzle re-exports |
-| `@evb/db/schema/auth` | `user`, `session`, `account`, `verification` only |
+| `@gc/db` | `createDb(d1)`, `type DB`, `RESET_ORDER`, every table, every `*_STATUSES` / `*_SOURCES` / `*_OUTCOMES` const, every row type, and the curated `drizzle-orm` re-exports |
+| `@gc/db/schema` | the same tables and row types, without the drizzle re-exports |
+| `@gc/db/schema/auth` | `user`, `session`, `account`, `verification` only |
 
 Row types come in three shapes, one set per table, next to the table that defines them:
 
@@ -34,7 +34,7 @@ Row types come in three shapes, one set per table, next to the table that define
   `EventPatchRow` (it moves only through `transition()`), and `quantityClaimed` is not in
   `TicketTypePatchRow` (it moves only through `stageClaim` / `stageRelease`).
 
-`NewTicketRow` is the one absentee: `@evb/domain/Domain/Pricing` owns that name, because
+`NewTicketRow` is the one absentee: `@gc/domain/Domain/Pricing` owns that name, because
 `ticketRowsFor()` is what builds those rows.
 
 ## Everyday
@@ -109,6 +109,6 @@ live table means the 12-step table rebuild (`CREATE TABLE …_new` / `INSERT …
 
 ```bash
 cd apps/api
-bunx wrangler d1 execute eventsbd-db-dev --local --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
-bunx wrangler d1 execute eventsbd-db-dev --local --command "SELECT sql FROM sqlite_master WHERE name='payments_live_per_reg_unq';"
+bunx wrangler d1 execute gcnotes-db-dev --local --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+bunx wrangler d1 execute gcnotes-db-dev --local --command "SELECT sql FROM sqlite_master WHERE name='payments_live_per_reg_unq';"
 ```

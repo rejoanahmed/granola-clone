@@ -1,6 +1,6 @@
-import type { TicketCode } from "@evb/domain/Domain/Ids";
-import type { Ticket } from "@evb/domain/Domain/Ticket";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { TicketCode } from "@gc/domain/Domain/Ids";
+import type { Ticket } from "@gc/domain/Domain/Ticket";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useThemeColors } from "@native/hooks/useThemedNavigation";
 import { checkInMutation, hasTag } from "@native/lib/api";
 import { useMutation } from "@tanstack/react-query";
@@ -109,7 +109,7 @@ export default function CheckInScreen() {
   );
 }
 
-// Read structurally, like `hasTag`: an error crossing two copies of `@evb/apiclient` fails
+// Read structurally, like `hasTag`: an error crossing two copies of `@gc/apiclient` fails
 // `instanceof` while still being the value meant, and the gate would silently lose the timestamp.
 const detailsOf = (error: unknown): Record<string, unknown> => {
   if (typeof error !== "object" || error === null || !("details" in error)) {

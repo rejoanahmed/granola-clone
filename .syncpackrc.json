@@ -4,7 +4,7 @@
   "semverGroups": [
     {
       "label": "Workspace packages are exact",
-      "packages": ["@evb/**"],
+      "packages": ["@gc/**"],
       "range": ""
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "label": "Local workspace packages use the workspace:* protocol",
-      "dependencies": ["@evb/**"],
+      "dependencies": ["@gc/**"],
       "dependencyTypes": ["!local"],
       "pinVersion": "workspace:*"
     }

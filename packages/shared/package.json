@@ -1,5 +1,5 @@
 {
-  "name": "@evb/shared",
+  "name": "@gc/shared",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "type-check": "tsc -b"
   },
   "devDependencies": {
-    "@evb/config": "workspace:*",
+    "@gc/config": "workspace:*",
     "@types/node": "26.6.2",
     "bun-types": "1.4.2",
     "typescript": "7.0.2"

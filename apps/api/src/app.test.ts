@@ -1,5 +1,5 @@
-import { SoldOut } from "@evb/domain/Ticket/Errors";
-import type { AppEnv, Env } from "@evb/server";
+import { SoldOut } from "@gc/domain/Ticket/Errors";
+import type { AppEnv, Env } from "@gc/server";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "./app";
@@ -17,7 +17,7 @@ const env = {
   BKASH_WEBHOOK_SECRET: "test-webhook-secret",
   DB: {} as D1Database,
   KV: {} as KVNamespace,
-  NATIVE_SCHEME: "eventsbd",
+  NATIVE_SCHEME: "gcnotes",
   NODE_ENV: "test",
 } satisfies Env;
 
@@ -28,7 +28,7 @@ describe("the worker's HTTP assembly", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       ok: true,
-      service: "eventsbd-api",
+      service: "gcnotes-api",
     });
   });
 

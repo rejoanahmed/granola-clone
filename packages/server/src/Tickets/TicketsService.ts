@@ -1,17 +1,17 @@
-import type { Event, EventSummary } from "@evb/domain/Domain/Event";
+import type { Event, EventSummary } from "@gc/domain/Domain/Event";
 import {
   type EventId,
   ID_PREFIX,
   type PaymentId,
   RegistrationId,
   type TicketCode,
-} from "@evb/domain/Domain/Ids";
-import type { Page, PageQuery } from "@evb/domain/Domain/Page";
+} from "@gc/domain/Domain/Ids";
+import type { Page, PageQuery } from "@gc/domain/Domain/Page";
 import {
   priceLines,
   ticketRowsFor,
   totalPoisha,
-} from "@evb/domain/Domain/Pricing";
+} from "@gc/domain/Domain/Pricing";
 import type {
   CreateRegistration,
   PricedLine,
@@ -19,14 +19,14 @@ import type {
   RegistrationDetail,
   RegistrationStatus,
   ReleaseReason,
-} from "@evb/domain/Domain/Registration";
+} from "@gc/domain/Domain/Registration";
 import type {
   AttendeeRow,
   Ticket,
   TicketWithEvent,
-} from "@evb/domain/Domain/Ticket";
-import { MINUTE_MS, type Timestamp } from "@evb/domain/Domain/Time";
-import { EventNotFound } from "@evb/domain/Event/Errors";
+} from "@gc/domain/Domain/Ticket";
+import { MINUTE_MS, type Timestamp } from "@gc/domain/Domain/Time";
+import { EventNotFound } from "@gc/domain/Event/Errors";
 import {
   EventNotPurchasable,
   RegistrationNotCancellable,
@@ -35,7 +35,7 @@ import {
   TicketAlreadyCheckedIn,
   TicketNotFound,
   TicketVoid,
-} from "@evb/domain/Ticket/Errors";
+} from "@gc/domain/Ticket/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { EventsRepo } from "../Events/EventsRepo";
 import { type FeatureFlagsPort, FLAG } from "../Integrations/FeatureFlags/Port";

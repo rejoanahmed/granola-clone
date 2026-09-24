@@ -379,7 +379,7 @@ describe("the constraints a hand-written double cannot reach", () => {
   });
 });
 
-// A local table object rather than `@evb/db`'s schema: the architecture check keeps that import
+// A local table object rather than `@gc/db`'s schema: the architecture check keeps that import
 // to `<Plural>Repo.ts` and `Runtime/Drizzle.ts`.
 const users = sqliteTable("user", {
   email: text("email").notNull(),

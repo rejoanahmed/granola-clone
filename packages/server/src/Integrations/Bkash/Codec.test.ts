@@ -1,4 +1,4 @@
-import { poisha } from "@evb/domain/Domain/Money";
+import { poisha } from "@gc/domain/Domain/Money";
 import { describe, expect, it } from "vitest";
 import { fromBdt, toBdt } from "./Codec";
 

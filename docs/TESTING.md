@@ -70,7 +70,7 @@ On top of it the test builds the repositories that ship, with the unit of work t
 
 ```ts
 // packages/server/src/Tickets/Tickets.test.ts, abridged
-import { SoldOut } from "@evb/domain/Ticket/Errors";
+import { SoldOut } from "@gc/domain/Ticket/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { makeEventsRepo } from "../Events/EventsRepo";
 import { makeDrizzle } from "../Runtime/Drizzle";
@@ -124,7 +124,7 @@ once per rule. A rule tested through the router is a rule whose failure message 
 code instead of a domain error.
 
 **2 · The seam is still `deps`, and the service still knows nothing about a database.**
-`makeTicketsService` takes a repo; `TicketsService.ts` imports no `@evb/db`; nothing in the service
+`makeTicketsService` takes a repo; `TicketsService.ts` imports no `@gc/db`; nothing in the service
 can tell whether the repo it was handed reads SQLite or a `Map`. What D016 changed is what sits
 *behind* the repo, not whether the seam exists — and `scripts/check-architecture.mjs` still fails
 the build if a query moves up into a service. The architecture's testability claim is exactly what
@@ -261,7 +261,7 @@ non-idempotent call was fenced.
 - `Codec.test.ts` — `toBdt`/`fromBdt` round trip, and each rejection by name: `"1250"`,
   `"1250.5"`, `"-1.00"`, `"1,250.00"`.
 - `time.test.ts` — including the regression test for the Workers `Intl` time-zone behaviour that
-  made `@evb/shared/time` do manual UTC+6 arithmetic (`DECISIONS.md` D003).
+  made `@gc/shared/time` do manual UTC+6 arithmetic (`DECISIONS.md` D003).
 - `crockford.test.ts` — the alphabet excludes I, L, O and U; round trip.
 - `traced.test.ts` — the sync path, the async path, the throw path, and non-function values passed
   through unchanged.
@@ -289,7 +289,7 @@ on. Three of the four now have an engine answering them instead of an author:
    `CHECK`s as alarms rather than control flow. Exercised by `Database.test.ts` "rolls the whole
    batch back when a statement throws" and `Events.test.ts` "raises it for a negative counter too,
    and rolls the whole batch back".
-4. **The practical per-batch statement ceiling** — eventsbd's largest batch is 12 statements
+4. **The practical per-batch statement ceiling** — gcnotes's largest batch is 12 statements
    (`register` at the maximum registration) and its largest fan-out 10 (`confirm` issuing 100
    tickets), both far inside any documented limit, but "far inside" is an inference until a real
    batch of that size runs. `D1-NOTES.md` §4 has the arithmetic. Unchanged by D016: a local engine
@@ -328,7 +328,7 @@ just deployed, and production is deployed only if it exits 0
 (`architecture/DEPLOYMENT.md` §2, `DECISIONS.md` D017).
 
 ```bash
-API_URL=https://api-dev.eventsbd.com E2E_SECRET=… bun run e2e     # from the repo root
+API_URL=https://api-dev.gcnotes.example.com E2E_SECRET=… bun run e2e     # from the repo root
 ```
 
 `E2E_DEADLINE_MS` (default 9 minutes, under the release model's 10) and `E2E_REQUEST_TIMEOUT_MS`

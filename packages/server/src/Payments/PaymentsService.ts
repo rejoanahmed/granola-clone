@@ -3,7 +3,7 @@ import {
   PaymentEventId,
   PaymentId,
   type RegistrationId,
-} from "@evb/domain/Domain/Ids";
+} from "@gc/domain/Domain/Ids";
 import type {
   BkashCallbackQuery,
   BkashWebhookBody,
@@ -14,9 +14,9 @@ import type {
   PaymentResult,
   RefundInput,
   WebhookAck,
-} from "@evb/domain/Domain/Payment";
-import type { RegistrationSummary } from "@evb/domain/Domain/Registration";
-import { isAppError } from "@evb/domain/Errors";
+} from "@gc/domain/Domain/Payment";
+import type { RegistrationSummary } from "@gc/domain/Domain/Registration";
+import { isAppError } from "@gc/domain/Errors";
 import {
   BkashRejected,
   BkashUnavailable,
@@ -24,8 +24,8 @@ import {
   PaymentNotAllowed,
   PaymentNotFound,
   PaymentNotRefundable,
-} from "@evb/domain/Payment/Errors";
-import { RegistrationNotFound } from "@evb/domain/Ticket/Errors";
+} from "@gc/domain/Payment/Errors";
+import { RegistrationNotFound } from "@gc/domain/Ticket/Errors";
 import type { Actor } from "../Auth/Actor";
 import type {
   BkashPaymentStatus,

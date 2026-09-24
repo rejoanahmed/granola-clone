@@ -1,4 +1,4 @@
-import type { AppEnv } from "@evb/server";
+import type { AppEnv } from "@gc/server";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
@@ -39,7 +39,7 @@ export const OPENAPI_DOCUMENT = {
   info: {
     description:
       "A Bangladeshi event-ticketing template. Money is integer poisha (100 poisha = BDT 1) and timestamps are epoch milliseconds UTC — there are no decimals and no date strings anywhere in this API.",
-    title: "eventsbd API",
+    title: "gcnotes API",
     version: "1.0.0",
   },
   openapi: "3.1.0",
@@ -61,6 +61,6 @@ export const mountOpenApi = (app: OpenAPIHono<AppEnv>): void => {
 
   app.get(
     API_REFERENCE_PATH,
-    Scalar({ pageTitle: "eventsbd API", url: API_DOC_PATH })
+    Scalar({ pageTitle: "gcnotes API", url: API_DOC_PATH })
   );
 };

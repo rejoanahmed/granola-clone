@@ -1,14 +1,14 @@
-import { CreateEvent } from "@evb/domain/Domain/Event";
-import { EventId, TicketTypeId, UserId } from "@evb/domain/Domain/Ids";
-import { poisha } from "@evb/domain/Domain/Money";
-import type { PricedLine } from "@evb/domain/Domain/Registration";
+import { CreateEvent } from "@gc/domain/Domain/Event";
+import { EventId, TicketTypeId, UserId } from "@gc/domain/Domain/Ids";
+import { poisha } from "@gc/domain/Domain/Money";
+import type { PricedLine } from "@gc/domain/Domain/Registration";
 import {
   EventNotEditable,
   EventNotFound,
   EventNotPublishable,
   NotEventOrganiser,
   QuantityBelowClaimed,
-} from "@evb/domain/Event/Errors";
+} from "@gc/domain/Event/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { makeDrizzle } from "../Runtime/Drizzle";

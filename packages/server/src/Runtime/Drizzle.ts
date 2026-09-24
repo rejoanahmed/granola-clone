@@ -1,4 +1,4 @@
-import { createDb, type DB } from "@evb/db";
+import { createDb, type DB } from "@gc/db";
 
 // `batch` and `transaction` are removed deliberately. D1 has no interactive transactions, so
 // `transaction()` would compile and silently autocommit; and every multi-statement write must go

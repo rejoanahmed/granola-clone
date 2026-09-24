@@ -13,7 +13,7 @@ export type SeededUser = {
 
 export type Identity = {
   readonly attendees: readonly [SeededUser, SeededUser];
-  /** Not a role — eventsbd has none; this account exists to prove a non-organiser scan is a 403. */
+  /** Not a role — gcnotes has none; this account exists to prove a non-organiser scan is a 403. */
   readonly gateStaff: SeededUser;
   readonly organiser: SeededUser;
 };
@@ -25,14 +25,14 @@ export type IdentityDeps = {
 };
 
 const PEOPLE = [
-  { email: "organiser@eventsbd.dev", key: "organiser", name: "Nusrat Jahan" },
-  { email: "attendee@eventsbd.dev", key: "attendeeOne", name: "Rafiul Karim" },
+  { email: "organiser@gcnotes.dev", key: "organiser", name: "Nusrat Jahan" },
+  { email: "attendee@gcnotes.dev", key: "attendeeOne", name: "Rafiul Karim" },
   {
-    email: "attendee2@eventsbd.dev",
+    email: "attendee2@gcnotes.dev",
     key: "attendeeTwo",
     name: "Tahmina Akter",
   },
-  { email: "gate@eventsbd.dev", key: "gateStaff", name: "Shakib Hossain" },
+  { email: "gate@gcnotes.dev", key: "gateStaff", name: "Shakib Hossain" },
 ] as const;
 
 type PersonKey = (typeof PEOPLE)[number]["key"];
@@ -44,7 +44,7 @@ export function buildIdentity(deps: IdentityDeps): Identity {
   for (const person of PEOPLE) {
     const id = rng.id("usr_");
     const sessionToken = rng.id();
-    // better-auth's columns are `timestamp_ms`, so drizzle wants a Date here; the eventsbd tables
+    // better-auth's columns are `timestamp_ms`, so drizzle wants a Date here; the gcnotes tables
     // take plain epoch-ms numbers.
     const createdAt = new Date(now);
 

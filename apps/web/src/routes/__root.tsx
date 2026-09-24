@@ -52,7 +52,7 @@ export const Route = createRootRouteWithContext<{
         content: "width=device-width, initial-scale=1, viewport-fit=cover",
         name: "viewport",
       },
-      { title: "eventsbd" },
+      { title: "gcnotes" },
       {
         content: "Find events in Bangladesh, hold a seat, pay with bKash.",
         name: "description",
@@ -80,7 +80,7 @@ const SiteHeader = () => {
     <header className="border-line border-b bg-raised">
       <nav className="mx-auto flex max-w-4xl flex-wrap items-center gap-4 px-4 py-3 text-sm">
         <Link className="font-semibold text-base" search={ALL_EVENTS} to="/">
-          eventsbd
+          gcnotes
         </Link>
         <Link className="text-muted hover:text-ink" search={ALL_EVENTS} to="/">
           Events

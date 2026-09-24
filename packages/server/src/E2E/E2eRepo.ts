@@ -6,8 +6,8 @@ import {
   session,
   ticketTypes,
   user,
-} from "@evb/db";
-import type { Timestamp } from "@evb/domain/Domain/Time";
+} from "@gc/db";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { E2eFixture, E2eUser } from "./Fixtures";

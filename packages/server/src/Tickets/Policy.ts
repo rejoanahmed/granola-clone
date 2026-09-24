@@ -1,6 +1,6 @@
-import type { Event } from "@evb/domain/Domain/Event";
-import type { RegistrationSummary } from "@evb/domain/Domain/Registration";
-import type { TicketWithEvent } from "@evb/domain/Domain/Ticket";
+import type { Event } from "@gc/domain/Domain/Event";
+import type { RegistrationSummary } from "@gc/domain/Domain/Registration";
+import type { TicketWithEvent } from "@gc/domain/Domain/Ticket";
 import { make } from "../Auth/Policy";
 
 export const VIEW_REGISTRATION = "tickets.registration.view";

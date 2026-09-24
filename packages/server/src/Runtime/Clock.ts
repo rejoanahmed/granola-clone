@@ -1,4 +1,4 @@
-import type { Timestamp } from "@evb/domain/Domain/Time";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 
 // The only place `Date.now()` is called in `packages/server`; everything else takes a `Clock` (R3).
 export type Clock = { now: () => Timestamp };

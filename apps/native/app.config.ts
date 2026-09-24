@@ -5,7 +5,7 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 // https://docs.expo.dev/config-plugins/plugins/#add-typescript-support-and-convert-to-dynamic-app-config
 import "tsx/cjs";
 
-// The dynamic half; `app.json` holds the static config, most importantly the `eventsbd` URL
+// The dynamic half; `app.json` holds the static config, most importantly the `gcnotes` URL
 // scheme. That scheme is load-bearing twice: better-auth's expo plugin signs the session cookie to
 // an origin derived from it (sent as `expo-origin` by `src/lib/api.ts`), and it is the bKash return
 // trip (`src/lib/bkash-checkout.ts`). Change it in one place only and every authenticated request

@@ -23,7 +23,7 @@ import {
   params,
 } from "../Http";
 
-// Route definitions only: nothing here may import `packages/server`, or `@evb/apiclient` can no
+// Route definitions only: nothing here may import `packages/server`, or `@gc/apiclient` can no
 // longer derive its client from these same constants. Every route that validates anything declares
 // 422, because `apps/api`'s one `defaultHook` turns any schema rejection into `ValidationFailed`.
 

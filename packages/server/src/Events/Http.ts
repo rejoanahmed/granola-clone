@@ -1,4 +1,4 @@
-import { Unauthorized } from "@evb/domain/Errors";
+import { Unauthorized } from "@gc/domain/Errors";
 import {
   addTicketTypeRoute,
   cancelEventRoute,
@@ -10,7 +10,7 @@ import {
   publishEventRoute,
   updateEventRoute,
   updateTicketTypeRoute,
-} from "@evb/domain/Event/Contract";
+} from "@gc/domain/Event/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

@@ -5,7 +5,7 @@ import type {
   listAttendeesRoute,
   listMyRegistrationsRoute,
   registerRoute,
-} from "@evb/domain/Ticket/Contract";
+} from "@gc/domain/Ticket/Contract";
 import type { Endpoint } from "./client";
 
 // Type-only imports, for the reason given in `events.ts`.

@@ -1,6 +1,6 @@
 # Decision log
 
-Every structural choice in eventsbd that a reader might otherwise take for an accident, so it can
+Every structural choice in gcnotes that a reader might otherwise take for an accident, so it can
 be found and overturned deliberately. Newest last. Each entry says what was decided, why, what it
 would cost to reverse, and where the evidence lives.
 
@@ -58,7 +58,7 @@ Three choices, one rationale: a timestamp should be an arithmetic value with no 
 - **No `Date` in the domain** — a `Date` in a zod schema forces a codec at the wire boundary, and
   nothing in this template needs one.
 
-Display formatting in Asia/Dhaka does **manual UTC+6 arithmetic** in `@evb/shared/time` rather
+Display formatting in Asia/Dhaka does **manual UTC+6 arithmetic** in `@gc/shared/time` rather
 than `Intl.DateTimeFormat` with a `timeZone` option, because Workers has been observed to ignore
 that option and silently return UTC — which ships wrong times to users with no error anywhere.
 There is a regression test for exactly that in `packages/shared/src/time.test.ts`.
@@ -112,10 +112,10 @@ An **inventory ledger** (append-only seat movements, with the counter as a proje
 textbook answer to inventory concurrency. It buys auditability and costs a projector, a cursor, a
 rebuild path, and a window in which the projection disagrees with the ledger. The single counter
 plus D001's "confirmation moves nothing" already makes every replay a no-op, so the ledger would
-be paying for a property eventsbd has for free.
+be paying for a property gcnotes has for free.
 
 An **outbox** (write the intent, let a worker deliver it) is the textbook answer to
-"database write and external call must both happen". eventsbd does not need it because the external
+"database write and external call must both happen". gcnotes does not need it because the external
 call is *followed* by a durable fact — `payment_events` — and every entry point re-drives the same
 writes idempotently. `reconcile` is the outbox's delivery worker, without the table.
 
@@ -288,7 +288,7 @@ which is not violated. Error classes are domain vocabulary; a pure function that
 error is still pure domain. The graph stays acyclic: `Ticket/Errors` imports only `../Errors`,
 which imports nothing.
 
-Checked rather than assumed: the transitive closure from `@evb/domain/Domain/*` pulls in no `hono`
+Checked rather than assumed: the transitive closure from `@gc/domain/Domain/*` pulls in no `hono`
 and no `@hono/zod-openapi`, so the web and native clients still type-import domain schemas without
 dragging the server contract into their bundles.
 
@@ -305,7 +305,7 @@ array without `"node"` removes those globals from scope (module imports like `no
 resolve — globals do not), so `bun run check-types` fails on the package as specified.
 
 `"node"` is added rather than the seed being excluded, because a seed that is not type-checked is a
-seed that rots. `skipLibCheck: true` from `@evb/config/base.json` suppresses the duplicate-global
+seed that rots. `skipLibCheck: true` from `@gc/config/base.json` suppresses the duplicate-global
 noise between `@types/node` and `@cloudflare/workers-types`. `packages/shared` already ships
 `["bun-types", "node"]` for the same reason, so this is the consistent shape, not an exception.
 
@@ -362,10 +362,10 @@ rollback rather than an assumption, and a column added to the drizzle schema wit
 migration fails a test instead of a deploy. The pattern is not new — `party-room`, the repo this
 template's conventions were distilled from, has carried one real-SQLite shim
 (`packages/server/src/Shared/Database.memory.ts`, reached by 16 files) for as long as it has had a
-suite. eventsbd had imported the weaker half of that convention.
+suite. gcnotes had imported the weaker half of that convention.
 
 What did **not** change is the seam. R3's seam is the injected `deps`, not the fake behind it:
-services still take a repo, still import no `@evb/db`, and still cannot tell what the repo they were
+services still take a repo, still import no `@gc/db`, and still cannot tell what the repo they were
 handed talks to. Swapping `makeEventsRepoMemory()` for `makeEventsRepo(makeDrizzle(d1))` changes what
 a repository is backed by, not whether a service knows there is a database — and
 `scripts/check-architecture.mjs` still fails the build if that stops being true. Time

@@ -1,5 +1,5 @@
-import type { Env } from "@evb/server";
-import { parseConfig } from "@evb/server/Runtime/AppConfig";
+import type { Env } from "@gc/server";
+import { parseConfig } from "@gc/server/Runtime/AppConfig";
 import { describe, expect, it } from "vitest";
 import { app } from "./app";
 
@@ -19,7 +19,7 @@ const off = {
   BKASH_WEBHOOK_SECRET: "test-webhook-secret",
   DB: {} as D1Database,
   KV: {} as KVNamespace,
-  NATIVE_SCHEME: "eventsbd",
+  NATIVE_SCHEME: "gcnotes",
   NODE_ENV: "test",
 } satisfies Env;
 

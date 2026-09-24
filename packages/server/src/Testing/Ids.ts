@@ -1,5 +1,5 @@
-import { TicketCode } from "@evb/domain/Domain/Ids";
-import { CROCKFORD_ALPHABET } from "@evb/shared/crockford";
+import { TicketCode } from "@gc/domain/Domain/Ids";
+import { CROCKFORD_ALPHABET } from "@gc/shared/crockford";
 import type { Ids } from "../Runtime/Ids";
 
 // Sixteen digits, so `<prefix>0000000000000001` clears the `min(prefix.length + 8)` every branded

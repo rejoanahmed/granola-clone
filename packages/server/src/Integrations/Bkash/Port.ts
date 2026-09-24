@@ -1,9 +1,9 @@
-import type { PaymentId, RegistrationId } from "@evb/domain/Domain/Ids";
-import type { Poisha } from "@evb/domain/Domain/Money";
+import type { PaymentId, RegistrationId } from "@gc/domain/Domain/Ids";
+import type { Poisha } from "@gc/domain/Domain/Money";
 import type {
   RegistrationSummary,
   ReleaseReason,
-} from "@evb/domain/Domain/Registration";
+} from "@gc/domain/Domain/Registration";
 import type { ConfirmOutcome } from "../../Tickets/TicketsService";
 
 // `executePayment` can charge twice; create, query and refund cannot. The `executing` lease and
@@ -66,7 +66,7 @@ export type BkashPort = {
     readonly amountPoisha: Poisha;
     readonly bkashPaymentId: string;
     readonly reason: string;
-    /** bKash requires a merchandise reference; eventsbd sends the registration id. */
+    /** bKash requires a merchandise reference; gcnotes sends the registration id. */
     readonly sku: string;
     readonly trxId: string;
   }) => Promise<BkashRefundResult>;

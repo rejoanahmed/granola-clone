@@ -1,15 +1,15 @@
-import type { Timestamp } from "@evb/domain/Domain/Time";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 
 // Fixed ids and addresses, never generated: reset-then-seed must produce the same world on every
 // run, so a failing assertion names a bug rather than yesterday's data.
 export const E2E_USERS = {
   attendee: {
-    email: "e2e-attendee@eventsbd.test",
+    email: "e2e-attendee@gcnotes.test",
     id: "usr_e2e_attendee",
     name: "E2E Attendee",
   },
   organiser: {
-    email: "e2e-organiser@eventsbd.test",
+    email: "e2e-organiser@gcnotes.test",
     id: "usr_e2e_organiser",
     name: "E2E Organiser",
   },

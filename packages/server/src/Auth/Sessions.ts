@@ -1,4 +1,4 @@
-import { type Auth, type AuthConfig, createAuth } from "@evb/auth";
+import { type Auth, type AuthConfig, createAuth } from "@gc/auth";
 import { type Actor, actorFromSession } from "./Actor";
 
 // `baseURL` is per-origin, not per-deploy: better-auth signs cookies and builds OAuth redirects

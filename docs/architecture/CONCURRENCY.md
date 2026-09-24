@@ -141,7 +141,7 @@ even if a caller is wrong about what it holds.
 
 **Why `registration_items` exists at all.** One ticket type per registration would make this a
 single statement and delete the lesson. The multi-line compensating batch is the hardest D1
-problem in eventsbd and the table is kept for exactly that reason (`DECISIONS.md` D005).
+problem in gcnotes and the table is kept for exactly that reason (`DECISIONS.md` D005).
 
 ---
 
@@ -161,7 +161,7 @@ ON CONFLICT (payment_id, external_ref) DO NOTHING;
 
 `changes === 0` means this exact fact has already been applied: reload the payment, return
 `{ outcome: "noop" }`, and **perform no side effect.** This is the single idempotency chokepoint in
-eventsbd — `handleCallback`, `handleWebhook`, `reconcile` and `sweepStale` all funnel through
+gcnotes — `handleCallback`, `handleWebhook`, `reconcile` and `sweepStale` all funnel through
 `applyResult`, and `applyResult` starts here.
 
 **`external_ref`** is `trxId` when bKash supplies one, else `${bkashPaymentId}:${transactionStatus}`.
@@ -307,7 +307,7 @@ If expiry won, `confirm` returns `"not-holdable"`. The payment **still settles t
 the money genuinely moved, and pretending otherwise would lose it — and `applyResult` immediately
 calls `refundForRegistration(registrationId, "hold_lost")`.
 
-**This is the one case in eventsbd that costs money, and it is modelled rather than wished away.**
+**This is the one case in gcnotes that costs money, and it is modelled rather than wished away.**
 It is the honest consequence of holding seats for thirty minutes against a third-party checkout
 window we do not control. No tickets are issued, the seats stay released, and the attendee is
 refunded automatically.

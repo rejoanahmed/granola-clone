@@ -1,5 +1,5 @@
-import { formatPoisha } from "@evb/shared/money";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import { formatPoisha } from "@gc/shared/money";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { myRegistrationsQuery } from "@web/lib/api";

@@ -37,7 +37,7 @@ fi
 
 if [[ ! -d "$API/.wrangler/state/v3/d1" ]]; then
   echo "No local D1 state yet — applying migrations." >&2
-  (cd "$API" && bunx wrangler d1 migrations apply eventsbd-db-dev --local)
+  (cd "$API" && bunx wrangler d1 migrations apply gcnotes-db-dev --local)
 fi
 
 CALLBACK_OVERRIDE=()

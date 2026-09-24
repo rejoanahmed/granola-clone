@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "eventsbd-api",
+  "name": "gcnotes-api",
   "main": "src/worker.ts",
   "compatibility_date": "2025-04-24",
   // better-auth and its drizzle adapter reach for `node:crypto` and `node:buffer`. Without this
@@ -40,14 +40,14 @@
     // Comma-separated flag keys the fake starts ON. This is how you work on a dark feature
     // locally: add its key here, restart `wrangler dev`. Empty is what production looks like.
     "FLAGS_ON": "",
-    "NATIVE_SCHEME": "eventsbd",
+    "NATIVE_SCHEME": "gcnotes",
     "NODE_ENV": "development"
   },
 
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "eventsbd-db-dev",
+      "database_name": "gcnotes-db-dev",
       // Zeroes on purpose and permanently: `wrangler dev --local` never reads this id, and no
       // deploy ever uses this block. The deployed environments carry named placeholders instead.
       "database_id": "00000000-0000-0000-0000-000000000000",
@@ -68,7 +68,7 @@
     }
   ],
 
-  // The ONLY KV use in eventsbd: `makeBkashClient` caches the bKash `id_token` under
+  // The ONLY KV use in gcnotes: `makeBkashClient` caches the bKash `id_token` under
   // `bkash:token` for 50 minutes (it lives an hour). No sessions, no cache-aside, no feature
   // flags — if you find yourself adding a second key, ask whether it belongs in D1.
   "kv_namespaces": [
@@ -127,16 +127,16 @@
     "dev": {
       // The promotion gate: merge to main deploys here, the E2E suite runs against this Worker,
       // and only a green run deploys production. Its data is disposable by design.
-      "name": "eventsbd-api-dev",
+      "name": "gcnotes-api-dev",
       // No workers.dev: a second public hostname for the same Worker is a second surface to
       // secure, and it bypasses anything bound to the custom domain.
       "workers_dev": false,
-      "routes": [{ "pattern": "api-dev.eventsbd.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api-dev.gcnotes.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api-dev.eventsbd.com",
-        "APP_URL": "https://dev.eventsbd.com",
-        "BETTER_AUTH_URL": "https://api-dev.eventsbd.com",
-        "BKASH_CALLBACK_URL": "https://api-dev.eventsbd.com/payments/bkash/callback",
+        "API_URL": "https://api-dev.gcnotes.example.com",
+        "APP_URL": "https://dev.gcnotes.example.com",
+        "BETTER_AUTH_URL": "https://api-dev.gcnotes.example.com",
+        "BKASH_CALLBACK_URL": "https://api-dev.gcnotes.example.com/payments/bkash/callback",
         // `fake` selects `makeBkashFake` — the real object graph with a scripted leaf. The E2E
         // suite can therefore buy a ticket end to end without a merchant account or a real charge.
         "BKASH_MODE": "fake",
@@ -146,7 +146,7 @@
         // Live, unlike bKash: the E2E suite runs against this Worker and must exercise the real
         // Flagship path, because flipping a flag here is the rehearsal for flipping it in prod.
         "FLAGS_MODE": "live",
-        "NATIVE_SCHEME": "eventsbd",
+        "NATIVE_SCHEME": "gcnotes",
         // `development` on a deployed Worker is deliberate: it is the only setting under which
         // `otpEmail` logs the one-time code (middleware.ts), and the template ships no email
         // provider — so it is the only way anything, E2E included, can sign in here. Never
@@ -158,7 +158,7 @@
           "binding": "DB",
           // Same name as the local database, different place: local is a miniflare file, this is
           // remote D1. `bun run migrate:dev` is the only thing that writes to the remote one.
-          "database_name": "eventsbd-db-dev",
+          "database_name": "gcnotes-db-dev",
           "database_id": "DEV_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
@@ -198,31 +198,31 @@
       }
     },
     "production": {
-      "name": "eventsbd-api-prod",
+      "name": "gcnotes-api-prod",
       "workers_dev": false,
-      "routes": [{ "pattern": "api.eventsbd.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api.gcnotes.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api.eventsbd.com",
-        "APP_URL": "https://eventsbd.com",
-        "BETTER_AUTH_URL": "https://api.eventsbd.com",
+        "API_URL": "https://api.gcnotes.example.com",
+        "APP_URL": "https://gcnotes.example.com",
+        "BETTER_AUTH_URL": "https://api.gcnotes.example.com",
         // `AppConfig` defaults BKASH_BASE_URL to the SANDBOX host on purpose, so a template one
         // typo away from a real charge fails safe. Production is the one place that must say the
         // live host out loud.
         "BKASH_BASE_URL": "https://tokenized.pay.bka.sh/v1.2.0-beta",
-        "BKASH_CALLBACK_URL": "https://api.eventsbd.com/payments/bkash/callback",
+        "BKASH_CALLBACK_URL": "https://api.gcnotes.example.com/payments/bkash/callback",
         "BKASH_MODE": "live",
         // E2E_HARNESS is deliberately ABSENT and must stay so: wrangler does not inherit the top
         // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
         // pruned by removing it here, which is exactly why `parseConfig` refuses to start
         // production with the harness armed instead of trusting this omission.
         "FLAGS_MODE": "live",
-        "NATIVE_SCHEME": "eventsbd",
+        "NATIVE_SCHEME": "gcnotes",
         "NODE_ENV": "production"
       },
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "eventsbd-db-prod",
+          "database_name": "gcnotes-db-prod",
           "database_id": "PROD_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }

@@ -1,5 +1,5 @@
-import { BD_DIVISIONS } from "@evb/shared/bd";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import { BD_DIVISIONS } from "@gc/shared/bd";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { publishedEventsQuery } from "@web/lib/api";

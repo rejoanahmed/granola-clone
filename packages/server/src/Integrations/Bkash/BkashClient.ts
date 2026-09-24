@@ -1,5 +1,5 @@
-import { type Poisha, poisha } from "@evb/domain/Domain/Money";
-import { BkashRejected, BkashUnavailable } from "@evb/domain/Payment/Errors";
+import { type Poisha, poisha } from "@gc/domain/Domain/Money";
+import { BkashRejected, BkashUnavailable } from "@gc/domain/Payment/Errors";
 import { logEvent } from "../../Runtime/Logger";
 import { fromBdt, toBdt } from "./Codec";
 import type {

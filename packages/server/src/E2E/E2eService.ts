@@ -1,4 +1,4 @@
-import { ValidationFailed } from "@evb/domain/Errors";
+import { ValidationFailed } from "@gc/domain/Errors";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";

@@ -1,4 +1,4 @@
-# eventsbd
+# gcnotes
 
 A Bangladeshi event-ticketing template on Cloudflare Workers. An organiser publishes an event with
 paid ticket types; an attendee holds seats, pays with bKash tokenized checkout, and receives QR
@@ -38,11 +38,11 @@ container.ts           the composition root. The only reader of Env.    packages
 worker.ts              fetch + scheduled, both building that container.  apps/api
 ```
 
-Two of those rules carry the whole design: **`@evb/db` appears only in `*Repo.ts`, and `hono`
+Two of those rules carry the whole design: **`@gc/db` appears only in `*Repo.ts`, and `hono`
 never appears in a service.** `bun run check` fails if either breaks — Biome covers the import
 paths, [`scripts/check-architecture.mjs`](scripts/check-architecture.mjs) covers the placement.
 
-Dependencies point one way only: `apps/*` → `@evb/server` → `@evb/domain`, with `@evb/db` reachable
+Dependencies point one way only: `apps/*` → `@gc/server` → `@gc/domain`, with `@gc/db` reachable
 only from repositories. The three business modules are acyclic too — `Payments → Tickets → Events`
 — which is why Payments declares a `RegistrationFulfilment` port and `container.ts` supplies a
 five-line adapter over `TicketsService` instead of the two modules importing each other.
@@ -55,14 +55,14 @@ apps/
   web/                 TanStack Start on Workers — attendee + organiser UI            :3003
   native/              Expo 57 app — event feed, tickets, pay                          Metro
 packages/
-  domain/  @evb/domain schemas, route contracts, error classes. Isomorphic; clients import it.
-  server/  @evb/server services, repositories, policies, handlers, Runtime, bKash port
-  db/      @evb/db     drizzle schema + D1 migrations + the deterministic seed
-  auth/    @evb/auth   better-auth instance and its web/native clients
-  apiclient/ @evb/apiclient  the typed client derived from the contract
-  shared/  @evb/shared money, Dhaka time, BD phone numbers, Crockford base32
-  e2e/     @evb/e2e    the promotion gate: four journeys, HTTP, against deployed dev
-  config/  @evb/config the tsconfig presets every package extends
+  domain/  @gc/domain schemas, route contracts, error classes. Isomorphic; clients import it.
+  server/  @gc/server services, repositories, policies, handlers, Runtime, bKash port
+  db/      @gc/db     drizzle schema + D1 migrations + the deterministic seed
+  auth/    @gc/auth   better-auth instance and its web/native clients
+  apiclient/ @gc/apiclient  the typed client derived from the contract
+  shared/  @gc/shared money, Dhaka time, BD phone numbers, Crockford base32
+  e2e/     @gc/e2e    the promotion gate: four journeys, HTTP, against deployed dev
+  config/  @gc/config the tsconfig presets every package extends
 docs/
   architecture/        README (the spec), CONCURRENCY, BKASH, D1-NOTES, DEPLOYMENT
   DECISIONS.md         numbered rulings; ambiguity is resolved here, not re-litigated in code
@@ -99,7 +99,7 @@ from `/organiser/scan`. Scanning the same code twice returns 409 with the first 
 | `bun run fix` | auto-fix the lint and version drift |
 | `bun run test` | every package's suite |
 | `bun run build` | every package |
-| `bun run db:generate` / `db:migrate` / `db:seed` / `db:studio` | drizzle-kit, via `@evb/db` |
+| `bun run db:generate` / `db:migrate` / `db:seed` / `db:studio` | drizzle-kit, via `@gc/db` |
 | `bun run auth:generate-schema` | regenerate `packages/db/src/schema/auth.ts` — never hand-edit it |
 
 **Turbo caches `type-check`**, so a green run reading "11 cached" has verified nothing. When you
@@ -141,7 +141,7 @@ way back, and you file it after the site is healthy again.
 | Tier | Undoes | How | Time |
 | --- | --- | --- | --- |
 | 1 | feature behaviour behind a flag | flip the flag in that environment's Flagship app | seconds |
-| 2 | the deployed code | `bunx wrangler rollback --name eventsbd-api-prod` | seconds |
+| 2 | the deployed code | `bunx wrangler rollback --name gcnotes-api-prod` | seconds |
 | 3 | **nothing — D1 has no rollback** | roll forward with a new migration | a deploy |
 
 Because tier 3 does not exist, **every migration must be backward compatible with the Worker already
@@ -175,7 +175,7 @@ which is the entire claim this repo is making. Work left to right; steps 1–7 n
     `makeTestD1()` and a `fixedClock` (D016). Every guard you wrote into a `WHERE` clause in step 5
     gets the test that provokes it, in the same commit.
 
-Then `bun run check`. If step 5's import of `@evb/db` leaked into step 8, or the repo is
+Then `bun run check`. If step 5's import of `@gc/db` leaked into step 8, or the repo is
 constructed anywhere but `container.ts`, the check says so with a file and a line.
 
 ## Reference

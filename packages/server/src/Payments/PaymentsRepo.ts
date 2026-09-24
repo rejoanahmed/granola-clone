@@ -10,11 +10,11 @@ import {
   type PaymentRow,
   paymentEvents,
   payments,
-} from "@evb/db";
-import type { PaymentId, RegistrationId } from "@evb/domain/Domain/Ids";
-import type { Poisha } from "@evb/domain/Domain/Money";
-import type { Payment, PaymentStatus } from "@evb/domain/Domain/Payment";
-import type { Timestamp } from "@evb/domain/Domain/Time";
+} from "@gc/db";
+import type { PaymentId, RegistrationId } from "@gc/domain/Domain/Ids";
+import type { Poisha } from "@gc/domain/Domain/Money";
+import type { Payment, PaymentStatus } from "@gc/domain/Domain/Payment";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 /**

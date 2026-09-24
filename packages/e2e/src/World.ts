@@ -1,7 +1,7 @@
-import { Event, EventDetail } from "@evb/domain/Domain/Event";
-import { Checkout } from "@evb/domain/Domain/Payment";
-import { RegistrationDetail } from "@evb/domain/Domain/Registration";
-import { TicketType } from "@evb/domain/Domain/TicketType";
+import { Event, EventDetail } from "@gc/domain/Domain/Event";
+import { Checkout } from "@gc/domain/Domain/Payment";
+import { RegistrationDetail } from "@gc/domain/Domain/Registration";
+import { TicketType } from "@gc/domain/Domain/TicketType";
 import {
   type Client,
   decode,

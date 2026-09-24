@@ -1,4 +1,4 @@
-import { CROCKFORD_ALPHABET } from "@evb/shared/crockford";
+import { CROCKFORD_ALPHABET } from "@gc/shared/crockford";
 
 export type Rng = {
   code: () => string;

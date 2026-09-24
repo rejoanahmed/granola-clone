@@ -1,7 +1,7 @@
 import {
   DEFAULT_HOLD_MINUTES,
   DEFAULT_PAYMENT_STALE_MINUTES,
-} from "@evb/domain/Domain/Time";
+} from "@gc/domain/Domain/Time";
 import { z } from "zod";
 import type { BkashSettings } from "../Integrations/Bkash/Port";
 import { type Env, settingsOf } from "./WorkerEnv";

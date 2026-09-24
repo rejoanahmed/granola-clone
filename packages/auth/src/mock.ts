@@ -12,11 +12,11 @@ export const auth = createAuth({
   baseURL: "http://localhost:3001",
   // The CLI reads options, not rows, and `drizzleAdapter` only optional-chains `db._?.schema` at
   // construction. Cast through `AuthConfig["db"]` rather than building a real client: this file is
-  // not a permitted `@evb/db` importer, and `scripts/check-architecture.mjs` fails the build on one.
+  // not a permitted `@gc/db` importer, and `scripts/check-architecture.mjs` fails the build on one.
   db: {} as AuthConfig["db"],
   email: { sendOtpEmail: () => Promise.resolve() },
   google: { clientId: "generate-only", clientSecret: "generate-only" },
-  nativeScheme: "eventsbd",
+  nativeScheme: "gcnotes",
   secret: "generate-only-never-signs-anything",
   trustedOrigins: ["http://localhost:3003"],
 });

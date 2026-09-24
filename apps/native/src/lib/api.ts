@@ -4,21 +4,17 @@ import {
   makeQueryApi,
   queryDefaults,
   queryKeys,
-} from "@evb/apiclient";
-import type { EventQuery } from "@evb/domain/Domain/Event";
-import type {
-  EventId,
-  PaymentId,
-  RegistrationId,
-} from "@evb/domain/Domain/Ids";
-import type { PageQuery } from "@evb/domain/Domain/Page";
-import type { CreateRegistration } from "@evb/domain/Domain/Registration";
-import type { CheckInInput } from "@evb/domain/Domain/Ticket";
+} from "@gc/apiclient";
+import type { EventQuery } from "@gc/domain/Domain/Event";
+import type { EventId, PaymentId, RegistrationId } from "@gc/domain/Domain/Ids";
+import type { PageQuery } from "@gc/domain/Domain/Page";
+import type { CreateRegistration } from "@gc/domain/Domain/Registration";
+import type { CheckInInput } from "@gc/domain/Domain/Ticket";
 import Config from "@native/config";
 import { authClient, EXPO_AUTH_SCHEME } from "@native/lib/auth-client";
 import { createURL } from "expo-linking";
 
-export { ApiError, hasTag } from "@evb/apiclient";
+export { ApiError, hasTag } from "@gc/apiclient";
 
 export const API_URL = Config.API_URL;
 export const WEB_URL = Config.WEB_URL;
@@ -108,15 +104,15 @@ export const createCheckoutMutation = () =>
 export const checkInMutation = () =>
   api.mutation((body: CheckInInput) => client.checkIn({ body }));
 
-// Re-exported rather than imported by screens, so `@evb/apiclient` has exactly one call site.
+// Re-exported rather than imported by screens, so `@gc/apiclient` has exactly one call site.
 export {
   invalidate,
   invalidationKeys,
   type QueryInvalidator,
   type QueryKey,
-} from "@evb/apiclient";
+} from "@gc/apiclient";
 
-// Re-exported so a screen never hand-writes a cache key and drifts from `@evb/apiclient`.
+// Re-exported so a screen never hand-writes a cache key and drifts from `@gc/apiclient`.
 export const keys = queryKeys;
 
 export const STALE_TIME_MS = queryDefaults.staleTimeMs;

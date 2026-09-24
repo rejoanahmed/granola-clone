@@ -9,7 +9,7 @@ import type {
   publishEventRoute,
   updateEventRoute,
   updateTicketTypeRoute,
-} from "@evb/domain/Event/Contract";
+} from "@gc/domain/Event/Contract";
 import type { Endpoint } from "./client";
 
 // Every import here is `import type`, route constants included: a value import would pull `zod` and

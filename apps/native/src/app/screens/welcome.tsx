@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Email OTP is the only flow `@evb/auth` configures plugins for (`emailOTP` and `expo`).
+// Email OTP is the only flow `@gc/auth` configures plugins for (`emailOTP` and `expo`).
 export default function WelcomeScreen() {
   const colors = useThemeColors();
   const { refetchSession } = useAuth();
@@ -67,7 +67,7 @@ export default function WelcomeScreen() {
         style={styles.fill}
       >
         <View style={styles.body}>
-          <Text style={[styles.title, { color: colors.text }]}>eventsbd</Text>
+          <Text style={[styles.title, { color: colors.text }]}>gcnotes</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
             {sent
               ? `We sent a 6-digit code to ${email.trim()}.`

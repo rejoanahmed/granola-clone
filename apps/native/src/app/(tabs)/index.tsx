@@ -1,5 +1,5 @@
-import type { EventSummary } from "@evb/domain/Domain/Event";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { EventSummary } from "@gc/domain/Domain/Event";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useThemeColors } from "@native/hooks/useThemedNavigation";
 import { eventsQuery } from "@native/lib/api";
 import { useQuery } from "@tanstack/react-query";

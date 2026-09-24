@@ -1,5 +1,5 @@
-import { TicketCode } from "@evb/domain/Domain/Ids";
-import { CROCKFORD_ALPHABET } from "@evb/shared/crockford";
+import { TicketCode } from "@gc/domain/Domain/Ids";
+import { CROCKFORD_ALPHABET } from "@gc/shared/crockford";
 import { nanoid } from "nanoid";
 
 // Sixteen, not nanoid's default 21: a ticket id is derived from its registration id

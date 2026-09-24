@@ -24,7 +24,7 @@ const envOver = (d1: TestD1) =>
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
     KV: {} as KVNamespace,
-    NATIVE_SCHEME: "eventsbd",
+    NATIVE_SCHEME: "gcnotes",
     NODE_ENV: "test",
   }) satisfies Env;
 
@@ -56,7 +56,7 @@ describe("the E2E harness", () => {
     const sessions = makeSessions({
       db: makeDrizzle(d1),
       email: { sendOtpEmail: () => Promise.resolve() },
-      nativeScheme: "eventsbd",
+      nativeScheme: "gcnotes",
       secret: AUTH_SECRET,
       trustedOrigins: ["http://localhost:3001"],
     });
@@ -73,7 +73,7 @@ describe("the E2E harness", () => {
     const local = await harness.signIn("attendee", "http://localhost:3001");
     const deployed = await harness.signIn(
       "attendee",
-      "https://api-dev.eventsbd.com"
+      "https://api-dev.gcnotes.example.com"
     );
 
     expect(local.cookie.name).toBe("better-auth.session_token");

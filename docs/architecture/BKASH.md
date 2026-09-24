@@ -1,6 +1,6 @@
 # bKash — the state machine, the fake, and the sandbox
 
-bKash tokenized checkout is the second of the two genuinely hard things in eventsbd (the first is
+bKash tokenized checkout is the second of the two genuinely hard things in gcnotes (the first is
 D1's lack of interactive transactions — `CONCURRENCY.md`). It is hard for one reason, and the whole
 design falls out of it:
 
@@ -75,7 +75,7 @@ export type BkashExecuteResult =
 
 ## 2. Money crosses the boundary in exactly two functions
 
-eventsbd has **no decimal string in its own API, schema or domain.** Money is integer poisha
+gcnotes has **no decimal string in its own API, schema or domain.** Money is integer poisha
 (100 poisha = BDT 1) everywhere. bKash speaks BDT decimal strings (`"1250.00"`).
 
 ```ts
@@ -185,7 +185,7 @@ status === "failure" | "cancel":
 routing it to `queryPayment` retrieves the real outcome. Treating it as an error would strand
 payments that in fact succeeded.
 
-This route is also the only one in eventsbd that does not return JSON: it redirects to
+This route is also the only one in gcnotes that does not return JSON: it redirects to
 `${APP_URL}/payment/return?paymentId=…&outcome=…`. The handler is still one expression — the
 decision about the outcome is the service's.
 

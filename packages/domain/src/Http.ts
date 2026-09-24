@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Plain `zod`, not `@hono/zod-openapi`: `@evb/apiclient` reads these helpers and must not pull
+// Plain `zod`, not `@hono/zod-openapi`: `@gc/apiclient` reads these helpers and must not pull
 // Hono into a browser bundle.
 
 export const ErrorBody = z.object({

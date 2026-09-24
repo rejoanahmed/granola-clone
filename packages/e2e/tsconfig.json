@@ -1,5 +1,5 @@
 {
-  "extends": "@evb/config/base.json",
+  "extends": "@gc/config/base.json",
   "include": ["src"],
   "compilerOptions": {
     // Nothing is built: the suite is run from source by `bun`, exactly as CI runs it, so `tsc -b`

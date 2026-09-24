@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "eventsbd",
-    "slug": "eventsbd",
+    "name": "Notes",
+    "slug": "gcnotes",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -9,7 +9,7 @@
     "platforms": ["ios", "android"],
     "runtimeVersion": { "policy": "fingerprint" },
 
-    "scheme": "eventsbd",
+    "scheme": "gcnotes",
 
     "experiments": {
       "tsconfigPaths": true,
@@ -36,7 +36,7 @@
     "assetBundlePatterns": ["**/*"],
 
     "ios": {
-      "bundleIdentifier": "com.eventsbd.app",
+      "bundleIdentifier": "com.rejoan.gcnotes",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -44,7 +44,7 @@
     },
 
     "android": {
-      "package": "com.eventsbd.app",
+      "package": "com.rejoan.gcnotes",
       "edgeToEdgeEnabled": true,
       "softwareKeyboardLayoutMode": "resize"
     },

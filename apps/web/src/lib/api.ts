@@ -3,22 +3,22 @@ import {
   makeApiClient,
   makeQueryApi,
   queryKeys,
-} from "@evb/apiclient";
-import type { CreateEvent, UpdateEvent } from "@evb/domain/Domain/Event";
+} from "@gc/apiclient";
+import type { CreateEvent, UpdateEvent } from "@gc/domain/Domain/Event";
 import type {
   EventId,
   PaymentId,
   RegistrationId,
   TicketCode,
   TicketTypeId,
-} from "@evb/domain/Domain/Ids";
-import type { PageQuery } from "@evb/domain/Domain/Page";
-import type { RefundInput } from "@evb/domain/Domain/Payment";
-import type { CreateRegistration } from "@evb/domain/Domain/Registration";
+} from "@gc/domain/Domain/Ids";
+import type { PageQuery } from "@gc/domain/Domain/Page";
+import type { RefundInput } from "@gc/domain/Domain/Payment";
+import type { CreateRegistration } from "@gc/domain/Domain/Registration";
 import type {
   CreateTicketType,
   UpdateTicketType,
-} from "@evb/domain/Domain/TicketType";
+} from "@gc/domain/Domain/TicketType";
 import { API_URL } from "@web/lib/auth-client";
 
 // `credentials: "include"` is load-bearing and its absence is silent: :3003 calling :3001 is
@@ -41,7 +41,7 @@ export {
   invalidationKeys,
   queryDefaults,
   queryKeys,
-} from "@evb/apiclient";
+} from "@gc/apiclient";
 
 // `from` is left unset so it defaults to 0 server-side: passing "now" would hide an event that has
 // already started but not finished, which is the one a latecomer is looking for.

@@ -1,6 +1,6 @@
 // Placeholders: replace both hosts. `EXPO_PUBLIC_SERVER_URL` is not a substitute — a `.env`
 // override is absent from the store build.
 export default {
-  API_URL: "https://api.eventsbd.com",
-  WEB_URL: "https://eventsbd.com",
+  API_URL: "https://api.gcnotes.example.com",
+  WEB_URL: "https://gcnotes.example.com",
 } as const;

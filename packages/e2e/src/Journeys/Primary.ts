@@ -1,6 +1,6 @@
-import { Checkout, Payment } from "@evb/domain/Domain/Payment";
-import { RegistrationDetail } from "@evb/domain/Domain/Registration";
-import { Ticket } from "@evb/domain/Domain/Ticket";
+import { Checkout, Payment } from "@gc/domain/Domain/Payment";
+import { RegistrationDetail } from "@gc/domain/Domain/Registration";
+import { Ticket } from "@gc/domain/Domain/Ticket";
 import {
   decode,
   detailsOf,

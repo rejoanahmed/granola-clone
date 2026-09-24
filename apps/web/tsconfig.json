@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@evb/config/react-library.json",
+  "extends": "@gc/config/react-library.json",
   "include": ["src/**/*.ts", "src/**/*.tsx", "*.ts"],
   "compilerOptions": {
     // An app emits nothing: Vite owns the output, `tsc -b` only checks.

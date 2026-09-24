@@ -1,4 +1,4 @@
-import { POISHA_PER_TAKA, type Poisha, poisha } from "@evb/domain/Domain/Money";
+import { POISHA_PER_TAKA, type Poisha, poisha } from "@gc/domain/Domain/Money";
 
 // The only border crossing between integer poisha and bKash's decimal strings; nothing else in
 // `packages/server` converts (D002).

@@ -17,22 +17,18 @@ import {
   type TicketTypePatchRow,
   type TicketTypeRow,
   ticketTypes,
-} from "@evb/db";
+} from "@gc/db";
 import {
   Event,
   type EventQuery,
   type EventStatus,
   EventSummary,
-} from "@evb/domain/Domain/Event";
-import {
-  EventId,
-  type TicketTypeId,
-  type UserId,
-} from "@evb/domain/Domain/Ids";
-import type { Page, PageQuery } from "@evb/domain/Domain/Page";
-import type { PricedLine } from "@evb/domain/Domain/Registration";
-import { TicketType } from "@evb/domain/Domain/TicketType";
-import type { Timestamp } from "@evb/domain/Domain/Time";
+} from "@gc/domain/Domain/Event";
+import { EventId, type TicketTypeId, type UserId } from "@gc/domain/Domain/Ids";
+import type { Page, PageQuery } from "@gc/domain/Domain/Page";
+import type { PricedLine } from "@gc/domain/Domain/Registration";
+import { TicketType } from "@gc/domain/Domain/TicketType";
+import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import { chunkIds, type Stage, type StatementRef } from "../Runtime/UnitOfWork";
 

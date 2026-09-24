@@ -1,8 +1,8 @@
-import type { EventId, TicketTypeId } from "@evb/domain/Domain/Ids";
-import type { TicketTypeAvailability } from "@evb/domain/Domain/TicketType";
-import { normaliseMsisdn } from "@evb/shared/bd";
-import { formatPoisha } from "@evb/shared/money";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { EventId, TicketTypeId } from "@gc/domain/Domain/Ids";
+import type { TicketTypeAvailability } from "@gc/domain/Domain/TicketType";
+import { normaliseMsisdn } from "@gc/shared/bd";
+import { formatPoisha } from "@gc/shared/money";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import Config from "@native/config";
 import { useThemeColors } from "@native/hooks/useThemedNavigation";
 import {

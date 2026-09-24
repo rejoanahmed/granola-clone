@@ -1,4 +1,4 @@
-import { formatDhakaDateTime } from "@evb/shared/time";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { myEventsQuery } from "@web/lib/api";

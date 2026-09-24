@@ -1,4 +1,4 @@
-# Working in eventsbd
+# Working in gcnotes
 
 Read this before writing anything. [README.md](README.md) is the tour; this file is the contract.
 The authority above both is [docs/architecture/README.md](docs/architecture/README.md) — if this
@@ -24,15 +24,15 @@ Two traps make a green run a lie:
 ## The three-package shape
 
 ```
-packages/domain   @evb/domain   DECLARES the contract. Schemas, route definitions, error classes.
+packages/domain   @gc/domain   DECLARES the contract. Schemas, route definitions, error classes.
                                 No I/O, no Drizzle, no Workers globals. The clients import it too.
-packages/server   @evb/server   IMPLEMENTS it. Services, repositories, policies, handlers, Runtime,
+packages/server   @gc/server   IMPLEMENTS it. Services, repositories, policies, handlers, Runtime,
                                 the bKash port.
 apps/api          api           MOUNTS it. The Worker: fetch and scheduled, nothing else.
 ```
 
 The arrow only points left. `packages/domain` must never import `packages/server`; `apps/web` and
-`apps/native` must never import either `@evb/server` or `@evb/db`.
+`apps/native` must never import either `@gc/server` or `@gc/db`.
 
 ## The import rules — this is the architecture
 
@@ -40,13 +40,13 @@ The arrow only points left. `packages/domain` must never import `packages/server
 | --- | --- | --- |
 | `packages/domain/src/Domain/*.ts` | `zod`, other `Domain/*` | anything in `packages/server` |
 | `packages/domain/src/<Ctx>/Contract.ts` | `Domain/*`, `@hono/zod-openapi` | anything in `packages/server` |
-| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@evb/db`, `drizzle-orm`, `@evb/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
-| `packages/server/src/<Plural>/Policy.ts` | `@evb/domain/*`, `../Auth/Policy` | `@evb/db`, `drizzle-orm`, `hono` |
-| `packages/server/src/<Plural>/<Plural>Service.ts` | `@evb/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos are fine) | `@evb/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
-| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@evb/domain/<Ctx>/Contract`, `../AppEnv` | `@evb/db`, any `*Repo`, any other context |
+| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@gc/db`, `drizzle-orm`, `@gc/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
+| `packages/server/src/<Plural>/Policy.ts` | `@gc/domain/*`, `../Auth/Policy` | `@gc/db`, `drizzle-orm`, `hono` |
+| `packages/server/src/<Plural>/<Plural>Service.ts` | `@gc/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos are fine) | `@gc/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
+| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@gc/domain/<Ctx>/Contract`, `../AppEnv` | `@gc/db`, any `*Repo`, any other context |
 | `packages/server/src/container.ts` | everything | — |
 
-Two of those carry the design: **`@evb/db` appears only in `*Repo.ts`, and `hono` never appears in
+Two of those carry the design: **`@gc/db` appears only in `*Repo.ts`, and `hono` never appears in
 a service.** Biome's `noRestrictedImports` enforces the paths;
 [`scripts/check-architecture.mjs`](scripts/check-architecture.mjs) enforces the four things a lint
 rule cannot see:
@@ -55,7 +55,7 @@ rule cannot see:
 2. A `*Repo` imported as a **value** by anything but `container.ts` and a `*.test.ts`.
    `import type { EventsRepo }` is legal everywhere; that is how `TicketsService` depends on it.
 3. A `*Deps` field that is not `readonly`.
-4. `@evb/db` outside `*Repo.ts` and `Runtime/Drizzle.ts`.
+4. `@gc/db` outside `*Repo.ts` and `Runtime/Drizzle.ts`.
 
 ## The rules, short form
 
@@ -105,7 +105,7 @@ one line in `Http.ts`, and a case in `<Plural>.test.ts`. Nothing in `apps/api` c
   `packages/server/src/Integrations/Bkash/Codec.ts` and never leaves that directory.
 - **Timestamps are plain `integer()` epoch milliseconds, UTC**, not drizzle's `timestamp_ms` mode
   and not `Date`. That is what makes `fixedClock(1_700_000_000_000)` give exact expiry tests.
-- **Dhaka display formatting does manual UTC+6 arithmetic** in `@evb/shared/time`, never
+- **Dhaka display formatting does manual UTC+6 arithmetic** in `@gc/shared/time`, never
   `Intl.DateTimeFormat` with a `timeZone` option — Workers has been observed to ignore that option
   and silently return UTC. There is a regression test; do not "simplify" it.
 - **Every version is exact.** No `^`, no `~`, except the two deliberate `~` entries (`@types/react`

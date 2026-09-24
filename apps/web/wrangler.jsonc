@@ -10,7 +10,7 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "eventsbd-web",
+	"name": "gcnotes-web",
 	"compatibility_date": "2025-09-02",
 	"compatibility_flags": ["nodejs_compat"],
 	"main": "@tanstack/react-start/server-entry",
@@ -29,16 +29,16 @@
 	// built from its copy, and a mismatch reads as "logged out" rather than as a misconfiguration.
 	"env": {
 		"dev": {
-			"name": "eventsbd-web-dev",
+			"name": "gcnotes-web-dev",
 			// No workers.dev: the custom domain is the only public surface.
 			"workers_dev": false,
-			"routes": [{ "pattern": "dev.eventsbd.com", "custom_domain": true }],
+			"routes": [{ "pattern": "dev.gcnotes.example.com", "custom_domain": true }],
 			"observability": { "enabled": true }
 		},
 		"production": {
-			"name": "eventsbd-web-prod",
+			"name": "gcnotes-web-prod",
 			"workers_dev": false,
-			"routes": [{ "pattern": "eventsbd.com", "custom_domain": true }],
+			"routes": [{ "pattern": "gcnotes.example.com", "custom_domain": true }],
 			"observability": { "enabled": true }
 		}
 	}

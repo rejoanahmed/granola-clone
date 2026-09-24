@@ -1,6 +1,6 @@
-import type { Registration } from "@evb/domain/Domain/Registration";
-import { formatPoisha } from "@evb/shared/money";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { Registration } from "@gc/domain/Domain/Registration";
+import { formatPoisha } from "@gc/shared/money";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useThemeColors } from "@native/hooks/useThemedNavigation";
 import { myRegistrationsQuery } from "@native/lib/api";
 import { useAuth } from "@native/lib/auth-provider";

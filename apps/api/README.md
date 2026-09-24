@@ -43,7 +43,7 @@ is what decides whether the code is logged (see `middleware.ts`).
 
 ## Bindings
 
-Declared in `wrangler.jsonc`, typed by `Env` in `@evb/server/Runtime/WorkerEnv` — hand-written, so
+Declared in `wrangler.jsonc`, typed by `Env` in `@gc/server/Runtime/WorkerEnv` — hand-written, so
 a renamed binding is a type error rather than a regenerated file nobody reads.
 
 | Binding | Kind | Used by | Why it exists |
@@ -65,8 +65,8 @@ Three environments, two of which are real:
 | | Where | Worker | Config |
 | --- | --- | --- | --- |
 | local | your machine | — | the top level of `wrangler.jsonc`, ids permanently zero |
-| dev | Cloudflare | `eventsbd-api-dev` | `env.dev` — bKash fake, OTP in the logs |
-| production | Cloudflare | `eventsbd-api-prod` | `env.production` — bKash live |
+| dev | Cloudflare | `gcnotes-api-dev` | `env.dev` — bKash fake, OTP in the logs |
+| production | Cloudflare | `gcnotes-api-prod` | `env.production` — bKash live |
 
 ```bash
 bun run deploy:check   # dry-run BOTH deployed environments; uploads nothing

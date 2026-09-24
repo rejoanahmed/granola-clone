@@ -7,21 +7,21 @@ import {
   ID_PREFIX,
   PaymentId,
   RegistrationId,
-} from "@evb/domain/Domain/Ids";
-import { poisha } from "@evb/domain/Domain/Money";
-import type { PaymentStatus } from "@evb/domain/Domain/Payment";
+} from "@gc/domain/Domain/Ids";
+import { poisha } from "@gc/domain/Domain/Money";
+import type { PaymentStatus } from "@gc/domain/Domain/Payment";
 import type {
   RegistrationStatus,
   RegistrationSummary,
   ReleaseReason,
-} from "@evb/domain/Domain/Registration";
-import { Forbidden } from "@evb/domain/Errors";
+} from "@gc/domain/Domain/Registration";
+import { Forbidden } from "@gc/domain/Errors";
 import {
   BkashRejected,
   BkashUnavailable,
   InvalidWebhookSignature,
   PaymentNotAllowed,
-} from "@evb/domain/Payment/Errors";
+} from "@gc/domain/Payment/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type BkashScriptOutcome,

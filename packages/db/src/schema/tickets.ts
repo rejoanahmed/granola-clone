@@ -52,8 +52,8 @@ export const tickets = sqliteTable(
 );
 
 export type TicketRow = typeof tickets.$inferSelect;
-// No `NewTicketRow` here on purpose: `@evb/domain/Domain/Pricing` owns that name, and a second
-// export of it from `@evb/db` would be ambiguous in `TicketsRepo.ts`, which imports both.
+// No `NewTicketRow` here on purpose: `@gc/domain/Domain/Pricing` owns that name, and a second
+// export of it from `@gc/db` would be ambiguous in `TicketsRepo.ts`, which imports both.
 
 export const ticketsRelations = relations(tickets, ({ one }) => ({
   checkedInByUser: one(user, {

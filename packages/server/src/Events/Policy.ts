@@ -1,5 +1,5 @@
-import type { Event } from "@evb/domain/Domain/Event";
-import { NotEventOrganiser } from "@evb/domain/Event/Errors";
+import type { Event } from "@gc/domain/Domain/Event";
+import { NotEventOrganiser } from "@gc/domain/Event/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, authorized, make } from "../Auth/Policy";
 

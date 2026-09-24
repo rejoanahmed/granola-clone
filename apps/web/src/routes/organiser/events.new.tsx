@@ -1,7 +1,7 @@
-import { poisha } from "@evb/domain/Domain/Money";
-import type { CreateTicketType } from "@evb/domain/Domain/TicketType";
-import { BD_DISTRICTS } from "@evb/shared/bd";
-import { poishaFromTaka } from "@evb/shared/money";
+import { poisha } from "@gc/domain/Domain/Money";
+import type { CreateTicketType } from "@gc/domain/Domain/TicketType";
+import { BD_DISTRICTS } from "@gc/shared/bd";
+import { poishaFromTaka } from "@gc/shared/money";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import {

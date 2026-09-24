@@ -1,5 +1,5 @@
-import type { TicketCode } from "@evb/domain/Domain/Ids";
-import { formatDhakaDateTime } from "@evb/shared/time";
+import type { TicketCode } from "@gc/domain/Domain/Ids";
+import { formatDhakaDateTime } from "@gc/shared/time";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { checkInMutation, hasTag } from "@web/lib/api";

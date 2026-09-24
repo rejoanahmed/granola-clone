@@ -1,5 +1,5 @@
-import type { Poisha } from "@evb/domain/Domain/Money";
-import { BkashRejected, BkashUnavailable } from "@evb/domain/Payment/Errors";
+import type { Poisha } from "@gc/domain/Domain/Money";
+import { BkashRejected, BkashUnavailable } from "@gc/domain/Payment/Errors";
 import type { Clock } from "../../Runtime/Clock";
 import type { Ids } from "../../Runtime/Ids";
 import type {

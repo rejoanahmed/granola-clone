@@ -2,11 +2,11 @@
 // See `Integrations/Bkash/Signature.ts`: node's types are referenced per-file because
 // `packages/server/tsconfig.json` scopes `types` to the Workers ones.
 import { createHmac } from "node:crypto";
-import { PaymentId, RegistrationId } from "@evb/domain/Domain/Ids";
-import { poisha } from "@evb/domain/Domain/Money";
-import type { Payment, PaymentResult } from "@evb/domain/Domain/Payment";
-import { isAppError, ValidationFailed } from "@evb/domain/Errors";
-import { InvalidWebhookSignature } from "@evb/domain/Payment/Errors";
+import { PaymentId, RegistrationId } from "@gc/domain/Domain/Ids";
+import { poisha } from "@gc/domain/Domain/Money";
+import type { Payment, PaymentResult } from "@gc/domain/Domain/Payment";
+import { isAppError, ValidationFailed } from "@gc/domain/Errors";
+import { InvalidWebhookSignature } from "@gc/domain/Payment/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";

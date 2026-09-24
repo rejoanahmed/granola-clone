@@ -1,5 +1,5 @@
 {
-  "extends": "@evb/config/base.json",
+  "extends": "@gc/config/base.json",
   "include": ["src"],
   "compilerOptions": {
     "declaration": true,
@@ -14,7 +14,7 @@
     // package, two runtimes: DOM has to be in `lib` or the client files stop typechecking.
     "lib": ["ESNext", "DOM"]
   },
-  // `src/index.ts` imports `@evb/db` (the `DB` type) and `@evb/db/schema/auth` (the generated
+  // `src/index.ts` imports `@gc/db` (the `DB` type) and `@gc/db/schema/auth` (the generated
   // tables). A composite project must reference every workspace project it reads, or `tsc -b`
   // resolves those specifiers to `packages/db/src/*.ts` and pulls that source into *this*
   // program — compiled without db's own `types: ["@cloudflare/workers-types","node"]`, so a db

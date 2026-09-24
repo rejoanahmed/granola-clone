@@ -1,12 +1,12 @@
-import { BkashWebhookBody, type WebhookAck } from "@evb/domain/Domain/Payment";
-import { Unauthorized } from "@evb/domain/Errors";
+import { BkashWebhookBody, type WebhookAck } from "@gc/domain/Domain/Payment";
+import { Unauthorized } from "@gc/domain/Errors";
 import {
   bkashCallbackRoute,
   bkashWebhookRoute,
   createCheckoutRoute,
   getPaymentRoute,
   refundPaymentRoute,
-} from "@evb/domain/Payment/Contract";
+} from "@gc/domain/Payment/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

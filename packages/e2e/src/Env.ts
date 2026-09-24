@@ -33,7 +33,7 @@ export const readEnv = (): E2eEnv => {
 
   if (apiUrl === "") {
     fail(
-      "API_URL is not set — point it at the deployed Worker, e.g. https://api-dev.eventsbd.com"
+      "API_URL is not set — point it at the deployed Worker, e.g. https://api-dev.gcnotes.example.com"
     );
   }
   // An origin, not a path: every request below appends an absolute contract path to it.

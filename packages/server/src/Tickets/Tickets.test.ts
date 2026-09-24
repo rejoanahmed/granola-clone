@@ -3,18 +3,18 @@ import {
   PaymentId,
   TicketTypeId,
   UserId,
-} from "@evb/domain/Domain/Ids";
+} from "@gc/domain/Domain/Ids";
 import type {
   CreateRegistration,
   RequestedLine,
-} from "@evb/domain/Domain/Registration";
-import { Forbidden } from "@evb/domain/Errors";
+} from "@gc/domain/Domain/Registration";
+import { Forbidden } from "@gc/domain/Errors";
 import {
   EventNotPurchasable,
   RegistrationNotCancellable,
   SoldOut,
   TicketVoid,
-} from "@evb/domain/Ticket/Errors";
+} from "@gc/domain/Ticket/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type EventsRepo, makeEventsRepo } from "../Events/EventsRepo";
 import { makeFeatureFlagsFake } from "../Integrations/FeatureFlags/FeatureFlagsFake";
@@ -239,7 +239,7 @@ describe("register", () => {
   });
 });
 
-// The one flagged behaviour in eventsbd, and the template for the next one: built, merged and
+// The one flagged behaviour in gcnotes, and the template for the next one: built, merged and
 // deployed to production with the flag off, where it is exactly the old rule.
 describe("door sales, behind the door-sales flag", () => {
   const STARTED = AT + DAY_MS + 1;
