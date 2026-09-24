@@ -10,6 +10,8 @@ import type { EmailPort } from "./Integrations/Email/Port";
 import { makeFeatureFlagsClient } from "./Integrations/FeatureFlags/FeatureFlagsClient";
 import { makeFeatureFlagsFake } from "./Integrations/FeatureFlags/FeatureFlagsFake";
 import type { FeatureFlagsPort } from "./Integrations/FeatureFlags/Port";
+import { makeNotesRepo } from "./Notes/NotesRepo";
+import { makeNotesService, type NotesService } from "./Notes/NotesService";
 import { makeOutboxRepo } from "./Outbox/OutboxRepo";
 import { makeProfilesRepo } from "./Profiles/ProfilesRepo";
 import {
@@ -43,6 +45,16 @@ export const buildContainer = (
   const profiles = traced(
     "Profiles",
     makeProfilesService({ clock, repo: profilesRepo })
+  );
+
+  const notes = traced(
+    "Notes",
+    makeNotesService({
+      clock,
+      ids,
+      repo: traced("NotesRepo", makeNotesRepo(db)),
+      uow,
+    })
   );
 
   // EMAIL_MODE is parsed in `AppConfig` and acted on here, nowhere else. `fake` is the only mode
@@ -100,7 +112,7 @@ export const buildContainer = (
           })
         );
 
-  return { authEmails, e2e, flags, profiles, ...overrides };
+  return { authEmails, e2e, flags, notes, profiles, ...overrides };
 };
 
 // Written out rather than `ReturnType<typeof buildContainer>`: `buildContainer` takes
@@ -109,5 +121,6 @@ export type Container = {
   authEmails: AuthEmailsService;
   e2e: E2eService | null;
   flags: FeatureFlagsPort;
+  notes: NotesService;
   profiles: ProfilesService;
 };
