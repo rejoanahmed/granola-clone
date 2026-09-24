@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 4: the cursor codec is specified (phase-4.md §6.3), not built
 import { decodeCursor, encodeCursor } from "./Cursor";
 
 // The cursor is opaque to clients and exact to the server: base64url of `[startedAt, id]`, the
