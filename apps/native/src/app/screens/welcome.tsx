@@ -1,14 +1,22 @@
-import { useThemeColors } from "@native/hooks/useThemedNavigation";
+import {
+  colors,
+  MAX_FONT_SCALE,
+  PillButton,
+  radii,
+  sizes,
+  spacing,
+  Text,
+  typography,
+} from "@native/design";
 import { authClient } from "@native/lib/auth-client";
 import { useAuth } from "@native/lib/auth-provider";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from "react-native";
@@ -16,7 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 // Email OTP is the only flow `@gc/auth` configures plugins for (`emailOTP` and `expo`).
 export default function WelcomeScreen() {
-  const colors = useThemeColors();
+  const router = useRouter();
   const { refetchSession } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -58,18 +66,15 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.screen, { backgroundColor: colors.background }]}
-      testID="welcome-screen"
-    >
+    <SafeAreaView style={styles.screen} testID="welcome-screen">
       <Stack.Screen options={{ title: "Sign in" }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.fill}
       >
         <View style={styles.body}>
-          <Text style={[styles.title, { color: colors.text }]}>Notes</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>
+          <Text variant="display">Notes</Text>
+          <Text style={styles.subtitle} variant="secondary">
             {sent
               ? `We sent a 6-digit code to ${email.trim()}.`
               : "Sign in with your email. We will send you a one-time code."}
@@ -80,13 +85,11 @@ export default function WelcomeScreen() {
             autoComplete="email"
             editable={!sent}
             keyboardType="email-address"
+            maxFontSizeMultiplier={MAX_FONT_SCALE}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.input,
-              { borderColor: colors.border, color: colors.text },
-            ]}
+            placeholderTextColor={colors.text.tertiary}
+            style={styles.input}
             testID="welcome-email"
             value={email}
           />
@@ -95,45 +98,36 @@ export default function WelcomeScreen() {
             <TextInput
               autoComplete="one-time-code"
               keyboardType="number-pad"
+              maxFontSizeMultiplier={MAX_FONT_SCALE}
               maxLength={6}
               onChangeText={setOtp}
               placeholder="123456"
-              placeholderTextColor={colors.muted}
-              style={[
-                styles.input,
-                styles.otp,
-                { borderColor: colors.border, color: colors.text },
-              ]}
+              placeholderTextColor={colors.text.tertiary}
+              style={[styles.input, styles.otp]}
               testID="welcome-otp"
               value={otp}
             />
           ) : null}
 
           {error ? (
-            <Text style={[styles.error, { color: colors.danger }]}>
+            <Text color={colors.destructive} variant="caption">
               {error}
             </Text>
           ) : null}
 
-          <Pressable
+          <PillButton
             disabled={busy || (sent ? otp.length < 6 : email.trim().length < 3)}
+            label={sent ? "Sign in" : "Send code"}
             onPress={sent ? verifyOtp : sendOtp}
-            style={[
-              styles.button,
-              {
-                backgroundColor: colors.accent,
-                opacity: busy ? 0.5 : 1,
-              },
-            ]}
+            size="lg"
+            style={styles.submit}
             testID="welcome-submit"
-          >
-            <Text style={[styles.buttonText, { color: colors.onAccent }]}>
-              {sent ? "Sign in" : "Send code"}
-            </Text>
-          </Pressable>
+            tone="light"
+          />
 
           {sent ? (
             <Pressable
+              accessibilityRole="button"
               onPress={() => {
                 setSent(false);
                 setOtp("");
@@ -141,10 +135,33 @@ export default function WelcomeScreen() {
               }}
               style={styles.secondary}
             >
-              <Text style={[styles.secondaryText, { color: colors.muted }]}>
-                Use a different email
-              </Text>
+              <Text variant="caption">Use a different email</Text>
             </Pressable>
+          ) : null}
+
+          {__DEV__ ? (
+            <View style={styles.devLinks}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/dev/home")}
+                style={styles.devLink}
+                testID="welcome-dev-home"
+              >
+                <Text style={styles.devLinkText} variant="caption">
+                  Preview home
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/dev/gallery")}
+                style={styles.devLink}
+                testID="welcome-dev-gallery"
+              >
+                <Text style={styles.devLinkText} variant="caption">
+                  Component gallery
+                </Text>
+              </Pressable>
+            </View>
           ) : null}
         </View>
       </KeyboardAvoidingView>
@@ -153,27 +170,33 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { flex: 1, gap: 12, justifyContent: "center", paddingHorizontal: 24 },
-  button: {
-    alignItems: "center",
-    borderRadius: 12,
-    marginTop: 8,
-    paddingVertical: 16,
+  body: {
+    flex: 1,
+    gap: spacing.sm,
+    justifyContent: "center",
+    paddingHorizontal: spacing.xl,
   },
-  buttonText: { fontSize: 16, fontWeight: "700" },
-  error: { fontSize: 14 },
+  devLink: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+  devLinks: {
+    flexDirection: "row",
+    gap: spacing.md,
+    justifyContent: "center",
+    paddingTop: spacing.md,
+  },
+  devLinkText: { textDecorationLine: "underline" },
   fill: { flex: 1 },
   input: {
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-    fontSize: 16,
-    paddingHorizontal: 12,
+    ...typography.body,
+    backgroundColor: colors.bg.list,
+    borderColor: colors.border.hairline,
+    borderRadius: radii.tile,
+    borderWidth: sizes.hairline,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 14,
   },
   otp: { fontSize: 24, letterSpacing: 8, textAlign: "center" },
-  screen: { flex: 1 },
-  secondary: { alignItems: "center", paddingVertical: 8 },
-  secondaryText: { fontSize: 14 },
-  subtitle: { fontSize: 15, paddingBottom: 8 },
-  title: { fontSize: 34, fontWeight: "800" },
+  screen: { backgroundColor: colors.bg.app, flex: 1 },
+  secondary: { alignItems: "center", paddingVertical: spacing.xs },
+  submit: { marginTop: spacing.xs },
+  subtitle: { paddingBottom: spacing.xs },
 });
