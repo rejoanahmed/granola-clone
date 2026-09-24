@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { Profile } from "@gc/domain/Domain/Profile";
 import { z } from "zod";
 import { makeApiClient, makeEndpoint } from "./client";
 import {
@@ -309,5 +310,53 @@ describe("makeApiClient", () => {
 
     expect(hasTag(error, NETWORK_ERROR_TAG)).toBe(true);
     expect((error as ApiError).status).toBe(0);
+  });
+});
+
+// §7 case 26 (docs/spec/phase-3.md §6.8).
+describe("the phase-3 profile endpoints", () => {
+  const PROFILE = {
+    companyDescription: null,
+    companyName: null,
+    createdAt: 1_690_000_000_000,
+    email: "rita@example.test",
+    emailVerified: true,
+    id: "usr_1" as Profile["id"],
+    jobTitle: null,
+    linkedinUsername: null,
+    name: "Rita",
+    onboardedAt: null,
+    userType: null,
+  } satisfies Profile;
+
+  it("sends PATCH /me with a JSON body and hands back the decoded profile", async () => {
+    const patched = { ...PROFILE, jobTitle: "Designer" };
+    const { calls, stub } = recording(jsonResponse(patched));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.updateMe({ body: { jobTitle: "Designer" } });
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/me`);
+    expect(call.init.method).toBe("PATCH");
+    expect(headerOf(call, "content-type")).toBe("application/json");
+    expect(JSON.parse(String(call.init.body))).toEqual({
+      jobTitle: "Designer",
+    });
+    expect(result).toEqual(patched);
+  });
+
+  it("sends POST /me/onboarding with no body", async () => {
+    const onboarded = { ...PROFILE, onboardedAt: 1_700_000_000_000 };
+    const { calls, stub } = recording(jsonResponse(onboarded));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.completeOnboarding();
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/me/onboarding`);
+    expect(call.init.method).toBe("POST");
+    expect(call.init.body ?? null).toBeNull();
+    expect(result).toEqual(onboarded);
   });
 });

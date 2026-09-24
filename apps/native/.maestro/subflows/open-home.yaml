@@ -1,0 +1,15 @@
+# Clean launch, reset and seeded backend, then a real sign-in as the seeded, onboarded `person`
+# (docs/spec/phase-3.md AC8). Replaces phase 2's sessionless "Preview home" entry.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: start-clean.yaml
+- runFlow:
+    file: sign-in.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

@@ -1,0 +1,82 @@
+# AC2 (docs/spec/phase-3.md §8): a seeded, onboarded person signs in with a code from the outbox
+# and goes straight home — onboarding never appears. The steps are the sign-in subflow's, written
+# out, because this flow is the one that pins the welcome copy and screenshots both steps.
+appId: ${APP_ID}
+name: Sign in — a seeded, onboarded person goes straight home
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+
+# Email step (§2.1), its copy pinned (§4): wrong copy, or another product's name in a headline,
+# must fail here.
+- assertVisible:
+    id: welcome-title
+    text: Welcome to Notes
+- assertVisible:
+    id: welcome-body
+    text: "Sign in or create an account with your email. We.ll send you a 6-digit code."
+- assertVisible:
+    id: welcome-email
+    text: you@example.com
+- assertVisible:
+    id: welcome-submit
+    text: Continue
+    enabled: false
+- tapOn:
+    id: welcome-email
+- inputText: e2e-person@gcnotes.test
+- assertVisible:
+    id: welcome-submit
+    enabled: true
+- takeScreenshot: phase-3-welcome-email
+- tapOn:
+    id: welcome-submit
+
+# Code step (§2.2): the same screen, naming the address the code went to.
+- extendedWaitUntil:
+    visible:
+      id: welcome-otp
+    timeout: 30000
+- assertVisible:
+    id: welcome-title
+    text: Check your email
+- assertVisible:
+    id: welcome-sent-to
+    text: "We sent a 6-digit code to e2e-person@gcnotes\\.test\\."
+- assertVisible:
+    id: welcome-submit
+    text: Verify
+    enabled: false
+# The send has just happened, so Resend is counting down (§2.2); `sign-in-resend.yaml` waits it out.
+- assertVisible:
+    id: welcome-resend
+    text: "Resend in 0:[0-3][0-9]"
+    enabled: false
+- assertVisible:
+    id: welcome-change-email
+    text: Use a different email
+- takeScreenshot: phase-3-welcome-code
+- runFlow:
+    file: ../subflows/enter-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+
+# AC2 says no onboarding screen appears on the way home. Maestro samples the screen rather than
+# watching it, so this checks the transition as early as it can — straight after the sixth digit,
+# while the session and the profile are still resolving — and again once home is up. It cannot
+# rule out a flash shorter than one sample (spec §8, AC2).
+- assertNotVisible:
+    id: onboarding-name-screen
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- assertNotVisible:
+    id: onboarding-name-screen
+- assertVisible:
+    id: home-avatar-initial
+    text: E

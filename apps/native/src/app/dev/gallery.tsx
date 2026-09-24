@@ -2,6 +2,8 @@ import {
   Card,
   colors,
   Fab,
+  FormDivider,
+  FormRow,
   IconButton,
   IconTile,
   ListRow,
@@ -11,6 +13,7 @@ import {
   sizes,
   spacing,
   Text,
+  TextField,
   ToolbarCapsule,
   type TypeVariant,
   typography,
@@ -26,7 +29,7 @@ import {
   Settings,
   Smartphone,
 } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -55,6 +58,8 @@ const SWATCHES = flatten(colors);
 
 // Clears the home indicator with room to spare, so the last section scrolls fully into view.
 const BOTTOM_CLEARANCE = 120;
+// #82's grouped form card.
+const FORM_RADIUS = 28;
 
 function Section({
   children,
@@ -75,6 +80,8 @@ function Section({
 
 export default function GalleryScreen() {
   const router = useRouter();
+  const [field, setField] = useState("");
+  const [row, setRow] = useState("");
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <ScrollView
@@ -197,6 +204,29 @@ export default function GalleryScreen() {
               title="Solo reflection thoughts"
             />
           </View>
+          <TextField
+            onChangeText={setField}
+            placeholder="you@example.com"
+            testID="gallery-text-field"
+            value={field}
+          />
+          <View style={styles.form} testID="gallery-form-row">
+            <FormRow
+              label="Job Title"
+              onChangeText={setRow}
+              placeholder="Your job title"
+              testID="gallery-form-row-input"
+              value={row}
+            />
+            <FormDivider />
+            <FormRow
+              label="User Type"
+              onPress={() => undefined}
+              placeholder="Choose"
+              testID="gallery-form-row-choice"
+              valueLabel="Startup/Generalist"
+            />
+          </View>
         </Section>
 
         <Section testID="gallery-sheets" title="Sheets">
@@ -217,6 +247,12 @@ export default function GalleryScreen() {
 const styles = StyleSheet.create({
   cardLines: { flex: 1, gap: sizes.cardLineGap },
   content: { gap: spacing.xxl, paddingBottom: BOTTOM_CLEARANCE },
+  form: {
+    borderColor: colors.border.hairline,
+    borderRadius: FORM_RADIUS,
+    borderWidth: sizes.hairline,
+    paddingVertical: spacing.xxs,
+  },
   list: {
     backgroundColor: colors.bg.list,
     borderRadius: spacing.md,

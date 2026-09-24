@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { RateLimited } from "@gc/domain/Errors";
 import { type AppEnv, buildContainer, type Env } from "@gc/server";
 import {
@@ -5,6 +6,7 @@ import {
   type Sessions,
   type SessionsConfig,
 } from "@gc/server/Auth/Sessions";
+import { parseConfig } from "@gc/server/Runtime/AppConfig";
 import { makeDrizzle } from "@gc/server/Runtime/Drizzle";
 import { logEvent } from "@gc/server/Runtime/Logger";
 import type { Handler, MiddlewareHandler } from "hono";
@@ -23,13 +25,13 @@ const onARawRoute = (path: string): boolean =>
   RAW_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 
 const AUTH_WINDOW_MS = 60_000;
-const AUTH_LIMIT = 20;
 const ANONYMOUS_CLIENT = "anonymous";
 
 // The default handler answers `text/plain`, which would make the 429 the one response in this API
 // that is not `ErrorBody`; throwing hands the status back to `on-error.ts` (R7). Headers the
 // library has already set survive onto the thrown response. The store is in-memory, so the budget
-// is per isolate rather than global.
+// is per isolate rather than global. The budget is `AUTH_RATE_LIMIT` (default 20): locally every
+// simulator request shares the key "anonymous", and one Maestro run spends twenty in minutes.
 //
 // Built on the FIRST REQUEST, never at module scope: `rateLimiter()` calls `store.init()`, which
 // arms a `setInterval`, and workerd refuses a timer in global scope outright — "Disallowed
@@ -38,16 +40,19 @@ const ANONYMOUS_CLIENT = "anonymous";
 let authLimiter: MiddlewareHandler<AppEnv> | undefined;
 
 export const authRateLimit = createMiddleware<AppEnv>(async (c, next) => {
-  authLimiter ??= rateLimiter<AppEnv>({
-    handler: () => {
-      throw new RateLimited({ limit: AUTH_LIMIT, windowMs: AUTH_WINDOW_MS });
-    },
-    keyGenerator: (ctx) =>
-      ctx.req.header("cf-connecting-ip") ?? ANONYMOUS_CLIENT,
-    limit: AUTH_LIMIT,
-    standardHeaders: "draft-6",
-    windowMs: AUTH_WINDOW_MS,
-  });
+  if (authLimiter === undefined) {
+    const limit = parseConfig(c.env).authRateLimit;
+    authLimiter = rateLimiter<AppEnv>({
+      handler: () => {
+        throw new RateLimited({ limit, windowMs: AUTH_WINDOW_MS });
+      },
+      keyGenerator: (ctx) =>
+        ctx.req.header("cf-connecting-ip") ?? ANONYMOUS_CLIENT,
+      limit,
+      standardHeaders: "draft-6",
+      windowMs: AUTH_WINDOW_MS,
+    });
+  }
   await authLimiter(c, next);
 });
 
@@ -90,18 +95,35 @@ export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
 
 type OtpEmail = Parameters<SessionsConfig["email"]["sendOtpEmail"]>[0];
 
-// The project ships no email provider yet, so the OTP is logged in development only — a one-time
-// password in a log line is one in everyone's log aggregator. Email sign-in therefore does not
-// work in production until a provider is wired in here.
+// better-auth 1.7.5 awaits the send hook inside `runInBackgroundOrAwait`, which catches whatever it
+// throws and only logs it: a send that failed still answers 200 `{ success: true }`, and the app
+// moves to "Check your email" for a code nobody sent. So the failure is carried out of band. Each
+// `/api/auth/*` request runs inside its own store, the hook records what it threw there, and
+// `betterAuthHandler` rethrows it once better-auth returns, which is how `EmailUnavailable` reaches
+// `on-error.ts` as the 503 it declares. Throwing a better-auth `APIError` from the hook would not
+// help: it is swallowed by the same catch.
+type SendOutcome = { failure?: unknown };
+const otpSends = new AsyncLocalStorage<SendOutcome>();
+
+// better-auth decides when a code is sent; the container's `authEmails` renders and sends it
+// through whichever email provider `EMAIL_MODE` chose (only the fake exists, writing the outbox the
+// E2E harness reads). The log line never carries the code, in any environment: a one-time password
+// in a log line is one in everyone's log aggregator, and the outbox is where a developer reads it.
+// The container is built per send rather than captured, because the sessions below outlive the
+// request that created them.
 const otpEmail = (env: Env): SessionsConfig["email"] => ({
-  sendOtpEmail: ({ email, otp, type }: OtpEmail) => {
-    logEvent(
-      "auth.otp.issued",
-      env.NODE_ENV === "development"
-        ? { email, otp, type }
-        : { email, provider: "none", type }
-    );
-    return Promise.resolve();
+  sendOtpEmail: async ({ email, otp, type }: OtpEmail) => {
+    try {
+      await buildContainer(env).authEmails.sendOtp({ email, otp, type });
+    } catch (failure) {
+      logEvent("auth.otp.failed", { email, type });
+      const outcome = otpSends.getStore();
+      if (outcome !== undefined) {
+        outcome.failure = failure;
+      }
+      throw failure;
+    }
+    logEvent("auth.otp.issued", { email, type });
   },
 });
 
@@ -145,5 +167,13 @@ export const currentActor = createMiddleware<AppEnv>(async (c, next) => {
   await next();
 });
 
-export const betterAuthHandler: Handler<AppEnv> = (c) =>
-  sessionsFor(c.env).handler(c.req.raw);
+export const betterAuthHandler: Handler<AppEnv> = async (c) => {
+  const outcome: SendOutcome = {};
+  const response = await otpSends.run(outcome, () =>
+    sessionsFor(c.env).handler(c.req.raw)
+  );
+  if (outcome.failure !== undefined) {
+    throw outcome.failure;
+  }
+  return response;
+};

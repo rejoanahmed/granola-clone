@@ -1,0 +1,70 @@
+# AC5 (docs/spec/phase-3.md §8): onboarding is a gate on `onboardedAt`, not on how far the screens
+# got, so a relaunch mid-way returns to step 1 with the saved name; step 2 can be skipped; and once
+# finished, a relaunch goes home rather than through onboarding again.
+appId: ${APP_ID}
+name: Onboarding survives a relaunch, can be skipped, and is shown once
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-newcomer@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: onboarding-name-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-name-input
+- inputText: Rita Newcomer
+- tapOn:
+    id: onboarding-name-continue
+- extendedWaitUntil:
+    visible:
+      id: onboarding-about-screen
+    timeout: 30000
+
+# Relaunch mid-onboarding: back to step 1, with the name that was saved.
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: onboarding-name-screen
+    timeout: 180000
+- assertNotVisible:
+    id: home-screen
+- assertVisible:
+    id: onboarding-name-input
+    text: Rita Newcomer
+
+# Continue, skip step 2, finish.
+- tapOn:
+    id: onboarding-name-continue
+- extendedWaitUntil:
+    visible:
+      id: onboarding-about-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-about-skip
+- extendedWaitUntil:
+    visible:
+      id: onboarding-ready-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-ready-finish
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+
+# Relaunch once onboarded: home, not onboarding.
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- assertNotVisible:
+    id: onboarding-name-screen

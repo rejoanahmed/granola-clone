@@ -5,6 +5,7 @@
 flows:
   - smoke/*
   - phase-2/*
+  - phase-3/*
 
 # Everything under this workspace runs against the simulator build; no flow may depend on the
 # order it runs in, because `clearState` is how each one starts from a known place.

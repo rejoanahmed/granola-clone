@@ -50,7 +50,7 @@ describe("the worker's HTTP assembly", () => {
     const response = await app.request("/api/doc", {}, env);
     const doc = (await response.json()) as { paths: Record<string, unknown> };
 
-    expect(Object.keys(doc.paths)).toEqual(["/me"]);
+    expect(Object.keys(doc.paths)).toEqual(["/me", "/me/onboarding"]);
   });
 
   it("answers an unknown route in the same envelope as every other failure", async () => {
@@ -58,6 +58,29 @@ describe("the worker's HTTP assembly", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({ _tag: "NotFound" });
+  });
+});
+
+// §7 case 25 (docs/spec/phase-3.md §6.7). The limiter is built on the first `/api/auth/*` request
+// and kept for the isolate, so this is the only test in the file that may reach that prefix.
+// `/api/auth/ok` is better-auth's own liveness route: it answers without touching the inert D1.
+describe("the /api/auth rate limit", () => {
+  const limited = { ...env, AUTH_RATE_LIMIT: "2" } satisfies Env;
+
+  it("reads its budget from AUTH_RATE_LIMIT, and answers the request past it with 429 RateLimited", async () => {
+    const responses: Response[] = [];
+    for (let i = 0; i < 3; i++) {
+      // Sequential on purpose: the budget is what is under test, and a parallel burst would make
+      // the order the limiter saw them in the thing asserted.
+      // biome-ignore lint/performance/noAwaitInLoops: see above
+      responses.push(await app.request("/api/auth/ok", {}, limited));
+    }
+    const statuses = responses.map((response) => response.status);
+
+    expect(statuses).toEqual([200, 200, 429]);
+    await expect(responses[2]?.json()).resolves.toMatchObject({
+      _tag: "RateLimited",
+    });
   });
 });
 

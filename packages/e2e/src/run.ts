@@ -11,6 +11,7 @@ import { makeClient } from "./Client";
 import { readEnv } from "./Env";
 import { E2eFailure } from "./Failure";
 import { makeHarness } from "./Harness";
+import { onboarding } from "./Journeys/Onboarding";
 import { whoAmI } from "./Journeys/WhoAmI";
 import type { World } from "./World";
 
@@ -24,6 +25,10 @@ const journeys = [
   {
     name: "each signed-in person reads their own profile; an anonymous caller gets a 401",
     run: whoAmI,
+  },
+  {
+    name: "a person's profile details and onboarding stamp persist, and stay theirs",
+    run: onboarding,
   },
 ] as const;
 

@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-// The module under test calls `SplashScreen.preventAutoHideAsync()` at import and builds the auth
-// client; neither can load on node, and neither is what these guards decide.
+// The module under test calls `SplashScreen.preventAutoHideAsync()` at import, builds the auth
+// client and reaches the API client and SecureStore; none can load on node, and none is what these
+// guards decide.
 vi.mock("expo-router", () => ({
   SplashScreen: { hideAsync: vi.fn(), preventAutoHideAsync: vi.fn() },
   useGlobalSearchParams: vi.fn(),
@@ -10,6 +11,9 @@ vi.mock("expo-router", () => ({
   useSegments: vi.fn(),
 }));
 vi.mock("@native/lib/auth-client", () => ({ authClient: {} }));
+vi.mock("@native/lib/api", () => ({ hasTag: vi.fn(), meQuery: vi.fn() }));
+vi.mock("@native/features/auth/signOut", () => ({ useSignOut: vi.fn() }));
+vi.mock("@tanstack/react-query", () => ({ useQuery: vi.fn() }));
 
 const { isPublicNativeRoute, sanitizeReturnPath } = await import(
   "./auth-provider"
@@ -54,6 +58,33 @@ describe("dev routes", () => {
       withDev(dev);
       expect(isPublicNativeRoute(["screens", "welcome"])).toBe(true);
       expect(isPublicNativeRoute([])).toBe(false);
+    }
+  });
+});
+
+// AC9 (docs/spec/phase-3.md §8): onboarding and settings are private, a returnTo may land on
+// settings, and none may land inside onboarding — that would let a link skip or re-enter it.
+describe("phase-3 routes", () => {
+  it("keeps onboarding and settings private in either build", () => {
+    for (const dev of [true, false]) {
+      withDev(dev);
+      expect(isPublicNativeRoute(["onboarding", "name"])).toBe(false);
+      expect(isPublicNativeRoute(["onboarding", "about"])).toBe(false);
+      expect(isPublicNativeRoute(["settings"])).toBe(false);
+    }
+  });
+
+  it("lets a returnTo land on /settings", () => {
+    expect(sanitizeReturnPath("/settings")).toBe("/settings");
+  });
+
+  it("never lets a returnTo land inside onboarding", () => {
+    for (const path of [
+      "/onboarding/name",
+      "/onboarding/about",
+      "/onboarding/ready",
+    ]) {
+      expect(sanitizeReturnPath(path)).toBe("/");
     }
   });
 });

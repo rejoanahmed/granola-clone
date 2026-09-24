@@ -22,11 +22,17 @@
   // deployed — never here. See `.dev.vars.example`.
   "vars": {
     "API_URL": "http://localhost:3001",
+    // Requests per minute per client on /api/auth/*. Locally every simulator request shares the
+    // key "anonymous", and a Maestro run spends the default 20 in its first few flows.
+    "AUTH_RATE_LIMIT": "600",
     "BETTER_AUTH_URL": "http://localhost:3001",
     // Arms the dev-only E2E harness (packages/server/src/E2E). Its secret is NOT here: set
     // E2E_SECRET in `.dev.vars`, or the Worker refuses to start. Never added to `production`
     // below — `parseConfig` fails startup if NODE_ENV=production sees this armed.
     "E2E_HARNESS": "true",
+    // The fake email provider: every sign-in code lands in the `email_outbox` table, and
+    // `GET /e2e/otp` reads it back. There is no live client yet; `live` refuses to start.
+    "EMAIL_MODE": "fake",
     // Flagship has no local store — `wrangler dev --local` binds no FLAGS at all — so `fake`
     // selects `makeFeatureFlagsFake` in container.ts, the same port with an in-memory answer.
     "FLAGS_MODE": "fake",
@@ -114,14 +120,16 @@
         // The reason this environment exists: reset, seed and sign-in for the suite that gates
         // promotion. E2E_SECRET is a dashboard secret on this Worker, never a var.
         "E2E_HARNESS": "true",
+        // The fake, because there is no live email client yet and the E2E gate signs in through
+        // the outbox. Stated rather than defaulted: a var not repeated here does not exist.
+        "EMAIL_MODE": "fake",
         // Live, not the fake: the E2E suite runs against this Worker and must exercise the real
         // Flagship path, because flipping a flag here is the rehearsal for flipping it in prod.
         "FLAGS_MODE": "live",
         "NATIVE_SCHEME": "gcnotes",
-        // `development` on a deployed Worker is deliberate: it is the only setting under which
-        // `otpEmail` logs the one-time code (middleware.ts), and the project ships no email
-        // provider — so it is the only way anything, E2E included, can sign in here. Never
-        // production: a live OTP in a log line is an OTP in everyone's log aggregator.
+        // `development` on a deployed Worker is deliberate: `AppConfig` refuses EMAIL_MODE=fake
+        // under `production`, because the fake writes plaintext codes to D1, and the fake is the
+        // only way anything, E2E included, can sign in here until a live email client exists.
         "NODE_ENV": "development"
       },
       "d1_databases": [
@@ -170,6 +178,10 @@
         // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
         // pruned by removing it here, which is exactly why `parseConfig` refuses to start
         // production with the harness armed instead of trusting this omission.
+        // EMAIL_MODE is deliberately ABSENT: its default is the fake, which `AppConfig` refuses
+        // under NODE_ENV=production, and `live` has no client yet. So this Worker fails at startup
+        // until one exists (docs/plan/BLOCKERS.md, "No live email client") — which is also the
+        // truth today: nothing can send a sign-in code in production.
         "FLAGS_MODE": "live",
         "NATIVE_SCHEME": "gcnotes",
         "NODE_ENV": "production"

@@ -1,0 +1,97 @@
+# AC6 (docs/spec/phase-3.md §8): a wrong code is refused on the same screen, the field is cleared
+# for another try, "Use a different email" keeps the address, and a fresh code then signs in.
+appId: ${APP_ID}
+name: A wrong code is refused and the sign-in is recoverable
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/request-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+
+# 000000 must really be wrong: one real code in a million is exactly that. Resend if so — the
+# button counts down 30s after a send, so wait for it rather than sleeping.
+- runScript:
+    file: ../scripts/read-otp.js
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- runFlow:
+    when:
+      true: ${output.otp == '000000'}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: welcome-resend
+            enabled: true
+          timeout: 45000
+      - tapOn:
+          id: welcome-resend
+      - runScript:
+          file: ../scripts/read-otp.js
+          env:
+            EMAIL: e2e-person@gcnotes.test
+- assertTrue: ${output.otp != '000000'}
+
+- tapOn:
+    id: welcome-otp
+- inputText: "000000"
+- extendedWaitUntil:
+    visible:
+      id: welcome-error
+    timeout: 30000
+# With three attempts allowed, one wrong guess is INVALID_OTP's line, not the network's or the
+# catch-all's (§4).
+- assertVisible:
+    id: welcome-error
+    text: "That code didn.t work. Check it and try again."
+- assertVisible:
+    id: welcome-screen
+# The field is cleared for the next try (§3). The field itself cannot be asked for "no text" (iOS
+# reports its placeholder instead), so emptiness is proved through Verify, which is disabled
+# until six digits are in it.
+- assertVisible:
+    id: welcome-otp
+- assertVisible:
+    id: welcome-submit
+    enabled: false
+- assertNotVisible:
+    id: welcome-otp
+    text: "000000"
+- assertNotVisible:
+    id: home-screen
+
+# Back to the email step: the address is kept and the code field is gone.
+- tapOn:
+    id: welcome-change-email
+- extendedWaitUntil:
+    notVisible:
+      id: welcome-otp
+    timeout: 10000
+- assertVisible:
+    id: welcome-email
+    text: e2e-person@gcnotes.test
+
+# A new code, from a new send, signs in. The keyboard swaps the number pad for the email layout as
+# the field comes back, moving Continue; a tap aimed mid-swap could land on a key and change the
+# address, so this waits for the screen to be still (docs/TESTING.md, "Let a moving footer settle").
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: welcome-submit
+- extendedWaitUntil:
+    visible:
+      id: welcome-otp
+    timeout: 30000
+- runFlow:
+    file: ../subflows/enter-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

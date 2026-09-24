@@ -1,7 +1,8 @@
 # AC6 (docs/spec/phase-2.md §8): the signed-out launch is unchanged, and a development build adds
-# the two dev entry links. Kept out of smoke/launch.yaml so smoke stays valid against Release.
+# the gallery link. "Preview home" is gone since phase 3 signs in for real. Kept out of
+# smoke/launch.yaml so smoke stays valid against Release.
 appId: ${APP_ID}
-name: Welcome shows the dev entry links in a development build
+name: Welcome shows the gallery link in a development build
 tags:
   - phase-2
   - regression
@@ -18,6 +19,6 @@ env:
 - assertVisible:
     id: welcome-submit
 - assertVisible:
-    id: welcome-dev-home
-- assertVisible:
     id: welcome-dev-gallery
+- assertNotVisible:
+    id: welcome-dev-home

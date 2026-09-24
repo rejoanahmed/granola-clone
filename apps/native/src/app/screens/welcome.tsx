@@ -1,169 +1,261 @@
+import { OTP_LENGTH } from "@gc/auth/otp";
+import { colors, PillButton, spacing, Text, TextField } from "@native/design";
 import {
-  colors,
-  MAX_FONT_SCALE,
-  PillButton,
-  radii,
-  sizes,
-  spacing,
-  Text,
-  typography,
-} from "@native/design";
+  type WelcomeError,
+  welcomeErrorCopy,
+} from "@native/features/auth/errors";
+import { PinnedFooter } from "@native/features/auth/PinnedFooter";
+import { TextButton } from "@native/features/auth/TextButton";
 import { authClient } from "@native/lib/auth-client";
 import { useAuth } from "@native/lib/auth-provider";
-import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { StyleSheet, type TextInput, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Email OTP is the only flow `@gc/auth` configures plugins for (`emailOTP` and `expo`).
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The server's own number, so the field, the copy and better-auth's check cannot drift apart.
+const CODE_LENGTH = OTP_LENGTH;
+const NON_DIGITS = /\D/g;
+// better-auth replaces the code on every send, so a resend is cheap but not free: it invalidates
+// the code already in the user's inbox.
+const RESEND_COOLDOWN_S = 30;
+const OTP_LETTER_SPACING = 8;
+const OTP_FONT_SIZE = 24;
+
+type Step = "email" | "code";
+
+// A thrown fetch (offline) has no status; better-auth's `result.error` carries code and status.
+const asWelcomeError = (error: unknown): WelcomeError =>
+  typeof error === "object" && error !== null ? (error as WelcomeError) : {};
+
+function useCountdown() {
+  const [remaining, setRemaining] = useState(0);
+  useEffect(() => {
+    if (remaining <= 0) {
+      return;
+    }
+    const timer = setTimeout(() => setRemaining((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [remaining]);
+  return [remaining, () => setRemaining(RESEND_COOLDOWN_S)] as const;
+}
+
+// Email OTP, sign-in and sign-up in one flow: an unknown address gets an account on its first
+// verified code. Both steps are one screen's state, so a failed verify never loses the address.
 export default function WelcomeScreen() {
   const router = useRouter();
   const { refetchSession } = useAuth();
+  const codeRef = useRef<TextInput>(null);
 
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldown, startCooldown] = useCountdown();
 
-  const sendOtp = async () => {
+  // `autoFocus` alone loses the race with the email field's keyboard leaving as it unmounts.
+  useEffect(() => {
+    if (step === "code") {
+      codeRef.current?.focus();
+    }
+  }, [step]);
+
+  const address = email.trim().toLowerCase();
+  const emailValid = EMAIL_PATTERN.test(email.trim());
+
+  const send = async (): Promise<boolean> => {
     setBusy(true);
     setError(null);
-    const result = await authClient.emailOtp.sendVerificationOtp({
-      email: email.trim().toLowerCase(),
-      type: "sign-in",
-    });
+    const result = await authClient.emailOtp
+      .sendVerificationOtp({ email: address, type: "sign-in" })
+      .catch((thrown: unknown) => ({ error: asWelcomeError(thrown) }));
     setBusy(false);
     if (result.error) {
-      setError(result.error.message ?? "Could not send the code.");
-      return;
+      setError(welcomeErrorCopy(asWelcomeError(result.error)));
+      return false;
     }
-    setSent(true);
+    startCooldown();
+    return true;
   };
 
-  const verifyOtp = async () => {
-    setBusy(true);
-    setError(null);
-    const result = await authClient.signIn.emailOtp({
-      email: email.trim().toLowerCase(),
-      otp: otp.trim(),
-    });
-    setBusy(false);
-    if (result.error) {
-      setError(result.error.message ?? "That code did not work.");
+  const submitEmail = async () => {
+    if (!emailValid || busy) {
       return;
     }
-    // Refetch so `useProtectedRoute` sees the session on this tick and redirects now, not on the
-    // next poll.
+    if (await send()) {
+      setCode("");
+      setStep("code");
+    }
+  };
+
+  const verify = async (otp: string) => {
+    if (otp.length !== CODE_LENGTH || busy) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const result = await authClient.signIn
+      .emailOtp({ email: address, otp })
+      .catch((thrown: unknown) => ({ error: asWelcomeError(thrown) }));
+    if (result.error) {
+      setBusy(false);
+      setError(welcomeErrorCopy(asWelcomeError(result.error)));
+      setCode("");
+      codeRef.current?.focus();
+      return;
+    }
+    // Stays busy: the gate navigates away once the session and the profile have both arrived.
     await refetchSession();
   };
 
+  const onCodeChange = (text: string) => {
+    const digits = text.replace(NON_DIGITS, "").slice(0, CODE_LENGTH);
+    setCode(digits);
+    if (digits.length === CODE_LENGTH) {
+      verify(digits);
+    }
+  };
+
+  const changeEmail = () => {
+    setStep("email");
+    setCode("");
+    setError(null);
+  };
+
+  const errorLine = error ? (
+    <Text
+      color={colors.destructive}
+      style={styles.error}
+      testID="welcome-error"
+      variant="caption"
+    >
+      {error}
+    </Text>
+  ) : null;
+
   return (
-    <SafeAreaView style={styles.screen} testID="welcome-screen">
-      <Stack.Screen options={{ title: "Sign in" }} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.fill}
-      >
+    <SafeAreaView edges={["top"]} style={styles.screen} testID="welcome-screen">
+      <KeyboardAvoidingView behavior="padding" style={styles.fill}>
         <View style={styles.body}>
-          <Text variant="display">Notes</Text>
-          <Text style={styles.subtitle} variant="secondary">
-            {sent
-              ? `We sent a 6-digit code to ${email.trim()}.`
-              : "Sign in with your email. We will send you a one-time code."}
-          </Text>
+          {step === "email" ? (
+            <>
+              <Text
+                accessibilityRole="header"
+                style={styles.center}
+                testID="welcome-title"
+                variant="display"
+              >
+                Welcome to Notes
+              </Text>
+              <Text
+                style={[styles.center, styles.lead]}
+                testID="welcome-body"
+                variant="secondary"
+              >
+                {`Sign in or create an account with your email. We’ll send you a ${CODE_LENGTH}-digit code.`}
+              </Text>
+              <TextField
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect={false}
+                autoFocus
+                editable={!busy}
+                keyboardType="email-address"
+                onChangeText={setEmail}
+                onSubmitEditing={submitEmail}
+                placeholder="you@example.com"
+                returnKeyType="next"
+                style={styles.field}
+                testID="welcome-email"
+                textContentType="emailAddress"
+                value={email}
+              />
+              {errorLine}
+            </>
+          ) : (
+            <>
+              <Text
+                accessibilityRole="header"
+                style={styles.center}
+                testID="welcome-title"
+                variant="display"
+              >
+                Check your email
+              </Text>
+              {/* The id is on the whole line, not the address: iOS flattens nested text, so an id
+                  on the inner <Text> never reaches the accessibility tree (spec §5). */}
+              <Text
+                style={[styles.center, styles.lead]}
+                testID="welcome-sent-to"
+                variant="secondary"
+              >
+                {`We sent a ${CODE_LENGTH}-digit code to `}
+                <Text color={colors.text.primary} variant="secondary">
+                  {address}
+                </Text>
+                .
+              </Text>
+              <TextField
+                autoComplete="one-time-code"
+                autoFocus
+                editable={!busy}
+                keyboardType="number-pad"
+                maxLength={CODE_LENGTH}
+                onChangeText={onCodeChange}
+                ref={codeRef}
+                style={{ ...styles.field, ...styles.code }}
+                testID="welcome-otp"
+                textContentType="oneTimeCode"
+                value={code}
+              />
+              {errorLine}
+              <View style={styles.codeLinks}>
+                <TextButton
+                  disabled={cooldown > 0 || busy}
+                  label={
+                    cooldown > 0
+                      ? `Resend in 0:${String(cooldown).padStart(2, "0")}`
+                      : "Resend code"
+                  }
+                  onPress={() => {
+                    setCode("");
+                    send();
+                  }}
+                  testID="welcome-resend"
+                />
+                <TextButton
+                  label="Use a different email"
+                  onPress={changeEmail}
+                  testID="welcome-change-email"
+                />
+              </View>
+            </>
+          )}
+        </View>
 
-          <TextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            editable={!sent}
-            keyboardType="email-address"
-            maxFontSizeMultiplier={MAX_FONT_SCALE}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={colors.text.tertiary}
-            style={styles.input}
-            testID="welcome-email"
-            value={email}
-          />
-
-          {sent ? (
-            <TextInput
-              autoComplete="one-time-code"
-              keyboardType="number-pad"
-              maxFontSizeMultiplier={MAX_FONT_SCALE}
-              maxLength={6}
-              onChangeText={setOtp}
-              placeholder="123456"
-              placeholderTextColor={colors.text.tertiary}
-              style={[styles.input, styles.otp]}
-              testID="welcome-otp"
-              value={otp}
-            />
-          ) : null}
-
-          {error ? (
-            <Text color={colors.destructive} variant="caption">
-              {error}
-            </Text>
-          ) : null}
-
+        <PinnedFooter>
           <PillButton
-            disabled={busy || (sent ? otp.length < 6 : email.trim().length < 3)}
-            label={sent ? "Sign in" : "Send code"}
-            onPress={sent ? verifyOtp : sendOtp}
+            disabled={
+              step === "email" ? !emailValid : code.length < CODE_LENGTH
+            }
+            label={step === "email" ? "Continue" : "Verify"}
+            loading={busy}
+            onPress={step === "email" ? submitEmail : () => verify(code)}
             size="lg"
-            style={styles.submit}
             testID="welcome-submit"
             tone="light"
           />
-
-          {sent ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setSent(false);
-                setOtp("");
-                setError(null);
-              }}
-              style={styles.secondary}
-            >
-              <Text variant="caption">Use a different email</Text>
-            </Pressable>
+          {__DEV__ && step === "email" ? (
+            <TextButton
+              label="Component gallery"
+              onPress={() => router.push("/dev/gallery")}
+              testID="welcome-dev-gallery"
+            />
           ) : null}
-
-          {__DEV__ ? (
-            <View style={styles.devLinks}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push("/dev/home")}
-                style={styles.devLink}
-                testID="welcome-dev-home"
-              >
-                <Text style={styles.devLinkText} variant="caption">
-                  Preview home
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push("/dev/gallery")}
-                style={styles.devLink}
-                testID="welcome-dev-gallery"
-              >
-                <Text style={styles.devLinkText} variant="caption">
-                  Component gallery
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-        </View>
+        </PinnedFooter>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -172,31 +264,25 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   body: {
     flex: 1,
-    gap: spacing.sm,
     justifyContent: "center",
     paddingHorizontal: spacing.xl,
   },
-  devLink: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
-  devLinks: {
+  center: { textAlign: "center" },
+  code: {
+    fontSize: OTP_FONT_SIZE,
+    fontWeight: "500",
+    letterSpacing: OTP_LETTER_SPACING,
+    textAlign: "center",
+  },
+  codeLinks: {
     flexDirection: "row",
-    gap: spacing.md,
+    gap: spacing.xl,
     justifyContent: "center",
-    paddingTop: spacing.md,
+    marginTop: spacing.xl,
   },
-  devLinkText: { textDecorationLine: "underline" },
+  error: { marginTop: spacing.sm, textAlign: "center" },
+  field: { marginTop: spacing.xxl },
   fill: { flex: 1 },
-  input: {
-    ...typography.body,
-    backgroundColor: colors.bg.list,
-    borderColor: colors.border.hairline,
-    borderRadius: radii.tile,
-    borderWidth: sizes.hairline,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 14,
-  },
-  otp: { fontSize: 24, letterSpacing: 8, textAlign: "center" },
+  lead: { marginTop: spacing.md },
   screen: { backgroundColor: colors.bg.app, flex: 1 },
-  secondary: { alignItems: "center", paddingVertical: spacing.xs },
-  submit: { marginTop: spacing.xs },
-  subtitle: { paddingBottom: spacing.xs },
 });

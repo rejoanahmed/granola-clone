@@ -1,0 +1,48 @@
+# AC10 (docs/spec/phase-3.md §8): Resend counts down for 30s after every send, is usable once the
+# countdown ends, and a resent code replaces the first — the new one signs in. The only other flow
+# that taps Resend does it in one run in a million (a real code of 000000).
+appId: ${APP_ID}
+name: Resend counts down, then sends a fresh code that signs in
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/request-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+
+# Straight after the send: disabled, reading "Resend in 0:{ss}".
+- assertVisible:
+    id: welcome-resend
+    text: "Resend in 0:[0-3][0-9]"
+    enabled: false
+
+# The countdown ends on its own; no sleep, only a wait for the label to change.
+- extendedWaitUntil:
+    visible:
+      id: welcome-resend
+      text: Resend code
+      enabled: true
+    timeout: 45000
+- tapOn:
+    id: welcome-resend
+- extendedWaitUntil:
+    visible:
+      id: welcome-resend
+      text: "Resend in 0:[0-3][0-9]"
+      enabled: false
+    timeout: 30000
+
+# The newest code in the outbox is the resent one, and it signs in.
+- runFlow:
+    file: ../subflows/enter-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000

@@ -29,6 +29,9 @@ export const e2eRouter = new Hono<E2eEnv>()
     c.set("e2e", harness);
     await next();
   })
+  .get("/e2e/otp", async (c) =>
+    c.json(await c.var.e2e.latestOtp(c.req.query("email") ?? ""), 200)
+  )
   .post("/e2e/reset", async (c) => c.json(await c.var.e2e.reset(), 200))
   .post("/e2e/seed", async (c) => c.json(await c.var.e2e.seed(), 200))
   .post("/e2e/session/:role", async (c) =>

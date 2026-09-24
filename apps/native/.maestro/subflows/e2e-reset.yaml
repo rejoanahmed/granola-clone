@@ -1,0 +1,9 @@
+# Reset, then seed, the local API's E2E world (docs/spec/phase-3.md §8): `person` and `other`
+# exist and are onboarded, and the newcomer does not exist at all. Fails the flow if either call
+# is not a 200 — a flow that ran against yesterday's data would pass or fail for the wrong reason.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-reset.js

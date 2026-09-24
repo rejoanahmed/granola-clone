@@ -1,3 +1,5 @@
+import { Profile } from "@gc/domain/Domain/Profile";
+import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
@@ -6,30 +8,53 @@ import type { Container } from "../container";
 import { actor } from "../Testing";
 import { profilesRouter } from "./Http";
 
-// Wire shape only — the path, `c.var.svc`, the verbatim body, and the one branch a handler owns:
-// no actor, no call. Business rules are `Profiles.test.ts`, and turning the thrown `Unauthorized`
-// into a 401 belongs to `apps/api/src/on-error.ts`.
+// Wire shape only — the path, `c.var.svc`, the verbatim body, the contract's validation, and the
+// one branch a handler owns: no actor, no call. Business rules are `Profiles.test.ts`. The parent
+// app below mirrors `apps/api/src/app.ts` in the two places that decide a status: the zod hook
+// (a rejected body is `ValidationFailed`, 422) and an `onError` that honours an `AppError`'s status.
 
 const profile = {
+  companyDescription: null,
+  companyName: null,
   createdAt: 1_700_000_000_000,
   email: "usr_person_0001@example.test",
   emailVerified: true,
   id: "usr_person_0001",
+  jobTitle: null,
+  linkedinUsername: null,
   name: "Person One",
+  onboardedAt: null,
+  userType: null,
 };
 
+type Call = { readonly args: readonly unknown[]; readonly method: string };
+
 const appAs = (who: Actor | null) => {
-  const calls: string[] = [];
+  const calls: Call[] = [];
+  const answer =
+    (method: string, over: Record<string, unknown> = {}) =>
+    (...args: unknown[]) => {
+      calls.push({ args, method });
+      return Promise.resolve({ ...profile, ...over });
+    };
   const svc = {
     profiles: {
-      me: (caller: Actor) => {
-        calls.push(caller.id);
-        return Promise.resolve(profile);
-      },
+      completeOnboarding: answer("completeOnboarding", {
+        onboardedAt: 1_700_000_000_000,
+      }),
+      me: answer("me"),
+      update: (caller: Actor, patch: Record<string, unknown>) =>
+        answer("update", patch)(caller, patch),
     },
   } as unknown as Container;
 
-  const app = new OpenAPIHono<AppEnv>();
+  const app = new OpenAPIHono<AppEnv>({
+    defaultHook: (result) => {
+      if (!result.success) {
+        throw new ValidationFailed({ issues: result.error.issues });
+      }
+    },
+  });
   app.use("*", async (c, next) => {
     c.set("actor", who);
     c.set("svc", svc);
@@ -37,20 +62,37 @@ const appAs = (who: Actor | null) => {
   });
   app.route("/", profilesRouter);
   app.onError((err, c) =>
-    c.json({ _tag: (err as { _tag?: string })._tag ?? "Internal" }, 500)
+    isAppError(err)
+      ? c.json({ _tag: err._tag }, err.status)
+      : c.json({ _tag: "Internal" }, 500)
   );
   return { app, calls };
 };
 
+const patchMe = (who: Actor | null, body: unknown) => {
+  const built = appAs(who);
+  return {
+    ...built,
+    response: built.app.request("/me", {
+      body: JSON.stringify(body),
+      headers: { "content-type": "application/json" },
+      method: "PATCH",
+    }),
+  };
+};
+
 describe("profilesRouter", () => {
-  it("serialises the caller's profile at GET /me", async () => {
+  // §7 case 10
+  it("serialises the caller's extended profile at GET /me", async () => {
     const { app, calls } = appAs(actor());
 
     const res = await app.request("/me");
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual(profile);
-    expect(calls).toEqual([actor().id]);
+    const body = await res.json();
+    expect(body).toEqual(profile);
+    expect(Profile.strict().safeParse(body).success).toBe(true);
+    expect(calls).toEqual([{ args: [actor()], method: "me" }]);
   });
 
   it("never reaches the service without an actor", async () => {
@@ -58,7 +100,75 @@ describe("profilesRouter", () => {
 
     const res = await app.request("/me");
 
+    expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ _tag: "Unauthorized" });
+    expect(calls).toEqual([]);
+  });
+});
+
+describe("PATCH /me", () => {
+  // §7 case 14
+  it("hands the service the caller and the patch, and answers 200 with the patched profile", async () => {
+    const patch = { companyName: "Acme", jobTitle: "Designer" };
+    const { calls, response } = patchMe(actor(), patch);
+
+    const res = await response;
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject(patch);
+    expect(calls).toEqual([
+      { args: [actor(), expect.objectContaining(patch)], method: "update" },
+    ]);
+  });
+
+  // §7 cases 11–13: the contract refuses before the service is reached.
+  it.each([
+    ["an unknown user type", { userType: "astronaut" }],
+    ["a key the patch does not own (strict object)", { name: "x" }],
+    ["a LinkedIn username with a space", { linkedinUsername: "a b" }],
+    ["a company name over 100 characters", { companyName: "x".repeat(101) }],
+  ])("is 422 ValidationFailed for %s", async (_what, body) => {
+    const { calls, response } = patchMe(actor(), body);
+
+    const res = await response;
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ _tag: "ValidationFailed" });
+    expect(calls).toEqual([]);
+  });
+
+  // §7 case 15
+  it("is 401 without an actor, and never reaches the service", async () => {
+    const { calls, response } = patchMe(null, { jobTitle: "Designer" });
+
+    const res = await response;
+
+    expect(res.status).toBe(401);
+    expect(calls).toEqual([]);
+  });
+});
+
+describe("POST /me/onboarding", () => {
+  // §7 case 14
+  it("answers 200 with onboardedAt a number, taking no body", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await app.request("/me/onboarding", { method: "POST" });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      onboardedAt: expect.any(Number),
+    });
+    expect(calls).toEqual([{ args: [actor()], method: "completeOnboarding" }]);
+  });
+
+  // §7 case 15
+  it("is 401 without an actor, and never reaches the service", async () => {
+    const { app, calls } = appAs(null);
+
+    const res = await app.request("/me/onboarding", { method: "POST" });
+
+    expect(res.status).toBe(401);
     expect(calls).toEqual([]);
   });
 });

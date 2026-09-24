@@ -171,11 +171,28 @@ These must exist. The names are the specification; the phrasing in the test file
 - a session whose user row is gone → `ProfileNotFound`
 - `canReadProfile` lets a person read their own profile, and refuses anyone else with `Forbidden`
   naming the action `profiles.read`
+- a user with no `profiles` row reads every detail as `null` and `onboardedAt: null`, and the read
+  inserts no row
+- `update` sets the details it is given and a later read agrees; it changes only the keys present;
+  `null` clears a detail; `{}` is a no-op answering the profile unchanged
+- `completeOnboarding` stamps `onboardedAt` with the clock's now, and a later call keeps the first
+  stamp; it keeps the details an earlier `update` wrote
+- `update` and `completeOnboarding` for an actor whose `user` row is gone → `ProfileNotFound`, not a
+  foreign-key 500, including when the row goes between the service's read and its write
+- `canReadProfile` and `canEditProfile` each allow the owner and refuse anyone else as `Forbidden`,
+  naming their own action
+- one person's `update` leaves another person's `profiles` row byte-identical
+- deleting a `user` row cascades its `profiles` row
 
 ### `Profiles/Profiles.http.test.ts`
 
 - `GET /me` serialises the service's answer verbatim, and the service was called with the actor's id
 - with no actor the service is **never called** and the handler throws `Unauthorized`
+- `PATCH /me` hands the service the actor and the patch and answers 200; an unknown user type, a
+  key the patch does not own (`name`), a LinkedIn username with a space, and a company name over
+  100 characters are each 422 `ValidationFailed` without reaching the service
+- `POST /me/onboarding` takes no body and answers 200 with `onboardedAt` a number
+- `PATCH /me` and `POST /me/onboarding` with no actor are 401 without reaching the service
 
 ### `Testing/Database.test.ts` — the harness itself
 
@@ -195,6 +212,41 @@ These must exist. The names are the specification; the phrasing in the test file
 - the cookie is named for the origin it was asked for (`__Secure-` over https)
 - an unknown role is `ValidationFailed`, never an invented user
 
+### `Integrations/Email/Email.test.ts` and `AuthEmails/AuthEmails.test.ts`
+
+- the email fake records each send in order and writes one row to its sink per send
+- scripted `unavailable` raises `EmailUnavailable` (503) and writes nothing; it sends again once reset
+- `sendOtp` sends "Your Notes sign-in code" and the §4 body (code, "expires in 5 minutes"), as
+  `kind: "otp"` with the code and type in its payload
+
+### `Outbox/Outbox.test.ts`
+
+- `latestOtpFor` answers the newest code for an address; a payload that is not JSON, or not
+  `{ otp, type }`, reads as `null` rather than throwing
+
+### `Runtime/AppConfig.test.ts`
+
+- `EMAIL_MODE` absent → `fake`; `fake` (or unset) with `NODE_ENV=production` refused, naming
+  `EMAIL_MODE`; `live` refused, naming the missing client; any other value refused
+
+### `apps/api/src/otp-send-failure.test.ts`
+
+- a send the email provider refuses answers 503 `EmailUnavailable`, not better-auth's 200 (the
+  plugin swallows the hook's error; `betterAuthHandler` rethrows it)
+
+### `apps/api/src/e2e-harness.test.ts` and `app.test.ts` — the real app
+
+- `GET /e2e/otp` is a 404 disarmed and a 401 with a wrong secret; it answers the harness's own 404
+  (not the router's) for an address with no mail
+- the sign-up round trip in process: a send writes a six-digit code to the outbox, `GET /e2e/otp`
+  returns it, `POST /api/auth/sign-in/email-otp` with it sets a session cookie, and a second send
+  makes `GET /e2e/otp` return the new code
+- `POST /e2e/reset` forgets the newcomer (`user`, `session`, `verification`, `profiles`) and the
+  outbox, and leaves `person` and `other` and their sessions intact
+- `POST /e2e/seed` leaves both seeded people onboarded, and `person` with their work details
+- the `auth.otp.issued` log line never carries the code, even in development
+- with `AUTH_RATE_LIMIT=2` the third `/api/auth/*` request in a window is 429 `RateLimited`
+
 ### Pure suites
 
 - `packages/domain/src/Errors.test.ts` — `appError` carries its tag and status on the instance and
@@ -212,7 +264,10 @@ These must exist. The names are the specification; the phrasing in the test file
   bodies, raw bodies passed through untouched, a raw redirect route, `AbortSignal` forwarding, and
   each error tag (`ErrorBody` → `ApiError`, non-`ErrorBody` → `UnexpectedError`, transport →
   `NetworkError`). The generic endpoint is exercised with route shapes written in the test, because
-  `GET /me` has no params, query or body.
+  `GET /me` has no params, query or body. `updateMe` sends `PATCH /me` with a JSON body and decodes
+  the profile; `completeOnboarding` sends `POST /me/onboarding` with no body.
+- `packages/domain/src/Domain/Profile.test.ts` — `ProfilePatch` trims, turns `""` and whitespace
+  into `null`, accepts every `UserType`, and rejects an unknown key.
 
 ---
 
@@ -286,18 +341,20 @@ every message names a deploy fault rather than a domain expectation.
 | Journey | What only a deployed run can prove |
 | --- | --- |
 | **WhoAmI** — anonymous `GET /me` → 401 in the error envelope; `GET /me` as `person` and as `other` → each gets their own profile | the minted session is accepted by better-auth on this Worker, the actor middleware resolves it against real D1, the handler reaches the service through the container, and the answer matches the contract this suite was built from |
+| **Onboarding** — `PATCH /me { jobTitle }` as `person`, then `GET /me` reads it back; `POST /me/onboarding` twice returns the same `onboardedAt`; `GET /me` as `other` does not show `person`'s job title | the `profiles` migration is applied on this D1, the upsert writes the caller's row and no one else's, and the coalesce holds across two requests rather than two calls in one process |
 
 Each new feature adds the journey that proves its deploy, not its rules — those stay in §2.
 
 ### The harness it drives, and why production cannot have one
 
-Three routes, in `packages/server/src/E2E/Http.ts`, mounted unconditionally but built only when the
+Four routes, in `packages/server/src/E2E/Http.ts`, mounted unconditionally but built only when the
 config arms them:
 
 | Route | Does |
 | --- | --- |
-| `POST /e2e/reset` | deletes every table in `RESET_ORDER`, children before parents, as one atomic batch — a no-op until the first domain table joins it; the better-auth tables are kept so sessions survive |
-| `POST /e2e/seed` | writes the two fixed users, `person` and `other`, idempotently |
+| `POST /e2e/reset` | deletes every table in `RESET_ORDER` (`email_outbox`, `profiles`), children before parents, plus the never-seeded newcomer's `user` row (cascading its sessions and profile) and its `verification` rows, as one atomic batch; the seeded people's better-auth rows are kept so their sessions survive |
+| `POST /e2e/seed` | writes the two fixed users, `person` and `other`, idempotently, and upserts their `profiles` rows onboarded (`person` also gets `Engineer`, `Notes E2E`, `startup_generalist`) |
+| `GET /e2e/otp?email=` | the newest sign-in code the fake email provider wrote to the outbox for that address, `{ email, otp, type, sentAt }`; 404 `NoOutboxMail` when there is none |
 | `POST /e2e/session/:role` | mints a **signed** better-auth session cookie for `person` or `other` |
 
 Armed by `E2E_HARNESS=true` plus an `E2E_SECRET` of at least 32 characters, both parsed in
@@ -315,9 +372,10 @@ the journeys run against the fake leaf.
 - **No device.** `apps/native` is never exercised by this suite; it talks to the API the way the app
   does, not through it. The app has its own Maestro flows (§8), which run on a simulator, not in the
   pipeline.
-- **Dev is not production.** `NODE_ENV=development` there (it is the only setting under which
-  `otpEmail` logs the OTP, which is how anything signs in without an email provider), and the
-  Flagship app is a different app with different flag values.
+- **Dev is not production.** `NODE_ENV=development` and `EMAIL_MODE=fake` there (the fake writes
+  codes to the outbox, which is how anything signs in without an email provider, and `AppConfig`
+  refuses it under `production`), and the Flagship app is a different app with different flag
+  values.
 
 **The gate must fail, never skip.** `deploy.yml` fails the job outright if `packages/e2e/src/run.ts`
 is missing, because a skipped gate promotes an unverified merge to production — the one outcome the
@@ -380,9 +438,21 @@ apps/native/.maestro/
   config.yaml            which directories are flows (smoke/*); subflows/ is deliberately not one
   subflows/
     launch-app.yaml      clean launch: clearState + clearKeychain, straight into the JS bundle
+    relaunch-app.yaml    stopApp + launchApp keeping app state and the Keychain (a real relaunch)
+    e2e-reset.yaml       POST /e2e/reset then /e2e/seed (scripts/e2e-reset.js); fails on non-200
+    start-clean.yaml     launch-app + e2e-reset, then wait for welcome-screen
+    request-code.yaml    EMAIL param: type the address, Continue, wait for the code step
+    enter-code.yaml      EMAIL param: GET /e2e/otp (scripts/read-otp.js), type it; digit 6 submits
+    sign-in.yaml         EMAIL param: request-code + enter-code; the caller asserts where it lands
+    open-home.yaml       start-clean + sign in as the seeded, onboarded e2e-person
+    tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
+  phase-2/, phase-3/     tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
+
+The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
+passes `API_URL` (default `http://localhost:3001`) and reads `E2E_SECRET` from `apps/api/.dev.vars`.
 
 ### Rules for writing a flow
 
@@ -397,6 +467,18 @@ apps/native/.maestro/
 - **Start from a known place.** Reuse `subflows/launch-app.yaml`. It clears the Keychain as well as
   the app's state, because the session cookie lives in SecureStore — the Keychain — and survives
   `clearState`.
+- **Let a moving footer settle.** Welcome and onboarding's name step autofocus their field, so the
+  software keyboard may rise at any moment after the screen appears (or never, with the hardware
+  keyboard connected) and the keyboard-pinned footer rides up with it. Maestro aims a tap from the
+  hierarchy it last read, so a tap taken mid-rise lands where the control was: the gallery link was
+  once hit on the keyboard's "t" key. Tap a footer control whose miss is harmless through
+  `subflows/tap-footer-link.yaml` (waits for stillness, retries a tap that changed nothing); for one
+  whose miss would type into the field (Continue), `waitForAnimationToEnd` first.
+- **One driver per simulator.** Maestro cannot tell its own taps from anybody else's. A failure
+  whose screenshots show screens the flow never opened (Settings, a scrolled gallery) means
+  something else was touching the simulator: the device log (`--test-output-dir`, the flow's
+  `logs/device-simulator.log`) shows those touches arriving through `dtuhidd` with no matching
+  `POST /touch` in the XCTest runner's log. Rerun once the simulator is free; do not "fix" the flow.
 - **Tag every flow.** `smoke` is for "the build is not broken" and must stay under a minute and
   independent of the API; journeys that sign in get their own tag and their own seeded backend.
 

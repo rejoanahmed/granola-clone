@@ -33,12 +33,15 @@ bun run db:seed
 | `http://localhost:3001/` | health — answers without touching D1 |
 | `http://localhost:3001/api/reference` | Scalar, the page you actually use |
 | `http://localhost:3001/api/doc` | the OpenAPI 3.1 document it renders |
-| `http://localhost:3001/api/auth/*` | better-auth. Rate-limited, 20/minute per IP |
+| `http://localhost:3001/api/auth/*` | better-auth. Rate-limited per IP: `AUTH_RATE_LIMIT`/minute, default 20, 600 locally |
+| `http://localhost:3001/e2e/otp?email=…` | the latest sign-in code sent to an address (harness only, `x-e2e-secret`) |
 
-Email sign-in prints the OTP to the `wrangler dev` output: the project ships no email provider
-yet, and `NODE_ENV` is what decides whether the code is logged (see `middleware.ts`). Providers
-that cost money or need an account (transcription, LLM, calendar) will be picked by environment
-the same way `FLAGS_MODE` picks the flag client.
+Email goes through the `Email` port (`@gc/server/Integrations/Email`), and `EMAIL_MODE=fake` — the
+only mode that exists — writes every message to the `email_outbox` table instead of sending it.
+Read a sign-in code from there, or from `GET /e2e/otp`; no log line carries one. `AppConfig`
+refuses the fake under `NODE_ENV=production` and refuses `live` until a client exists, so
+production sign-in waits on a real provider (`docs/plan/BLOCKERS.md`). The other providers that
+cost money or need an account (transcription, LLM, calendar) are picked by environment the same way.
 
 ## Bindings
 

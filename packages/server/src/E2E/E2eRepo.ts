@@ -1,8 +1,17 @@
-import { RESET_ORDER, session, user } from "@gc/db";
+import {
+  eq,
+  inArray,
+  profiles,
+  RESET_ORDER,
+  session,
+  sql,
+  user,
+  verification,
+} from "@gc/db";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
-import type { E2eUser } from "./Fixtures";
+import type { E2eProfileDetails, E2eUser } from "./Fixtures";
 
 export type E2eSessionRow = {
   readonly expiresAt: Timestamp;
@@ -12,7 +21,70 @@ export type E2eSessionRow = {
   readonly userId: string;
 };
 
+export type E2eProfileRow = E2eProfileDetails & { readonly userId: string };
+
+// better-auth's email-otp types, each of which keys a pending code by `${type}-otp-${email}`.
+// Restated rather than imported: a repo may not import `@gc/auth`.
+const OTP_TYPES = [
+  "change-email",
+  "email-verification",
+  "forget-password",
+  "sign-in",
+] as const;
+
 export const makeE2eRepo = (db: DrizzleClient) => ({
+  // The newcomer's account is the one better-auth tables row a reset does delete: the sign-up flow
+  // must always meet an unknown address. Deleting the `user` row cascades its sessions, accounts
+  // and profile. Pending codes live in `verification` under better-auth's `${type}-otp-${email}`,
+  // matched exactly: a substring match would also delete the codes of any address that merely
+  // contains this one (`xe2e-newcomer@…`).
+  stageForget: (stage: Stage, email: string): void => {
+    stage.add({ query: db.delete(user).where(eq(user.email, email)) });
+    stage.add({
+      query: db.delete(verification).where(
+        inArray(
+          verification.identifier,
+          OTP_TYPES.map((type) => `${type}-otp-${email}`)
+        )
+      ),
+    });
+  },
+
+  // An upsert, so re-seeding restores the fixture details a journey edited. `onboardedAt` keeps
+  // the first stamp, the same rule `ProfilesRepo.markOnboarded` enforces.
+  stageProfiles: (
+    stage: Stage,
+    rows: readonly E2eProfileRow[],
+    now: Timestamp
+  ): void => {
+    for (const row of rows) {
+      const details = {
+        companyName: row.companyName ?? null,
+        jobTitle: row.jobTitle ?? null,
+        userType: row.userType ?? null,
+      };
+      stage.add({
+        query: db
+          .insert(profiles)
+          .values({
+            ...details,
+            createdAt: now,
+            onboardedAt: now,
+            updatedAt: now,
+            userId: row.userId,
+          })
+          .onConflictDoUpdate({
+            set: {
+              ...details,
+              onboardedAt: sql`coalesce(${profiles.onboardedAt}, excluded.onboarded_at)`,
+              updatedAt: now,
+            },
+            target: profiles.userId,
+          }),
+      });
+    }
+  },
+
   // One atomic batch in RESET_ORDER — children before parents, which is what lets the delete run
   // with foreign keys on. The better-auth tables are deliberately not in it: a reset between
   // journeys must not sign the suite out.
