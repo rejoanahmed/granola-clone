@@ -67,7 +67,11 @@ env:
     id: welcome-email
     text: e2e-person@gcnotes.test
 
-# A new code, from a new send, signs in.
+# A new code, from a new send, signs in. The keyboard swaps the number pad for the email layout as
+# the field comes back, moving Continue; a tap aimed mid-swap could land on a key and change the
+# address, so this waits for the screen to be still (docs/TESTING.md, "Let a moving footer settle").
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: welcome-submit
 - extendedWaitUntil:

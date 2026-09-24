@@ -17,12 +17,12 @@ env:
     visible:
       id: onboarding-name-screen
     timeout: 30000
-- tapOn:
-    id: onboarding-sign-out
-- extendedWaitUntil:
-    visible:
-      id: welcome-screen
-    timeout: 30000
+- runFlow:
+    file: ../subflows/tap-footer-link.yaml
+    env:
+      TARGET: onboarding-sign-out
+      EXPECT: welcome-screen
+      TIMEOUT: "30000"
 
 - runFlow: ../subflows/relaunch-app.yaml
 - extendedWaitUntil:

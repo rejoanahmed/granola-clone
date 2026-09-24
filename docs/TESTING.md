@@ -433,6 +433,7 @@ apps/native/.maestro/
     enter-code.yaml      EMAIL param: GET /e2e/otp (scripts/read-otp.js), type it; digit 6 submits
     sign-in.yaml         EMAIL param: request-code + enter-code; the caller asserts where it lands
     open-home.yaml       start-clean + sign in as the seeded, onboarded e2e-person
+    tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
   phase-2/, phase-3/     tagged per phase (plus `regression`); phase-3 signs in with real codes
@@ -454,6 +455,18 @@ passes `API_URL` (default `http://localhost:3001`) and reads `E2E_SECRET` from `
 - **Start from a known place.** Reuse `subflows/launch-app.yaml`. It clears the Keychain as well as
   the app's state, because the session cookie lives in SecureStore — the Keychain — and survives
   `clearState`.
+- **Let a moving footer settle.** Welcome and onboarding's name step autofocus their field, so the
+  software keyboard may rise at any moment after the screen appears (or never, with the hardware
+  keyboard connected) and the keyboard-pinned footer rides up with it. Maestro aims a tap from the
+  hierarchy it last read, so a tap taken mid-rise lands where the control was: the gallery link was
+  once hit on the keyboard's "t" key. Tap a footer control whose miss is harmless through
+  `subflows/tap-footer-link.yaml` (waits for stillness, retries a tap that changed nothing); for one
+  whose miss would type into the field (Continue), `waitForAnimationToEnd` first.
+- **One driver per simulator.** Maestro cannot tell its own taps from anybody else's. A failure
+  whose screenshots show screens the flow never opened (Settings, a scrolled gallery) means
+  something else was touching the simulator: the device log (`--test-output-dir`, the flow's
+  `logs/device-simulator.log`) shows those touches arriving through `dtuhidd` with no matching
+  `POST /touch` in the XCTest runner's log. Rerun once the simulator is free; do not "fix" the flow.
 - **Tag every flow.** `smoke` is for "the build is not broken" and must stay under a minute and
   independent of the API; journeys that sign in get their own tag and their own seeded backend.
 

@@ -1,0 +1,38 @@
+# Tap TARGET, a control in the keyboard-pinned footer of an autofocused screen (welcome, onboarding's
+# name step), and wait up to TIMEOUT ms for EXPECT to appear.
+#
+# The field autofocuses (docs/spec/phase-3.md §2.1), so the software keyboard may rise at any point
+# after the screen appears — or, with the simulator's hardware keyboard connected, never — and the
+# footer rides up with it. Maestro aims a tap from the hierarchy it last read, so a tap taken
+# mid-rise lands where the control was: the gallery link, read at y=600, was hit on the keyboard's
+# "t" key once the keyboard arrived. No wait can say "the keyboard is done" when it may never
+# start, so the flow waits for the screen to be still and then, if the tap still missed (the
+# screen did not move on), taps again from a fresh hierarchy. Only for controls whose miss is
+# harmless: a stray keystroke into the field does not change what EXPECT proves.
+#
+#   - runFlow:
+#       file: ../subflows/tap-footer-link.yaml
+#       env:
+#         TARGET: welcome-dev-gallery
+#         EXPECT: gallery-screen
+#         TIMEOUT: "30000"
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- waitForAnimationToEnd:
+    timeout: 5000
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: ${TARGET}
+          commands:
+            - tapOn:
+                id: ${TARGET}
+      - extendedWaitUntil:
+          visible:
+            id: ${EXPECT}
+          timeout: ${TIMEOUT}
