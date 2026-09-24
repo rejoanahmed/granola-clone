@@ -101,7 +101,11 @@ export default function OnboardingAboutScreen() {
       step={2}
       testID="onboarding-about-screen"
     >
-      <Text accessibilityRole="header" variant="display">
+      <Text
+        accessibilityRole="header"
+        testID="onboarding-about-title"
+        variant="display"
+      >
         Tell us about your work
       </Text>
       <Text style={styles.lead} variant="body">

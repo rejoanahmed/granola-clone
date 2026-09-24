@@ -1,3 +1,4 @@
+import { OTP_LENGTH } from "@gc/auth/otp";
 import { colors, PillButton, spacing, Text, TextField } from "@native/design";
 import {
   type WelcomeError,
@@ -14,7 +15,8 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CODE_LENGTH = 6;
+// The server's own number, so the field, the copy and better-auth's check cannot drift apart.
+const CODE_LENGTH = OTP_LENGTH;
 const NON_DIGITS = /\D/g;
 // better-auth replaces the code on every send, so a resend is cheap but not free: it invalidates
 // the code already in the user's inbox.
@@ -148,9 +150,12 @@ export default function WelcomeScreen() {
               >
                 Welcome to Notes
               </Text>
-              <Text style={[styles.center, styles.lead]} variant="secondary">
-                Sign in or create an account with your email. We’ll send you a
-                6-digit code.
+              <Text
+                style={[styles.center, styles.lead]}
+                testID="welcome-body"
+                variant="secondary"
+              >
+                {`Sign in or create an account with your email. We’ll send you a ${CODE_LENGTH}-digit code.`}
               </Text>
               <TextField
                 autoCapitalize="none"
@@ -180,14 +185,14 @@ export default function WelcomeScreen() {
               >
                 Check your email
               </Text>
-              {/* The id is on the whole line: iOS flattens nested text, so an id on the address
-                  alone would never reach the accessibility tree. */}
+              {/* The id is on the whole line, not the address: iOS flattens nested text, so an id
+                  on the inner <Text> never reaches the accessibility tree (spec §5). */}
               <Text
                 style={[styles.center, styles.lead]}
                 testID="welcome-sent-to"
                 variant="secondary"
               >
-                We sent a 6-digit code to{" "}
+                {`We sent a ${CODE_LENGTH}-digit code to `}
                 <Text color={colors.text.primary} variant="secondary">
                   {address}
                 </Text>

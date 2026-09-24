@@ -1,3 +1,4 @@
+import { OTP_EXPIRES_IN_SECONDS } from "@gc/auth/otp";
 import { describe, expect, it } from "vitest";
 import { makeEmailFake } from "../Integrations/Email/EmailFake";
 import { makeAuthEmailsService } from "./AuthEmailsService";
@@ -13,7 +14,10 @@ describe("AuthEmailsService.sendOtp", () => {
   // §7 case 18
   it("sends §4's subject and body to the address, as an otp with the code in its payload", async () => {
     const email = makeEmailFake({ sink: () => Promise.resolve() });
-    const authEmails = makeAuthEmailsService({ email });
+    const authEmails = makeAuthEmailsService({
+      email,
+      otpExpiresInSeconds: OTP_EXPIRES_IN_SECONDS,
+    });
 
     await authEmails.sendOtp({
       email: "rita@example.test",

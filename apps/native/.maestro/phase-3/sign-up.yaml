@@ -23,9 +23,13 @@ env:
       id: onboarding-name-screen
     timeout: 30000
 - assertVisible:
+    id: onboarding-name-title
+    text: What should we call you?
+- assertVisible:
     id: onboarding-progress
 - assertVisible:
     id: onboarding-name-input
+    text: Your name
 - assertVisible:
     id: onboarding-name-continue
     enabled: false
@@ -41,6 +45,9 @@ env:
     visible:
       id: onboarding-about-screen
     timeout: 30000
+- assertVisible:
+    id: onboarding-about-title
+    text: Tell us about your work
 - tapOn:
     id: onboarding-job-title
 - inputText: Designer

@@ -74,7 +74,8 @@ Layout, top to bottom, vertically centred in the space above the pinned pill:
    code." (`body`, `text.secondary`, centred).
 3. 32pt gap, **email field** `welcome-email`: `TextField`, full width, placeholder
    "you@example.com", `keyboardType=email-address`, `autoCapitalize=none`,
-   `autoComplete=email`, `textContentType=emailAddress`, return key "continue", which submits.
+   `autoComplete=email`, `textContentType=emailAddress`, return key "next", which submits.
+   (iOS has a "Continue" return key, but React Native's `returnKeyType` does not expose it.)
 4. Pinned pill **"Continue"** `welcome-submit`. It is disabled until the trimmed value matches
    `^[^\s@]+@[^\s@]+\.[^\s@]+$`.
 5. Development builds only: under the pill, the text button **"Component gallery"**
@@ -89,7 +90,7 @@ The same screen with different state (no navigation), so a failed verify never l
 
 1. **Headline** "Check your email", `display`, centred.
 2. **Body** "We sent a 6-digit code to {email}." (`body`, `text.secondary`, centred). The address is
-   `text.primary`, testID `welcome-sent-to`.
+   `text.primary`. The testID `welcome-sent-to` is on the whole sentence (see §5).
 3. **Code field** `welcome-otp`: `TextField`, 24pt SF Pro Medium, letter spacing 8, centred,
    `keyboardType=number-pad`, `textContentType=oneTimeCode` (iOS offers the code from Mail),
    `maxLength=6`. It autofocuses. Typing the sixth digit submits, with no tap needed. The pill still
@@ -148,8 +149,10 @@ Company Description and LinkedIn Username (#83) are stored and served by the API
 are **not** asked for in onboarding. Two long fields would make the first run a form. Phase 10's
 Profile screen edits all six.
 
-**User type menu (#84).** Tapping the row opens a popover anchored under the row's right edge. It
-has `bg.sheet` fill, radius 14, a 1px `border.hairline` edge, 44pt rows and SF Pro `body`, with a
+**User type menu (#84).** Tapping the row opens a popover, 248pt wide, right-aligned with the
+row's value and with its top 16pt *into* the row it opened from, so it overlaps the User Type row
+as #84's does. It has `bg.sheet` fill, radius 24 (measured off #84; an earlier draft of this spec
+said 14, which the shot does not support), a 1px `border.hairline` edge, 44pt rows and SF Pro `body`, with a
 leading `Check` glyph on the selected row and 28pt left padding on the others (#84). The options,
 in order, are **Investing, Recruiting, Customer Facing, Startup/Generalist, Other**, with testIDs
 `onboarding-user-type-option-<value>` (`investing`, `recruiting`, `customer_facing`,
@@ -184,8 +187,10 @@ Pushed from home by `home-settings-button`. Root `settings-screen`.
   (`body`). The whole row is the button `settings-sign-out` (#81, discovery id
   `settingsSignOutButton`).
 - 16pt below, a centred footer in `caption` (`text.tertiary`):
-  `{expo version} ({native build number})`, e.g. "1.0.0 (1)", from `expo-application`, testID
-  `settings-version`.
+  `{expo version} ({build number})`, e.g. "1.0.0 (1)", testID `settings-version`. Both come from
+  `app.json` through `expo-constants` (`version` and `ios.buildNumber`); prebuild writes the
+  latter into the binary's `CFBundleVersion`, so they agree without adding `expo-application` as
+  a native dependency.
 
 Phase 10 inserts the Account, Features, Support and Data & sharing sections above the Sign out
 card. This phase ships only the bottom of #81.
@@ -288,18 +293,19 @@ Error mapping: `authClient` errors are mapped on `error.code` (better-auth's `IN
 | --- | --- | --- |
 | `welcome-screen` | Welcome root (unchanged) | |
 | `welcome-title` | Headline | |
+| `welcome-body` | Email-step body line | |
 | `welcome-email` | Email field (unchanged) | |
 | `welcome-otp` | Code field (unchanged) | |
 | `welcome-submit` | Continue / Verify pill (unchanged) | |
-| `welcome-sent-to` | The address in the code body | |
+| `welcome-sent-to` | The whole code-step body sentence, not the address alone: iOS flattens nested `<Text>` into one accessibility element, so an id on the inner address never reaches Maestro. Flows match the address inside it with a regex. | |
 | `welcome-resend` | Resend code | |
 | `welcome-change-email` | Use a different email | |
 | `welcome-error` | Inline error line | |
 | `welcome-dev-gallery` | Dev-only gallery link (unchanged) | |
 | `onboarding-progress` | Step dots | |
 | `onboarding-back` | Back on steps 2 and 3 | `Back` |
-| `onboarding-name-screen`, `onboarding-name-input`, `onboarding-name-continue`, `onboarding-name-error`, `onboarding-sign-out` | Step 1 | |
-| `onboarding-about-screen`, `onboarding-job-title`, `onboarding-company`, `onboarding-user-type`, `onboarding-user-type-menu`, `onboarding-user-type-option-<value>`, `onboarding-about-continue`, `onboarding-about-skip`, `onboarding-about-error` | Step 2 | (#84 menu had none) |
+| `onboarding-name-screen`, `onboarding-name-title`, `onboarding-name-input`, `onboarding-name-continue`, `onboarding-name-error`, `onboarding-sign-out` | Step 1 | |
+| `onboarding-about-screen`, `onboarding-about-title`, `onboarding-job-title`, `onboarding-company`, `onboarding-user-type`, `onboarding-user-type-menu`, `onboarding-user-type-option-<value>`, `onboarding-about-continue`, `onboarding-about-skip`, `onboarding-about-error` | Step 2 | (#84 menu had none) |
 | `onboarding-ready-screen`, `onboarding-ready-title`, `onboarding-ready-finish`, `onboarding-ready-error` | Step 3 | |
 | `settings-screen`, `settings-back`, `settings-sign-out`, `settings-version` | Settings | `settingsSignOutButton` |
 | `boot-error-screen`, `boot-error-retry`, `boot-error-sign-out` | Boot error | |
@@ -437,11 +443,11 @@ Per `PROVIDER-FAKES.md`: `Port.ts` (`send(message: { to, subject, body, kind, pa
 ### 6.6 E2E harness additions (`packages/server/src/E2E/`, plain Hono, not in OpenAPI)
 
 - `GET /e2e/otp?email=<address>` returns the newest outbox `otp` row for that recipient:
-  `{ email, otp, type, sentAt }`. It answers 404 `{ _tag: "NotFound" }` when there is none. It sits
+  `{ email, otp, type, sentAt }`. It answers 404 `{ _tag: "NoOutboxMail" }` when there is none — its own tag, so it cannot be mistaken for the router's `NotFound`. It sits
   behind the same guard as the others (404 when disarmed, 401 on a bad secret).
 - `E2E_USERS` gains `newcomer: { email: "e2e-newcomer@gcnotes.test" }`, which is **never seeded**.
   `POST /e2e/reset` additionally deletes the `user` row with that email (cascading to its
-  sessions, accounts and profile), and deletes `verification` rows whose identifier contains it.
+  sessions, accounts and profile), and deletes the `verification` rows better-auth keys to it (`${type}-otp-${email}`, matched exactly, so an address that merely contains it keeps its codes).
   The sign-up flow therefore always meets an unknown address.
 - `POST /e2e/seed` upserts `profiles` rows for `person` and `other` with `onboardedAt` set to the
   seed time, so a seeded sign-in goes straight home. `person` also gets `jobTitle: "Engineer"`,
@@ -584,7 +590,13 @@ New subflows and scripts:
 - Given a clean launch and a seeded backend
 - When the user signs in with `e2e-person@gcnotes.test`
 - Then `home-screen` is visible without any `onboarding-*` screen appearing, and
-  `home-avatar-initial` reads "E"
+  `home-avatar-initial` reads "E". Maestro samples the screen, so "without appearing" is checked
+  twice — straight after the sixth digit, while the session and profile resolve, and again once
+  home is up. That catches a gate that routes to onboarding; it cannot rule out a flash shorter
+  than one sample, which is the splash hold's job (§3) and is checked by eye in the screenshots.
+- And the copy is pinned: `welcome-title` reads "Welcome to Notes" then "Check your email",
+  `welcome-body`, `welcome-sent-to`, both pill labels, and the Resend and "Use a different email"
+  labels match §4.
 - And the email step showed `welcome-title`, and the code step showed `welcome-sent-to` with the
   address (screenshots `phase-3-welcome-email`, `phase-3-welcome-code`).
 
@@ -594,7 +606,8 @@ New subflows and scripts:
 - Then `settings-screen`, `settings-sign-out` and `settings-version` are visible
   (screenshot `phase-3-settings`)
 - When they tap `settings-sign-out`
-- Then `welcome-screen` is visible and `welcome-email` is empty
+- Then `welcome-screen` is visible and `welcome-email` is empty (its reported text is exactly the
+  placeholder "you@example.com", and `welcome-submit` is disabled)
 - When the app is relaunched with `subflows/relaunch-app.yaml` (Keychain **not** cleared)
 - Then `welcome-screen` is visible, not `home-screen`, which proves sign-out deleted the stored
   credential rather than hiding it.
@@ -605,7 +618,8 @@ New subflows and scripts:
 - Given `e2e-person` signed in and `home-screen` visible
 - When the app is relaunched with `subflows/relaunch-app.yaml`
 - Then `home-screen` is visible and `welcome-screen` never appears
-  (`assertNotVisible: welcome-screen` after `home-screen` is up).
+  (`assertNotVisible: welcome-screen` sampled once during the boot and again after `home-screen`
+  is up — the same sampling limit as AC2).
 
 **AC5. Onboarding survives a relaunch and can be skipped.** `phase-3/onboarding-resume.yaml`
 - Given a newcomer who completed step 1 with "Rita Newcomer" and is on `onboarding-about-screen`
@@ -621,7 +635,8 @@ New subflows and scripts:
 - Given the code step for `e2e-person@gcnotes.test`
 - When the user types `000000` (the flow first asserts that the outbox code is not `000000`,
   re-sending if it is)
-- Then `welcome-error` is visible, `welcome-otp` is empty and `welcome-screen` is still showing
+- Then `welcome-error` reads "That code didn’t work. Check it and try again.", `welcome-otp` is
+  empty (`welcome-submit` is disabled) and `welcome-screen` is still showing
 - When they tap `welcome-change-email`
 - Then `welcome-email` still holds the address and `welcome-otp` is not visible
 - When they tap `welcome-submit` again and enter the new outbox code
@@ -644,6 +659,14 @@ New subflows and scripts:
 **AC9. Non-flow checks.** The §7 unit and wire tests pass. `isPublicNativeRoute(["onboarding",
 "name"])` and `(["settings"])` are `false`. `sanitizeReturnPath` allows `/settings` and refuses
 `/onboarding/*`, so a returnTo cannot skip or re-enter onboarding.
+
+**AC10. Resend counts down and sends a fresh code.** `phase-3/sign-in-resend.yaml`
+- Given the code step for `e2e-person@gcnotes.test`, straight after the send
+- Then `welcome-resend` is disabled and reads "Resend in 0:{ss}"
+- When the countdown ends
+- Then it reads "Resend code" and is enabled
+- When they tap it
+- Then it counts down again, and the newest outbox code signs in to `home-screen`.
 
 **Exit** (from phases.md): sign-up, sign-in, sign-out and relaunch-signed-in pass. `sign-out.yaml`
 leaves `home-screen` through `home-settings-button`, not through `clearKeychain`. The whole
@@ -718,6 +741,6 @@ removed from `BLOCKERS.md`.
    `subflows/open-home.yaml`, `e2e-reset.yaml`, `sign-in.yaml`, `relaunch-app.yaml` and
    `scripts/e2e-reset.js`, `read-otp.js`. Rewrite the phase-2 flows (AC8). Add `phase-3/*` to
    `config.yaml`. Update `scripts/maestro.sh` to pass `API_URL` and `E2E_SECRET`.
-9. The eight phase-3 flows in §8, then a visual check of the screenshots against #04, #81, #82 and
+9. The eight phase-3 flows in §8 (AC1–AC7 and AC10; AC8 rewrites the phase-2 flows), then a visual check of the screenshots against #04, #81, #82 and
    #84 per `docs/TESTING.md` §8.
 10. `docs/plan/BLOCKERS.md`: remove "No sign-out in the app" once AC3 passes.

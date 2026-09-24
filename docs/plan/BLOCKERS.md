@@ -12,3 +12,21 @@
   substance: before phase 3, production email sign-in silently logged `provider: "none"` and sent
   nothing. Stubbed: local and the deployed dev Worker run the fake. Unblocked by a phase that picks
   a provider, writes `Integrations/Email/EmailClient.ts`, and adds its credential to `parseConfig`.
+
+## Deferred review items (phase 3)
+
+- **Rendered states no flow reaches.** The boot error screen (`boot-error-screen`, retry, sign
+  out), silent sign-out on `ProfileNotFound`, the expired-code and too-many-attempts lines, the
+  onboarding save-error lines and the Settings row spinner are designed and built, and
+  `welcomeErrorCopy` and `gateFor` are unit-tested. No flow renders them. Each needs a failure the
+  flows cannot cause on demand. `GET /me` has to fail for a signed-in user (a 5xx, or a 404 while
+  the session is still valid, but deleting the user row cascades the session into a 401). A code
+  has to expire (5 minutes of waiting) or be burned by three wrong guesses. A save has to fail.
+  The honest seam is a harness switch that scripts the next response of a named route, behind the
+  existing `E2E_HARNESS` guard. That is new API surface, so it waits for a phase that needs it for
+  more than one screen. The resend countdown, the other state the review named, is now covered by
+  `phase-3/sign-in-resend.yaml` (AC10).
+- **"Without flashing" is sampled, not proven.** AC2 and AC4 now check for onboarding or welcome
+  during the transition as well as after it, but Maestro samples the hierarchy, so a flash shorter
+  than one sample can still pass. The spec now says so (§8, AC2). The splash hold is still checked
+  by eye in the screenshots.

@@ -1,3 +1,4 @@
+import { OTP_EXPIRES_IN_SECONDS } from "@gc/auth/otp";
 import {
   type AuthEmailsService,
   makeAuthEmailsService,
@@ -61,7 +62,13 @@ export const buildContainer = (
     })
   );
 
-  const authEmails = traced("AuthEmails", makeAuthEmailsService({ email }));
+  const authEmails = traced(
+    "AuthEmails",
+    makeAuthEmailsService({
+      email,
+      otpExpiresInSeconds: OTP_EXPIRES_IN_SECONDS,
+    })
+  );
 
   // FLAGS_MODE is read here and nowhere else. Flagship has no local store, so `wrangler dev` runs
   // the fake and FLAGS_ON is how a dark feature is switched on locally; unset, the mode is live and

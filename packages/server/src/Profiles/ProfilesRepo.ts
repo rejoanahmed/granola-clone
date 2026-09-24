@@ -27,6 +27,36 @@ const detailsOf = (patch: ProfilePatch) =>
     }).filter(([, value]) => value !== undefined)
   );
 
+// SQLite's message, which D1 passes through; drizzle wraps it, so the chain of causes is walked.
+const FOREIGN_KEY_FAILED = /FOREIGN KEY constraint failed/;
+
+const isForeignKeyFailure = (error: unknown): boolean => {
+  let current: unknown = error;
+  while (current instanceof Error) {
+    if (FOREIGN_KEY_FAILED.test(current.message)) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+};
+
+// The service reads the user row before it writes, but the account can be deleted between the two
+// (the cascade takes `profiles` with it). The insert then fails the foreign key; answering `false`
+// lets the service report the `ProfileNotFound` it would have reported a moment earlier, instead of
+// the constraint surfacing as a 500.
+const unlessUserGone = async (write: Promise<unknown>): Promise<boolean> => {
+  try {
+    await write;
+    return true;
+  } catch (error) {
+    if (isForeignKeyFailure(error)) {
+      return false;
+    }
+    throw error;
+  }
+};
+
 // Reads better-auth's `user` table and never writes it: better-auth owns that row's lifecycle, and
 // a second writer is how a profile edit and a sign-in race each other into a lost update. The
 // details live in `profiles`, which this repo does write.
@@ -74,36 +104,40 @@ export const makeProfilesRepo = (db: DrizzleClient) => ({
 
   // One statement, so the first save of a detail and a concurrent onboarding completion cannot
   // lose each other's columns: each only sets what it owns.
-  markOnboarded: async (userId: UserId, now: Timestamp): Promise<void> => {
-    await db
-      .insert(profiles)
-      .values({ createdAt: now, onboardedAt: now, updatedAt: now, userId })
-      .onConflictDoUpdate({
-        // `coalesce` keeps the first stamp: onboarding is completed once, and a retried or
-        // concurrent second call must not move the moment it happened.
-        set: {
-          onboardedAt: sql`coalesce(${profiles.onboardedAt}, excluded.onboarded_at)`,
-          updatedAt: now,
-        },
-        target: profiles.userId,
-      })
-      .run();
-  },
+  // `false` when the user row is gone (see `unlessUserGone`).
+  markOnboarded: (userId: UserId, now: Timestamp): Promise<boolean> =>
+    unlessUserGone(
+      db
+        .insert(profiles)
+        .values({ createdAt: now, onboardedAt: now, updatedAt: now, userId })
+        .onConflictDoUpdate({
+          // `coalesce` keeps the first stamp: onboarding is completed once, and a retried or
+          // concurrent second call must not move the moment it happened.
+          set: {
+            onboardedAt: sql`coalesce(${profiles.onboardedAt}, excluded.onboarded_at)`,
+            updatedAt: now,
+          },
+          target: profiles.userId,
+        })
+        .run()
+    ),
 
-  upsertDetails: async (
+  upsertDetails: (
     userId: UserId,
     patch: ProfilePatch,
     now: Timestamp
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     const details = detailsOf(patch);
-    await db
-      .insert(profiles)
-      .values({ ...details, createdAt: now, updatedAt: now, userId })
-      .onConflictDoUpdate({
-        set: { ...details, updatedAt: now },
-        target: profiles.userId,
-      })
-      .run();
+    return unlessUserGone(
+      db
+        .insert(profiles)
+        .values({ ...details, createdAt: now, updatedAt: now, userId })
+        .onConflictDoUpdate({
+          set: { ...details, updatedAt: now },
+          target: profiles.userId,
+        })
+        .run()
+    );
   },
 });
 

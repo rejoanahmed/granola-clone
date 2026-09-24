@@ -64,7 +64,11 @@ export default function OnboardingNameScreen() {
       step={1}
       testID="onboarding-name-screen"
     >
-      <Text accessibilityRole="header" variant="display">
+      <Text
+        accessibilityRole="header"
+        testID="onboarding-name-title"
+        variant="display"
+      >
         What should we call you?
       </Text>
       <Text style={styles.lead} variant="secondary">

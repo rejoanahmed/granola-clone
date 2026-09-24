@@ -25,13 +25,16 @@ const CARD_RADIUS = 28;
 const ROW_HEIGHT = 64;
 const TILE_RADIUS = 12;
 
-// "1.0.0 (1)", as #81's footer reads. The build number is the native binary's `CFBundleVersion`,
-// read through expo-constants rather than expo-application, which would be a native dependency
-// (and a rebuild) for one string.
-const VERSION = `${Constants.expoConfig?.version ?? "0.0.0"} (${
-  Constants.platform?.ios?.buildNumber ?? "0"
+// "1.0.0 (1)", as #81's footer reads. The build number is app.json's `ios.buildNumber`, which
+// prebuild writes into the binary's `CFBundleVersion`, read through expo-constants rather than
+// expo-application, which would be a native dependency (and a rebuild) for one string. The "?"
+// fallback is visible on purpose: a missing value should look wrong, not like build 0.
+const VERSION = `${Constants.expoConfig?.version ?? "?"} (${
+  Constants.expoConfig?.ios?.buildNumber ?? "?"
 })`;
 
+// Back may have nothing behind it: `sanitizeReturnPath` allows `/settings`, so a sign-in can
+// `replace` straight onto this screen, and then home is where Back goes.
 // #80/#81's chrome with only #81's last card: phase 10 inserts the Account, Features, Support and
 // Data & sharing sections above it.
 export default function SettingsScreen() {
@@ -50,7 +53,9 @@ export default function SettingsScreen() {
           <IconButton
             accessibilityLabel="Back"
             icon={ChevronLeft}
-            onPress={() => router.back()}
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.replace("/")
+            }
             testID="settings-back"
           />
         </View>

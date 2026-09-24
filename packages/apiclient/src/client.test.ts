@@ -313,8 +313,7 @@ describe("makeApiClient", () => {
   });
 });
 
-// §7 case 26 (docs/spec/phase-3.md §6.8). The directives go when `makeProfilesApi` grows the two
-// methods — each fails type-check the moment it has nothing left to expect.
+// §7 case 26 (docs/spec/phase-3.md §6.8).
 describe("the phase-3 profile endpoints", () => {
   const PROFILE = {
     companyDescription: null,

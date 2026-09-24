@@ -42,8 +42,10 @@ env:
     timeout: 10000
 - assertVisible:
     id: settings-sign-out
+# app.json's version and ios.buildNumber (§2.6), so a missing build number cannot read as "(0)".
 - assertVisible:
     id: settings-version
+    text: "1\\.0\\.0 \\(1\\)"
 - takeScreenshot: phase-3-settings
 - tapOn:
     id: settings-sign-out
@@ -51,9 +53,14 @@ env:
     visible:
       id: welcome-screen
     timeout: 30000
-- assertNotVisible:
+# An empty iOS field reports its placeholder as its text, so the placeholder being the whole text
+# is what proves the field empty, and the Continue pill agrees.
+- assertVisible:
     id: welcome-email
-    text: ".*e2e-person.*"
+    text: you@example.com
+- assertVisible:
+    id: welcome-submit
+    enabled: false
 
 # Relaunch with the Keychain intact.
 - runFlow: ../subflows/relaunch-app.yaml

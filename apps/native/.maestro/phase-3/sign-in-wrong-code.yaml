@@ -44,12 +44,21 @@ env:
     visible:
       id: welcome-error
     timeout: 30000
+# With three attempts allowed, one wrong guess is INVALID_OTP's line, not the network's or the
+# catch-all's (§4).
+- assertVisible:
+    id: welcome-error
+    text: "That code didn.t work. Check it and try again."
 - assertVisible:
     id: welcome-screen
-# The field is cleared for the next try (§3); an iOS field reports its placeholder when empty, so
-# the check is that the wrong code is gone rather than that there is no text at all.
+# The field is cleared for the next try (§3). The field itself cannot be asked for "no text" (iOS
+# reports its placeholder instead), so emptiness is proved through Verify, which is disabled
+# until six digits are in it.
 - assertVisible:
     id: welcome-otp
+- assertVisible:
+    id: welcome-submit
+    enabled: false
 - assertNotVisible:
     id: welcome-otp
     text: "000000"

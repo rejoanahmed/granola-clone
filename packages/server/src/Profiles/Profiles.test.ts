@@ -14,7 +14,7 @@ import {
   seedD1,
   type TestD1,
 } from "../Testing";
-import { canReadProfile } from "./Policy";
+import { canEditProfile, canReadProfile } from "./Policy";
 import { makeProfilesRepo } from "./ProfilesRepo";
 import { makeProfilesService, type ProfilesService } from "./ProfilesService";
 
@@ -71,6 +71,23 @@ const repo = () => makeProfilesRepo(makeDrizzle(d1));
 
 const service = (clock: Clock = fixedClock(AT)): ProfilesService =>
   makeProfilesService({ clock, repo: repo() });
+
+// The real repository, except that its read deletes the account on the way out: the window
+// between `existing()` and the write, forced open.
+const vanishingAfterRead = (): ProfilesService => {
+  const real = repo();
+  return makeProfilesService({
+    clock: fixedClock(AT),
+    repo: {
+      ...real,
+      byId: async (id) => {
+        const profile = await real.byId(id);
+        await d1.prepare("DELETE FROM user WHERE id = ?").bind(id).run();
+        return profile;
+      },
+    },
+  });
+};
 
 const count = async (sql: string): Promise<number> =>
   Number(await d1.prepare(sql).first("n"));
@@ -186,6 +203,13 @@ describe("ProfilesService.update", () => {
     ).rejects.toBeInstanceOf(ProfileNotFound);
   });
 
+  // §7 case 7, the race: the account is deleted after the service's read and before its write.
+  it("is ProfileNotFound when the user row goes between the read and the write", async () => {
+    await expect(
+      vanishingAfterRead().update(actor(), { jobTitle: "Designer" })
+    ).rejects.toBeInstanceOf(ProfileNotFound);
+  });
+
   // §7 case 8: the id comes from the actor, never from input.
   it("leaves another person's row byte-identical", async () => {
     await seedD1(d1, [{ rows: [profileRow(otherActor())], table: "profiles" }]);
@@ -233,6 +257,12 @@ describe("ProfilesService.completeOnboarding", () => {
   });
 
   // §7 case 7
+  it("is ProfileNotFound when the user row goes between the read and the write", async () => {
+    await expect(
+      vanishingAfterRead().completeOnboarding(actor())
+    ).rejects.toBeInstanceOf(ProfileNotFound);
+  });
+
   it("is ProfileNotFound when the actor's user row is gone", async () => {
     const ghost = actor({ id: UserId.parse("usr_deleted_0001") });
 
@@ -256,7 +286,7 @@ describe("the profiles table", () => {
   });
 });
 
-describe("canReadProfile", () => {
+describe("the profile policies", () => {
   const profile = {
     companyDescription: null,
     companyName: null,
@@ -275,10 +305,21 @@ describe("canReadProfile", () => {
     expect(canReadProfile(profile, actor())).toBe(profile);
   });
 
-  it("refuses anyone else, naming the action", () => {
+  it("refuses anyone else a read, naming the action", () => {
     expect(() => canReadProfile(profile, otherActor())).toThrow(Forbidden);
     expect(() => canReadProfile(profile, otherActor())).toThrow(
       expect.objectContaining({ details: { action: "profiles.read" } })
+    );
+  });
+
+  it("lets a person edit their own profile", () => {
+    expect(canEditProfile(profile, actor())).toBe(profile);
+  });
+
+  it("refuses anyone else an edit, naming the edit action rather than the read", () => {
+    expect(() => canEditProfile(profile, otherActor())).toThrow(Forbidden);
+    expect(() => canEditProfile(profile, otherActor())).toThrow(
+      expect.objectContaining({ details: { action: "profiles.edit" } })
     );
   });
 });

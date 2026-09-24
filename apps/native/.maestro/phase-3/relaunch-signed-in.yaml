@@ -19,6 +19,10 @@ env:
     timeout: 30000
 
 - runFlow: ../subflows/relaunch-app.yaml
+# Sampled during the boot, before home is up, as well as after (spec §8, AC4): the splash hold is
+# what keeps welcome off screen while the session resolves.
+- assertNotVisible:
+    id: welcome-screen
 - extendedWaitUntil:
     visible:
       id: home-screen

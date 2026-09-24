@@ -172,8 +172,9 @@ describe("GET /e2e/otp", () => {
     const response = await readOtp("nobody@gcnotes.test");
 
     expect(response.status).toBe(404);
-    await expect(response.json()).resolves.not.toMatchObject({
-      message: "No route for GET /e2e/otp",
+    await expect(response.json()).resolves.toMatchObject({
+      _tag: "NoOutboxMail",
+      details: { email: "nobody@gcnotes.test" },
     });
   });
 
@@ -252,6 +253,12 @@ describe("POST /e2e/reset, phase 3", () => {
             identifier: `sign-in-otp-${NEWCOMER}`,
             value: "hashed",
           },
+          {
+            expires_at: 4_000_000_000_000,
+            id: "ver_lookalike_0001",
+            identifier: `sign-in-otp-x${NEWCOMER}`,
+            value: "hashed",
+          },
         ],
         table: "verification",
       },
@@ -271,10 +278,17 @@ describe("POST /e2e/reset, phase 3", () => {
     ).toBe(0);
     expect(
       await countOf(
-        "SELECT count(*) AS n FROM verification WHERE identifier LIKE ?",
-        `%${NEWCOMER}%`
+        "SELECT count(*) AS n FROM verification WHERE identifier = ?",
+        `sign-in-otp-${NEWCOMER}`
       )
     ).toBe(0);
+    // An address that merely contains the newcomer's keeps its code.
+    expect(
+      await countOf(
+        "SELECT count(*) AS n FROM verification WHERE id = ?",
+        "ver_lookalike_0001"
+      )
+    ).toBe(1);
     expect(
       await countOf(
         "SELECT count(*) AS n FROM profiles WHERE user_id = ?",

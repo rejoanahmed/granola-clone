@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { RateLimited } from "@gc/domain/Errors";
 import { type AppEnv, buildContainer, type Env } from "@gc/server";
 import {
@@ -94,6 +95,16 @@ export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
 
 type OtpEmail = Parameters<SessionsConfig["email"]["sendOtpEmail"]>[0];
 
+// better-auth 1.7.5 awaits the send hook inside `runInBackgroundOrAwait`, which catches whatever it
+// throws and only logs it: a send that failed still answers 200 `{ success: true }`, and the app
+// moves to "Check your email" for a code nobody sent. So the failure is carried out of band. Each
+// `/api/auth/*` request runs inside its own store, the hook records what it threw there, and
+// `betterAuthHandler` rethrows it once better-auth returns, which is how `EmailUnavailable` reaches
+// `on-error.ts` as the 503 it declares. Throwing a better-auth `APIError` from the hook would not
+// help: it is swallowed by the same catch.
+type SendOutcome = { failure?: unknown };
+const otpSends = new AsyncLocalStorage<SendOutcome>();
+
 // better-auth decides when a code is sent; the container's `authEmails` renders and sends it
 // through whichever email provider `EMAIL_MODE` chose (only the fake exists, writing the outbox the
 // E2E harness reads). The log line never carries the code, in any environment: a one-time password
@@ -102,7 +113,16 @@ type OtpEmail = Parameters<SessionsConfig["email"]["sendOtpEmail"]>[0];
 // request that created them.
 const otpEmail = (env: Env): SessionsConfig["email"] => ({
   sendOtpEmail: async ({ email, otp, type }: OtpEmail) => {
-    await buildContainer(env).authEmails.sendOtp({ email, otp, type });
+    try {
+      await buildContainer(env).authEmails.sendOtp({ email, otp, type });
+    } catch (failure) {
+      logEvent("auth.otp.failed", { email, type });
+      const outcome = otpSends.getStore();
+      if (outcome !== undefined) {
+        outcome.failure = failure;
+      }
+      throw failure;
+    }
     logEvent("auth.otp.issued", { email, type });
   },
 });
@@ -147,5 +167,13 @@ export const currentActor = createMiddleware<AppEnv>(async (c, next) => {
   await next();
 });
 
-export const betterAuthHandler: Handler<AppEnv> = (c) =>
-  sessionsFor(c.env).handler(c.req.raw);
+export const betterAuthHandler: Handler<AppEnv> = async (c) => {
+  const outcome: SendOutcome = {};
+  const response = await otpSends.run(outcome, () =>
+    sessionsFor(c.env).handler(c.req.raw)
+  );
+  if (outcome.failure !== undefined) {
+    throw outcome.failure;
+  }
+  return response;
+};

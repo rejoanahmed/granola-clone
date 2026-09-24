@@ -1,3 +1,5 @@
+import type { UserType } from "@gc/domain/Domain/Profile";
+
 // Fixed ids and addresses, never generated: reset-then-seed must produce the same world on every
 // run, so a failing assertion names a bug rather than yesterday's data. Two people, so a journey
 // can prove that one of them cannot read the other's data.
@@ -33,7 +35,7 @@ export const E2E_PROFILES = {
 export type E2eProfileDetails = {
   readonly companyName?: string;
   readonly jobTitle?: string;
-  readonly userType?: string;
+  readonly userType?: UserType;
 };
 
 export type E2eRole = keyof typeof E2E_USERS;

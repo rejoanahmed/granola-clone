@@ -178,7 +178,9 @@ These must exist. The names are the specification; the phrasing in the test file
 - `completeOnboarding` stamps `onboardedAt` with the clock's now, and a later call keeps the first
   stamp; it keeps the details an earlier `update` wrote
 - `update` and `completeOnboarding` for an actor whose `user` row is gone → `ProfileNotFound`, not a
-  foreign-key 500
+  foreign-key 500, including when the row goes between the service's read and its write
+- `canReadProfile` and `canEditProfile` each allow the owner and refuse anyone else as `Forbidden`,
+  naming their own action
 - one person's `update` leaves another person's `profiles` row byte-identical
 - deleting a `user` row cascades its `profiles` row
 
@@ -217,10 +219,20 @@ These must exist. The names are the specification; the phrasing in the test file
 - `sendOtp` sends "Your Notes sign-in code" and the §4 body (code, "expires in 5 minutes"), as
   `kind: "otp"` with the code and type in its payload
 
+### `Outbox/Outbox.test.ts`
+
+- `latestOtpFor` answers the newest code for an address; a payload that is not JSON, or not
+  `{ otp, type }`, reads as `null` rather than throwing
+
 ### `Runtime/AppConfig.test.ts`
 
 - `EMAIL_MODE` absent → `fake`; `fake` (or unset) with `NODE_ENV=production` refused, naming
   `EMAIL_MODE`; `live` refused, naming the missing client; any other value refused
+
+### `apps/api/src/otp-send-failure.test.ts`
+
+- a send the email provider refuses answers 503 `EmailUnavailable`, not better-auth's 200 (the
+  plugin swallows the hook's error; `betterAuthHandler` rethrows it)
 
 ### `apps/api/src/e2e-harness.test.ts` and `app.test.ts` — the real app
 
@@ -342,7 +354,7 @@ config arms them:
 | --- | --- |
 | `POST /e2e/reset` | deletes every table in `RESET_ORDER` (`email_outbox`, `profiles`), children before parents, plus the never-seeded newcomer's `user` row (cascading its sessions and profile) and its `verification` rows, as one atomic batch; the seeded people's better-auth rows are kept so their sessions survive |
 | `POST /e2e/seed` | writes the two fixed users, `person` and `other`, idempotently, and upserts their `profiles` rows onboarded (`person` also gets `Engineer`, `Notes E2E`, `startup_generalist`) |
-| `GET /e2e/otp?email=` | the newest sign-in code the fake email provider wrote to the outbox for that address, `{ email, otp, type, sentAt }`; 404 `NotFound` when there is none |
+| `GET /e2e/otp?email=` | the newest sign-in code the fake email provider wrote to the outbox for that address, `{ email, otp, type, sentAt }`; 404 `NoOutboxMail` when there is none |
 | `POST /e2e/session/:role` | mints a **signed** better-auth session cookie for `person` or `other` |
 
 Armed by `E2E_HARNESS=true` plus an `E2E_SECRET` of at least 32 characters, both parsed in

@@ -1,5 +1,6 @@
 import {
   eq,
+  inArray,
   profiles,
   RESET_ORDER,
   session,
@@ -22,17 +23,30 @@ export type E2eSessionRow = {
 
 export type E2eProfileRow = E2eProfileDetails & { readonly userId: string };
 
+// better-auth's email-otp types, each of which keys a pending code by `${type}-otp-${email}`.
+// Restated rather than imported: a repo may not import `@gc/auth`.
+const OTP_TYPES = [
+  "change-email",
+  "email-verification",
+  "forget-password",
+  "sign-in",
+] as const;
+
 export const makeE2eRepo = (db: DrizzleClient) => ({
   // The newcomer's account is the one better-auth tables row a reset does delete: the sign-up flow
   // must always meet an unknown address. Deleting the `user` row cascades its sessions, accounts
-  // and profile. Pending codes live in `verification` keyed by an identifier that embeds the
-  // address, matched with `instr` rather than `LIKE`, where `_` in an address would be a wildcard.
+  // and profile. Pending codes live in `verification` under better-auth's `${type}-otp-${email}`,
+  // matched exactly: a substring match would also delete the codes of any address that merely
+  // contains this one (`xe2e-newcomer@…`).
   stageForget: (stage: Stage, email: string): void => {
     stage.add({ query: db.delete(user).where(eq(user.email, email)) });
     stage.add({
-      query: db
-        .delete(verification)
-        .where(sql`instr(${verification.identifier}, ${email}) > 0`),
+      query: db.delete(verification).where(
+        inArray(
+          verification.identifier,
+          OTP_TYPES.map((type) => `${type}-otp-${email}`)
+        )
+      ),
     });
   },
 

@@ -29,30 +29,37 @@ export const makeProfilesService = (deps: ProfilesDeps) => {
     canReadProfile(await existing(actor), actor);
 
   // Read, check, write, read again. The first read is what turns a deleted account into
-  // `ProfileNotFound` instead of the foreign key's 500, and it is also the subject the policy
-  // needs. The id written is the actor's, never one from input, so no patch can reach another row.
+  // `ProfileNotFound` and is the subject the policy needs; an account deleted between that read
+  // and the write is caught by the repo, which answers `false` rather than the foreign key's 500. The id written is the actor's, never one from input, so no patch can reach another row.
   const editing = async (actor: Actor): Promise<Authorized<Profile>> =>
     canEditProfile(await existing(actor), actor);
 
   return {
     completeOnboarding: async (actor: Actor): Promise<Authorized<Profile>> => {
       const subject = await editing(actor);
-      await deps.repo.markOnboarded(subject.id, deps.clock.now());
+      if (!(await deps.repo.markOnboarded(subject.id, deps.clock.now()))) {
+        throw new ProfileNotFound({ id: actor.id });
+      }
       return me(actor);
     },
 
     me,
 
-    // `{}` writes nothing: a no-op PATCH must not create a row or move `updatedAt`.
+    // `{}` writes nothing: a no-op PATCH must not create a row or move `updatedAt`. What it answers
+    // still passes the read policy, so a no-op edit can never become a read that skipped it.
     update: async (
       actor: Actor,
       patch: ProfilePatch
     ): Promise<Authorized<Profile>> => {
       const subject = await editing(actor);
       if (!hasChanges(patch)) {
-        return subject;
+        return canReadProfile(subject, actor);
       }
-      await deps.repo.upsertDetails(subject.id, patch, deps.clock.now());
+      if (
+        !(await deps.repo.upsertDetails(subject.id, patch, deps.clock.now()))
+      ) {
+        throw new ProfileNotFound({ id: actor.id });
+      }
       return me(actor);
     },
   };

@@ -13,11 +13,6 @@ const USER_TYPES = [
 ];
 
 describe("ProfilePatch", () => {
-  it("is exported, alongside UserType", () => {
-    expect(ProfilePatch).toBeDefined();
-    expect(UserType).toBeDefined();
-  });
-
   it("trims what it keeps", () => {
     expect(
       ProfilePatch.parse({ companyName: "  Acme  ", jobTitle: " Designer" })
