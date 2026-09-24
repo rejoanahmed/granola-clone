@@ -164,9 +164,11 @@ export default function RecordingScreen() {
     }
   };
 
+  // Inside the sheet, `measureInWindow` answers relative to the sheet, which sits one status bar
+  // below the window's top; the menu is drawn in window space, so that offset is added back.
   const openMenu = () =>
     more.current?.measureInWindow((x, y, width, height) =>
-      setMenuFrame({ height, width, x, y })
+      setMenuFrame({ height, width, x, y: y + insets.top })
     );
 
   const owner = session?.user.name ?? "";

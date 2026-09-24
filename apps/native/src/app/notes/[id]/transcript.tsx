@@ -203,32 +203,36 @@ export default function TranscriptSheet() {
       style={styles.sheet}
       testID="transcript-sheet"
     >
-      <View collapsable={false} style={styles.header}>
-        <View style={styles.headings}>
-          <Text
-            accessibilityRole="header"
-            testID="transcript-title"
-            variant="displaySheet"
-          >
-            {TRANSCRIPT_COPY.title}
-          </Text>
-          <Text style={styles.subtitle} variant="secondary">
-            {TRANSCRIPT_COPY.subtitle}
-          </Text>
-        </View>
-        <View style={styles.buttons}>
-          <RoundButton
-            icon={ShareIcon}
-            label={TRANSCRIPT_COPY.shareLabel}
-            onPress={share}
-            testID="transcript-share"
-          />
-          <RoundButton
-            icon={X}
-            label="Close"
-            onPress={close}
-            testID="transcript-close"
-          />
+      {/* Wrapped: a sticky row's own style is moved onto RN's sticky wrapper, which would drop
+          the header's row direction and stack the buttons under the heading. */}
+      <View collapsable={false} style={styles.pinned}>
+        <View style={styles.header}>
+          <View style={styles.headings}>
+            <Text
+              accessibilityRole="header"
+              testID="transcript-title"
+              variant="displaySheet"
+            >
+              {TRANSCRIPT_COPY.title}
+            </Text>
+            <Text style={styles.subtitle} variant="secondary">
+              {TRANSCRIPT_COPY.subtitle}
+            </Text>
+          </View>
+          <View style={styles.buttons}>
+            <RoundButton
+              icon={ShareIcon}
+              label={TRANSCRIPT_COPY.shareLabel}
+              onPress={share}
+              testID="transcript-share"
+            />
+            <RoundButton
+              icon={X}
+              label="Close"
+              onPress={close}
+              testID="transcript-close"
+            />
+          </View>
         </View>
       </View>
       <View testID="transcript-scroll">{body}</View>
@@ -262,13 +266,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii.sheet,
     flexDirection: "row",
     gap: spacing.sm,
-    left: 0,
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl,
-    position: "absolute",
-    right: 0,
-    top: 0,
   },
   headings: { flex: 1 },
   initial: { fontSize: 20 },
@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
     height: 14,
   },
   lineShort: { width: 96 },
+  pinned: { backgroundColor: colors.bg.app },
   pressed: { opacity: PRESSED_OPACITY },
   retry: { marginTop: spacing.md },
   round: {
