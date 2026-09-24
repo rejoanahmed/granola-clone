@@ -1,0 +1,103 @@
+# AC10 (docs/spec/phase-5.md §8, §3.9–3.10): the seeded launch note's two-speaker transcript opens
+# from More → View transcript (#12 → #13). Scrolled to its end, the header is still there (#14).
+# Close returns to the note. A note with no recording offers no View transcript at all.
+appId: ${APP_ID}
+name: The seeded transcript, scrolled, and a note without one
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- tapOn:
+    id: note-menu-transcript
+- extendedWaitUntil:
+    visible:
+      id: transcript-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-loading
+    timeout: 15000
+
+- assertVisible:
+    id: transcript-title
+    text: Transcript
+- assertVisible:
+    id: transcript-share
+- assertVisible:
+    id: transcript-close
+- assertVisible:
+    id: transcript-speaker-0
+    text: Speaker A
+- assertVisible:
+    id: transcript-avatar-0
+    text: A
+- assertVisible:
+    id: transcript-speaker-1
+    text: Speaker B
+- assertVisible:
+    id: transcript-avatar-1
+    text: B
+- assertVisible:
+    id: transcript-utterance-1
+    below:
+      id: transcript-utterance-0
+# Compared by eye against #13 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-5-transcript
+
+# The header is pinned while the body scrolls (#14).
+- scrollUntilVisible:
+    element:
+      id: transcript-end
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: transcript-title
+- assertVisible:
+    id: transcript-close
+
+- tapOn:
+    id: transcript-close
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-sheet
+    timeout: 10000
+- assertVisible:
+    id: note-screen
+- assertVisible:
+    id: note-title
+    text: Launch planning review
+
+# A note typed by hand has no transcript to view.
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-edit
+- assertNotVisible:
+    id: note-menu-transcript

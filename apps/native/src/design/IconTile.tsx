@@ -9,6 +9,8 @@ type Props = {
   /** A circle, as #04's grouped-card rows draw their tiles. */
   readonly round?: boolean;
   readonly testID?: string;
+  /** The glyph's colour; the live recording's row draws its waveform in lime. */
+  readonly tint?: string;
 };
 
 export function IconTile({
@@ -16,6 +18,7 @@ export function IconTile({
   icon: Icon,
   round = false,
   testID,
+  tint = colors.text.primary,
 }: Props) {
   return (
     <View
@@ -26,11 +29,7 @@ export function IconTile({
       ]}
       testID={testID}
     >
-      <Icon
-        color={colors.text.primary}
-        size={sizes.glyph}
-        strokeWidth={ICON_STROKE}
-      />
+      <Icon color={tint} size={sizes.glyph} strokeWidth={ICON_STROKE} />
     </View>
   );
 }

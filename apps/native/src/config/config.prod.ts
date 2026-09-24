@@ -2,4 +2,5 @@
 // override is absent from the store build.
 export default {
   API_URL: "https://api.gcnotes.example.com",
+  RECORDER: "expo",
 } as const;

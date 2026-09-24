@@ -20,6 +20,31 @@
   `notes_owner_live_idx`. Unblocked by a phase that designs a trash screen and a retention period.
   The purge would be a cron calling a service method (R8), and the cascade on `note_attendees`
   already cleans up after it.
+- **No live transcription client (phase 5).** Recordings are transcribed through the
+  `Transcription` port, and the only implementation is `TranscriptionFake`, which never decodes the
+  audio: it answers a deterministic transcript seeded on the recording id and duration. `AppConfig`
+  refuses `TRANSCRIPTION_MODE=fake` under `NODE_ENV=production` and refuses `live` because there is
+  no client, so production (which sets `live`) fails at startup for this reason as well as
+  `EMAIL_MODE`'s. Stubbed: local and the deployed dev Worker run the fake, and the E2E harness's
+  `e2e_switches` row scripts it. Unblocked by a phase that picks a vendor, writes
+  `Integrations/Transcription/TranscriptionClient.ts` and its webhook route (a `RAW_ROUTE_PREFIXES`
+  entry, PROVIDER-FAKES.md rule 8), and adds the credential to `parseConfig`.
+- **The R2 buckets must exist before a deploy (phase 5).** `wrangler.jsonc` binds `AUDIO` to
+  `gcnotes-audio-dev` and `gcnotes-audio-prod`. They are created by the user
+  (`bunx wrangler r2 bucket create gcnotes-audio-dev`, and the same for prod), not by an agent or
+  by `deploy.sh`. `bun run deploy:check` resolves the binding but does not prove the bucket exists;
+  a missing one fails the real deploy. Stubbed: `wrangler dev --local` simulates the bucket, and the
+  audio store fails only the calls that need it when the binding is absent.
+- **Audio objects outlive a deleted user (phase 5).** Deleting a user cascades their notes,
+  recordings and segments in D1, but nothing deletes the R2 objects under
+  `recordings/<ownerId>/`. Discard deletes its own object; nothing else does. Stubbed: nothing.
+  Unblocked by a purge (a cron over a service method, R8) that runs with the phase-4 trash purge,
+  whenever that lands, and lists the owner's prefix.
+- **An abandoned upload never expires (phase 5).** A recording ended on a device that never comes
+  back stays `uploading` on the server forever, and one whose app was killed mid-recording stays
+  `recording` (the note page shows "This recording didn’t finish."). `sweep()` only polls
+  `transcribing` rows. Stubbed: nothing; the note can be trashed. Unblocked by giving the sweep an
+  age cutoff that fails such rows, once the client's resume-on-launch has had a release to settle.
 
 ## Deferred review items (phase 3)
 
@@ -52,8 +77,15 @@
   is therefore 60pt tall rather than 52.
 - **The gallery's Menu and Toast sections sit after Sheets.** Placed before it, `phase-2/gallery-sheet.yaml`
   could not find `gallery-open-sheet` even while it was on screen, run after the other phase-2
-  flows (it passed alone). Moving the new sections below it restored the flow; the cause was not
-  found.
+  flows (it passed alone). Moving the new sections below it restored the flow.
+  **Cause found in phase 5:** the id was never missing from the tree. `scrollUntilVisible` checks
+  only between swipes (~3.5s each on this simulator) and needs the target 100% on screen. The
+  palette grew by six tokens, the gallery reached five pages, and `gallery-open-sheet` needed a
+  sixth swipe that the 20s timeout expired during, before the check ran; the failure screenshot is
+  taken after that last swipe, so it shows the button. `gallery-surfaces` (565pt) had a 247pt
+  window in which it was whole, narrower than one swipe, so it was jumped over. The palette is now
+  a two-column grid and the fields sit in their own `gallery-fields` section. Keep a scrolled-to
+  container well under half a screen tall, and keep the gallery short.
 - **`phase-2/home-shell-inert.yaml` failed once in the full phase-2..4 suite (phase 4), not
   reproduced.** Right after its tap on `home-search-button`, the detail for `not_e2e_launch` was
   being pushed. No artefacts of that run survived, so no root cause was found. The review's
@@ -89,3 +121,62 @@
 - **`FormRow`'s caret tint (phase 3).** The caret fix (tint applied once focused) was made in the
   note editor and `TextField`. `FormRow` sets its tint at mount the old way; it is not
   autofocused, which is the case that showed blue, so it was left alone.
+
+## Phase 5 native
+
+- **The note page's More menu is drawn inline, not in a native modal.** On a recording's note page,
+  opening More, closing it, then tapping Retry (so the status row leaves the page) and opening More
+  again brought the menu up visibly but with nothing in the accessibility tree: every Maestro query
+  answered an empty hierarchy until it closed. Remounting the modal did not help; drawing the menu as
+  the screen's own top layer (`ActionMenu`'s `inline`) did, and `transcription-failed.yaml` passes.
+  Home and the live card still use the modal. The root cause (RN `Modal` on iOS 26 after a layout
+  change beneath a dismissed one) is not understood; if a second screen hits it, move `ActionMenu`
+  to inline everywhere.
+- **Sheets with a scroller must make it the screen's root.** react-native-screens sizes a
+  `formSheet`'s first-child `ScrollView` to the sheet and, when the scroller is nested, sets its
+  frame to the sheet's *window* frame (it ended up 735pt down, 54pt tall). The transcript sheet is
+  therefore a root `ScrollView` whose sticky first row is the header, which is how the header stays
+  pinned (#14). The sheet root's testID `transcript-sheet` is on that scroller, and
+  `transcript-scroll` names the body inside it.
+- **`measureInWindow` inside the live card's sheet is sheet-relative.** The live card adds the top
+  safe-area inset back when it anchors its More menu (discovery screen 104). A sheet presented at a
+  different offset would need the offset measured rather than assumed.
+- **The fake recorder writes a bundled one-second tone** (`assets/e2e/sample.m4a`) whatever the
+  timer says, so the fake transcriber's duration comes from `POST /recordings/{id}/end`, never from
+  the bytes. The real `ExpoAudioRecorder` has not been exercised on a device: the simulator
+  microphone cannot be scripted and the physical iPhone is off-limits to agents.
+- **Upload-failed, start-failed, interrupted, transcript-empty/-error, and the discard- and
+  share-failure toasts** are built and unit-tested (the status-row copy and backoff), and no flow
+  reaches them — the scripted-response harness seam the phase-3 and phase-4 entries already defer.
+- **End dismisses the card and pushes the note page; it does not cross-fade (phase 5, deliberate).**
+  §3.8 first asked for `router.replace` to `/notes/[id]`, which cross-fades as #105 does. The
+  replaced page inherited the sheet's presentation, and a second menu opened on it vanished from the
+  accessibility tree, so from every flow. `end()` in `record/[id].tsx` now does `back()` then
+  `push()`: the sheet slides down, then the page pushes in. The spec records it as a deviation.
+  Restoring the cross-fade needs a transition that does not reuse the sheet's presentation.
+
+## Deferred review items (phase 5)
+
+- **Flows still sign in one by one.** Every flow runs `clearState` + reset + the OTP sign-in through
+  `open-home.yaml`, as the Maestro rules in `phases.md` require, so flows stay order-independent.
+  Sharing one sign-in across the flows that do not test sign-in would save more wall-clock than the
+  10 s End wait did (now removed by `recording-skip-ahead`). It is left for a decision about the
+  rule itself, not made inside one phase's review.
+- **"Disabled until `POST /recordings` answers" is not flowed.** The meta pill and Add to folder
+  carry `accessibilityState.disabled` until the note exists, but locally the POST answers before
+  Maestro's first assertion, so no flow can see the disabled window without the scripted-response
+  seam the phase-3 and phase-4 entries already defer. `record-transcript.yaml` now asserts the
+  paperclip's disabled state and the owner name in the pill's label.
+- **`canReadRecording` and `canEditRecording` share one predicate.** The split is a naming seam for
+  sharing (phase-level, not yet designed), and no test pins the two diverging, because nothing
+  makes them diverge yet. The test belongs to the phase that adds sharing.
+- **The phase-5 review read only part of the E2E module and the error mapping.** A follow-up read
+  of `E2eService`, `E2eRepo`, `E2E/Http.ts` and `TranscriptionFake.ts` found no factory
+  constructing its own dependency (R3) and no `Env` read outside `container.ts`/`Runtime` (R5).
+  `E2eService` throws a plain `Error` for a seeded recording that names no note, which is a fixture
+  invariant and a 500 by design. `on-error.ts` maps every `AppError` by its own status, so the new
+  `AudioLengthRequired` (411) and `AudioLengthMismatch` (400) need no case there.
+- **A job-less row whose audio never arrived waits 30 minutes, then goes back to `uploading`.** The
+  sweep resubmits a stranded `transcribing` row after 5 minutes when its object is stored, and
+  releases it only after 30 when it is not, so a slow 100 MB put is never cut off mid-stream. If the
+  client has already given up by then, the row joins the abandoned-upload entry above.

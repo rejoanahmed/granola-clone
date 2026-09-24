@@ -15,6 +15,11 @@ const TAGS = [
       "The signed-in person's meeting notes: list, read, edit, trash and restore. Another person's note answers exactly as one that does not exist.",
     name: "Notes",
   },
+  {
+    description:
+      "Recording a meeting: start it (which creates its note), save the notes typed while it runs, end it, upload the audio, and retry a failed transcription. The transcript itself is read through its note.",
+    name: "Recordings",
+  },
 ];
 
 export const OPENAPI_DOCUMENT = {

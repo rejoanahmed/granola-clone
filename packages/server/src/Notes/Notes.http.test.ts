@@ -31,6 +31,7 @@ const NOTE = {
   bodyMarkdown: "### Updates\n\n- Pagination merged",
   createdAt: AT,
   id: NOTE_ID,
+  recording: null,
   source: "phone",
   startedAt: AT,
   title: "Weekly standup",
@@ -41,6 +42,7 @@ const NOTE = {
 const SUMMARY = {
   attendeeCount: 1,
   id: NOTE_ID,
+  recordingStatus: null,
   source: "phone",
   startedAt: AT,
   title: "Weekly standup",

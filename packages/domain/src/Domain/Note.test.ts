@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { AttendeeInput, NoteCreate, NotePatch, NoteTitle } from "./Note";
+import {
+  AttendeeInput,
+  Note,
+  NoteCreate,
+  NotePatch,
+  NoteSummary,
+  NoteTitle,
+} from "./Note";
 
 // The contract is the only thing between a phone's form and the `notes` row, so the rules the
 // service leans on — a title is never blank, a body never names its owner — are the schema's.
@@ -79,5 +86,32 @@ describe("AttendeeInput", () => {
     expect(
       AttendeeInput.safeParse({ name: "Priya", userId: "usr_1" }).success
     ).toBe(false);
+  });
+});
+
+// Phase 5 (docs/spec/phase-5.md §6.2): the note detail carries its recording, and the summary its
+// status, so the page needs one fetch to choose its status row and home can draw the live tile.
+type Parsed = { readonly success: boolean };
+
+describe("the recording on a note", () => {
+  // Read through a loose view: until phase 5 lands, neither key exists on the schemas.
+  const fields = (schema: { shape: object }) =>
+    schema.shape as Record<string, { safeParse: (value: unknown) => Parsed }>;
+
+  it("is part of the note detail and the summary, nullable on both", () => {
+    expect(fields(Note).recording?.safeParse(null).success).toBe(true);
+    expect(fields(NoteSummary).recordingStatus?.safeParse(null).success).toBe(
+      true
+    );
+  });
+
+  it("carries only the id, status and duration on the note detail", () => {
+    expect(
+      fields(Note).recording?.safeParse({
+        durationMs: null,
+        id: "rec_0000000000000001",
+        status: "recording",
+      }).success
+    ).toBe(true);
   });
 });

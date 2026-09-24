@@ -1,0 +1,74 @@
+# AC4 (docs/spec/phase-5.md §8, §3.1, §3.3): with the permission undetermined, + shows the primer
+# card (#100). Close sends no request: the next + shows the primer again rather than acting on an
+# answer. Continue raises the system alert (#101), and Allow opens the live card with no further
+# tap. It then Cancels, to leave nothing behind. The alert is the system's, so it is tapped by text.
+appId: ${APP_ID}
+name: The microphone primer, closed and then allowed
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: ../subflows/open-home.yaml
+    env:
+      MIC: unset
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: mic-primer-card
+    timeout: 15000
+- assertVisible:
+    id: mic-primer-title
+    text: Enable your microphone to start transcribing
+- assertVisible:
+    id: mic-primer-continue
+    text: Continue
+- assertVisible:
+    id: mic-primer-close
+- assertNotVisible:
+    id: recording-screen
+# Compared by eye against #100 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-5-primer
+
+- tapOn:
+    id: mic-primer-close
+- extendedWaitUntil:
+    notVisible:
+      id: mic-primer-card
+    timeout: 10000
+- runFlow: ../subflows/assert-no-new-note.yaml
+
+# Still undetermined, so the primer again, not the alert and not the denied card.
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: mic-primer-card
+    timeout: 15000
+- tapOn:
+    id: mic-primer-continue
+- extendedWaitUntil:
+    visible:
+      text: Allow
+    timeout: 15000
+- tapOn:
+    text: Allow
+- extendedWaitUntil:
+    visible:
+      id: recording-screen
+    timeout: 15000
+- assertNotVisible:
+    id: mic-primer-card
+- assertNotVisible:
+    id: mic-denied-card
+
+- tapOn:
+    id: recording-cancel
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 15000
+- runFlow: ../subflows/assert-no-new-note.yaml

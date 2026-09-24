@@ -1,6 +1,6 @@
 # Clean launch, reset and seeded backend, then a real sign-in as the seeded, onboarded `person`
 # (docs/spec/phase-3.md AC8). Phase 4 generalised it into `open-home-as.yaml`; this stays as the
-# name every earlier flow already calls.
+# name every earlier flow already calls. MIC passes through (phase 5; see launch-app.yaml).
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
@@ -9,3 +9,4 @@ env:
     file: open-home-as.yaml
     env:
       EMAIL: e2e-person@gcnotes.test
+      MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"

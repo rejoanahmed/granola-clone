@@ -55,6 +55,7 @@ const present = (note: Authorized<NoteRecord>, actor: Actor): Note => ({
   bodyMarkdown: note.bodyMarkdown,
   createdAt: note.createdAt,
   id: note.id,
+  recording: note.recording,
   source: note.source,
   startedAt: note.startedAt,
   title: note.title,

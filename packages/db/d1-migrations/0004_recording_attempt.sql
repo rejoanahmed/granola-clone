@@ -1,0 +1,1 @@
+ALTER TABLE `recordings` ADD `attempt` integer DEFAULT 0 NOT NULL;

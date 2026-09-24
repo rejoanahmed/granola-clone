@@ -233,6 +233,49 @@ These must exist. The names are the specification; the phrasing in the test file
 - `NoteTitle` trims and rejects blank; `NoteCreate`/`NotePatch` reject unknown keys;
   `AttendeeInput` needs a name or an email
 
+### `Recordings/Recordings.test.ts` (phase 5)
+
+- `create` makes an "Untitled note" from the `phone` with the owner as sole attendee, and a
+  recording `recording` with `durationMs: null` and `privateNotes: ""`; the note detail carries it
+- `create` honours a supplied `startedAt` on both, and uses the clock without one; one recording
+  per note (the unique `note_id`)
+- `patch` saves `privateNotes` while `recording`; on `uploading` → `RecordingNotActive`
+- `discard` of a live recording hard-deletes the note, the recording and the audio object, so the
+  note is `NoteNotFound`; on `transcribed` → `RecordingNotActive`
+- `end` sets `uploading`, `durationMs`, `endedAt`; a replay is a no-op; on `transcribed` →
+  `RecordingNotActive`
+- `uploadAudio` before `end` → `RecordingNotUploading`; in `auto` it stores the object at
+  `recordings/<ownerId>/<recordingId>`, submits once keyed by the recording id and ends
+  `transcribed`; a replay on `transcribed`/`transcribing` stores and submits nothing
+- the accepted audio types; `UnsupportedAudioType` 415, `AudioTooLarge` 413 before anything is
+  stored, `EmptyAudio` 422
+- a finished recording's note body is its private notes, and its title stays "Untitled note"
+- `hold` leaves `transcribing` with a job id; `sweep()` is pending while held, completes once in
+  `auto`, then completes nothing; a failing poll fails the row; two overlapping sweeps write the
+  segments once
+- `fail` → `failed` with `transcription_unavailable`; `retry` in `auto` → `transcribed`, re-using
+  the stored audio; `retry` on `transcribed` → `RecordingNotRetryable`
+- `silent` → `transcribed` with `utterances: []`; segments A, A, B, A → three utterances
+- `transcript` of a note with no recording, or one still transcribing → `TranscriptNotFound`
+- B's `get`, `patch`, `discard`, `end`, `uploadAudio`, `retry` of A's recording → the absent id's
+  `RecordingNotFound`, A's rows untouched; B's `transcript` of A's note → `NoteNotFound`
+- the notes list carries `recordingStatus`, the detail `recording`, `null` without one
+- a deleted owner cascades recordings and segments; a trashed note's transcript stays readable; a
+  duplicate segment position fails the unique index
+
+### `Recordings/Recordings.http.test.ts`, `Transcription.test.ts`, `Domain/Recording.test.ts` (phase 5)
+
+- every recordings route and `GET /notes/{id}/transcript` anonymous → 401 without reaching the
+  service; create → 201 `{ note, recording }`; discard → 204 with no body; unknown keys and a
+  duration past 6 h → 422; `/recordings/not-an-id` → 422
+- `PUT …/audio` hands the service the raw stream, the content type and the declared length;
+  `AudioTooLarge` 413, `UnsupportedAudioType` 415, `EmptyAudio` 422, `RecordingNotUploading` 409
+- the fake is deterministic; under 60 s one A "Hello. How are you?"; from 60 s
+  `ceil(duration / 15 s)` segments across A and B; `hold`/`fail`/`silent` as §6.4; a held job polls
+  from another instance; every call recorded; the four transcription errors carry 503/429/422/504
+- `groupUtterances` on an empty list, one segment, one speaker, and a returning speaker; the strict
+  bodies refuse unknown keys; `RecordingEnd` bounds the duration
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -253,6 +296,10 @@ These must exist. The names are the specification; the phrasing in the test file
 - (phase 4) the seed writes the five `E2E_NOTES` fixtures with their fixed ids and names them in
   its answer; `person`'s list is exactly launch, standup, solo; `empty` is onboarded with no notes;
   a reset leaves no `notes` or `note_attendees` rows and a re-seed restores a renamed fixture
+- (phase 5) `not_e2e_launch` has ≥ 8 utterances alternating A/B from A; `not_e2e_solo` exactly one,
+  "Hello. How are you?"; `not_e2e_other` is readable only by `other`; `not_e2e_standup` has none;
+  the mode switch answers what it set, refuses an unknown mode, is cleared by a reset, and release
+  completes a held recording
 
 ### `Integrations/Email/Email.test.ts` and `AuthEmails/AuthEmails.test.ts`
 
@@ -270,6 +317,8 @@ These must exist. The names are the specification; the phrasing in the test file
 
 - `EMAIL_MODE` absent → `fake`; `fake` (or unset) with `NODE_ENV=production` refused, naming
   `EMAIL_MODE`; `live` refused, naming the missing client; any other value refused
+- `TRANSCRIPTION_MODE` the same way: absent → `fake`; `fake` or unset refused in production; `live`
+  refused, naming the missing client; any other value refused
 
 ### `apps/api/src/otp-send-failure.test.ts`
 
@@ -288,6 +337,10 @@ These must exist. The names are the specification; the phrasing in the test file
 - `POST /e2e/seed` leaves both seeded people onboarded, and `person` with their work details
 - the `auth.otp.issued` log line never carries the code, even in development
 - with `AUTH_RATE_LIMIT=2` the third `/api/auth/*` request in a window is 429 `RateLimited`
+- (phase 5) `POST /e2e/transcription` sets and answers the mode, 422 for an unknown one, and a
+  reset clears it; `/release` answers the sweep's counts; the seeded launch transcript is served at
+  `GET /notes/{id}/transcript`; the `scheduled` handler sweeps a held recording to `transcribed`
+  over the real container; the OpenAPI document lists the recordings routes under a `Recordings` tag
 
 ### Pure suites
 
@@ -479,7 +532,8 @@ the device is always named by UDID and never left to "whichever is booted".
 apps/native/.maestro/
   config.yaml            which directories are flows (smoke/*); subflows/ is deliberately not one
   subflows/
-    launch-app.yaml      clean launch: clearState + clearKeychain, straight into the JS bundle
+    launch-app.yaml      clean launch: clearState + clearKeychain, straight into the JS bundle;
+                         MIC param (allow | deny | unset) is the microphone permission
     relaunch-app.yaml    stopApp + launchApp keeping app state and the Keychain (a real relaunch)
     e2e-reset.yaml       POST /e2e/reset then /e2e/seed (scripts/e2e-reset.js); fails on non-200
     start-clean.yaml     launch-app + e2e-reset, then wait for welcome-screen
@@ -491,10 +545,15 @@ apps/native/.maestro/
     open-note.yaml       NOTE_ID param: from home, wait for the row, open its detail
     open-editor.yaml     from a detail, More → Edit notes, wait for the editor
     swipe-to-trash.yaml  NOTE_ID param: swipe the row left until its trash action shows
+    start-recording.yaml tap + and wait for the live card (the mic must be allowed)
+    wait-for-end.yaml    skip the fake recorder 10 s ahead, so Cancel becomes End at once
+    set-transcription.yaml  MODE param: script the fake transcriber (scripts/e2e-transcription.js)
+    release-transcription.yaml  switch back to auto and sweep once (scripts/e2e-release.js)
+    assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-4/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-5/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`

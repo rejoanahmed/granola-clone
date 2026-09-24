@@ -1,5 +1,6 @@
 import {
   and,
+  e2eSwitches,
   eq,
   inArray,
   ne,
@@ -7,8 +8,10 @@ import {
   notes,
   profiles,
   RESET_ORDER,
+  recordings,
   session,
   sql,
+  transcriptSegments,
   user,
   verification,
 } from "@gc/db";
@@ -45,6 +48,28 @@ export type E2eSessionRow = {
 
 export type E2eProfileRow = E2eProfileDetails & { readonly userId: string };
 
+export type E2eSegmentRow = {
+  readonly endMs: number;
+  readonly id: string;
+  readonly speaker: string;
+  readonly startMs: number;
+  readonly text: string;
+};
+
+// A seeded recording is already transcribed: the flows that read a transcript must not wait on a
+// sweep, and the ones that exercise the transcriber make their own recording.
+export type E2eRecordingRow = {
+  readonly durationMs: number;
+  readonly id: string;
+  readonly noteId: string;
+  readonly ownerId: string;
+  readonly segments: readonly E2eSegmentRow[];
+  readonly startedAt: Timestamp;
+};
+
+// Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
+const SEGMENT_COLUMNS = 7;
+
 // better-auth's email-otp types, each of which keys a pending code by `${type}-otp-${email}`.
 // Restated rather than imported: a repo may not import `@gc/auth`.
 const OTP_TYPES = [
@@ -55,6 +80,13 @@ const OTP_TYPES = [
 ] as const;
 
 export const makeE2eRepo = (db: DrizzleClient) => ({
+  setSwitch: async (name: string, value: string): Promise<void> => {
+    await db
+      .insert(e2eSwitches)
+      .values({ name, value })
+      .onConflictDoUpdate({ set: { value }, target: e2eSwitches.name })
+      .run();
+  },
   // The newcomer's account is the one better-auth tables row a reset does delete: the sign-up flow
   // must always meet an unknown address. Deleting the `user` row cascades its sessions, accounts
   // and profile. Pending codes live in `verification` under better-auth's `${type}-otp-${email}`,
@@ -149,6 +181,53 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
     }
   },
 
+  // Upserts, and the segments deleted and rewritten, so a re-seed restores exactly the fixture
+  // transcript. Stamps come from the fixture, never the clock.
+  stageRecordings: (stage: Stage, rows: readonly E2eRecordingRow[]): void => {
+    stage.add({
+      query: db.delete(transcriptSegments).where(
+        inArray(
+          transcriptSegments.recordingId,
+          rows.map((row) => row.id)
+        )
+      ),
+    });
+    for (const row of rows) {
+      const endedAt = row.startedAt + row.durationMs;
+      const columns = {
+        audioKey: null,
+        createdAt: row.startedAt,
+        durationMs: row.durationMs,
+        endedAt,
+        failure: null,
+        noteId: row.noteId,
+        ownerId: row.ownerId,
+        privateNotes: "",
+        providerJobId: null,
+        startedAt: row.startedAt,
+        status: "transcribed",
+        updatedAt: endedAt,
+      };
+      stage.add({
+        query: db
+          .insert(recordings)
+          .values({ ...columns, id: row.id })
+          .onConflictDoUpdate({ set: columns, target: recordings.id }),
+      });
+      stage.addChunked(
+        row.segments.map((segment, position) => ({ ...segment, position })),
+        SEGMENT_COLUMNS,
+        (chunk) => ({
+          query: db
+            .insert(transcriptSegments)
+            .values(
+              chunk.map((segment) => ({ ...segment, recordingId: row.id }))
+            ),
+        })
+      );
+    }
+  },
+
   // One atomic batch in RESET_ORDER — children before parents, which is what lets the delete run
   // with foreign keys on. The better-auth tables are deliberately not in it: a reset between
   // journeys must not sign the suite out.
@@ -205,6 +284,16 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
           .onConflictDoNothing(),
       });
     }
+  },
+
+  // What a flow last told the fake transcriber; `null` when nothing has, which reads as auto.
+  switchValue: async (name: string): Promise<string | null> => {
+    const row = await db
+      .select({ value: e2eSwitches.value })
+      .from(e2eSwitches)
+      .where(eq(e2eSwitches.name, name))
+      .get();
+    return row?.value ?? null;
   },
 });
 

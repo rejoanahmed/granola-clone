@@ -1,0 +1,58 @@
+# AC6 (docs/spec/phase-5.md §8, §3.6): past 10 s, ••• opens a menu holding only Discard note (#104).
+# Discard asks first (a system alert, tapped by text), then goes home with "Note discarded" and no
+# new row.
+appId: ${APP_ID}
+name: Discarding a recording from its More menu
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+
+- tapOn:
+    id: recording-more
+- extendedWaitUntil:
+    visible:
+      id: recording-menu
+    timeout: 5000
+- assertVisible:
+    id: recording-menu-discard
+    text: Discard note
+# Only Discard: none of the note page's items.
+- assertNotVisible:
+    id: note-menu-edit
+- assertNotVisible:
+    id: note-menu-transcript
+- assertNotVisible:
+    id: note-menu-copy
+- assertNotVisible:
+    id: note-menu-trash
+# Compared by eye against #104 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-5-more
+
+- tapOn:
+    id: recording-menu-discard
+- extendedWaitUntil:
+    visible:
+      text: Discard this note\?
+    timeout: 10000
+- assertVisible:
+    text: The recording and your notes will be deleted\.
+- tapOn:
+    text: Discard
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Note discarded
+    timeout: 10000
+- assertNotVisible:
+    id: recording-screen
+- runFlow: ../subflows/assert-no-new-note.yaml

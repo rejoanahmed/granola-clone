@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./Text";
 import { colors, ICON_STROKE, PRESSED_OPACITY, sizes, spacing } from "./tokens";
@@ -46,6 +47,12 @@ type Props = {
   readonly onClose: () => void;
   /** Redrawn above the scrim at its own frame: the lifted row of #02. */
   readonly preview?: ReactNode;
+  /**
+   * `inline` draws the menu as the screen's own top layer instead of a native modal. The note page
+   * uses it: after its status row left, a second native modal there came up with nothing in the
+   * accessibility tree, so no flow could find the menu (docs/plan/BLOCKERS.md).
+   */
+  readonly inline?: boolean;
   /** Space a floating bar keeps at the bottom; a menu that would reach it opens above the frame. */
   readonly reserveBottom?: number;
   readonly testID: string;
@@ -60,6 +67,7 @@ const MENU_PADDING = 8;
 const SEPARATOR_SPACE = 9;
 const PREVIEW_RADIUS = 12;
 const LABEL_GAP = 58 - spacing.xl - sizes.glyph;
+const INLINE_FADE_MS = 150;
 
 const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
   MENU_PADDING * 2 +
@@ -74,6 +82,7 @@ const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
 export function ActionMenu({
   anchor,
   entries,
+  inline = false,
   onClose,
   preview,
   reserveBottom,
@@ -100,13 +109,8 @@ export function ActionMenu({
     };
   }
 
-  return (
-    <Modal
-      animationType="fade"
-      onRequestClose={onClose}
-      transparent
-      visible={anchor != null}
-    >
+  const layers = (
+    <>
       <Pressable
         accessibilityLabel="Close menu"
         onPress={onClose}
@@ -145,6 +149,29 @@ export function ActionMenu({
           )}
         </View>
       ) : null}
+    </>
+  );
+
+  if (inline) {
+    return anchor ? (
+      <Animated.View
+        entering={FadeIn.duration(INLINE_FADE_MS)}
+        exiting={FadeOut.duration(INLINE_FADE_MS)}
+        style={StyleSheet.absoluteFill}
+      >
+        {layers}
+      </Animated.View>
+    ) : null;
+  }
+
+  return (
+    <Modal
+      animationType="fade"
+      onRequestClose={onClose}
+      transparent
+      visible={anchor != null}
+    >
+      {layers}
     </Modal>
   );
 }

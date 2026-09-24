@@ -1,8 +1,14 @@
 import type { FlagshipBinding } from "../Integrations/FeatureFlags/Port";
+import type { AudioBucket } from "./R2AudioStore";
 
 // Split so `settingsOf` can hand `AppConfig` a value that cannot contain a live binding.
 
 export type WorkerResources = {
+  /**
+   * The recordings' R2 bucket. Optional so a test or a route that never touches audio can build the
+   * container without one; the store fails the first call that needs it.
+   */
+  readonly AUDIO?: AudioBucket;
   readonly DB: D1Database;
   /** Optional: `wrangler dev --local` binds no flag store, and the client fails closed without it. */
   readonly FLAGS?: FlagshipBinding;
@@ -33,6 +39,8 @@ export type WorkerSettings = {
   readonly GOOGLE_CLIENT_SECRET?: string;
   readonly NATIVE_SCHEME: string;
   readonly NODE_ENV: "development" | "production" | "test";
+  /** `fake` (the default) is refused in production, and `live` until a vendor client exists. */
+  readonly TRANSCRIPTION_MODE?: "fake" | "live";
 };
 
 export type Env = WorkerResources & WorkerSettings;
@@ -40,6 +48,6 @@ export type Env = WorkerResources & WorkerSettings;
 // The rest destructuring is deliberate: a binding added to `WorkerResources` but not named here is
 // a type error at the return, rather than a binding leaking into `AppConfig`.
 export const settingsOf = (env: Env): WorkerSettings => {
-  const { DB: _db, FLAGS: _flags, ...settings } = env;
+  const { AUDIO: _audio, DB: _db, FLAGS: _flags, ...settings } = env;
   return settings;
 };

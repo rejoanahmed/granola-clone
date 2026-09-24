@@ -1,6 +1,7 @@
 # AC3 (docs/spec/phase-2.md §8): every shell control renders and gives press feedback but does not
 # navigate in phase 2. After each tap the shell is still there, unobstructed: no sheet came up over it.
 # The avatar is no longer one of them: it opens Settings since phase 3, and sign-out.yaml owns it.
+# Nor is the + FAB: it starts a recording since phase 5, and the phase-5 flows own it.
 appId: ${APP_ID}
 name: Home shell controls are inert and do not crash
 tags:
@@ -27,7 +28,4 @@ env:
 - runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-ask-button
-- runFlow: ../subflows/assert-home-unobstructed.yaml
-- tapOn:
-    id: home-new-note-button
 - runFlow: ../subflows/assert-home-unobstructed.yaml

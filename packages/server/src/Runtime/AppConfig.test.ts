@@ -49,3 +49,50 @@ describe("EMAIL_MODE", () => {
     expect(() => configWith({ EMAIL_MODE: "smtp" })).toThrow(NAMES_EMAIL_MODE);
   });
 });
+
+// `TRANSCRIPTION_MODE` is phase 5's (phase-5.md §6.4, §7). The same shape as `EMAIL_MODE`: the fake
+// is refused in production, and `live` is refused until a vendor client exists (§10).
+const NAMES_TRANSCRIPTION_MODE = /TRANSCRIPTION_MODE/;
+
+describe("TRANSCRIPTION_MODE", () => {
+  it("defaults to the fake when absent", () => {
+    expect(configWith({})).toMatchObject({ transcription: { mode: "fake" } });
+  });
+
+  it("accepts the fake outside production", () => {
+    expect(configWith({ TRANSCRIPTION_MODE: "fake" })).toMatchObject({
+      transcription: { mode: "fake" },
+    });
+  });
+
+  it("refuses the fake in production, naming TRANSCRIPTION_MODE", () => {
+    expect(() =>
+      configWith({
+        EMAIL_MODE: "fake",
+        NODE_ENV: "production",
+        TRANSCRIPTION_MODE: "fake",
+      })
+    ).toThrow(NAMES_TRANSCRIPTION_MODE);
+  });
+
+  it("refuses production with the variable unset, since unset means fake", () => {
+    expect(() => configWith({ NODE_ENV: "production" })).toThrow(
+      NAMES_TRANSCRIPTION_MODE
+    );
+  });
+
+  it("refuses live, naming the client that does not exist yet", () => {
+    expect(() => configWith({ TRANSCRIPTION_MODE: "live" })).toThrow(
+      NAMES_TRANSCRIPTION_MODE
+    );
+    expect(() => configWith({ TRANSCRIPTION_MODE: "live" })).toThrow(
+      NAMES_A_CLIENT
+    );
+  });
+
+  it("refuses a value that is neither", () => {
+    expect(() => configWith({ TRANSCRIPTION_MODE: "whisper" })).toThrow(
+      NAMES_TRANSCRIPTION_MODE
+    );
+  });
+});

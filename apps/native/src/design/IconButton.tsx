@@ -7,6 +7,8 @@ type Props = {
   readonly accessibilityLabel: string;
   /** Replaces the glyph, for the avatar: same circle, same hit area, different content. */
   readonly children?: ReactNode;
+  /** Drawn at 40% and inert, as the live card's paperclip is until attachments exist. */
+  readonly disabled?: boolean;
   readonly icon?: LucideIcon;
   /** Set by `ToolbarCapsule`: inside the capsule the button drops its own fill and border. */
   readonly bare?: boolean;
@@ -20,6 +22,7 @@ export function IconButton({
   accessibilityLabel,
   bare = false,
   children,
+  disabled = false,
   icon: Icon,
   onPress,
   onSheet = false,
@@ -30,11 +33,14 @@ export function IconButton({
     <Pressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         bare ? null : surface,
         pressed ? styles.pressed : null,
+        disabled ? styles.disabled : null,
       ]}
       testID={testID}
     >
@@ -58,6 +64,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: sizes.iconButton,
   },
+  disabled: { opacity: 0.4 },
   filled: {
     backgroundColor: colors.bg.iconButton,
     borderColor: colors.border.hairline,

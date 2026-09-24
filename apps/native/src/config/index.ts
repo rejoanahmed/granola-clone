@@ -20,11 +20,22 @@ const appEnv = resolveAppEnv();
 const tier = appEnv === "dev" ? DevConfig : ProdConfig;
 const apiOverride = process.env.EXPO_PUBLIC_SERVER_URL?.trim();
 
+export type RecorderKind = "expo" | "fake";
+
+function resolveRecorder(): RecorderKind {
+  const raw = process.env.EXPO_PUBLIC_RECORDER?.trim().toLowerCase();
+  if (raw === "expo" || raw === "fake") {
+    return raw;
+  }
+  return tier.RECORDER;
+}
+
 const Config = {
   ...BaseConfig,
   ...tier,
   API_URL: apiOverride || tier.API_URL,
   APP_ENV: appEnv,
+  RECORDER: resolveRecorder(),
 } as const;
 
 export default Config;

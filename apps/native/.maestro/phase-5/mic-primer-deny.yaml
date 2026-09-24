@@ -1,0 +1,45 @@
+# AC5 (docs/spec/phase-5.md §8, §3.1–3.3): with the permission undetermined, + → Continue →
+# Don’t Allow on the system alert shows the denied card. The alert is the system's, so it is tapped
+# by text; `.` stands for the curly apostrophe iOS writes.
+appId: ${APP_ID}
+name: Denying the microphone from the primer shows the denied card
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: ../subflows/open-home.yaml
+    env:
+      MIC: unset
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: mic-primer-card
+    timeout: 15000
+- tapOn:
+    id: mic-primer-continue
+- extendedWaitUntil:
+    visible:
+      text: Don.t Allow
+    timeout: 15000
+- tapOn:
+    text: Don.t Allow
+- extendedWaitUntil:
+    visible:
+      id: mic-denied-card
+    timeout: 15000
+- assertVisible:
+    id: mic-denied-title
+    text: Microphone access is off
+- assertNotVisible:
+    id: recording-screen
+- tapOn:
+    id: mic-denied-close
+- extendedWaitUntil:
+    notVisible:
+      id: mic-denied-card
+    timeout: 10000
+- runFlow: ../subflows/assert-no-new-note.yaml

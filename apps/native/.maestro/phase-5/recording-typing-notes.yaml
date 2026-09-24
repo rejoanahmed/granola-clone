@@ -1,0 +1,61 @@
+# AC7 (docs/spec/phase-5.md §8, §3.5, §3.8): typing into the private notes collapses the bar into
+# the keyboard mini pill (#103); Hide keyboard brings it back; after End with the transcriber in
+# auto, the finished note's body is what was typed.
+appId: ${APP_ID}
+name: Typing private notes while recording, into the finished note's body
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow: ../subflows/start-recording.yaml
+
+- tapOn:
+    id: recording-notes-input
+- inputText: Budget follow-up
+- extendedWaitUntil:
+    visible:
+      id: recording-mini-pill
+    timeout: 10000
+- assertVisible:
+    id: recording-keyboard-dismiss
+- assertNotVisible:
+    id: recording-bar
+- assertVisible:
+    id: recording-notes-input
+    text: Budget follow-up
+# Compared by eye against #103 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-5-typing
+
+- tapOn:
+    id: recording-keyboard-dismiss
+- extendedWaitUntil:
+    visible:
+      id: recording-bar
+    timeout: 10000
+- assertNotVisible:
+    id: recording-mini-pill
+
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 30000
+- assertVisible:
+    id: note-block-0
+    text: Budget follow-up
+- assertVisible:
+    id: note-title
+    text: Untitled note

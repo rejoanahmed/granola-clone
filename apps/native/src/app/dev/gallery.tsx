@@ -63,6 +63,9 @@ const flatten = (node: object, prefix = ""): [string, string][] =>
   );
 
 const SWATCHES = flatten(colors);
+// Two columns of small tiles, so the palette takes one screen rather than four and every section
+// below it is a few swipes away.
+const SWATCH_SIZE = 32;
 
 // Clears the home indicator with room to spare, so the last section scrolls fully into view.
 const BOTTOM_CLEARANCE = 120;
@@ -105,14 +108,21 @@ export default function GalleryScreen() {
         </Text>
 
         <Section testID="gallery-colors" title="Colours">
-          {SWATCHES.map(([name, hex]) => (
-            <View key={name} style={styles.swatchRow}>
-              <View style={[styles.swatch, { backgroundColor: hex }]} />
-              <Text variant="caption">
-                {name} {hex}
-              </Text>
-            </View>
-          ))}
+          <View style={styles.swatchGrid}>
+            {SWATCHES.map(([name, hex]) => (
+              <View key={name} style={styles.swatchCell}>
+                <View style={[styles.swatch, { backgroundColor: hex }]} />
+                <View style={styles.swatchLabel}>
+                  <Text numberOfLines={1} variant="caption">
+                    {name}
+                  </Text>
+                  <Text numberOfLines={1} variant="caption">
+                    {hex}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </Section>
 
         <Section testID="gallery-type" title="Type">
@@ -216,6 +226,9 @@ export default function GalleryScreen() {
               title="Solo reflection thoughts"
             />
           </View>
+        </Section>
+
+        <Section testID="gallery-fields" title="Fields">
           <TextField
             onChangeText={setField}
             placeholder="you@example.com"
@@ -342,10 +355,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border.hairline,
     borderRadius: radii.tile,
     borderWidth: sizes.hairline,
-    height: sizes.listTile,
-    width: sizes.listTile,
+    height: SWATCH_SIZE,
+    width: SWATCH_SIZE,
   },
-  swatchRow: { alignItems: "center", flexDirection: "row", gap: spacing.sm },
+  swatchCell: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: spacing.sm,
+    width: "48%",
+  },
+  swatchGrid: {
+    columnGap: "4%",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: spacing.sm,
+  },
+  swatchLabel: { flex: 1 },
   title: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
   underline: { textDecorationLine: "underline" },
   wrap: {

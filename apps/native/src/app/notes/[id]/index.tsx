@@ -1,3 +1,4 @@
+import { DEFAULT_NOTE_TITLE } from "@gc/domain/Domain/Note";
 import {
   ActionMenu,
   colors,
@@ -17,28 +18,43 @@ import { formatPillDate } from "@native/features/notes/format";
 import { hasBlocks, NoteMarkdown } from "@native/features/notes/NoteMarkdown";
 import { noteShareText, SHARE_COPY } from "@native/features/notes/share";
 import { useShareNote } from "@native/features/notes/useShareNote";
+import { useLiveNoteId } from "@native/features/recording/liveRecording";
+import { NoteStatus } from "@native/features/recording/NoteStatus";
 import {
+  isProcessing,
+  noteStatusRow,
+  shouldPoll,
+} from "@native/features/recording/status";
+import {
+  retryUpload,
+  useUploadState,
+} from "@native/features/recording/uploadQueue";
+import {
+  client,
   findNoteSummary,
   hasTag,
+  invalidate,
+  invalidationKeys,
   type NoteDetail,
   noteQuery,
   useTrashNote,
 } from "@native/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { setStringAsync } from "expo-clipboard";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   Calendar,
   ChevronLeft,
   Copy,
   Ellipsis,
+  FileText,
   FolderPlus,
   MessageCircle,
   NotebookPen,
   Trash2,
   Users,
 } from "lucide-react-native";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -64,6 +80,7 @@ const META_INNER_GAP = 6;
 const META_GROUP_GAP = 16;
 const SHARE_WIDTH = 85;
 const MENU_GAP = 8;
+const POLL_MS = 2000;
 
 export const NOTE_COPY = {
   copied: "Copied to clipboard",
@@ -214,12 +231,61 @@ export default function NoteScreen() {
   const toast = useToast();
   const share = useShareNote();
   const trash = useTrashNote();
-  const query = useQuery(noteQuery(id));
   const [summary] = useState(() => findNoteSummary(queryClient, id));
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
+  // Every 2 s while the server is still working on the audio, and only while this page is in
+  // front (docs/spec/phase-5.md §3.8).
+  const query = useQuery({
+    ...noteQuery(id),
+    refetchInterval: (current) =>
+      focused && shouldPoll(current.state.data?.recording?.status ?? null)
+        ? POLL_MS
+        : false,
+  });
   const [menuFrame, setMenuFrame] = useState<Frame | null>(null);
   const more = useRef<View>(null);
+  const liveNoteId = useLiveNoteId();
 
   const note = query.data;
+  const recordingId = note?.recording?.id ?? null;
+  const upload = useUploadState(recordingId);
+  const statusRow = noteStatusRow({
+    isLiveHere: liveNoteId === id,
+    recordingStatus:
+      note?.recording?.status ?? summary?.recordingStatus ?? null,
+    upload,
+  });
+  const processing = isProcessing(statusRow);
+  const transcribed = note?.recording?.status === "transcribed";
+  const [retrying, setRetrying] = useState(false);
+
+  const retry = () => {
+    if (!(recordingId && statusRow)) {
+      return;
+    }
+    if (statusRow.kind === "uploadFailed") {
+      retryUpload(recordingId);
+      return;
+    }
+    setRetrying(true);
+    client
+      .retryRecording({ params: { id: recordingId } })
+      .catch(() => undefined)
+      .then(() =>
+        invalidate(
+          queryClient,
+          invalidationKeys.retryRecording(recordingId, id)
+        )
+      )
+      .catch(() => undefined)
+      .finally(() => setRetrying(false));
+  };
   const notFound =
     (query.isError && isGone(query.error)) || note?.trashedAt != null;
   const title = note?.title ?? summary?.title;
@@ -257,6 +323,11 @@ export default function NoteScreen() {
           {title ? (
             <Text
               accessibilityRole="header"
+              color={
+                processing && title === DEFAULT_NOTE_TITLE
+                  ? colors.text.secondary
+                  : undefined
+              }
               style={styles.title}
               testID="note-title"
               variant="display"
@@ -294,12 +365,22 @@ export default function NoteScreen() {
               </Pressable>
             </View>
           ) : null}
-          <View style={styles.body} testID="note-body">
-            <BodyContent
-              isError={query.isError}
-              note={notFound ? undefined : note}
-              onRetry={() => query.refetch()}
+          {statusRow ? (
+            <NoteStatus
+              busy={retrying}
+              onRetry={retry}
+              row={statusRow}
+              style={styles.status}
             />
+          ) : null}
+          <View style={styles.body} testID="note-body">
+            {processing ? null : (
+              <BodyContent
+                isError={query.isError}
+                note={notFound ? undefined : note}
+                onRetry={() => query.refetch()}
+              />
+            )}
             <View style={styles.bodyEnd} testID="note-body-end" />
           </View>
         </ScrollView>
@@ -315,7 +396,7 @@ export default function NoteScreen() {
           onPress={goHome}
           testID="note-back"
         />
-        {notFound || !note ? null : (
+        {notFound || !note || processing ? null : (
           <View style={styles.barRight}>
             <PillButton
               label="Share"
@@ -379,6 +460,23 @@ export default function NoteScreen() {
                   },
                   testID: "note-menu-edit",
                 },
+                // #12's order, and only when there is a transcript to read.
+                ...(transcribed
+                  ? [
+                      {
+                        icon: FileText,
+                        label: "View transcript",
+                        onPress: () => {
+                          closeMenu();
+                          router.push({
+                            params: { id },
+                            pathname: "/notes/[id]/transcript",
+                          });
+                        },
+                        testID: "note-menu-transcript",
+                      },
+                    ]
+                  : []),
                 {
                   icon: Copy,
                   label: "Copy notes",
@@ -408,6 +506,7 @@ export default function NoteScreen() {
               ]
             : []
         }
+        inline
         onClose={closeMenu}
         testID="note-menu"
       />
@@ -476,5 +575,6 @@ const styles = StyleSheet.create({
   share: { minWidth: SHARE_WIDTH },
   state: { alignItems: "center", paddingTop: spacing.xxl },
   stateButton: { marginTop: spacing.md },
+  status: { marginHorizontal: spacing.lg, marginTop: BODY_GAP },
   title: { paddingHorizontal: spacing.xl },
 });

@@ -15,7 +15,15 @@
     {
       "includes": [".maestro/scripts/**"],
       "javascript": {
-        "globals": ["API_URL", "E2E_SECRET", "EMAIL", "http", "json", "output"]
+        "globals": [
+          "API_URL",
+          "E2E_SECRET",
+          "EMAIL",
+          "MODE",
+          "http",
+          "json",
+          "output"
+        ]
       }
     },
     {

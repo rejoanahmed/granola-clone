@@ -1,0 +1,41 @@
+# AC3 (docs/spec/phase-5.md §8, §3.2): with the microphone denied, + shows the denied card rather
+# than the live card, and closing it leaves home with no new note.
+appId: ${APP_ID}
+name: Tapping + with the microphone denied shows the denied card
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: ../subflows/open-home.yaml
+    env:
+      MIC: deny
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: mic-denied-card
+    timeout: 15000
+- assertVisible:
+    id: mic-denied-title
+    text: Microphone access is off
+- assertVisible:
+    id: mic-denied-settings
+    text: Open Settings
+- assertVisible:
+    id: mic-denied-close
+- assertNotVisible:
+    id: recording-screen
+- assertNotVisible:
+    id: mic-primer-card
+- tapOn:
+    id: mic-denied-close
+- extendedWaitUntil:
+    notVisible:
+      id: mic-denied-card
+    timeout: 10000
+- assertVisible:
+    id: home-screen
+- runFlow: ../subflows/assert-no-new-note.yaml

@@ -4,12 +4,22 @@ import {
   makeAuthEmailsService,
 } from "./AuthEmails/AuthEmailsService";
 import { makeE2eRepo } from "./E2E/E2eRepo";
-import { type E2eService, makeE2eService } from "./E2E/E2eService";
+import {
+  type E2eService,
+  makeE2eService,
+  TRANSCRIPTION_SWITCH,
+  transcriptionModeOf,
+} from "./E2E/E2eService";
 import { makeEmailFake } from "./Integrations/Email/EmailFake";
 import type { EmailPort } from "./Integrations/Email/Port";
 import { makeFeatureFlagsClient } from "./Integrations/FeatureFlags/FeatureFlagsClient";
 import { makeFeatureFlagsFake } from "./Integrations/FeatureFlags/FeatureFlagsFake";
 import type { FeatureFlagsPort } from "./Integrations/FeatureFlags/Port";
+import type {
+  TranscriptionMode,
+  TranscriptionPort,
+} from "./Integrations/Transcription/Port";
+import { makeTranscriptionFake } from "./Integrations/Transcription/TranscriptionFake";
 import { makeNotesRepo } from "./Notes/NotesRepo";
 import { makeNotesService, type NotesService } from "./Notes/NotesService";
 import { makeOutboxRepo } from "./Outbox/OutboxRepo";
@@ -18,10 +28,17 @@ import {
   makeProfilesService,
   type ProfilesService,
 } from "./Profiles/ProfilesService";
+import type { AudioStore } from "./Recordings/AudioStore";
+import { makeRecordingsRepo } from "./Recordings/RecordingsRepo";
+import {
+  makeRecordingsService,
+  type RecordingsService,
+} from "./Recordings/RecordingsService";
 import { parseConfig } from "./Runtime/AppConfig";
 import { makeClock } from "./Runtime/Clock";
 import { makeDrizzle } from "./Runtime/Drizzle";
 import { makeIds } from "./Runtime/Ids";
+import { makeR2AudioStore } from "./Runtime/R2AudioStore";
 import { traced } from "./Runtime/traced";
 import { makeUnitOfWork } from "./Runtime/UnitOfWork";
 import type { Env } from "./Runtime/WorkerEnv";
@@ -93,11 +110,43 @@ export const buildContainer = (
       : makeFeatureFlagsClient({ flagship: env.FLAGS })
   );
 
+  const e2eRepo =
+    config.e2e === null ? null : traced("E2eRepo", makeE2eRepo(db));
+
+  // TRANSCRIPTION_MODE is parsed in `AppConfig` and acted on here. As with email, `fake` is the only
+  // mode that parses today, so the fake is built unconditionally until a live client widens
+  // `config.transcription`. Armed, the harness's switch table tells it what to do next — which is
+  // how a Maestro flow holds a transcription at "Uploading transcript..." — and disarmed it always
+  // transcribes at once.
+  const readMode: () => Promise<TranscriptionMode> =
+    e2eRepo === null
+      ? () => Promise.resolve("auto")
+      : async () =>
+          transcriptionModeOf(await e2eRepo.switchValue(TRANSCRIPTION_SWITCH));
+  const transcription: TranscriptionPort = traced(
+    "Transcription",
+    makeTranscriptionFake({ readMode })
+  );
+
+  const audio: AudioStore = traced("AudioStore", makeR2AudioStore(env.AUDIO));
+
+  const recordings = traced(
+    "Recordings",
+    makeRecordingsService({
+      audio,
+      clock,
+      ids,
+      repo: traced("RecordingsRepo", makeRecordingsRepo(db)),
+      transcription,
+      uow,
+    })
+  );
+
   // `null` when disarmed, so production ships no object that can truncate a table — the harness
   // is absent from the graph rather than guarded inside it. `BETTER_AUTH_SECRET` is read here (R5)
   // because minting a session means signing the cookie better-auth will verify.
   const e2e =
-    config.e2e === null
+    config.e2e === null || e2eRepo === null
       ? null
       : traced(
           "E2E",
@@ -106,13 +155,22 @@ export const buildContainer = (
             clock,
             ids,
             outbox: outboxRepo,
-            repo: traced("E2eRepo", makeE2eRepo(db)),
+            recordings,
+            repo: e2eRepo,
             secret: config.e2e.secret,
             uow,
           })
         );
 
-  return { authEmails, e2e, flags, notes, profiles, ...overrides };
+  return {
+    authEmails,
+    e2e,
+    flags,
+    notes,
+    profiles,
+    recordings,
+    ...overrides,
+  };
 };
 
 // Written out rather than `ReturnType<typeof buildContainer>`: `buildContainer` takes
@@ -123,4 +181,5 @@ export type Container = {
   flags: FeatureFlagsPort;
   notes: NotesService;
   profiles: ProfilesService;
+  recordings: RecordingsService;
 };

@@ -40,7 +40,10 @@
     // locally: add its key here, restart `wrangler dev`. Empty is what production looks like.
     "FLAGS_ON": "",
     "NATIVE_SCHEME": "gcnotes",
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    // The deterministic fake transcriber (packages/server/src/Integrations/Transcription). No vendor
+    // has been chosen, so `live` refuses to start (docs/plan/BLOCKERS.md).
+    "TRANSCRIPTION_MODE": "fake"
   },
 
   "d1_databases": [
@@ -66,6 +69,20 @@
       "app_id": "00000000-0000-0000-0000-000000000000"
     }
   ],
+
+  // Recorded audio, keyed `recordings/<ownerId>/<recordingId>`. `wrangler dev --local` simulates the
+  // bucket; the deployed ones below must be created by hand first (docs/plan/BLOCKERS.md).
+  "r2_buckets": [
+    {
+      "binding": "AUDIO",
+      "bucket_name": "gcnotes-audio-dev"
+    }
+  ],
+
+  // The transcription sweep (RecordingsService.sweep): polls every held job and settles it.
+  "triggers": {
+    "crons": ["*/2 * * * *"]
+  },
 
   // The outer `"enabled": false` with the nested blocks true looks wrong and is not: each nested
   // block carries its own flag, and this shape is taken verbatim from a deployment where traces
@@ -130,7 +147,9 @@
         // `development` on a deployed Worker is deliberate: `AppConfig` refuses EMAIL_MODE=fake
         // under `production`, because the fake writes plaintext codes to D1, and the fake is the
         // only way anything, E2E included, can sign in here until a live email client exists.
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        // The fake, so the E2E gate never depends on a vendor being up (PROVIDER-FAKES.md).
+        "TRANSCRIPTION_MODE": "fake"
       },
       "d1_databases": [
         {
@@ -151,6 +170,16 @@
           "app_id": "DEV_FLAGSHIP_APP_ID"
         }
       ],
+      // A bucket name, not an id, so it is committed as it is. Created by the user, not by a deploy.
+      "r2_buckets": [
+        {
+          "binding": "AUDIO",
+          "bucket_name": "gcnotes-audio-dev"
+        }
+      ],
+      "triggers": {
+        "crons": ["*/2 * * * *"]
+      },
       "observability": {
         "enabled": false,
         "head_sampling_rate": 1,
@@ -184,7 +213,10 @@
         // truth today: nothing can send a sign-in code in production.
         "FLAGS_MODE": "live",
         "NATIVE_SCHEME": "gcnotes",
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        // Live, said out loud as PROVIDER-FAKES.md asks. It has no client yet, so `AppConfig`
+        // refuses to start — the same honest failure as EMAIL_MODE's (docs/plan/BLOCKERS.md).
+        "TRANSCRIPTION_MODE": "live"
       },
       "d1_databases": [
         {
@@ -202,6 +234,15 @@
           "app_id": "PROD_FLAGSHIP_APP_ID"
         }
       ],
+      "r2_buckets": [
+        {
+          "binding": "AUDIO",
+          "bucket_name": "gcnotes-audio-prod"
+        }
+      ],
+      "triggers": {
+        "crons": ["*/2 * * * *"]
+      },
       "observability": {
         "enabled": false,
         "head_sampling_rate": 1,

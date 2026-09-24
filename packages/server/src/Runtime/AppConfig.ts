@@ -13,6 +13,10 @@ const DEFAULT_AUTH_RATE_LIMIT = 20;
 // no live client yet, so `live` has nothing to select. Both are refused below rather than trusted.
 const EmailMode = z.enum(["fake", "live"]);
 
+// The same shape for the transcriber: the fake is a development tool that transcribes nothing, and
+// no vendor has been chosen, so `live` has no client to select either.
+const TranscriptionMode = z.enum(["fake", "live"]);
+
 const EnvSettings = z
   .object({
     API_URL: z.url(),
@@ -30,6 +34,9 @@ const EnvSettings = z
     EMAIL_MODE: EmailMode.default("fake"),
     NATIVE_SCHEME: z.string().min(1),
     NODE_ENV: z.enum(["development", "production", "test"]),
+    // Defaults to the fake for the same reason as EMAIL_MODE, and is refused in production the
+    // same way: a forgotten var fails safe, and fails loudly where it matters.
+    TRANSCRIPTION_MODE: TranscriptionMode.default("fake"),
   })
   // The harness cannot exist in production, and cannot be armed without a secret. Both are
   // startup failures: a Worker that refuses to boot is the only state an operator cannot miss.
@@ -48,6 +55,25 @@ const EnvSettings = z
         message:
           'EMAIL_MODE=live has no email client to select yet (docs/plan/BLOCKERS.md, "No live email client")',
         path: ["EMAIL_MODE"],
+      });
+    }
+    if (
+      settings.TRANSCRIPTION_MODE === "fake" &&
+      settings.NODE_ENV === "production"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "TRANSCRIPTION_MODE=fake (the default) is refused when NODE_ENV=production: the fake invents every transcript",
+        path: ["TRANSCRIPTION_MODE"],
+      });
+    }
+    if (settings.TRANSCRIPTION_MODE === "live") {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'TRANSCRIPTION_MODE=live has no transcription client to select yet (docs/plan/BLOCKERS.md, "No live transcription client")',
+        path: ["TRANSCRIPTION_MODE"],
       });
     }
     if (settings.E2E_HARNESS !== "true") {
@@ -80,6 +106,8 @@ export type AppConfig = {
   readonly email: { readonly mode: "fake" };
   readonly isDevelopment: boolean;
   readonly nativeScheme: string;
+  // Only `fake` survives parsing, exactly as `email`; a live client widens it.
+  readonly transcription: { readonly mode: "fake" };
 };
 
 // Throws rather than returning a result: a bad environment is a deployment fault, not a request
@@ -103,5 +131,6 @@ export const parseConfig = (env: Env): AppConfig => {
     email: { mode: "fake" },
     isDevelopment: settings.NODE_ENV === "development",
     nativeScheme: settings.NATIVE_SCHEME,
+    transcription: { mode: "fake" },
   };
 };

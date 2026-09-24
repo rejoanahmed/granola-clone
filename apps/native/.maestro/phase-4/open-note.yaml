@@ -1,10 +1,12 @@
 # AC2 (docs/spec/phase-4.md §8): opening a note shows its title, the date and attendees pill, the
-# attendees sheet, the More menu without View transcript, Copy's toast, and the rendered body —
-# the long note (#10, #11) and the short one (#40).
+# attendees sheet, the More menu, Copy's toast, and the rendered body — the long note (#10, #11)
+# and the short one (#40). Since phase 5 (phase-5.md AC12) the launch note has a transcript, so its
+# More offers View transcript, in the #12 order.
 appId: ${APP_ID}
 name: Opening a note shows its title, metadata, attendees and body
 tags:
   - phase-4
+  - phase-5
   - regression
 env:
   APP_ID: com.rejoan.gcnotes
@@ -79,7 +81,7 @@ env:
       id: attendees-sheet
     timeout: 10000
 
-# More (#12): Edit, Copy and Trash; no transcript until phase 5.
+# More (#12): Edit notes · View transcript · Copy notes · Move to trash, top to bottom.
 - tapOn:
     id: note-more
 - extendedWaitUntil:
@@ -89,11 +91,17 @@ env:
 - assertVisible:
     id: note-menu-edit
 - assertVisible:
+    id: note-menu-transcript
+    below:
+      id: note-menu-edit
+- assertVisible:
     id: note-menu-copy
+    below:
+      id: note-menu-transcript
 - assertVisible:
     id: note-menu-trash
-- assertNotVisible:
-    id: note-menu-transcript
+    below:
+      id: note-menu-copy
 - takeScreenshot: phase-4-more-menu
 # Maestro cannot read the clipboard; the toast is the observable half (§9).
 - tapOn:

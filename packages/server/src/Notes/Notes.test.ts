@@ -182,6 +182,8 @@ describe("NotesService.create", () => {
       bodyMarkdown: "",
       createdAt: AT,
       id: expect.stringMatching(NOTE_ID),
+      // Phase 5 (phase-5.md §6.2): a note typed by hand has no recording.
+      recording: null,
       source: "phone",
       startedAt: AT,
       title: "Untitled note",
@@ -402,6 +404,7 @@ describe("NotesService.list", () => {
     expect(page.items[0]).toEqual({
       attendeeCount: 1,
       id: expect.stringMatching(NOTE_ID),
+      recordingStatus: null,
       source: "phone",
       startedAt: AT,
       title: "Untitled note",

@@ -82,11 +82,14 @@ describe("makeTestD1", () => {
 
     expect(tables.results.map((row) => row.name)).toEqual([
       "account",
+      "e2e_switches",
       "email_outbox",
       "note_attendees",
       "notes",
       "profiles",
+      "recordings",
       "session",
+      "transcript_segments",
       "user",
       "verification",
     ]);

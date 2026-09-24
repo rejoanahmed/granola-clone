@@ -9,7 +9,7 @@ import {
 } from "@native/design";
 import { formatRowTime } from "@native/features/notes/format";
 import type { NoteListItem } from "@native/lib/api";
-import { Smartphone, Trash2 } from "lucide-react-native";
+import { AudioLines, Smartphone, Trash2 } from "lucide-react-native";
 import { useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import ReanimatedSwipeable, {
@@ -35,6 +35,9 @@ export const TRASH_LABEL = "Move to trash";
 export const rowLabel = (note: NoteListItem): string =>
   `${note.title}, ${formatRowTime(note.startedAt)}`;
 
+// The lime tile is drawn inside one accessibility element, so the label says what it shows.
+const LIVE_SUFFIX = ", recording";
+
 /**
  * The row's face without its gestures: the list draws it, and so does the menu's lifted preview.
  * The preview is `flush`: it is drawn at the frame inside the gutter, so the gutter is not padded
@@ -42,14 +45,21 @@ export const rowLabel = (note: NoteListItem): string =>
  */
 export function NoteRowContent({
   flush = false,
+  live = false,
   note,
 }: {
   readonly flush?: boolean;
+  /** Recording right now, on this device (docs/spec/phase-5.md §3.7). */
+  readonly live?: boolean;
   readonly note: NoteListItem;
 }) {
   return (
     <View style={[styles.content, flush ? styles.flush : null]}>
-      <IconTile icon={Smartphone} />
+      {live ? (
+        <IconTile icon={AudioLines} tint={colors.accent.lime} />
+      ) : (
+        <IconTile icon={Smartphone} />
+      )}
       <View style={styles.lines}>
         <Text numberOfLines={1} variant="rowTitle">
           {note.title}
@@ -63,6 +73,7 @@ export function NoteRowContent({
 }
 
 type Props = {
+  readonly live: boolean;
   readonly note: NoteListItem;
   readonly onLongPress: (note: NoteListItem, frame: Frame) => void;
   readonly onOpen: (note: NoteListItem) => void;
@@ -74,6 +85,7 @@ type Props = {
 // One trailing action and no leading one: #03 showed a short right swipe opening the note, and a
 // leading action would steal it. A full swipe does not trash on release — only the tap does.
 export function NoteRow({
+  live,
   note,
   onLongPress,
   onOpen,
@@ -137,7 +149,9 @@ export function NoteRow({
       rightThreshold={ACTION_WIDTH / 2}
     >
       <Pressable
-        accessibilityLabel={rowLabel(note)}
+        accessibilityLabel={
+          live ? `${rowLabel(note)}${LIVE_SUFFIX}` : rowLabel(note)
+        }
         accessibilityRole="button"
         accessible
         delayLongPress={LONG_PRESS_MS}
@@ -150,7 +164,7 @@ export function NoteRow({
         ]}
         testID={`home-note-${note.id}`}
       >
-        <NoteRowContent note={note} />
+        <NoteRowContent live={live} note={note} />
       </Pressable>
     </ReanimatedSwipeable>
   );

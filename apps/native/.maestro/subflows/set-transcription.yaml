@@ -1,0 +1,10 @@
+# Script the fake transcriber for this run: MODE is `auto`, `hold`, `fail` or `silent`
+# (docs/spec/phase-5.md §6.4). Every reset puts it back to `auto`.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-transcription.js
+    env:
+      MODE: ${MODE}

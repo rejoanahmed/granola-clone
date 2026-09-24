@@ -1,9 +1,12 @@
 import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { AppEnv, Env } from "@gc/server";
+import { buildContainer } from "@gc/server";
+import { makeTestD1 } from "@gc/server/Testing";
 import { Hono } from "hono";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { app } from "./app";
 import { onError } from "./on-error";
+import worker from "./worker";
 
 // `DB` is an inert handle: `buildContainer` is synchronous and dereferences nothing, and the routes
 // exercised below never issue a query.
@@ -53,15 +56,29 @@ describe("the worker's HTTP assembly", () => {
       tags: { name: string }[];
     };
 
-    expect(Object.keys(doc.paths)).toEqual([
-      "/me",
-      "/me/onboarding",
-      "/notes",
-      "/notes/{id}",
-      "/notes/{id}/trash",
-      "/notes/{id}/restore",
+    // Sorted: the order is the mounting order, which says nothing about what is published.
+    expect(Object.keys(doc.paths).sort()).toEqual(
+      [
+        "/me",
+        "/me/onboarding",
+        "/notes",
+        "/notes/{id}",
+        "/notes/{id}/trash",
+        "/notes/{id}/restore",
+        // Phase 5 (docs/spec/phase-5.md §6.1).
+        "/notes/{id}/transcript",
+        "/recordings",
+        "/recordings/{id}",
+        "/recordings/{id}/end",
+        "/recordings/{id}/audio",
+        "/recordings/{id}/retry",
+      ].sort()
+    );
+    expect(doc.tags.map((tag) => tag.name)).toEqual([
+      "Profile",
+      "Notes",
+      "Recordings",
     ]);
-    expect(doc.tags.map((tag) => tag.name)).toEqual(["Profile", "Notes"]);
   });
 
   it("answers an unknown route in the same envelope as every other failure", async () => {
@@ -131,5 +148,107 @@ describe("on-error, the one place a status is decided", () => {
     expect(logged).toHaveBeenCalledOnce();
 
     logged.mockRestore();
+  });
+});
+
+// Phase 5 (docs/spec/phase-5.md §6.4, §7): the cron is the same container and the same service
+// method a request would reach (R8). Proved end to end rather than with a spy: a recording is held
+// at `transcribing` through the real container, the switch goes back to auto, and only the
+// `scheduled` handler runs between that and the recording reading `transcribed`.
+describe("the scheduled handler", () => {
+  const d1 = makeTestD1();
+  const objects = new Map<string, Uint8Array>();
+  // Enough of R2 for the audio store.
+  const bucket = {
+    delete: (key: string) => {
+      objects.delete(key);
+      return Promise.resolve();
+    },
+    get: (key: string) => {
+      const bytes = objects.get(key);
+      return Promise.resolve(
+        bytes === undefined
+          ? null
+          : { body: new Blob([bytes]).stream(), key, size: bytes.byteLength }
+      );
+    },
+    head: (key: string) => Promise.resolve(objects.has(key) ? { key } : null),
+    put: async (key: string, value: unknown) => {
+      objects.set(
+        key,
+        new Uint8Array(await new Response(value as BodyInit).arrayBuffer())
+      );
+      return { key };
+    },
+  };
+  const cronEnv = {
+    ...env,
+    AUDIO: bucket,
+    BETTER_AUTH_SECRET: "auth-secret-32-characters-long-000000",
+    DB: d1,
+    E2E_HARNESS: "true",
+    E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
+  } as unknown as Env;
+
+  afterAll(() => {
+    d1.close();
+  });
+
+  type Held = { id: string; status: string };
+  type Recordings = {
+    create: (who: object, input: object) => Promise<{ recording: Held }>;
+    end: (who: object, id: string, input: object) => Promise<Held>;
+    get: (who: object, id: string) => Promise<Held>;
+    uploadAudio: (who: object, id: string, input: object) => Promise<Held>;
+  };
+  type Switch = { setTranscriptionMode: (mode: string) => Promise<unknown> };
+
+  it("sweeps a held transcription to completion", async () => {
+    const container = buildContainer(cronEnv);
+    const harness = container.e2e as unknown as Switch & {
+      reset: () => Promise<unknown>;
+      seed: () => Promise<{ users: { person: object } }>;
+    };
+    const recordings = (container as unknown as { recordings: Recordings })
+      .recordings;
+    await harness.reset();
+    const { users } = await harness.seed();
+    await harness.setTranscriptionMode("hold");
+    const { recording } = await recordings.create(users.person, {});
+    await recordings.end(users.person, recording.id, { durationMs: 12_000 });
+    const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
+    const held = await recordings.uploadAudio(users.person, recording.id, {
+      body: new Blob([bytes]).stream(),
+      contentLength: String(bytes.byteLength),
+      contentType: "audio/mp4",
+    });
+    expect(held.status).toBe("transcribing");
+    await harness.setTranscriptionMode("auto");
+
+    const handler = worker as ExportedHandler<Env>;
+    if (handler.scheduled === undefined) {
+      throw new Error("the worker exports no scheduled handler");
+    }
+    const waited: Promise<unknown>[] = [];
+    await handler.scheduled(
+      {
+        cron: "*/2 * * * *",
+        noRetry: () => undefined,
+        scheduledTime: Date.now(),
+      },
+      cronEnv,
+      {
+        passThroughOnException: () => undefined,
+        props: {},
+        waitUntil: (promise: Promise<unknown>) => {
+          waited.push(promise);
+        },
+      } as unknown as ExecutionContext
+    );
+    await Promise.all(waited);
+
+    await expect(
+      recordings.get(users.person, recording.id)
+    ).resolves.toMatchObject({ status: "transcribed" });
   });
 });

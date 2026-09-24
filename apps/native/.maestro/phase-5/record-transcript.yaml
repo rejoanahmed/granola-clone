@@ -1,0 +1,160 @@
+# AC1 (docs/spec/phase-5.md §8): + starts a recording on the live card (#102); End at 10 s shows
+# the post-End page with "Uploading transcript..." and no Share or More (#105); once the held
+# transcriber is released the row goes, More offers View transcript, and the sheet shows the fake's
+# one-utterance answer (#42). Back home, the new "Untitled note" is in today's group.
+appId: ${APP_ID}
+name: Recording, ending, and reading the transcript
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: hold
+- runFlow: ../subflows/start-recording.yaml
+
+# The live card (§3.4). Under 10 s the pill reads Cancel.
+- assertVisible:
+    id: recording-title
+    text: Untitled note
+- assertVisible:
+    id: recording-meta-pill
+    text: 'Today \d{1,2}:\d{2} [AP]M, E2E Person'
+- assertVisible:
+    id: recording-notes-input
+    text: Write notes here\.\.\.
+- assertVisible:
+    id: recording-minimize
+- assertVisible:
+    id: recording-more
+# Drawn but inert this phase (§3.1).
+- assertVisible:
+    id: recording-attach
+    enabled: false
+- assertVisible:
+    id: recording-bar
+- assertVisible:
+    id: recording-pause
+- assertVisible:
+    id: recording-meter
+- assertVisible:
+    id: recording-timer
+    text: '\d{2}:\d{2}'
+- assertVisible:
+    id: recording-cancel
+    text: Cancel
+- runFlow: ../subflows/wait-for-end.yaml
+- assertVisible:
+    id: recording-end
+    text: End
+# Compared by eye against #102 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-5-recording
+
+# End (§3.8): the card becomes the note page, uploading.
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- assertNotVisible:
+    id: recording-screen
+- assertVisible:
+    id: note-status
+- assertVisible:
+    id: note-status-text
+    text: Uploading transcript\.\.\.
+- assertVisible:
+    id: note-title
+    text: Untitled note
+- assertVisible:
+    id: note-back
+# A note recorded today reads "Today", as #105 does, never the month and day.
+- assertVisible:
+    id: note-meta-pill
+    text: 'Today \d{1,2}:\d{2} [AP]M, \+1'
+- assertNotVisible:
+    id: note-share
+- assertNotVisible:
+    id: note-more
+- takeScreenshot: phase-5-uploading
+
+# The transcriber finishes; the page polls every 2 s and drops the row.
+- runFlow: ../subflows/release-transcription.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 30000
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more
+
+# More → View transcript (#12, #13, #42).
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-transcript
+- tapOn:
+    id: note-menu-transcript
+- extendedWaitUntil:
+    visible:
+      id: transcript-sheet
+    timeout: 15000
+- assertVisible:
+    id: transcript-title
+    text: Transcript
+- assertVisible:
+    id: transcript-speaker-0
+    text: Speaker A
+- assertVisible:
+    id: transcript-avatar-0
+    text: A
+- assertVisible:
+    id: transcript-text-0
+    text: Hello\. How are you\?
+- assertNotVisible:
+    id: transcript-utterance-1
+
+- tapOn:
+    id: transcript-close
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-sheet
+    timeout: 10000
+- assertVisible:
+    id: note-screen
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+
+# The new row sits under today's header and above the seeded ones: today's group comes first.
+- extendedWaitUntil:
+    visible:
+      id: "home-note-(?!not_e2e_).*"
+      text: "Untitled note, .*"
+    timeout: 15000
+- runScript: ../scripts/today.js
+- assertVisible:
+    id: home-day-${output.today}
+    above:
+      id: "home-note-(?!not_e2e_).*"
+- assertVisible:
+    id: "home-note-(?!not_e2e_).*"
+    above:
+      id: home-note-not_e2e_launch
+- assertVisible:
+    id: home-new-note-button
+- assertNotVisible:
+    id: home-recording-pill

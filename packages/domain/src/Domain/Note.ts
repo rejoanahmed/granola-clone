@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { branded } from "./Ids";
+import { branded, NoteId } from "./Ids";
+import { NoteRecording, RecordingStatus } from "./Recording";
 import { Timestamp } from "./Time";
 
-export const NoteId = branded("NoteId", "not_");
-export type NoteId = z.infer<typeof NoteId>;
+export { NoteId } from "./Ids";
 
 export const AttendeeId = branded("AttendeeId", "att_");
 export type AttendeeId = z.infer<typeof AttendeeId>;
 
-// One value until recording lands (phase 5). An enum rather than a literal, so a client switching
-// on it already has the exhaustiveness check that phase will need.
+// One value: a recording is also a `phone` note, and whether one exists is `recording`, not the
+// source. An enum rather than a literal, so a later source (a call, a watch) is an added member.
 export const NoteSource = z.enum(["phone"]);
 export type NoteSource = z.infer<typeof NoteSource>;
 
@@ -44,6 +44,9 @@ export const Note = z.object({
   bodyMarkdown: NoteBody,
   createdAt: Timestamp,
   id: NoteId,
+  // Null for a note typed by hand. On the detail so the page needs one fetch to choose its status
+  // row and its menu.
+  recording: NoteRecording.nullable(),
   source: NoteSource,
   startedAt: Timestamp,
   title: NoteTitle,
@@ -57,6 +60,8 @@ export type Note = z.infer<typeof Note>;
 export const NoteSummary = z.object({
   attendeeCount: z.number().int().min(1),
   id: NoteId,
+  // The status alone, which is all home needs to draw the live tile on a row.
+  recordingStatus: RecordingStatus.nullable(),
   source: NoteSource,
   startedAt: Timestamp,
   title: NoteTitle,
