@@ -5,6 +5,7 @@ import {
   connectUploads,
   resumeUploads,
 } from "@native/features/recording/uploadQueue";
+import { TRANSCRIPT_DETENT } from "@native/features/transcript/sheet";
 import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { STALE_TIME_MS } from "@native/lib/api";
 import {
@@ -23,8 +24,6 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 const ATTENDEES_DETENT = 0.7;
-// #13's sheet starts just under the status bar: a large sheet, not the attendees' 0.7.
-const TRANSCRIPT_DETENT = 0.94;
 
 /**
  * Built through `useState(factory)`: a module constant survives Fast Refresh wired to a dead tree,

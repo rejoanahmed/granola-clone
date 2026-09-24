@@ -193,8 +193,17 @@ export default function TranscriptSheet() {
   }
 
   return (
-    <View style={styles.sheet} testID="transcript-sheet">
-      <View style={styles.header}>
+    // The scroller is the screen's root: react-native-screens sizes a sheet's scroll view to the
+    // sheet only when it is the content's first child, and moves it to the sheet's own origin
+    // (off the bottom) when it is nested. The header is its sticky first row, so it stays pinned
+    // while the utterances scroll under it (#14).
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+      stickyHeaderIndices={[0]}
+      style={styles.sheet}
+      testID="transcript-sheet"
+    >
+      <View collapsable={false} style={styles.header}>
         <View style={styles.headings}>
           <Text
             accessibilityRole="header"
@@ -222,14 +231,8 @@ export default function TranscriptSheet() {
           />
         </View>
       </View>
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
-        style={styles.scroll}
-        testID="transcript-scroll"
-      >
-        {body}
-      </ScrollView>
-    </View>
+      <View testID="transcript-scroll">{body}</View>
+    </ScrollView>
   );
 }
 
@@ -254,11 +257,18 @@ const styles = StyleSheet.create({
   end: { height: sizes.hairline },
   header: {
     alignItems: "flex-start",
+    backgroundColor: colors.bg.app,
+    borderTopLeftRadius: radii.sheet,
+    borderTopRightRadius: radii.sheet,
     flexDirection: "row",
     gap: spacing.sm,
+    left: 0,
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xxl,
+    position: "absolute",
+    right: 0,
+    top: 0,
   },
   headings: { flex: 1 },
   initial: { fontSize: 20 },
@@ -280,7 +290,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: BUTTON,
   },
-  scroll: { flex: 1 },
   sheet: {
     backgroundColor: colors.bg.app,
     borderTopLeftRadius: radii.sheet,

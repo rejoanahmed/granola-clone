@@ -153,7 +153,12 @@ export default function RecordingScreen() {
     input.current?.blur();
     const noteId = await endRecording().catch(() => null);
     if (noteId) {
-      router.replace({ params: { id: noteId }, pathname: "/notes/[id]" });
+      // Dismissed, then pushed, rather than `replace`d: a note page swapped in for the sheet
+      // inherited the sheet's presentation, and a second menu opened on it vanished from the
+      // accessibility tree (so from every flow).
+      leaving.current = true;
+      router.back();
+      router.push({ params: { id: noteId }, pathname: "/notes/[id]" });
     } else {
       setEnding(false);
     }
@@ -308,8 +313,10 @@ export default function RecordingScreen() {
         </Pressable>
       </View>
 
+      {/* A hint, not a label: iOS reads a label ahead of the field's text, so a flow asserting what
+          was typed (or the placeholder) would see "Private notes" glued to the front of it. */}
       <TextInput
-        accessibilityLabel={RECORDING_COPY.privateNotes}
+        accessibilityHint={RECORDING_COPY.privateNotes}
         multiline
         onBlur={() => {
           setFocused(false);

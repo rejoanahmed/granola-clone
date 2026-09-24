@@ -506,6 +506,7 @@ export default function NoteScreen() {
               ]
             : []
         }
+        inline
         onClose={closeMenu}
         testID="note-menu"
       />

@@ -23,12 +23,7 @@ export function Meter({
   readonly testID?: string;
 }) {
   return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={styles.meter}
-      testID={testID}
-    >
+    <View style={styles.meter} testID={testID}>
       {meterHeights(level).map((height, index) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: the five bars are positional.
         <View key={index} style={[styles.bar, { height }]} />
