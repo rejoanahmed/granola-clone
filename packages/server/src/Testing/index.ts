@@ -1,5 +1,5 @@
 // Imported only by `*.test.ts`; nothing in the shipped Worker reaches it.
-export { actor, organiser, staff, systemActor } from "./Actors";
+export { actor, otherActor, systemActor } from "./Actors";
 export { fixedClock, steppingClock } from "./Clock";
 export {
   makeTestD1,

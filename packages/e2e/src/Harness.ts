@@ -5,42 +5,29 @@ import { fail } from "./Failure";
 
 export const E2E_SECRET_HEADER = "x-e2e-secret";
 
-const Seeded = z.object({
-  event: z.object({ id: z.string(), slug: z.string() }),
-  ticketType: z.object({ id: z.string() }),
-  users: z.record(
-    z.string(),
-    z.object({ email: z.string(), id: z.string(), name: z.string() })
-  ),
+const Person = z.object({
+  email: z.string(),
+  id: z.string(),
+  name: z.string(),
 });
+
+const Seeded = z.object({ users: z.record(z.string(), Person) });
 
 const Minted = z.object({
   cookie: z.object({ name: z.string(), value: z.string() }),
-  user: z.object({ email: z.string(), id: z.string(), name: z.string() }),
+  user: Person,
 });
 
 export type Seeded = z.infer<typeof Seeded>;
 
-/**
- * Optional harness routes this suite will use if the deploy has them, and works around if not.
- * `POST /e2e/sweep` runs the cron body once, synchronously; `POST /e2e/expire-holds` back-dates
- * every pending hold so the sweep has something to find. Without both, the two release journeys
- * fall back to the attendee-cancel and organiser-refund routes, which exercise the same
- * `releaseLines` path but not the sweeper's own selection query — §6's "run the cron by hand".
- */
-export type Capabilities = { readonly sweep: boolean };
-
 export type Harness = {
-  readonly capabilities: Capabilities;
   readonly reset: () => Promise<void>;
   readonly seed: () => Promise<Seeded>;
   readonly signIn: (role: Role) => Promise<string>;
-  readonly sweep: () => Promise<void>;
 };
 
 export const makeHarness = (client: Client, env: E2eEnv): Harness => {
   const headers = { [E2E_SECRET_HEADER]: env.secret };
-  const capabilities = { sweep: false };
 
   const post = async (path: string) =>
     await client.call({ headers, method: "POST", path });
@@ -55,7 +42,7 @@ export const makeHarness = (client: Client, env: E2eEnv): Harness => {
     }
     if (wire.status === 401) {
       fail(
-        `E2E_SECRET mismatch — the Worker rejected this runner's x-e2e-secret. Re-set it with: bunx wrangler secret put E2E_SECRET --env dev`,
+        "E2E_SECRET mismatch — the Worker rejected this runner's x-e2e-secret. Re-set it with: bunx wrangler secret put E2E_SECRET --env dev",
         ...where(wire)
       );
     }
@@ -69,15 +56,10 @@ export const makeHarness = (client: Client, env: E2eEnv): Harness => {
   };
 
   return {
-    capabilities,
-
     // First, never last: a crashed run must not poison the next one, and a run that tidied up
     // after itself proves nothing about the state the next run starts from.
     reset: async () => {
       guard(await post("/e2e/reset"));
-      // Probed here rather than at each call site, so the run prints its own coverage once.
-      const probe = await post("/e2e/sweep");
-      capabilities.sweep = probe.status === 200;
     },
 
     seed: async () => {
@@ -91,11 +73,6 @@ export const makeHarness = (client: Client, env: E2eEnv): Harness => {
       const wire = guard(await post(`/e2e/session/${role}`));
       const minted = decode(Minted, wire, `POST /e2e/session/${role} response`);
       return `${minted.cookie.name}=${minted.cookie.value}`;
-    },
-
-    sweep: async () => {
-      guard(await post("/e2e/expire-holds"));
-      guard(await post("/e2e/sweep"));
     },
   };
 };

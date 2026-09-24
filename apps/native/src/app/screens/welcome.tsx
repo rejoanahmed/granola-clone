@@ -60,6 +60,7 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView
       style={[styles.screen, { backgroundColor: colors.background }]}
+      testID="welcome-screen"
     >
       <Stack.Screen options={{ title: "Sign in" }} />
       <KeyboardAvoidingView
@@ -67,7 +68,7 @@ export default function WelcomeScreen() {
         style={styles.fill}
       >
         <View style={styles.body}>
-          <Text style={[styles.title, { color: colors.text }]}>gcnotes</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Notes</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
             {sent
               ? `We sent a 6-digit code to ${email.trim()}.`
@@ -86,6 +87,7 @@ export default function WelcomeScreen() {
               styles.input,
               { borderColor: colors.border, color: colors.text },
             ]}
+            testID="welcome-email"
             value={email}
           />
 
@@ -102,6 +104,7 @@ export default function WelcomeScreen() {
                 styles.otp,
                 { borderColor: colors.border, color: colors.text },
               ]}
+              testID="welcome-otp"
               value={otp}
             />
           ) : null}
@@ -122,6 +125,7 @@ export default function WelcomeScreen() {
                 opacity: busy ? 0.5 : 1,
               },
             ]}
+            testID="welcome-submit"
           >
             <Text style={[styles.buttonText, { color: colors.onAccent }]}>
               {sent ? "Sign in" : "Send code"}

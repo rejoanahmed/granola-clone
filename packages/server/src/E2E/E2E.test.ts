@@ -13,17 +13,12 @@ const AUTH_SECRET = "auth-secret-32-characters-long-000000";
 const envOver = (d1: TestD1) =>
   ({
     API_URL: "http://localhost:3001",
-    APP_URL: "http://localhost:3003",
     BETTER_AUTH_SECRET: AUTH_SECRET,
     BETTER_AUTH_URL: "http://localhost:3001",
-    BKASH_CALLBACK_URL: "http://localhost:3001/payments/bkash/callback",
-    BKASH_MODE: "fake",
-    BKASH_WEBHOOK_SECRET: "test-webhook-secret",
     DB: d1,
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    KV: {} as KVNamespace,
     NATIVE_SCHEME: "gcnotes",
     NODE_ENV: "test",
   }) satisfies Env;
@@ -51,7 +46,7 @@ describe("the E2E harness", () => {
   });
 
   it("mints a session cookie better-auth itself accepts", async () => {
-    const minted = await harness.signIn("organiser", "http://localhost:3001");
+    const minted = await harness.signIn("person", "http://localhost:3001");
 
     const sessions = makeSessions({
       db: makeDrizzle(d1),
@@ -61,7 +56,7 @@ describe("the E2E harness", () => {
       trustedOrigins: ["http://localhost:3001"],
     });
     const actor = await sessions.resolveActor(
-      new Request("http://localhost:3001/events", {
+      new Request("http://localhost:3001/me", {
         headers: { cookie: `${minted.cookie.name}=${minted.cookie.value}` },
       })
     );
@@ -70,9 +65,9 @@ describe("the E2E harness", () => {
   });
 
   it("names the cookie the way the origin it was asked for does", async () => {
-    const local = await harness.signIn("attendee", "http://localhost:3001");
+    const local = await harness.signIn("person", "http://localhost:3001");
     const deployed = await harness.signIn(
-      "attendee",
+      "person",
       "https://api-dev.gcnotes.example.com"
     );
 

@@ -35,21 +35,21 @@ const sql = (query: string, params: unknown[]): StagedStatement => ({
 });
 
 describe("chunkForBoundParams", () => {
-  it("splits registration_items (4 columns) at 25 rows per statement", () => {
+  it("splits a 4-column insert at 25 rows per statement", () => {
     const rows = Array.from({ length: 60 }, (_, index) => index);
     const chunks = chunkForBoundParams(rows, 4);
     expect(chunks.map((chunk) => chunk.length)).toEqual([25, 25, 10]);
     expect(chunks.flat()).toEqual(rows);
   });
 
-  it("splits tickets (8 columns) at 12 rows per statement", () => {
+  it("splits an 8-column insert at 12 rows per statement", () => {
     const rows = Array.from({ length: 30 }, (_, index) => index);
     expect(chunkForBoundParams(rows, 8).map((c) => c.length)).toEqual([
       12, 12, 6,
     ]);
   });
 
-  it("keeps the happy path at one chunk — maxPerRegistration is 10", () => {
+  it("keeps a small batch in one chunk", () => {
     const rows = Array.from({ length: 10 }, (_, index) => index);
     expect(chunkForBoundParams(rows, 8)).toHaveLength(1);
   });
@@ -112,8 +112,8 @@ describe("makeUnitOfWork", () => {
 
     await expect(
       uow.commit((stage) => {
-        const ref = stage.add(sql("UPDATE ticket_types", [1]));
-        // The oversell bug in its original form: branch on a claim that has not run yet.
+        const ref = stage.add(sql("UPDATE user", [1]));
+        // The double-apply bug in its original form: branch on a guarded write that has not run yet.
         return ref.changes;
       })
     ).rejects.toThrow(READ_BEFORE_COMMIT);

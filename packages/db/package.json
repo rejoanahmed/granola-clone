@@ -22,7 +22,6 @@
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
     "@gc/config": "workspace:*",
-    "@gc/shared": "workspace:*",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.2",
     "better-sqlite3": "13.0.3",

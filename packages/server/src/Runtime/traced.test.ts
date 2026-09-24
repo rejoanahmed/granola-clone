@@ -13,26 +13,26 @@ describe("traced", () => {
   });
 
   it("resolves an async method's value", async () => {
-    const svc = traced("Events", {
-      publish: (id: string) => Promise.resolve(`published:${id}`),
+    const svc = traced("Profiles", {
+      me: (id: string) => Promise.resolve(`profile:${id}`),
     });
-    await expect(svc.publish("evt_1")).resolves.toBe("published:evt_1");
+    await expect(svc.me("usr_1")).resolves.toBe("profile:usr_1");
   });
 
   it("propagates a rejection unchanged", async () => {
-    const boom = new Error("EventNotPublishable");
-    const svc = traced("Events", { publish: () => Promise.reject(boom) });
-    await expect(svc.publish()).rejects.toBe(boom);
+    const boom = new Error("ProfileNotFound");
+    const svc = traced("Profiles", { me: () => Promise.reject(boom) });
+    await expect(svc.me()).rejects.toBe(boom);
   });
 
   it("propagates a synchronous throw unchanged", () => {
     const boom = new Error("Forbidden");
-    const svc = traced("Tickets", {
-      checkIn: () => {
+    const svc = traced("Profiles", {
+      me: () => {
         throw boom;
       },
     });
-    expect(() => svc.checkIn()).toThrow(boom);
+    expect(() => svc.me()).toThrow(boom);
   });
 
   it("passes non-function values through unchanged", () => {

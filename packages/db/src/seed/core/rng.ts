@@ -1,7 +1,4 @@
-import { CROCKFORD_ALPHABET } from "@gc/shared/crockford";
-
 export type Rng = {
-  code: () => string;
   id: (prefix?: string) => string;
   int: (min: number, max: number) => number;
   next: () => number;
@@ -11,7 +8,6 @@ export type Rng = {
 const ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 /** Matches `Ids.generate` = prefix + nanoid(16), so seeded ids are the same length as live ones. */
 const ID_LENGTH = 16;
-const TICKET_CODE_LENGTH = 10;
 
 // Mixes the low-entropy anchor date string into a well-distributed 32-bit mulberry32 seed.
 function xmur3(str: string): number {
@@ -68,8 +64,5 @@ export function createRng(seed: string): Rng {
     return prefix ? `${prefix}${body}` : body;
   };
 
-  const code = (): string =>
-    fromAlphabet(CROCKFORD_ALPHABET, TICKET_CODE_LENGTH);
-
-  return { code, id, int, next, pick };
+  return { id, int, next, pick };
 }

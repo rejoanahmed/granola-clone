@@ -1,9 +1,7 @@
 import { ValidationFailed } from "@gc/domain/Errors";
 import type { AppEnv } from "@gc/server";
 import { e2eRouter } from "@gc/server/E2E/Http";
-import { eventsRouter } from "@gc/server/Events/Http";
-import { paymentsRouter } from "@gc/server/Payments/Http";
-import { ticketsRouter } from "@gc/server/Tickets/Http";
+import { profilesRouter } from "@gc/server/Profiles/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   authRateLimit,
@@ -41,9 +39,7 @@ app.get("/", (c) => c.json({ ok: true, service: "gcnotes-api" }));
 
 // Mounted at `/` because the paths in each `Contract.ts` are already absolute; a prefix here would
 // desynchronise the served path from the documented one and from the derived client.
-app.route("/", eventsRouter);
-app.route("/", ticketsRouter);
-app.route("/", paymentsRouter);
+app.route("/", profilesRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.

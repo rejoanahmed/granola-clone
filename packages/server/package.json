@@ -16,7 +16,6 @@
     "@gc/auth": "workspace:*",
     "@gc/db": "workspace:*",
     "@gc/domain": "workspace:*",
-    "@gc/shared": "workspace:*",
     "@hono/zod-openapi": "1.6.3",
     "better-auth": "1.7.5",
     "drizzle-orm": "0.45.3",

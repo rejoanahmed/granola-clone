@@ -17,8 +17,8 @@ name: Deploy
 # Environment variables, on the `dev` and `prod` GitHub Environments respectively. These are ids,
 # not credentials — see apps/api/.deploy.env.example — but they are account-specific, so they are
 # configured rather than committed:
-#   dev    EVB_DEV_D1_DATABASE_ID   EVB_DEV_KV_NAMESPACE_ID   EVB_DEV_FLAGSHIP_APP_ID
-#   prod   EVB_PROD_D1_DATABASE_ID  EVB_PROD_KV_NAMESPACE_ID  EVB_PROD_FLAGSHIP_APP_ID
+#   dev    GC_DEV_D1_DATABASE_ID    GC_DEV_FLAGSHIP_APP_ID
+#   prod   GC_PROD_D1_DATABASE_ID   GC_PROD_FLAGSHIP_APP_ID
 #
 # The two Environments exist so prod can carry a protection rule later. None is set now: the user
 # asked for automatic promotion on a green E2E, so there is no manual approval step.
@@ -118,9 +118,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          EVB_DEV_D1_DATABASE_ID: ${{ vars.EVB_DEV_D1_DATABASE_ID }}
-          EVB_DEV_KV_NAMESPACE_ID: ${{ vars.EVB_DEV_KV_NAMESPACE_ID }}
-          EVB_DEV_FLAGSHIP_APP_ID: ${{ vars.EVB_DEV_FLAGSHIP_APP_ID }}
+          GC_DEV_D1_DATABASE_ID: ${{ vars.GC_DEV_D1_DATABASE_ID }}
+          GC_DEV_FLAGSHIP_APP_ID: ${{ vars.GC_DEV_FLAGSHIP_APP_ID }}
 
       # parseConfig fails the Worker at startup rather than serving half a configuration, so a
       # bad binding uploads fine and 500s here. Catch it as a failed deploy, not as a failed E2E.
@@ -262,9 +261,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          EVB_PROD_D1_DATABASE_ID: ${{ vars.EVB_PROD_D1_DATABASE_ID }}
-          EVB_PROD_KV_NAMESPACE_ID: ${{ vars.EVB_PROD_KV_NAMESPACE_ID }}
-          EVB_PROD_FLAGSHIP_APP_ID: ${{ vars.EVB_PROD_FLAGSHIP_APP_ID }}
+          GC_PROD_D1_DATABASE_ID: ${{ vars.GC_PROD_D1_DATABASE_ID }}
+          GC_PROD_FLAGSHIP_APP_ID: ${{ vars.GC_PROD_FLAGSHIP_APP_ID }}
 
       - name: Wait for the production API to answer
         run: |

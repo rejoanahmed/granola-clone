@@ -9,30 +9,30 @@ Three layers run in this repository's own process, and the proportions are delib
 
 | Layer | Where | How many | What it proves |
 | --- | --- | --- | --- |
-| **Service tests** | `packages/server/src/<Plural>/<Plural>.test.ts` | most of the suite | Every business rule, every race outcome, every error — against the real repositories and the real schema |
+| **Service tests** | `packages/server/src/<Plural>/<Plural>.test.ts` | most of the suite | Every business rule and every error — against the real repositories and the real schema |
 | **Wire-shape tests** | `packages/server/src/<Plural>/<Plural>.http.test.ts` | one per context | The router mounts, validates and serialises as the contract says |
-| **Pure unit tests** | `packages/domain/src/Domain/Pricing.test.ts`, `packages/shared/src/*.test.ts`, `Runtime/UnitOfWork.test.ts`, `Bkash/Codec.test.ts` | one per pure module | Arithmetic, formats, boundaries |
+| **Pure unit tests** | `packages/domain/src/Errors.test.ts`, `Runtime/UnitOfWork.test.ts`, `Runtime/traced.test.ts`, `FeatureFlags.test.ts` | one per pure module | Arithmetic, boundaries, fail-closed behaviour |
 
 `packages/apiclient/src/client.test.ts` belongs to the middle row — same wire-shape budget, read
 from the client's side against a recording `fetch` stub. `apps/native` ships the jest harness
-(`jest.config.js`, `test/setup.ts`) and no suite.
+(`jest.config.js`, `test/setup.ts`) and no unit suite; its UI is exercised by Maestro (§8).
 
 There is a fourth layer, and it is deliberately outside that table because it does not run here:
-`packages/e2e` walks four journeys over HTTP against the **deployed** dev Worker, and a green run is
-what promotes a merge to production. It answers the one question none of the three rows can — does a
-*deploy* work — and §6 is its specification.
+`packages/e2e` walks its journeys over HTTP against the **deployed** dev Worker, and a green run is
+what promotes a merge to production. It answers the one question none of the three rows can — does
+a *deploy* work — and §6 is its specification.
 
 `Testing/Database.test.ts` is none of the three: it tests the **harness** the first row runs on —
 that the real migration applies, that `meta.changes` is per statement, that `batch()` rolls back,
-that the `CHECK`s and the partial unique index bite. A harness whose fidelity is assumed is a
-second model of D1 wearing a better disguise, so it gets its own suite (§2, §5).
+that unique indexes and foreign keys bite. A harness whose fidelity is assumed is a second model of
+D1 wearing a better disguise, so it gets its own suite (§2, §5).
 
 ---
 
 ## 1. The setup
 
 ```ts
-// vitest.config.ts — packages/server and apps/api
+// vitest.config.ts — packages/domain, packages/server and apps/api
 export default { test: { environment: "node", globals: false, include: ["src/**/*.test.ts"] } };
 ```
 
@@ -40,13 +40,12 @@ export default { test: { environment: "node", globals: false, include: ["src/**/
 `import { describe, expect, it } from "vitest"`, which is what makes a test file readable in
 isolation and what stops a stray `test()` from a different runner compiling by accident.
 
-`packages/shared` and `packages/apiclient` run under `bun test`; `packages/domain`,
-`packages/server` and `apps/api` run under vitest. **Whichever runner a package uses, it must be
-scoped to `src`** — `bun test src` for the first pair, `include: ["src/**/*.test.ts"]` in the
-vitest config for the rest. Every one of these packages emits a `dist` (they are `composite`, so
-`tsc -b` writes one), and an unscoped run discovers the built copies too: every suite runs twice,
-which reads as "everything passes" right up until a stale `dist` makes it read as "everything
-fails".
+`packages/apiclient` runs under `bun test`; `packages/domain`, `packages/server` and `apps/api` run
+under vitest. **Whichever runner a package uses, it must be scoped to `src`** — `bun test src` for
+the first, `include: ["src/**/*.test.ts"]` in the vitest config for the rest. Every one of these
+packages emits a `dist` (they are `composite`, so `tsc -b` writes one), and an unscoped run
+discovers the built copies too: every suite runs twice, which reads as "everything passes" right up
+until a stale `dist` makes it read as "everything fails".
 
 This is also why the repo's test gate is `bun run test` (turbo, per-package configs) and not a bare
 `bun test` at the root. Bare `bun test` walks the whole tree — gitignored `dist/` included — and it
@@ -59,63 +58,35 @@ has none of the per-package vitest setup, so it cannot provide the `cloudflare:w
 
 No `wrangler dev`, no mocking library, and — since **D016** — no hand-written repository doubles.
 What replaces them is one file: `packages/server/src/Testing/Database.ts`. `makeTestD1()` applies
-every statement of `packages/db/d1-migrations/*.sql` — the same file `wrangler d1 migrations apply`
+every statement of `packages/db/d1-migrations/*.sql` — the same files `wrangler d1 migrations apply`
 sends to production — to a `better-sqlite3` `:memory:` database, turns foreign keys on, and hands
 back a `D1Database` facade. `seedD1(d1, tables)` writes fixture rows as one atomic batch, in the
 order given, in **database** column names. The migrations are read off disk, so a checkout that has
 never run `bun run db:generate` fails every service test at once — with that instruction as the
 error message, rather than with a hundred "no such table".
 
-On top of it the test builds the repositories that ship, with the unit of work that ships:
+On top of it the test builds the repositories that ship:
 
 ```ts
-// packages/server/src/Tickets/Tickets.test.ts, abridged
-import { SoldOut } from "@gc/domain/Ticket/Errors";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { makeEventsRepo } from "../Events/EventsRepo";
-import { makeDrizzle } from "../Runtime/Drizzle";
-import { makeUnitOfWork } from "../Runtime/UnitOfWork";
-import { fixedClock, makeTestD1, type SeedRow, seedD1, sequentialIds, type TestD1 } from "../Testing";
-import { makeTicketsRepo } from "./TicketsRepo";
-import { makeTicketsService } from "./TicketsService";
-
-/** One migrated, empty database per test; closed after it, so the run does not leak handles. */
+// packages/server/src/Profiles/Profiles.test.ts, abridged
 let d1: TestD1;
-beforeEach(() => { d1 = makeTestD1(); });
-afterEach(() => { d1.close(); });
+beforeEach(() => { d1 = makeTestD1(); });   // one migrated, empty database per test
+afterEach(() => { d1.close(); });           // closed after it, so the run does not leak handles
 
-const world = async (types: readonly SeedRow[]) => {
-  await seedD1(d1, [
-    { rows: userRows, table: "user" },      // foreign keys are ON, so parents first
-    { rows: [eventRow], table: "events" },
-    { rows: types, table: "ticket_types" },
-  ]);
-  const db = makeDrizzle(d1);
-  const events = makeEventsRepo(db);
-  const repo = makeTicketsRepo(db);
-  const at = (now: number) =>
-    makeTicketsService({
-      clock: fixedClock(now),
-      events,
-      holdMinutes: 30,
-      ids: sequentialIds(),
-      repo,
-      uow: makeUnitOfWork(d1),
-    });
-  return { at, events, repo, svc: at(AT) };
-};
+const service = () =>
+  makeProfilesService({ repo: makeProfilesRepo(makeDrizzle(d1)) });
 
-it("gives the last seat to exactly one of two attendees", async () => {
-  const { events, svc } = await world([aType(GENERAL, 1)]);
+it("answers the caller's own row, in epoch milliseconds", async () => {
+  await seedD1(d1, [{ rows: [userRow(actor()), userRow(otherActor())], table: "user" }]);
 
-  await svc.register(ATTENDEE, EVENT_ID, order([seats(GENERAL, 1)]));
-
-  await expect(
-    svc.register(OTHER_ATTENDEE, EVENT_ID, order([seats(GENERAL, 1)]))
-  ).rejects.toBeInstanceOf(SoldOut);
-  expect(await claimedOf(events, GENERAL)).toBe(1);
+  await expect(service().me(actor())).resolves.toEqual({
+    createdAt: AT, email: actor().email, emailVerified: true, id: actor().id, name: actor().name,
+  });
 });
 ```
+
+A service that writes adds `makeUnitOfWork(d1)`, `fixedClock(at)` and `sequentialIds()` to the same
+construction.
 
 ### Four rules that keep this honest
 
@@ -124,39 +95,32 @@ once per rule. A rule tested through the router is a rule whose failure message 
 code instead of a domain error.
 
 **2 · The seam is still `deps`, and the service still knows nothing about a database.**
-`makeTicketsService` takes a repo; `TicketsService.ts` imports no `@gc/db`; nothing in the service
+`makeProfilesService` takes a repo; `ProfilesService.ts` imports no `@gc/db`; nothing in the service
 can tell whether the repo it was handed reads SQLite or a `Map`. What D016 changed is what sits
 *behind* the repo, not whether the seam exists — and `scripts/check-architecture.mjs` still fails
-the build if a query moves up into a service. The architecture's testability claim is exactly what
-it was.
+the build if a query moves up into a service.
 
-**3 · The guard under test is the statement that ships.** A hand-written double could only assert
-that its own TypeScript re-implementation of a `WHERE` clause agreed with itself; every row below is
-now SQLite evaluating the clause that runs in production, against real rows:
+**3 · The guard under test is the statement that ships.** A hand-written double can only assert
+that its own TypeScript re-implementation of a `WHERE` clause agrees with itself; here SQLite
+evaluates the clause that runs in production, against real rows. `Testing/Database.test.ts` shows
+the shape for each kind of guard, against the only tables that exist today:
 
-| Guard | Lives in | Provoked by |
-| --- | --- | --- |
-| `quantity_claimed + :q <= quantity_total` | `EventsRepo.stageClaim` | `Events.test.ts` "lets exactly one of two claims take the only seat" |
-| `quantity_claimed >= :q` | `EventsRepo.stageRelease` | `Events.test.ts` "never lets a release drive the counter below zero" |
-| `status IN (:from)` | `TicketsRepo.stageTransition` | `Tickets.test.ts` "returns the seats exactly once, however often it runs" |
-| `ON CONFLICT (id) DO NOTHING` | `TicketsRepo.stageTickets` | `Tickets.test.ts` "issues each ticket once and moves no counter" |
-| `WHERE code = ? AND status = 'issued'` | `TicketsRepo.checkIn` | `Tickets.test.ts` "admits once and answers the second scan with the FIRST scan's time" |
-| `payments_live_per_reg_unq` (partial unique index) | `PaymentsRepo.insert` | `Payments.test.ts` "lets a retry through once the first payment failed — the predicate, not the column" |
-| `ON CONFLICT (payment_id, external_ref) DO NOTHING` | `PaymentsRepo.recordEvent` | `Payments.test.ts` "is a duplicate when the callback already applied the same trxId" |
-| `UPDATE … WHERE status = 'initiated' RETURNING id` | `PaymentsRepo.claimExecute` | `Payments.test.ts` "lets exactly one of two simultaneous callbacks execute" |
-| `ticket_types_claimed_ck` (`CHECK`) | the DDL, nowhere else | `Events.test.ts` "raises ticket_types_claimed_ck when a write bypasses the WHERE clause" |
+| Guard | Provoked by |
+| --- | --- |
+| a guarded `UPDATE … WHERE <precondition>` reporting `changes: 0` when it loses | "reports 0 for the losing half of a guarded write and leaves the row alone" |
+| a unique index (`user_email_unique`, `session_token_unique`) | "refuses a second session with the same token"; the `batch` cases |
+| a foreign key, and `ON DELETE CASCADE` | "enforces foreign keys, so a fixture cannot orphan a row"; "cascades a user's sessions away when the user is deleted" |
 
-The last two rows are the ones that could not exist before: a `CHECK` constraint and a partial
-unique index are lines of DDL, so no object in TypeScript can raise them. **If you add a guard to a
-repository, add the test that provokes it in the same commit** — and provoke it through the
-repository or through raw SQL, never through a re-statement of the rule.
+**If you add a guard to a repository — a `WHERE` precondition, a `CHECK`, a unique or partial
+index — add the test that provokes it in the same commit**, in that context's `<Plural>.test.ts`,
+and provoke it through the repository or through raw SQL, never through a re-statement of the rule.
 
-**4 · Time, ids, actors and the bKash port are still fakes, and correctly so.** `fixedClock(at)`
-makes hold-expiry assertions exact — `expect(reg.holdExpiresAt).toBe(at + 30 * 60_000)`, not
-"roughly half an hour". `sequentialIds()` makes generated ids assertable. `steppingClock(at, stepMs)`
-moves time by a known amount between two calls. `makeBkashFake` is a second implementation of a port
-we do not own (`architecture/BKASH.md` §6). The line is: **fake what you do not control or cannot
-make deterministic; do not fake the thing you are asserting about.** A clock is the first; a
+**4 · Time, ids, actors and outside providers are still fakes, and correctly so.** `fixedClock(at)`
+makes expiry assertions exact. `sequentialIds()` makes generated ids assertable.
+`steppingClock(at, stepMs)` moves time by a known amount between two calls. A provider fake
+(`FeatureFlagsFake` today; transcription, LLM and calendar later — `architecture/PROVIDER-FAKES.md`)
+is a second implementation of a port we do not own. The line is: **fake what you do not control or
+cannot make deterministic; do not fake the thing you are asserting about.** A clock is the first; a
 `WHERE` clause is the second.
 
 ---
@@ -164,37 +128,34 @@ make deterministic; do not fake the thing you are asserting about.** A clock is 
 ## 3. Wire-shape tests — one per context
 
 ```ts
-// packages/server/src/Events/Events.http.test.ts
+// packages/server/src/Profiles/Profiles.http.test.ts, abridged
 const app = new OpenAPIHono<AppEnv>();
 app.use("*", async (c, next) => {
-  c.set("svc", { events: stubEventsService, payments: {}, tickets: {} } as Container);
-  c.set("actor", organiser());
+  c.set("actor", who);
+  c.set("svc", { profiles: { me: stubMe } } as unknown as Container);
   await next();
 });
-app.route("/", eventsRouter);
+app.route("/", profilesRouter);
 
-it("serialises a published event list", async () => {
-  const res = await app.request("/events?limit=2");
+it("serialises the caller's profile at GET /me", async () => {
+  const res = await app.request("/me");
   expect(res.status).toBe(200);
-  expect(await res.json()).toEqual({ items: [/* … */], nextCursor: null });
+  expect(await res.json()).toEqual(profile);
 });
 ```
 
 What it is for: that the route is mounted at the path the contract declares, that validation
-rejects a malformed query with 422, that the response matches the contract's schema, and that
+rejects a malformed input with 422, that the response matches the contract's schema, and that
 `c.var.svc` is reached rather than anything else. **Not** for business rules — those are §2.
 
 One per context is the budget. The signals it catches (a typo in a path, a missing `.openapi()`
 call, a response shape that drifted from its schema) are all "wrong everywhere or wrong nowhere",
 so a second test of the same router catches nothing the first did not.
 
-Two extra cases earn their place because they are not shaped like the others:
-
-- `Payments.http.test.ts` must include **a webhook with a bad signature → 401**, and a webhook
-  for an unknown payment → **200** with `{ outcome: "unmatched" }`. The status codes are the
-  contract with bKash, not with our client.
-- `apps/api/src/app.test.ts` covers health, a 404, and the **error body shape** produced by
-  `on-error.ts` — the one place `{ _tag, message, details }` is constructed.
+`apps/api/src/app.test.ts` covers the assembled app: health, the request id, `GET /me` mounted and
+answering 401 without a session, the OpenAPI document listing exactly the contract's paths, a 404,
+and the **error body shape** produced by `on-error.ts` — the one place `{ _tag, message, details }`
+is constructed. `apps/api/src/e2e-harness.test.ts` holds the harness's fail-closed properties (§6).
 
 ---
 
@@ -202,122 +163,96 @@ Two extra cases earn their place because they are not shaped like the others:
 
 These must exist. The names are the specification; the phrasing in the test file may differ.
 
-### `Events.test.ts`
+### `Profiles/Profiles.test.ts`
 
-- publish an event with no ticket type → `EventNotPublishable`
-- publish an event whose `startsAt` is in the past → `EventNotPublishable`
-- edit an event after publish → `EventNotEditable`
-- raise `quantityTotal` after publish → allowed
-- lower `quantityTotal` below `quantityClaimed` → `QuantityBelowClaimed`
-- a draft event requested by a non-organiser → `EventNotFound` (not 403 — a draft does not exist
-  for anyone but its organiser)
-- two claims for one remaining seat, staged in one unit of work → `changes` is `[1, 0]` and the
-  counter moved once
-- an unguarded `UPDATE` that sets `quantity_claimed` past `quantity_total` → `CHECK constraint
-  failed: ticket_types_claimed_ck`, and the batch around it rolls back
+- `me` answers the caller's own row, with `createdAt` in epoch milliseconds (the `Date` from
+  better-auth's column stops at the mapper — D003)
+- an unverified address reads `emailVerified: false`, not a default
+- a session whose user row is gone → `ProfileNotFound`
+- `canReadProfile` lets a person read their own profile, and refuses anyone else with `Forbidden`
+  naming the action `profiles.read`
 
-### `Tickets.test.ts`
+### `Profiles/Profiles.http.test.ts`
 
-- the last seat: one registration wins, the next gets `SoldOut`
-- **multi-line partial**: one line wins, one loses → the winner's seats are released, the
-  registration is `expired`, and `SoldOut` names the losing `ticketTypeIds`
-- an expired hold → `sweepExpiredHolds` returns the seats **exactly once** (run it twice; the
-  counter moves once)
-- `confirm` twice → `"already"` on the second call, and zero extra tickets
-- `confirm` after the hold was swept → `"not-holdable"`, and no tickets issued
-- double check-in → `TicketAlreadyCheckedIn` carrying **the original scan's** time and scanner
-- check in a voided ticket → `TicketVoid`
-- `release` called twice → the seats come back once
+- `GET /me` serialises the service's answer verbatim, and the service was called with the actor's id
+- with no actor the service is **never called** and the handler throws `Unauthorized`
 
-### `Payments.test.ts`
+### `Testing/Database.test.ts` — the harness itself
 
-- `handleCallback` called twice with identical input → `fulfilment.confirm` invoked **exactly
-  once**, and `bkash.calls.filter(c => c.kind === "execute")` has length **1**
-- a webhook arriving after the callback for the same `trxId` → `{ outcome: "duplicate" }`, no side
-  effect
-- a webhook with a bad signature → `InvalidWebhookSignature`
-- a second `createCheckout` for the same registration → the **same** `bkashUrl`
-- `already_executed` from execute → routes to `queryPayment` and settles from its answer
-- `sweepStale` on an `initiated` payment whose bKash status is `Completed` → settles and confirms
-- refund → tickets voided, seats returned, payment `refunded`
-- the oversold-refund path: `confirm` returns `"not-holdable"` → no tickets, and a refund is opened
-  automatically
-- **both halves of `payments_live_per_reg_unq`**: a second live payment is refused and the caller
-  gets the one that landed; a retry alongside a *failed* payment is allowed. The second case is the
-  predicate, and a plain unique index would fail it
+- the real migration files apply, and the database starts empty
+- foreign keys are on
+- `meta.changes` is 1 for a matching `UPDATE`, 0 for a missing one, per statement through `batch()`,
+  and 0 for a `SELECT` rather than the previous write's count
+- a unit of work's refs are filled from the real `WHERE` clause
+- `batch()` rolls back entirely when any statement throws, including the first, and fails as a
+  rejection rather than a synchronous throw
+- `seedD1` is one batch, so a bad row rolls back the good ones
 
-Counting the fake's calls is the point of several of those. **Asserting on the final payment status
-would pass even if the attendee had been charged twice**; only the call log proves the
-non-idempotent call was fenced.
+### `E2E/E2E.test.ts` — the harness the promotion gate drives
+
+- seeding after a reset produces the same world, and seeding twice is a no-op
+- the minted session cookie is one better-auth itself accepts
+- the cookie is named for the origin it was asked for (`__Secure-` over https)
+- an unknown role is `ValidationFailed`, never an invented user
 
 ### Pure suites
 
-- `Pricing.test.ts` — full coverage of `priceLines`, `totalPoisha`, `ticketRowsFor`. These three
-  are the only domain logic with no seam, so they get the only exhaustive suite in
-  `packages/domain`: every `maxPerRegistration` boundary, a missing ticket type, deterministic
-  ticket ordering and `seq` numbering.
+- `packages/domain/src/Errors.test.ts` — `appError` carries its tag and status on the instance and
+  the class; `isAppError` is true across factories and false for a plain `Error` or a look-alike
+  object; the message defaults to the tag and `cause` is kept as an object. `on-error.ts` decides
+  every status by asking exactly these questions.
+- `FeatureFlags.test.ts` — **every path that could answer `true` without being asked to**: an absent
+  binding, a throwing lookup (async and sync), an unknown key all read `false`; the fake starts the
+  keys it was given, records its calls in order, and flips at runtime.
 - `UnitOfWork.test.ts` — the chunking arithmetic at `n = 0`, `max`, `max + 1`; chunks concatenate
   back to the input in order; and **reading `.changes` before commit throws**.
-- `Codec.test.ts` — `toBdt`/`fromBdt` round trip, and each rejection by name: `"1250"`,
-  `"1250.5"`, `"-1.00"`, `"1,250.00"`.
-- `time.test.ts` — including the regression test for the Workers `Intl` time-zone behaviour that
-  made `@gc/shared/time` do manual UTC+6 arithmetic (`DECISIONS.md` D003).
-- `crockford.test.ts` — the alphabet excludes I, L, O and U; round trip.
 - `traced.test.ts` — the sync path, the async path, the throw path, and non-function values passed
   through unchanged.
+- `packages/apiclient/src/client.test.ts` — path params, query serialisation omitting nulls, JSON
+  bodies, raw bodies passed through untouched, a raw redirect route, `AbortSignal` forwarding, and
+  each error tag (`ErrorBody` → `ApiError`, non-`ErrorBody` → `UnexpectedError`, transport →
+  `NetworkError`). The generic endpoint is exercised with route shapes written in the test, because
+  `GET /me` has no params, query or body.
 
 ---
 
 ## 5. What the suite cannot prove
 
-Every hand-written double was a model of D1, and a model is a claim. Four claims underpin the entire
-suite — and a double proved the first three *by construction*, which is to say not at all: the
-double behaved that way because somebody wrote it to, so the test asserted the double's arithmetic
-was right rather than the shipped statement's. That, and not tidiness, is the argument D016 acted
-on. Three of the four now have an engine answering them instead of an author:
+Every hand-written double is a model of D1, and a model is a claim. Four claims underpin any suite
+built on this harness — and a double proves the first three *by construction*, which is to say not
+at all. Three of the four have an engine answering them instead of an author:
 
-1. **A guarded `UPDATE` matching zero rows does not abort the batch** — the other statements' writes
-   are still visible afterwards. If this were false, `register`'s compensation would be
-   unnecessary *and wrong*. Exercised by `Database.test.ts` "reports 0 for the losing seat claim and
-   leaves the counter alone", and end to end by `Tickets.test.ts` "compensates the winning line when
-   another line loses, then throws SoldOut".
-2. **`meta.changes` is per statement, and reports `0` for `ON CONFLICT DO NOTHING` on an existing
-   row** — not `1`, and not rows-examined. Every idempotency decision reads this number. Exercised by
-   `Database.test.ts` "is per statement, in staging order, through batch()" and, for the conflict
-   half, by `Tickets.test.ts` "issues each ticket once and moves no counter".
-3. **A `CHECK` violation aborts the whole batch and throws** — which is what licenses treating
-   `CHECK`s as alarms rather than control flow. Exercised by `Database.test.ts` "rolls the whole
-   batch back when a statement throws" and `Events.test.ts` "raises it for a negative counter too,
-   and rolls the whole batch back".
-4. **The practical per-batch statement ceiling** — gcnotes's largest batch is 12 statements
-   (`register` at the maximum registration) and its largest fan-out 10 (`confirm` issuing 100
-   tickets), both far inside any documented limit, but "far inside" is an inference until a real
-   batch of that size runs. `D1-NOTES.md` §4 has the arithmetic. Unchanged by D016: a local engine
-   cannot tell you what an RPC will carry.
+1. **A guarded `UPDATE` matching zero rows does not abort the batch** — the other statements'
+   writes are still visible afterwards. Exercised by `Database.test.ts` "reports 0 for the losing
+   half of a guarded write and leaves the row alone".
+2. **`meta.changes` is per statement** — not rows-examined. Every idempotency decision reads this
+   number. Exercised by `Database.test.ts` "is per statement, in staging order, through batch()";
+   the `ON CONFLICT DO NOTHING` half gets its test with the first repository that relies on it.
+3. **A constraint violation aborts the whole batch and throws** — which is what licenses treating
+   constraints as alarms rather than control flow. Exercised by `Database.test.ts` "rolls the whole
+   batch back when a statement throws".
+4. **The practical per-batch statement ceiling** — "far inside any documented limit" is an inference
+   until a real batch of that size runs. `D1-NOTES.md` §4 has the arithmetic. A local engine cannot
+   tell you what an RPC will carry.
 
 That answer comes from `better-sqlite3`, not from Cloudflare's SQLite, so the honesty boundary
 moved rather than disappeared. It is written out in full as the **fidelity ledger** at the top of
 `Testing/Database.ts`, and these are the parts of it a green suite says nothing about:
 
 - **Engine skew.** Two SQLite builds. Anything that differs between versions differs here, silently.
-- **The bound-parameter ceiling.** D1 caps a statement at 100; this engine does not. A statement over
-  the limit passes locally and fails in production — which is why `chunkForBoundParams` has its own
-  unit test rather than waiting for the harness to notice.
+- **The bound-parameter ceiling.** D1 caps a statement at 100; this engine does not. A statement
+  over the limit passes locally and fails in production — which is why `chunkForBoundParams` has
+  its own unit test rather than waiting for the harness to notice.
 - **Concurrency.** One connection, statements serialised. "Two racing writers" is staged as two
   statements in one atomic batch; that D1 resolves a genuine race the same way is its
   serialisable-write guarantee, taken on trust.
 - **Everything advisory in `meta`** — `duration`, `size_after`, `rows_read`, `rows_written` are
   plausible, not measured. Do not assert on them.
 
-V2 and V3 in `architecture/D1-NOTES.md` §7 are the same probes run against a real local D1, and they
-are still worth running once; V1 is settled (**D009** — drizzle emits the `CHECK`s and the partial
-index, and both bite). The open **VERIFY** entries left in `DECISIONS.md` are **D010** (does
-`@hono/zod-openapi@1.5.1` accept `zod@4.5.4`), **D011** (does `startActiveSpan` double-end a span)
-and **D012** (is the `observability` block shape right).
-
-Until those are checked, the suite proves the code is correct *given this SQLite*. That is a great
-deal more than "given a model of D1 we wrote ourselves", and it is still not everything. Do the
-checks.
+V2 and V3 in `architecture/D1-NOTES.md` §7 are the same probes run against a real local D1, and
+they are worth running once; V1 is settled (**D009**). The open **VERIFY** entries left in
+`DECISIONS.md` are **D010** (the pinned `@hono/zod-openapi` and `zod` agree), **D011** (does
+`startActiveSpan` double-end a span) and **D012** (is the `observability` block shape right).
 
 ---
 
@@ -333,30 +268,26 @@ API_URL=https://api-dev.gcnotes.example.com E2E_SECRET=… bun run e2e     # fro
 
 `E2E_DEADLINE_MS` (default 9 minutes, under the release model's 10) and `E2E_REQUEST_TIMEOUT_MS`
 (default 30s) are the only other knobs. `Env.ts` reads and validates all of them **before the first
-request**, because the suite's first act is to truncate the dev database: discovering a missing
+request**, because the suite's first act is to reset the dev database: discovering a missing
 variable halfway through has already destroyed state.
 
-It is **HTTP only — no browser, no local server, no `wrangler dev`.** That is the point rather than
-a shortcut. What it exists to prove is that a *deploy* works: bindings resolved, secrets present,
-migrations applied, D1 reachable, the module graph initialising at all. A Playwright suite answers a
-different question — does the UI work — and answers this one slowly and flakily. The four failures
+It is **HTTP only — no browser, no device, no local server, no `wrangler dev`.** That is the point
+rather than a shortcut. What it exists to prove is that a *deploy* works: bindings resolved, secrets
+present, migrations applied, D1 reachable, the module graph initialising at all. The four failures
 that motivate the gate are listed in `architecture/DEPLOYMENT.md` §6; every one of them is invisible
 to `bun run test` and to `wrangler deploy --dry-run`.
 
-### The four journeys
+### The journey
 
-`run.ts` resets, seeds, signs in as both actors, then walks these in order. A journey's failure is
-reported with its `x-request-id` so the run can be found in the Worker's logs.
+`run.ts` wakes the Worker, resets, seeds, signs in as both people, then walks each journey in order.
+A failure is reported with its `x-request-id` so the run can be found in the Worker's logs, and
+every message names a deploy fault rather than a domain expectation.
 
 | Journey | What only a deployed run can prove |
 | --- | --- |
-| **Primary** — hold two seats → pay → return from the fake checkout → two QR codes → check one in → rescan | the whole registration-to-gate path across *separate requests*, each with its own container, against real D1 |
-| **One seat, two clients** | a genuine race, concurrently, against real D1. §5 stages "two racing writers" as two statements in one batch and takes D1's serialisation on trust; here it is measured |
-| **Abandoned hold** | the seats come back **once**, not twice, through `releaseLines` |
-| **Cancelled event** | the cascade: pending released, confirmed refunded, tickets voided |
+| **WhoAmI** — anonymous `GET /me` → 401 in the error envelope; `GET /me` as `person` and as `other` → each gets their own profile | the minted session is accepted by better-auth on this Worker, the actor middleware resolves it against real D1, the handler reaches the service through the container, and the answer matches the contract this suite was built from |
 
-The rescan assertion in the first journey is the template's definition of done: **409 carrying the
-first scan's time**, not merely a 409.
+Each new feature adds the journey that proves its deploy, not its rules — those stay in §2.
 
 ### The harness it drives, and why production cannot have one
 
@@ -365,39 +296,25 @@ config arms them:
 
 | Route | Does |
 | --- | --- |
-| `POST /e2e/reset` | deletes every table in `RESET_ORDER`, children before parents, as one atomic batch |
-| `POST /e2e/seed` | writes the fixed fixture — one organiser, one attendee, one published event, one ticket type |
-| `POST /e2e/session/:role` | mints a **signed** better-auth session cookie for `attendee` or `organiser` |
+| `POST /e2e/reset` | deletes every table in `RESET_ORDER`, children before parents, as one atomic batch — a no-op until the first domain table joins it; the better-auth tables are kept so sessions survive |
+| `POST /e2e/seed` | writes the two fixed users, `person` and `other`, idempotently |
+| `POST /e2e/session/:role` | mints a **signed** better-auth session cookie for `person` or `other` |
 
 Armed by `E2E_HARNESS=true` plus an `E2E_SECRET` of at least 32 characters, both parsed in
 `Runtime/AppConfig.ts`. Disarmed, `container.ts` builds `e2e: null` and the routes answer the app's
-own 404 **before reading the header** — a 401 there would confirm to a prober that this deploy has a
-harness at all. `apps/api/src/e2e-harness.test.ts` holds all three properties, including that
+own 404 **before reading the header** — a 401 there would confirm to a prober that this deploy has
+a harness at all. `apps/api/src/e2e-harness.test.ts` holds all three properties, including that
 `parseConfig` refuses to start a Worker where the harness is armed and `NODE_ENV=production`.
 
-The other seam is unchanged and still the only one: **`BKASH_MODE=fake`** selects `makeBkashFake` in
-`container.ts`. The rest of the graph is the production graph — real services, real repositories,
-real D1.
+Everything else in the graph is the production graph — real services, real repositories, real D1.
+When provider fakes arrive (`architecture/PROVIDER-FAKES.md`), dev selects them by environment and
+the journeys run against the fake leaf.
 
 ### What a green run still does not prove
 
-- **No browser and no device.** `apps/web` and `apps/native` are deployed but never exercised; the
-  suite talks to the API the way the clients do, not through them.
-- **The live bKash client is never called.** Dev runs `BKASH_MODE=fake`, so `BkashClient`, the token
-  cache in KV and the real signature path are covered only by `Payments.test.ts` and by
-  `architecture/BKASH.md`'s sandbox recipe.
-- **The fake had to change shape to survive a deploy, and the change is load-bearing.**
-  `container.ts` builds `makeBkashFake` per request, so an issued-payment `Map` dies with the
-  request that created the checkout — and two requests need not even share an isolate. The fake
-  therefore encodes the amount and the scripted outcome **into the `bkashPaymentId`** and
-  reconstructs the payment when its map does not have it. What an id cannot carry is `executed`, and
-  that is correct: the lease in `PaymentsRepo.claimExecute` is what fences the non-idempotent
-  execute, not the fake's memory. A `BkashRejected 2054` from the primary journey means that
-  encoding broke, and `Journeys/Primary.ts` says so by name.
-- **The sweeper's own selection query is not covered.** The harness has no `POST /e2e/sweep` or
-  `/e2e/expire-holds`; `Harness.reset()` probes for them, prints a `NOTE` when they are absent, and
-  the two release journeys fall back to the attendee-cancel and organiser-refund routes. Same
-  `releaseLines` path, different caller.
+- **No device.** `apps/native` is never exercised by this suite; it talks to the API the way the app
+  does, not through it. The app has its own Maestro flows (§8), which run on a simulator, not in the
+  pipeline.
 - **Dev is not production.** `NODE_ENV=development` there (it is the only setting under which
   `otpEmail` logs the OTP, which is how anything signs in without an email provider), and the
   Flagship app is a different app with different flag values.
@@ -415,11 +332,11 @@ bun run test                 # everything, through turbo
 bun run check                # lint + syncpack + architecture greps + types — the gate
 ```
 
-**Trap 1: turbo caches `type-check`.** "11 cached" has verified nothing. When you need to know that
+**Trap 1: turbo caches `type-check`.** "9 cached" has verified nothing. When you need to know that
 types really pass — before a release, or after a dependency bump — purge and force:
 
 ```bash
-find . -name "*.tsbuildinfo" -not -path "*/node_modules/*" -delete && bun run check --force
+find . -name "*.tsbuildinfo" -not -path "*/node_modules/*" -delete && TURBO_FORCE=1 bun run check
 ```
 
 **Trap 2: `bun test` must be scoped.** In any package that emits a `dist`, the script is
@@ -429,3 +346,9 @@ duplicate run is against code that may be several commits old.
 One more worth knowing: `scripts/check-architecture.mjs` is part of `bun run check`, not of
 `bun run test`. A pull request that moves a query out of a repository and into a service will pass
 every test and fail the gate. That is the intended order of discovery.
+
+---
+
+## 8. Native UI flows (Maestro)
+
+See below — added with the Maestro harness.

@@ -6,7 +6,7 @@ import { FLAG, type FlagshipBinding } from "./Port";
 // Every branch that could answer `true` without being asked to is a test here: fail-closed is the
 // entire safety property, and it is invisible until the day Flagship is down.
 
-const EVENT_ID = "evt_0000000000000001";
+const USER_ID = "usr_person_0001";
 
 const binding = (
   getBooleanValue: FlagshipBinding["getBooleanValue"]
@@ -26,10 +26,10 @@ describe("the live client over the FLAGS binding", () => {
     });
 
     await expect(
-      flags.enabled(FLAG.doorSales, { eventId: EVENT_ID })
+      flags.enabled(FLAG.example, { userId: USER_ID })
     ).resolves.toBe(true);
-    expect(getBooleanValue).toHaveBeenCalledWith(FLAG.doorSales, false, {
-      eventId: EVENT_ID,
+    expect(getBooleanValue).toHaveBeenCalledWith(FLAG.example, false, {
+      userId: USER_ID,
     });
   });
 
@@ -37,7 +37,7 @@ describe("the live client over the FLAGS binding", () => {
     const logged = silenced();
     const flags = makeFeatureFlagsClient({ flagship: undefined });
 
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(false);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(false);
     expect(logged).toHaveBeenCalled();
     logged.mockRestore();
   });
@@ -51,7 +51,7 @@ describe("the live client over the FLAGS binding", () => {
     });
 
     await expect(
-      flags.enabled(FLAG.doorSales, { eventId: EVENT_ID })
+      flags.enabled(FLAG.example, { userId: USER_ID })
     ).resolves.toBe(false);
     expect(logged).toHaveBeenCalled();
     logged.mockRestore();
@@ -65,7 +65,7 @@ describe("the live client over the FLAGS binding", () => {
       }),
     });
 
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(false);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(false);
     logged.mockRestore();
   });
 });
@@ -74,35 +74,35 @@ describe("the fake", () => {
   it("answers false for a key it was not told to turn on", async () => {
     const flags = makeFeatureFlagsFake();
 
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(false);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(false);
   });
 
   it("starts the keys it was given on, trimming them so a CSV env var splits straight in", async () => {
-    const flags = makeFeatureFlagsFake({ on: " door-sales ".split(",") });
+    const flags = makeFeatureFlagsFake({ on: " example ".split(",") });
 
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(true);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(true);
   });
 
   it("records what was asked, in order, with the context the caller sent", async () => {
     const flags = makeFeatureFlagsFake();
 
-    await flags.enabled(FLAG.doorSales, { eventId: EVENT_ID });
-    await flags.enabled(FLAG.doorSales);
+    await flags.enabled(FLAG.example, { userId: USER_ID });
+    await flags.enabled(FLAG.example);
 
     expect(flags.calls).toEqual([
-      { context: { eventId: EVENT_ID }, key: FLAG.doorSales },
-      { context: undefined, key: FLAG.doorSales },
+      { context: { userId: USER_ID }, key: FLAG.example },
+      { context: undefined, key: FLAG.example },
     ]);
   });
 
   it("flips at runtime through set, and reset puts back the keys it was built with", async () => {
-    const flags = makeFeatureFlagsFake({ on: ["door-sales"] });
+    const flags = makeFeatureFlagsFake({ on: ["example"] });
 
-    flags.set(FLAG.doorSales, false);
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(false);
+    flags.set(FLAG.example, false);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(false);
 
     flags.reset();
-    await expect(flags.enabled(FLAG.doorSales)).resolves.toBe(true);
+    await expect(flags.enabled(FLAG.example)).resolves.toBe(true);
     expect(flags.calls).toHaveLength(1);
   });
 });

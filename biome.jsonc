@@ -64,9 +64,8 @@
         "noIncrementDecrement": "off",
         "noNonNullAssertion": "warn",
         // Method shorthand in a port or service type is deliberate and load-bearing twice over.
-        // §8 and §9 of the spec print `BkashPort`, `RegistrationFulfilment`, `Stage` and `Clock`
-        // verbatim with this syntax, and every area is told to assume exactly those signatures;
-        // and `QueryInvalidator.invalidateQueries` only accepts a real TanStack `QueryClient`
+        // Ports (`FeatureFlagsPort`, `Stage`, `Clock`) are printed in the architecture doc with this
+        // syntax, and every area is told to assume exactly those signatures; and `QueryInvalidator.invalidateQueries` only accepts a real TanStack `QueryClient`
         // because method parameters compare bivariantly, which the property form would lose. Left
         // at warn rather than off so a new *data* type still gets nudged toward the property form.
         "useConsistentMethodSignatures": "warn",

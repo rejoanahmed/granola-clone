@@ -2,11 +2,11 @@ import type { z } from "zod";
 import type { E2eEnv } from "./Env";
 import { fail } from "./Failure";
 
-export type Role = "attendee" | "organiser";
+export type Role = "other" | "person";
 
 export type Wire = {
   readonly body: unknown;
-  /** Present on a 302; the contract's payment return is a redirect, not a body. */
+  /** Present on a 3xx; redirects are never followed, so the Location is what a journey asserts. */
   readonly location: string | null;
   readonly method: string;
   readonly path: string;
@@ -75,7 +75,7 @@ export const makeClient = (env: E2eEnv): Client => {
         ...options.headers,
       },
       method: options.method,
-      // Manual, or the payment return's 302 is followed to APP_URL and its Location is lost.
+      // Manual, or a redirect is followed and its Location — the thing worth asserting — is lost.
       redirect: "manual",
       signal: AbortSignal.timeout(env.requestTimeoutMs),
     });
@@ -107,7 +107,7 @@ export const makeClient = (env: E2eEnv): Client => {
           // included, because the container is built in middleware ahead of the handler.
           if (wire.status >= 500) {
             fail(
-              `the Worker is deployed but its configuration is invalid — GET / answered ${wire.status}. parseConfig rejected the env: check vars and secrets on this Worker (BETTER_AUTH_SECRET, BKASH_WEBHOOK_SECRET, E2E_SECRET).`,
+              `the Worker is deployed but its configuration is invalid — GET / answered ${wire.status}. parseConfig rejected the env: check vars and secrets on this Worker (BETTER_AUTH_SECRET, E2E_SECRET).`,
               ...where(wire)
             );
           }

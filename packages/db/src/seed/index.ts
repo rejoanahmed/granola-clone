@@ -4,22 +4,19 @@ import { getTableName } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { RESET_ORDER } from "../reset-order";
 import { account, session, user, verification } from "../schema";
-import { buildEvents } from "./builders/events";
 import { buildIdentity } from "./builders/identity";
-import { buildRegistrations } from "./builders/registrations";
 import { openLocalD1, type SeedDb } from "./core/client";
 import { createRng } from "./core/rng";
 
 const DATE_ARG_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const DHAKA_UTC_OFFSET_HOURS = 6;
-const NOON = 12;
+const NOON_UTC = 12;
 
 const log = (message: string): void => {
   console.log(`[seed] ${message}`);
 };
 
-// `Date.UTC` plus a literal offset, not a local `new Date(y, m, d)`: the seeder must produce the
-// same rows on a laptop in Dhaka and a CI box in UTC.
+// `Date.UTC`, not a local `new Date(y, m, d)`: the seeder must produce the same rows on a laptop in
+// any timezone and on a CI box in UTC.
 function parseAnchor(argv: readonly string[]): { key: string; now: number } {
   const arg = argv.find((a) => a.startsWith("--date="));
   const raw =
@@ -35,7 +32,7 @@ function parseAnchor(argv: readonly string[]): { key: string; now: number } {
     Number(match[1]),
     Number(match[2]) - 1,
     Number(match[3]),
-    NOON - DHAKA_UTC_OFFSET_HOURS
+    NOON_UTC
   );
   // Date.UTC rolls 2026-02-31 forward instead of rejecting it; round-tripping catches that.
   if (new Date(now).toISOString().slice(0, 10) !== raw) {
@@ -76,49 +73,21 @@ function main(): void {
   const rng = createRng(anchor.key);
   const now = anchor.now;
 
-  log(`anchor date: ${anchor.key} (12:00 Asia/Dhaka = ${now})`);
+  log(`anchor date: ${anchor.key} (12:00 UTC = ${now})`);
   log(`local D1 file: ${dbPath}`);
 
   resetAllTables(db);
 
-  const identity = buildIdentity({ db, now, rng });
-  const events = buildEvents({
-    db,
-    now,
-    organiserId: identity.organiser.id,
-    rng,
-  });
-  const registrations = buildRegistrations({
-    attendees: identity.attendees,
-    db,
-    event: events.published,
-    now,
-    rng,
-  });
+  const people = buildIdentity({ db, now, rng });
 
   log("done seeding.");
   printRowCounts(db);
 
-  const scannableCode = registrations.confirmed.ticketCodes[0];
   log("");
   log("=== copy a session token into a `better-auth.session_token` cookie ===");
-  log(
-    `organiser : ${identity.organiser.sessionToken}  (${identity.organiser.email})`
-  );
-  for (const attendee of identity.attendees) {
-    log(`attendee  : ${attendee.sessionToken}  (${attendee.email})`);
+  for (const person of people) {
+    log(`${person.sessionToken}  (${person.email})`);
   }
-  log(
-    `gate      : ${identity.gateStaff.sessionToken}  (${identity.gateStaff.email})`
-  );
-  log("");
-  log(`published event : /events/${events.published.slug}`);
-  log(
-    `pending hold    : ${registrations.pending.id} (expires ${registrations.pending.holdExpiresAt})`
-  );
-  log(
-    `scan this code  : ${scannableCode} — scanning it twice is the 409 walkthrough`
-  );
   log("======================================================================");
 }
 

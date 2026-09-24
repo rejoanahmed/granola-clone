@@ -43,7 +43,6 @@
         "@gc/apiclient": "workspace:*",
         "@gc/auth": "workspace:*",
         "@gc/domain": "workspace:*",
-        "@gc/shared": "workspace:*",
         "@tanstack/react-query": "5.103.2",
         "babel-preset-expo": "57.0.12",
         "expo": "~57.0.24",
@@ -123,7 +122,6 @@
       "devDependencies": {
         "@cloudflare/workers-types": "5.20260922.1",
         "@gc/config": "workspace:*",
-        "@gc/shared": "workspace:*",
         "@types/better-sqlite3": "9.6.0",
         "@types/node": "26.6.2",
         "better-sqlite3": "13.0.3",
@@ -171,7 +169,6 @@
         "@gc/auth": "workspace:*",
         "@gc/db": "workspace:*",
         "@gc/domain": "workspace:*",
-        "@gc/shared": "workspace:*",
         "@hono/zod-openapi": "1.6.3",
         "better-auth": "1.7.5",
         "drizzle-orm": "0.45.3",
@@ -189,16 +186,6 @@
       },
       "peerDependencies": {
         "@cloudflare/workers-types": "5.20260922.1",
-        "typescript": "7.0.2",
-      },
-    },
-    "packages/shared": {
-      "name": "@gc/shared",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@gc/config": "workspace:*",
-        "@types/node": "26.6.2",
-        "bun-types": "1.4.2",
         "typescript": "7.0.2",
       },
     },
@@ -586,8 +573,6 @@
     "@gc/e2e": ["@gc/e2e@workspace:packages/e2e"],
 
     "@gc/server": ["@gc/server@workspace:packages/server"],
-
-    "@gc/shared": ["@gc/shared@workspace:packages/shared"],
 
     "@hono/zod-openapi": ["@hono/zod-openapi@1.6.3", "", { "dependencies": { "@asteasolutions/zod-to-openapi": "^9.1.0", "@hono/zod-validator": "^0.9.1", "openapi3-ts": "^4.5.0" }, "peerDependencies": { "hono": ">=4.10.0", "zod": "^4.0.0" } }, "sha512-VYR82Y60plu8g3pN60OUXMVKpmxh3R04Qs++3DY9vtwZ9/sA/BRY0PcRIR+Z37/3itWtM7pYwT9bKiH9JhqV6Q=="],
 

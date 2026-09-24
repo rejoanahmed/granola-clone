@@ -8,10 +8,10 @@
  */
 export const FLAG = {
   /**
-   * Door sales. On, an event stays purchasable after `startsAt` until `endsAt`, so an organiser
-   * can sell at the gate. Off — the default — sales close the moment the event starts.
+   * A placeholder, so `FlagKey` is not `never` before the first real feature ships dark. Nothing
+   * reads it outside the flag tests; replace it with that first flag rather than adding beside it.
    */
-  doorSales: "door-sales",
+  example: "example",
 } as const;
 
 export type FlagKey = (typeof FLAG)[keyof typeof FLAG];

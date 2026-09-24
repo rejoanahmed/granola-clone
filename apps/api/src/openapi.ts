@@ -8,38 +8,13 @@ export const API_REFERENCE_PATH = "/api/reference";
 
 // Order here is Scalar's sidebar order. A name that does not match one in a `Contract.ts`
 // silently creates a second, empty group, so these are copied from the contracts.
-const TAGS = [
-  { description: "The public event feed and event detail.", name: "Events" },
-  {
-    description:
-      "Holding seats, cancelling a hold, and the QR codes it issues.",
-    name: "Registrations",
-  },
-  {
-    description:
-      "bKash tokenized checkout: create, the redirect callback, the webhook, and refunds.",
-    name: "Payments",
-  },
-  {
-    description:
-      "Creating, publishing and cancelling events and their ticket types.",
-    name: "Organiser · Events",
-  },
-  {
-    description: "Check-in at the gate, and the attendee list.",
-    name: "Organiser · Gate",
-  },
-  {
-    description: "Refunding a paid registration.",
-    name: "Organiser · Payments",
-  },
-];
+const TAGS = [{ description: "The signed-in person.", name: "Profile" }];
 
 export const OPENAPI_DOCUMENT = {
   info: {
     description:
-      "A Bangladeshi event-ticketing template. Money is integer poisha (100 poisha = BDT 1) and timestamps are epoch milliseconds UTC — there are no decimals and no date strings anywhere in this API.",
-    title: "gcnotes API",
+      "The API behind Notes, an iPhone meeting-notes app. Timestamps are epoch milliseconds UTC — there are no date strings anywhere in this API.",
+    title: "Notes API",
     version: "1.0.0",
   },
   openapi: "3.1.0",
@@ -51,7 +26,7 @@ export const OPENAPI_DOCUMENT = {
 export const mountOpenApi = (app: OpenAPIHono<AppEnv>): void => {
   app.openAPIRegistry.registerComponent("securitySchemes", "sessionCookie", {
     description:
-      "better-auth session cookie, set by `/api/auth/*`. Sent automatically by the browser; the native client attaches it by hand.",
+      "better-auth session cookie, set by `/api/auth/*`. The native client keeps it in SecureStore and attaches it by hand.",
     in: "cookie",
     name: "better-auth.session_token",
     type: "apiKey",
@@ -61,6 +36,6 @@ export const mountOpenApi = (app: OpenAPIHono<AppEnv>): void => {
 
   app.get(
     API_REFERENCE_PATH,
-    Scalar({ pageTitle: "gcnotes API", url: API_DOC_PATH })
+    Scalar({ pageTitle: "Notes API", url: API_DOC_PATH })
   );
 };

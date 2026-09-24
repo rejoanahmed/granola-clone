@@ -153,7 +153,7 @@ for (const file of serverFiles) {
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // 2. R3 — a repository is constructed in container.ts, and taken as a dep everywhere else.
-//    `import type { EventsRepo }` is legal anywhere; it is the *value* that must not spread.
+//    `import type { ProfilesRepo }` is legal anywhere; it is the *value* that must not spread.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 const REPO_RULE =
   "Repositories are constructed in container.ts. Take the repo as a dep (R3).";

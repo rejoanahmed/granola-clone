@@ -22,9 +22,9 @@ every merge stops being reckless and a long-lived branch stops being useful.
 | --- | --- | --- | --- |
 | CI | `.github/workflows/ci.yml`, on the PR | lint, syncpack, architecture, types, tests, build, both dry runs | the PR does not merge |
 | verify | `deploy.yml`, at the merge SHA | the same four gates against the merge result, not the branch | nothing deploys |
-| deploy dev | `apps/api/scripts/deploy.sh dev`, then `apps/web` | D1 migrations applied, both Workers uploaded, `GET /` healthy | dev is suspect; production untouched |
-| **E2E** | `packages/e2e`, HTTP against `gcnotes-api-dev` | a real deployed isolate serves four full journeys | **production is not deployed** |
-| deploy prod | `scripts/deploy.sh production`, then `apps/web` | the same two uploads against production ids | reach for §3, in order |
+| deploy dev | `apps/api/scripts/deploy.sh dev` | D1 migrations applied, the Worker uploaded, `GET /` healthy | dev is suspect; production untouched |
+| **E2E** | `packages/e2e`, HTTP against `gcnotes-api-dev` | a real deployed isolate serves the journeys end to end | **production is not deployed** |
+| deploy prod | `scripts/deploy.sh production` | the same upload against production ids | reach for §3, in order |
 
 One branch (`main`), two deployed environments (`dev`, `production`), three rollback tiers, and no
 manual approval anywhere in the sequence. The rest of this file is why each of those is the way it
@@ -39,8 +39,8 @@ branch, no `staging` branch, and no release branch.
 
 **A branch and a flag both hold work back; they differ in what you can do about it at 2am.** A
 long-lived branch holds unfinished code away from `main` *and* away from every environment that has
-real bindings, so the first time it meets a real D1, a real Flagship app and a real bKash credential
-is the day it lands — and it lands all at once, mixed with three weeks of other people's merges.
+real bindings, so the first time it meets a real D1, a real Flagship app and a real provider
+credential is the day it lands — and it lands all at once, mixed with three weeks of other people's merges.
 The unit of risk is the merge, and the merge is the biggest thing in the system.
 
 A flag inverts that. The code merges the day it is written, deploys to dev and to production, and
@@ -51,7 +51,7 @@ from GitHub, or from your laptop** (§3).
 The registry is `packages/server/src/Integrations/FeatureFlags/Port.ts`:
 
 ```ts
-export const FLAG = { doorSales: "door-sales" } as const;
+export const FLAG = { example: "example" } as const; // a placeholder until the first dark feature
 ```
 
 A list, not a grep. Three properties of the port are load-bearing and none of them is taste:
@@ -63,13 +63,13 @@ A list, not a grep. Three properties of the port are load-bearing and none of th
   not dark shipping; it is two untested code paths and a switch between them.
 - **One Flagship app per environment.** Sharing one would make every toggle a developer flips in
   dev a production release. `app_id` is per `env` block in `apps/api/wrangler.jsonc` and comes from
-  `EVB_DEV_FLAGSHIP_APP_ID` / `EVB_PROD_FLAGSHIP_APP_ID`.
+  `GC_DEV_FLAGSHIP_APP_ID` / `GC_PROD_FLAGSHIP_APP_ID`.
 
 The cost, stated plainly: **every flag is a branch in the code that somebody has to delete.** A
 flag that outlives its feature is a second code path nobody exercises and nobody remembers the off
 side of. Removing the flag is part of finishing the feature, not a follow-up ticket.
 
-Locally, `FLAGS_MODE=fake` and `FLAGS_ON=door-sales` in `wrangler.jsonc` turn a dark feature on for
+Locally, `FLAGS_MODE=fake` and `FLAGS_ON=<key>` in `wrangler.jsonc` turn a dark feature on for
 `wrangler dev`; dev and production both run `FLAGS_MODE=live` against their own app.
 
 ---
@@ -93,13 +93,13 @@ Not redundancy. **A green PR proves the branch, not the merge result.** Two PRs 
 independently can be red together, and this job is the only thing standing between that pair and
 dev.
 
-`deploy:check` dry-runs `dev` **and** `production` for both apps. Wrangler inherits no bindings into
+`deploy:check` dry-runs `dev` **and** `production` for the API Worker. Wrangler inherits no bindings into
 an `env` block, so production can be missing `FLAGS` while dev is green; running both is the only
 way that is caught before the upload.
 
 ### deploy dev
 
-`scripts/deploy.sh dev` substitutes the `DEV_*` placeholders in `wrangler.jsonc` from the `EVB_*`
+`scripts/deploy.sh dev` substitutes the `DEV_*` placeholders in `wrangler.jsonc` from the `GC_*`
 environment, refuses to proceed if any is unset or the wrong shape, then:
 
 1. `wrangler d1 migrations apply DB --env dev --remote`
@@ -109,9 +109,6 @@ environment, refuses to proceed if any is unset or the wrong shape, then:
 which is exactly the state §4 is written to make safe — and exactly the state a Worker rollback
 leaves you in permanently. The reverse order would put code ahead of its schema, which does not
 serve at all.
-
-Then `apps/web`, which holds no bindings and no secrets: its environment is baked in at build time
-by `@cloudflare/vite-plugin`, which is why its scripts set `CLOUDFLARE_ENV` and pass no `--env`.
 
 ### the health wait
 
@@ -128,7 +125,7 @@ packages/e2e   API_URL=<deployed dev>   E2E_SECRET=<the dev Worker's secret>   b
 ```
 
 HTTP only, no browser, against the Worker that was just deployed. Exit 0 promotes; anything else
-blocks production. Four journeys (`docs/TESTING.md` §6), reset and seed first so a crashed run
+blocks production. The journeys (`docs/TESTING.md` §6) reset and seed first so a crashed run
 cannot poison the next one.
 
 Two timeouts, on purpose. The suite carries its own 9-minute deadline (`E2E_DEADLINE_MS`) so that
@@ -171,12 +168,11 @@ Tier 2, in full:
 ```bash
 bunx wrangler versions list --name gcnotes-api-prod   # pick a version-id
 bunx wrangler rollback <version-id> --name gcnotes-api-prod
-bunx wrangler rollback --name gcnotes-web-prod        # the renderer, if it is the one at fault
 ```
 
 From `apps/api`, `--env production` names the same Worker as `--name gcnotes-api-prod`; `name` is
 stated explicitly in both `env` blocks of `wrangler.jsonc` precisely so the Worker a rollback names
-is the Worker you think it is. Substitute `-dev` for the dev pair.
+is the Worker you think it is. Substitute `-dev` for dev.
 
 **Tier 2 restores the Worker. It does not touch D1.** The migration that ran three minutes ago is
 still applied, so the version you roll back to is now serving a schema it has never seen. That is
@@ -204,7 +200,7 @@ If the answer is no, the migration is not one migration. Split it across release
 
 | Change | Expand-safe? | How |
 | --- | --- | --- |
-| Add a nullable column | yes | `ALTER TABLE events ADD COLUMN venue_note text;` — old code selects named columns and never sees it |
+| Add a nullable column | yes | `ALTER TABLE notes ADD COLUMN summary text;` — old code selects named columns and never sees it |
 | Add a column with a constant `DEFAULT` | yes | SQLite allows `NOT NULL` on `ADD COLUMN` only with a non-null constant default |
 | Add a new table | yes | nothing reads it until the code that does ships |
 | Add a plain (non-unique) index | yes | invisible to behaviour; it is the write cost you are choosing |
@@ -215,24 +211,23 @@ If the answer is no, the migration is not one migration. Split it across release
 | Narrow a type or a domain of values | no | it is a `CHECK` in disguise; §5 |
 
 **Dropping.** A drop is safe exactly when no deployed Worker reads the column — and the Worker you
-might roll back to counts as deployed. So: release *n* stops reading `registrations.release_reason`;
+might roll back to counts as deployed. So: release *n* stops reading `notes.legacy_title`;
 release *n+1*, at the earliest, drops it. Doing both in one release means a tier-2 rollback restores
 code that selects a column that no longer exists, and every request 500s.
 
 **Renaming.** There is no safe rename. There is an add, a dual-write, a backfill, a stop, and a
-drop — five steps, at least three releases, and `tickets.checked_in_by → tickets.admitted_by` looks
-like this:
+drop — five steps, at least three releases, and `notes.owner_id → notes.author_id` looks like this:
 
-1. **Add.** Migration: `ALTER TABLE tickets ADD COLUMN admitted_by text;` Nothing reads it.
-2. **Dual-write.** Code: every write that sets `checked_in_by` sets `admitted_by` too. Reads still
-   come from `checked_in_by`. Deploy. This release is the one a rollback lands on, and it works
+1. **Add.** Migration: `ALTER TABLE notes ADD COLUMN author_id text;` Nothing reads it.
+2. **Dual-write.** Code: every write that sets `owner_id` sets `author_id` too. Reads still
+   come from `owner_id`. Deploy. This release is the one a rollback lands on, and it works
    against both schemas.
-3. **Backfill.** Migration: `UPDATE tickets SET admitted_by = checked_in_by WHERE admitted_by IS NULL;`
+3. **Backfill.** Migration: `UPDATE notes SET author_id = owner_id WHERE author_id IS NULL;`
    Data only; no code changes.
-4. **Stop reading.** Code: reads move to `admitted_by`; writes still set both. Deploy. Now the old
+4. **Stop reading.** Code: reads move to `author_id`; writes still set both. Deploy. Now the old
    column is written but never read — which is what makes step 5 a non-event.
-5. **Drop.** A later release: stop writing `checked_in_by`, then
-   `ALTER TABLE tickets DROP COLUMN checked_in_by;`
+5. **Drop.** A later release: stop writing `owner_id`, then
+   `ALTER TABLE notes DROP COLUMN owner_id;`
 
 Steps 2 and 4 are separate deploys on purpose. Collapsing them gives you a release whose rollback
 target reads a column the running code stopped filling.
@@ -243,10 +238,10 @@ a column" and "rebuilt a table" is visible only in that file.
 
 ---
 
-## 5 · The trap in this schema: constraining a populated table
+## 5 · The trap: constraining a populated table
 
 Adding a `CHECK` or a unique index to a table that already has rows is **not** expand-safe, for two
-independent reasons, and this schema contains the two live examples.
+independent reasons.
 
 **Reason one: it fails on the data.** A constraint is validated against every existing row at
 creation time. One row that violates it aborts the migration — and it aborts it *after* the
@@ -257,46 +252,27 @@ without going to look.
 therefore not an `ALTER` at all. drizzle-kit emits the standard SQLite rebuild — create
 `__new_<table>` with the constraint, `INSERT … SELECT` every row across, `DROP` the original,
 `RENAME` the new one into its place. That sequence **rewrites the entire table while the currently
-deployed Worker is still writing to it.** A registration landing mid-copy can be written to a table
-that is about to be dropped. On a large table it is also long, and the failure mode of a failed
-half — a `__new_ticket_types` left behind — is a schema state no later migration expects.
+deployed Worker is still writing to it.** A row landing mid-copy can be written to a table that is
+about to be dropped. On a large table it is also long, and the failure mode of a failed half — a
+`__new_<table>` left behind — is a schema state no later migration expects.
 
-The two examples are already in `0000_charming_the_spike.sql`, where they cost nothing because the
-tables were empty when they were created:
+The cheap moment for a constraint is the migration that creates the table, while it is empty. Put
+every `CHECK` and unique index a new table needs into that first migration; adding one like it
+*later*, to a table with traffic in it, is a completely different operation.
 
-```sql
-CONSTRAINT "ticket_types_claimed_ck" CHECK(quantity_claimed >= 0 AND quantity_claimed <= quantity_total)
+**When you must, backfill first, constrain second, as two separate deploys.** Say `notes` needs a
+`CHECK (duration_ms >= 0)`:
 
-CREATE UNIQUE INDEX payments_live_per_reg_unq
-    ON payments (registration_id) WHERE status in ('initiated','executing','succeeded');
-```
-
-Adding either of those *tomorrow*, to a database with traffic in it, is a completely different
-operation from having them in the first migration. Both are load-bearing — `CONCURRENCY.md` §1 and
-§6 — so the pressure to add one like them is real.
-
-**Backfill first, constrain second, as two separate deploys.**
-
-1. **Find the violators**, against the live database, with the read-only query for that constraint:
+1. **Find the violators**, against the live database, with a read-only query for that constraint:
 
    ```sql
-   -- ticket_types_claimed_ck
-   SELECT id, quantity_claimed, quantity_total
-     FROM ticket_types
-    WHERE quantity_claimed < 0 OR quantity_claimed > quantity_total;
-
-   -- payments_live_per_reg_unq
-   SELECT registration_id, COUNT(*) AS live
-     FROM payments
-    WHERE status IN ('initiated', 'executing', 'succeeded')
-    GROUP BY registration_id
-   HAVING live > 1;
+   SELECT id, duration_ms FROM notes WHERE duration_ms < 0;
    ```
 
 2. **Deploy the code that stops creating new ones.** Until this ships, the query above is a moving
    target: rows that satisfy the constraint at the moment you check keep arriving afterwards.
-3. **Migrate the data.** A migration that only `UPDATE`s — correct the counters, settle the
-   duplicate live payments. It carries no constraint, so it cannot fail on a row.
+3. **Migrate the data.** A migration that only `UPDATE`s. It carries no constraint, so it cannot
+   fail on a row.
 4. **Re-run the query. It must return zero rows.** Not "did earlier" — now.
 5. **Migrate the constraint**, alone, in its own release. It is now a validation that passes, and
    the rebuild copies a table you have already proved clean.
@@ -341,18 +317,17 @@ Once per Cloudflare account:
 ```bash
 bunx wrangler d1 create gcnotes-db-dev
 bunx wrangler d1 create gcnotes-db-prod
-bunx wrangler kv namespace create gcnotes-tokens-dev
-bunx wrangler kv namespace create gcnotes-tokens-prod
 # dashboard -> Workers & Pages -> Feature flags: ONE Flagship app per environment
 ```
 
-**The zone has to be on the account before the first deploy.** Both API environments set
-`workers_dev: false` and claim a custom domain (`api-dev.gcnotes.example.com`, `api.gcnotes.example.com`), so
-there is no `*.workers.dev` fallback hostname to fall back to: a Worker deployed without its zone is
-a Worker nothing can reach, and the pipeline's health wait — and then the E2E gate — is what tells
-you so. The four hostnames must stay equal across `apps/api/wrangler.jsonc` (`API_URL` / `APP_URL`
-per environment), the `VITE_*` values in `apps/web/package.json`'s deploy scripts, and the `env:`
-block at the top of `.github/workflows/deploy.yml`. A mismatch in the last of those points the gate
+**The zone has to be on the account before the first deploy.** Both environments set
+`workers_dev: false` and claim a custom domain (`api-dev.gcnotes.example.com`,
+`api.gcnotes.example.com` — placeholders until a real domain exists), so there is no
+`*.workers.dev` hostname to fall back to: a Worker deployed without its zone is a Worker nothing can
+reach, and the pipeline's health wait — and then the E2E gate — is what tells you so. The two
+hostnames must stay equal across `apps/api/wrangler.jsonc` (`API_URL` per environment),
+`apps/native/src/config/config.prod.ts`, and the `env:` block at the top of
+`.github/workflows/deploy.yml`. A mismatch in the last of those points the gate
 at the wrong Worker **and still goes green**, which is the worst shape this configuration can take.
 
 Ids are configured, never committed: a real id in git points every clone and every fork at one
@@ -364,18 +339,19 @@ person's database. Locally they go in `apps/api/.deploy.env` (gitignored; start 
 | GitHub secret | `CLOUDFLARE_API_TOKEN` | Workers Scripts:Edit + D1:Edit |
 | GitHub secret | `CLOUDFLARE_ACCOUNT_ID` | the account the resources live in |
 | GitHub secret | `E2E_SECRET` | must equal the dev Worker's `E2E_SECRET`; the suite sends it as `x-e2e-secret` |
-| `dev` env var | `EVB_DEV_D1_DATABASE_ID`, `EVB_DEV_KV_NAMESPACE_ID`, `EVB_DEV_FLAGSHIP_APP_ID` | ids, not credentials |
-| `prod` env var | `EVB_PROD_D1_DATABASE_ID`, `EVB_PROD_KV_NAMESPACE_ID`, `EVB_PROD_FLAGSHIP_APP_ID` | ids, not credentials |
+| `dev` env var | `GC_DEV_D1_DATABASE_ID`, `GC_DEV_FLAGSHIP_APP_ID` | ids, not credentials |
+| `prod` env var | `GC_PROD_D1_DATABASE_ID`, `GC_PROD_FLAGSHIP_APP_ID` | ids, not credentials |
 
 Worker secrets, per environment — `bunx wrangler secret put NAME --env <dev|production>`:
 
 | Secret | dev | production | Why |
 | --- | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | required | required | signs the session cookie; rotating it signs everyone out |
-| `BKASH_WEBHOOK_SECRET` | required | required | the webhook verifies the HMAC *before* it looks anything up, so unset means every webhook 401s — required even under `BKASH_MODE=fake` |
 | `E2E_SECRET` | **required** | **must never exist** | dev arms `E2E_HARNESS=true`, and the Worker refuses to start without a secret of 32+ characters |
-| `BKASH_APP_KEY`, `BKASH_APP_SECRET`, `BKASH_USERNAME`, `BKASH_PASSWORD` | not needed | required | only `BKASH_MODE=live` needs them; `parseConfig` refuses to build a container without them |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional | optional | set **both** or neither — half a pair fails at the redirect, not at startup |
+
+A provider credential (transcription, LLM, calendar) joins this table when its live client lands,
+required only where that provider runs live rather than faked — see `PROVIDER-FAKES.md`.
 
 The two GitHub Environments (`dev`, `prod`) exist so that production can carry a protection rule
 later. None is set today, deliberately: D017.

@@ -7,9 +7,7 @@ import {
   resolveFetch,
 } from "./config";
 import { networkError, unwrap } from "./errors";
-import { makeEventsApi } from "./events";
-import { makePaymentsApi } from "./payments";
-import { makeTicketsApi } from "./tickets";
+import { makeProfilesApi } from "./profiles";
 
 // Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
 // router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
@@ -97,7 +95,7 @@ type PresentParts<R> = {
     : K]: RawParts<R>[K];
 };
 
-/** A part whose every field is optional becomes an optional key, so `listEvents()` is legal. */
+/** A part whose every field is optional becomes an optional key, so `getMe()` is legal. */
 type OptionalPartKeys<T> = {
   [K in keyof T]-?: EmptyObject extends T[K] ? K : never;
 }[keyof T];
@@ -119,8 +117,8 @@ export type ResultOf<R extends AnyRoute> = [SuccessSchema<R>] extends [never]
   ? Response
   : OutputOf<SuccessSchema<R>>;
 
-// Per-call escape hatches outside the contract. `body` exists for the bKash webhook alone: parsing
-// and re-serialising its bytes would break the signature check.
+// Per-call escape hatches outside the contract. `body` is for a signed webhook-style route, where
+// parsing and re-serialising the bytes would break the signature check.
 export type RequestOptions = {
   readonly body?: BodyInit;
   readonly headers?: Readonly<Record<string, string>>;
@@ -146,7 +144,7 @@ export type Endpoint = <R extends AnyRoute>(
   ...raw: RawArg<R>
 ) => Call<R>;
 
-/** `{eventId}` — zod-openapi's path syntax, not Hono's `:eventId`. */
+/** `{noteId}` — zod-openapi's path syntax, not Hono's `:noteId`. */
 const PATH_PARAM = /\{([A-Za-z0-9_]+)\}/g;
 const TRAILING_SLASH = /\/+$/;
 
@@ -166,7 +164,7 @@ const buildUrl = (
     const value = input?.params?.[name];
     if (value === undefined) {
       // Unreachable through the typed surface; the alternative is a request to a URL containing a
-      // literal "{eventId}" and a 404 that says nothing about why.
+      // literal "{noteId}" and a 404 that says nothing about why.
       throw new TypeError(`Missing path parameter "${name}" for ${path}`);
     }
     return encodeURIComponent(String(value));
@@ -257,7 +255,7 @@ const send = async (
 
 // The one cast in this package, at the only seam that can carry no type: `Endpoint` is generic over
 // a route with no runtime value, so the implementation is written erased and re-typed once here.
-const makeEndpoint = (config: ApiClientConfig): Endpoint => {
+export const makeEndpoint = (config: ApiClientConfig): Endpoint => {
   const doFetch = resolveFetch(config);
   return ((method: string, path: string, raw?: { readonly raw?: boolean }) =>
     (input?: RequestInput, options?: RequestOptions) =>
@@ -276,12 +274,9 @@ const makeEndpoint = (config: ApiClientConfig): Endpoint => {
 export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   const endpoint = makeEndpoint(config);
   return {
-    ...makeEventsApi(endpoint),
-    ...makePaymentsApi(endpoint),
-    ...makeTicketsApi(endpoint),
+    ...makeProfilesApi(endpoint),
   };
 };
 
-export type ApiClient = ReturnType<typeof makeEventsApi> &
-  ReturnType<typeof makePaymentsApi> &
-  ReturnType<typeof makeTicketsApi>;
+// One `ReturnType<…>` per context, intersected, as contexts are added.
+export type ApiClient = ReturnType<typeof makeProfilesApi>;

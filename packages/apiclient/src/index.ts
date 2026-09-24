@@ -4,6 +4,7 @@ export {
   type Call,
   type Endpoint,
   makeApiClient,
+  makeEndpoint,
   type RequestOf,
   type RequestOptions,
   type ResultOf,
@@ -24,8 +25,7 @@ export {
   UNEXPECTED_ERROR_TAG,
   unwrap,
 } from "./errors";
-export { makeEventsApi } from "./events";
-export { makePaymentsApi } from "./payments";
+export { makeProfilesApi } from "./profiles";
 export {
   type ApiMutationOptions,
   type ApiQueryOptions,
@@ -37,4 +37,3 @@ export {
   type QueryKey,
 } from "./query";
 export { invalidationKeys, queryDefaults, queryKeys } from "./query-keys";
-export { makeTicketsApi } from "./tickets";

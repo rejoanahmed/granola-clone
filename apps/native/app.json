@@ -6,16 +6,15 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["ios", "android"],
-    "runtimeVersion": { "policy": "fingerprint" },
-
+    "platforms": ["ios"],
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "scheme": "gcnotes",
-
     "experiments": {
       "tsconfigPaths": true,
       "typedRoutes": true
     },
-
     "plugins": [
       "expo-router",
       "expo-build-properties",
@@ -27,30 +26,25 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#ffffff",
-          "dark": { "backgroundColor": "#0b0b0c" },
+          "dark": {
+            "backgroundColor": "#0b0b0c"
+          },
           "resizeMode": "contain"
         }
       ]
     ],
-
     "assetBundlePatterns": ["**/*"],
-
     "ios": {
       "bundleIdentifier": "com.rejoan.gcnotes",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-
-    "android": {
-      "package": "com.rejoan.gcnotes",
-      "edgeToEdgeEnabled": true,
-      "softwareKeyboardLayoutMode": "resize"
-    },
-
     "extra": {
-      "router": { "origin": false }
+      "router": {
+        "origin": false
+      }
     }
   }
 }

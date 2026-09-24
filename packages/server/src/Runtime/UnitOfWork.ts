@@ -13,7 +13,7 @@ export type StagedStatement = {
 };
 
 // `changes` throws until the batch has flushed: reading it early would report `undefined`, which
-// every seat claim would read as a win, and the oversell typechecks.
+// every guarded write would read as a win, and the double-apply typechecks.
 export type StatementRef = { readonly changes: number };
 
 export type Stage = {

@@ -3,7 +3,7 @@ import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { E2eRepo } from "./E2eRepo";
-import { E2E_USERS, type E2eUser, fixtureAt, isE2eRole } from "./Fixtures";
+import { E2E_USERS, type E2eUser, isE2eRole } from "./Fixtures";
 import { secretMatches, sessionCookieFor } from "./Secret";
 
 // better-auth's `session.expiresIn`. A shorter one would expire mid-suite; a longer one would
@@ -24,6 +24,8 @@ export const makeE2eService = (deps: E2eDeps) => ({
   authorize: (presented: string | null): boolean =>
     presented !== null && secretMatches(presented, deps.secret),
 
+  // Nothing to delete until the first domain table joins `RESET_ORDER`; the route exists now so
+  // the journeys already call it and a new table only has to be listed, not wired.
   reset: async (): Promise<{ readonly ok: true }> => {
     await deps.uow.commit((stage) => deps.repo.stageReset(stage));
     return { ok: true };
@@ -31,17 +33,11 @@ export const makeE2eService = (deps: E2eDeps) => ({
 
   seed: async () => {
     const now = deps.clock.now();
-    const fixture = fixtureAt(now);
     const users: readonly E2eUser[] = Object.values(E2E_USERS);
     await deps.uow.commit((stage) => {
       deps.repo.stageUsers(stage, users, now);
-      deps.repo.stageFixture(stage, fixture);
     });
-    return {
-      event: { id: fixture.event.id, slug: fixture.event.slug },
-      ticketType: { id: fixture.ticketType.id },
-      users: E2E_USERS,
-    };
+    return { users: E2E_USERS };
   },
 
   // `origin` comes from the request, not from config: better-auth builds its cookie name from the

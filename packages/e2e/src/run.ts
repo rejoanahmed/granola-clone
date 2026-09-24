@@ -11,10 +11,7 @@ import { makeClient } from "./Client";
 import { readEnv } from "./Env";
 import { E2eFailure } from "./Failure";
 import { makeHarness } from "./Harness";
-import { abandonedHold } from "./Journeys/AbandonedHold";
-import { cancelledEvent } from "./Journeys/CancelledEvent";
-import { oneSeat } from "./Journeys/OneSeat";
-import { primary } from "./Journeys/Primary";
+import { whoAmI } from "./Journeys/WhoAmI";
 import type { World } from "./World";
 
 const out = (line: string): void => {
@@ -25,17 +22,8 @@ const seconds = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 const journeys = [
   {
-    name: "buy two tickets, scan one, rescan it and be refused with the first scan's time",
-    run: primary,
-  },
-  { name: "two clients, one seat: exactly one wins", run: oneSeat },
-  {
-    name: "abandon a checkout: the seats come back exactly once",
-    run: abandonedHold,
-  },
-  {
-    name: "cancel a selling event: pending released, confirmed refunded, tickets voided",
-    run: cancelledEvent,
+    name: "each signed-in person reads their own profile; an anonymous caller gets a 401",
+    run: whoAmI,
   },
 ] as const;
 
@@ -75,27 +63,15 @@ const main = async (): Promise<number> => {
   // itself proves nothing about the state it began in.
   await harness.reset();
   const seeded = await harness.seed();
-  client.use("attendee", await harness.signIn("attendee"));
-  client.use("organiser", await harness.signIn("organiser"));
-  out("  PASS  reset, seeded, and signed in as both actors");
-
-  if (!harness.capabilities.sweep) {
-    out(
-      "  NOTE  the harness exposes no POST /e2e/sweep, so the two release journeys below drive"
-    );
-    out(
-      "        releaseLines through cancel/refund instead of the cron. The sweeper's own"
-    );
-    out("        selection query is NOT covered by this run.");
-  }
+  client.use("person", await harness.signIn("person"));
+  client.use("other", await harness.signIn("other"));
+  out("  PASS  reset, seeded, and signed in as both people");
 
   const world: World = {
-    attendeeId: seeded.users.attendee?.id ?? "",
     client,
-    eventId: seeded.event.id,
     harness,
-    organiserId: seeded.users.organiser?.id ?? "",
-    ticketTypeId: seeded.ticketType.id,
+    otherId: seeded.users.other?.id ?? "",
+    personId: seeded.users.person?.id ?? "",
   };
 
   let failed = 0;

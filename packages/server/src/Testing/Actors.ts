@@ -13,13 +13,11 @@ const person = (
 });
 
 export const actor = (o?: Partial<Actor>): Actor =>
-  person("usr_attendee_0001", "Attendee One", o);
+  person("usr_person_0001", "Person One", o);
 
-export const organiser = (o?: Partial<Actor>): Actor =>
-  person("usr_organiser_0001", "Organiser One", o);
+// A second person, for the ownership rule every context eventually needs: "not yours" is a 403.
+export const otherActor = (o?: Partial<Actor>): Actor =>
+  person("usr_person_0002", "Person Two", o);
 
-export const staff = (o?: Partial<Actor>): Actor =>
-  person("usr_staff_0001", "Gate Staff One", o);
-
-// The cron's caller. Not an `Actor`, deliberately — see `Auth/Actor.ts`.
+// A cron's caller. Not an `Actor`, deliberately — see `Auth/Actor.ts`.
 export const systemActor: SystemActor = { id: "system", system: true };

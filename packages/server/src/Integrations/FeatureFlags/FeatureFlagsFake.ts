@@ -1,8 +1,8 @@
 import type { FeatureFlagsPort, FlagContext, FlagKey } from "./Port";
 
 // Flagship has no local simulator, so this is what `wrangler dev`, the unit tests and the E2E
-// harness evaluate against. The call log is the same idea as `BkashFake`'s: what was asked, in
-// order, with the targeting context that was sent.
+// harness evaluate against. The call log is what was asked, in order, with
+// the targeting context that was sent — the shape every provider fake here should copy.
 
 export type FlagCall = {
   readonly context: FlagContext | undefined;

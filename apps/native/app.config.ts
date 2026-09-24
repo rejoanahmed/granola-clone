@@ -7,8 +7,8 @@ import "tsx/cjs";
 
 // The dynamic half; `app.json` holds the static config, most importantly the `gcnotes` URL
 // scheme. That scheme is load-bearing twice: better-auth's expo plugin signs the session cookie to
-// an origin derived from it (sent as `expo-origin` by `src/lib/api.ts`), and it is the bKash return
-// trip (`src/lib/bkash-checkout.ts`). Change it in one place only and every authenticated request
+// an origin derived from it (sent as `expo-origin` by `src/lib/api.ts`), and it is the OAuth return
+// trip back into the app. Change it in one place only and every authenticated request
 // silently reads as logged out. Added here because a static config cannot express it: Apple wants
 // a declared reason for every required-reason API, and `expo-secure-store` reaches UserDefaults.
 // https://developer.apple.com/documentation/bundleresources/privacy-manifest-files

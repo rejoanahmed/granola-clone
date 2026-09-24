@@ -2,14 +2,13 @@
 #
 #   cp apps/api/.dev.vars.example apps/api/.dev.vars
 #
-# Everything NON-secret already lives in `wrangler.jsonc` under `vars` (API_URL, APP_URL,
-# BKASH_MODE, BKASH_CALLBACK_URL, NATIVE_SCHEME, NODE_ENV) — this file is only for values that
-# must not be in git. In production the same names are dashboard secrets, and `keep_vars: true`
-# in wrangler.jsonc is what stops a deploy from pruning them.
+# Everything NON-secret already lives in `wrangler.jsonc` under `vars` (API_URL, NATIVE_SCHEME,
+# NODE_ENV, the E2E and flag switches) — this file is only for values that must not be in git. In
+# a deployed environment the same names are dashboard secrets, and `keep_vars: true` in
+# wrangler.jsonc is what stops a deploy from pruning them.
 #
 # `Runtime/AppConfig.ts` parses these once, at container build. A missing or malformed value is a
-# 500 on the first request after a bad deploy, with the variable named in the message — which is
-# the moment an operator wants to hear about it, rather than three hours later inside a checkout.
+# 500 on the first request after a bad deploy, with the variable named in the message.
 
 # ── Auth ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -28,24 +27,3 @@ GOOGLE_CLIENT_SECRET=""
 # not start without it, and 32 characters is the floor. `openssl rand -base64 32`.
 # On the deployed dev Worker this is a dashboard secret; production never has either name.
 E2E_SECRET="local-dev-e2e-secret-change-me-32ch"
-
-# ── bKash ─────────────────────────────────────────────────────────────────────────────────────
-
-# Required in EVERY mode, including BKASH_MODE=fake: `POST /payments/bkash/webhook` verifies the
-# signature before it looks anything up, so an unset secret rejects every webhook with a 401.
-BKASH_WEBHOOK_SECRET="local-dev-webhook-secret"
-
-# The four merchant credentials. Needed only when BKASH_MODE=live — `parseConfig` refuses to build
-# a container if live mode is missing any of them, rather than letting an empty app key surface as
-# an opaque bKash rejection during a real checkout.
-BKASH_APP_KEY=""
-BKASH_APP_SECRET=""
-BKASH_USERNAME=""
-BKASH_PASSWORD=""
-
-# ── Optional local overrides ──────────────────────────────────────────────────────────────────
-
-# Both have domain defaults (30 and 45). Set them here only to shorten a manual test of the
-# sweepers — HOLD_MINUTES=1 makes the expiry path observable inside one coffee.
-# HOLD_MINUTES="30"
-# PAYMENT_STALE_MINUTES="45"

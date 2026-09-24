@@ -7,8 +7,8 @@
   // flag the bundle builds and then throws at the first sign-in, not at deploy time.
   "compatibility_flags": ["nodejs_compat"],
   // Secrets set in the dashboard survive a deploy that does not mention them. Without this,
-  // `wrangler deploy` prunes BKASH_* and BETTER_AUTH_SECRET and the next request 500s in
-  // `parseConfig` — which is the right failure, at the worst possible moment.
+  // `wrangler deploy` prunes BETTER_AUTH_SECRET and the next request 500s in `parseConfig` —
+  // which is the right failure, at the worst possible moment.
   "keep_vars": true,
 
   // ── The top level is LOCAL ONLY. Nothing deploys from it. ────────────────────────────────────
@@ -17,19 +17,12 @@
   // `wrangler deploy` with no `--env` fail at the API instead of publishing a Worker whose
   // API_URL is http://localhost:3001.
 
-  // Non-secret configuration only. Everything here is readable by anyone with the repo, so the
-  // five bKash credentials and BETTER_AUTH_SECRET live in `.dev.vars` locally and in dashboard
-  // secrets in production — never here. See `.dev.vars.example`.
+  // Non-secret configuration only. Everything here is readable by anyone with the repo, so
+  // BETTER_AUTH_SECRET and E2E_SECRET live in `.dev.vars` locally and in dashboard secrets when
+  // deployed — never here. See `.dev.vars.example`.
   "vars": {
     "API_URL": "http://localhost:3001",
-    "APP_URL": "http://localhost:3003",
     "BETTER_AUTH_URL": "http://localhost:3001",
-    // Where bKash returns the payer's browser. It must be reachable from *their* device, so when
-    // you test on a phone this becomes the tunnel URL — which is what `scripts/dev.sh` rewrites.
-    "BKASH_CALLBACK_URL": "http://localhost:3001/payments/bkash/callback",
-    // `fake` selects `makeBkashFake` in container.ts — the same object graph with a scripted leaf,
-    // which is what local dev and the E2E path run against. Never `live` at the top level.
-    "BKASH_MODE": "fake",
     // Arms the dev-only E2E harness (packages/server/src/E2E). Its secret is NOT here: set
     // E2E_SECRET in `.dev.vars`, or the Worker refuses to start. Never added to `production`
     // below — `parseConfig` fails startup if NODE_ENV=production sees this armed.
@@ -68,16 +61,6 @@
     }
   ],
 
-  // The ONLY KV use in gcnotes: `makeBkashClient` caches the bKash `id_token` under
-  // `bkash:token` for 50 minutes (it lives an hour). No sessions, no cache-aside, no feature
-  // flags — if you find yourself adding a second key, ask whether it belongs in D1.
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "00000000000000000000000000000000"
-    }
-  ],
-
   // The outer `"enabled": false` with the nested blocks true looks wrong and is not: each nested
   // block carries its own flag, and this shape is taken verbatim from a deployment where traces
   // demonstrably appear. Do not "fix" the outer flag — verify it instead (D012), because this is
@@ -103,20 +86,13 @@
     }
   },
 
-  // Every five minutes: sweep expired holds, re-query stale payments, cascade cancelled events.
-  // Five is chosen against the 30-minute hold — a sweep an order of magnitude finer than the
-  // window it enforces means a released seat is visible long before an attendee reloads.
-  "triggers": {
-    "crons": ["*/5 * * * *"]
-  },
-
   // Wrangler does NOT inherit top-level bindings into an `env` block: anything omitted here is
-  // simply absent at runtime, with no warning. That is why d1, kv, vars, observability and the
-  // cron are all repeated rather than referenced.
+  // simply absent at runtime, with no warning. That is why d1, flagship, vars and observability
+  // are all repeated rather than referenced — and why a cron, when one is added, must be too.
   //
   // ── The ids below are NAMED PLACEHOLDERS, not values. ────────────────────────────────────────
-  // D1 and KV ids are account-specific, so committing real ones points every clone at one
-  // person's data. `scripts/deploy.sh` substitutes each token from the matching `EVB_<token>`
+  // D1 and Flagship ids are account-specific, so committing real ones points every clone at one
+  // person's data. `scripts/deploy.sh` substitutes each token from the matching `GC_<token>`
   // environment variable into a throwaway config and refuses to deploy if one is unset or
   // malformed. A committed token cannot resolve to anyone's database by accident; an id that is
   // never in git cannot leak into a fork. One-time setup is at the top of that script.
@@ -134,21 +110,16 @@
       "routes": [{ "pattern": "api-dev.gcnotes.example.com", "custom_domain": true }],
       "vars": {
         "API_URL": "https://api-dev.gcnotes.example.com",
-        "APP_URL": "https://dev.gcnotes.example.com",
         "BETTER_AUTH_URL": "https://api-dev.gcnotes.example.com",
-        "BKASH_CALLBACK_URL": "https://api-dev.gcnotes.example.com/payments/bkash/callback",
-        // `fake` selects `makeBkashFake` — the real object graph with a scripted leaf. The E2E
-        // suite can therefore buy a ticket end to end without a merchant account or a real charge.
-        "BKASH_MODE": "fake",
         // The reason this environment exists: reset, seed and sign-in for the suite that gates
         // promotion. E2E_SECRET is a dashboard secret on this Worker, never a var.
         "E2E_HARNESS": "true",
-        // Live, unlike bKash: the E2E suite runs against this Worker and must exercise the real
+        // Live, not the fake: the E2E suite runs against this Worker and must exercise the real
         // Flagship path, because flipping a flag here is the rehearsal for flipping it in prod.
         "FLAGS_MODE": "live",
         "NATIVE_SCHEME": "gcnotes",
         // `development` on a deployed Worker is deliberate: it is the only setting under which
-        // `otpEmail` logs the one-time code (middleware.ts), and the template ships no email
+        // `otpEmail` logs the one-time code (middleware.ts), and the project ships no email
         // provider — so it is the only way anything, E2E included, can sign in here. Never
         // production: a live OTP in a log line is an OTP in everyone's log aggregator.
         "NODE_ENV": "development"
@@ -172,12 +143,6 @@
           "app_id": "DEV_FLAGSHIP_APP_ID"
         }
       ],
-      "kv_namespaces": [
-        {
-          "binding": "KV",
-          "id": "DEV_KV_NAMESPACE_ID"
-        }
-      ],
       "observability": {
         "enabled": false,
         "head_sampling_rate": 1,
@@ -192,9 +157,6 @@
           "head_sampling_rate": 1,
           "persist": true
         }
-      },
-      "triggers": {
-        "crons": ["*/5 * * * *"]
       }
     },
     "production": {
@@ -203,14 +165,7 @@
       "routes": [{ "pattern": "api.gcnotes.example.com", "custom_domain": true }],
       "vars": {
         "API_URL": "https://api.gcnotes.example.com",
-        "APP_URL": "https://gcnotes.example.com",
         "BETTER_AUTH_URL": "https://api.gcnotes.example.com",
-        // `AppConfig` defaults BKASH_BASE_URL to the SANDBOX host on purpose, so a template one
-        // typo away from a real charge fails safe. Production is the one place that must say the
-        // live host out loud.
-        "BKASH_BASE_URL": "https://tokenized.pay.bka.sh/v1.2.0-beta",
-        "BKASH_CALLBACK_URL": "https://api.gcnotes.example.com/payments/bkash/callback",
-        "BKASH_MODE": "live",
         // E2E_HARNESS is deliberately ABSENT and must stay so: wrangler does not inherit the top
         // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
         // pruned by removing it here, which is exactly why `parseConfig` refuses to start
@@ -235,12 +190,6 @@
           "app_id": "PROD_FLAGSHIP_APP_ID"
         }
       ],
-      "kv_namespaces": [
-        {
-          "binding": "KV",
-          "id": "PROD_KV_NAMESPACE_ID"
-        }
-      ],
       "observability": {
         "enabled": false,
         "head_sampling_rate": 1,
@@ -255,9 +204,6 @@
           "head_sampling_rate": 1,
           "persist": true
         }
-      },
-      "triggers": {
-        "crons": ["*/5 * * * *"]
       }
     }
   }

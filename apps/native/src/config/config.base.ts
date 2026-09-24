@@ -1,15 +1,8 @@
 // Nothing secret belongs in `src/config/`: every value in the Expo bundle is readable from a
-// downloaded `.ipa` or `.apk`.
-export type ConfigBaseProps = {
-  /**
-   * Display copy only. Never use it to decide whether a hold is still good — the live answer is
-   * `RegistrationDetail.holdExpiresInMs`, computed against the server's clock.
-   */
-  readonly holdMinutesHint: number;
-};
+// downloaded `.ipa`. Tier-independent settings go here; the per-tier ones are `config.dev.ts` and
+// `config.prod.ts`.
+export type ConfigBaseProps = Record<never, never>;
 
-const BaseConfig: ConfigBaseProps = {
-  holdMinutesHint: 30,
-};
+const BaseConfig: ConfigBaseProps = {};
 
 export default BaseConfig;

@@ -11,14 +11,9 @@ const NAMES_SECRET = /E2E_SECRET/;
 // Inert handles: every request below is refused by the guard, so nothing reaches D1.
 const off = {
   API_URL: "http://localhost:3001",
-  APP_URL: "http://localhost:3003",
   BETTER_AUTH_SECRET: "test-secret-not-used-by-these-routes",
   BETTER_AUTH_URL: "http://localhost:3001",
-  BKASH_CALLBACK_URL: "http://localhost:3001/payments/bkash/callback",
-  BKASH_MODE: "fake",
-  BKASH_WEBHOOK_SECRET: "test-webhook-secret",
   DB: {} as D1Database,
-  KV: {} as KVNamespace,
   NATIVE_SCHEME: "gcnotes",
   NODE_ENV: "test",
 } satisfies Env;

@@ -21,8 +21,8 @@ export default function NotFoundScreen() {
           The link you followed does not point anywhere in this version of the
           app.
         </Text>
-        <Link href="/(tabs)" style={[styles.link, { color: colors.accent }]}>
-          Back to events
+        <Link href="/" style={[styles.link, { color: colors.accent }]}>
+          Back to notes
         </Link>
       </View>
     </SafeAreaView>

@@ -13,13 +13,11 @@ import { createMiddleware } from "hono/factory";
 import { rateLimiter } from "hono-rate-limiter";
 
 // Routes that must receive the request exactly as it arrived: better-auth re-reads the body
-// itself, and the bKash webhook HMAC is over the exact bytes sent — anything that parses and
-// re-serialises the body makes every signature check fail as if the secret were wrong. Consult
-// this list before adding any global request rewriting; today it only suppresses session lookup.
-export const RAW_ROUTE_PREFIXES = [
-  "/api/auth/",
-  "/payments/bkash/webhook",
-] as const;
+// itself, and a signed provider webhook (a transcription callback, say) is verified over the exact
+// bytes sent — anything that parses and re-serialises the body makes every signature check fail as
+// if the secret were wrong. Consult this list before adding any global request rewriting; today it
+// only suppresses session lookup.
+export const RAW_ROUTE_PREFIXES = ["/api/auth/"] as const;
 
 const onARawRoute = (path: string): boolean =>
   RAW_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
@@ -53,19 +51,19 @@ export const authRateLimit = createMiddleware<AppEnv>(async (c, next) => {
   await authLimiter(c, next);
 });
 
-// Doubles as better-auth's `trustedOrigins` on purpose: an origin the browser may send a cookie
-// from and one better-auth will sign for are the same question, and answering it twice is how
-// "works on web, loops on native" happens.
+// Doubles as better-auth's `trustedOrigins` on purpose: an origin a client may send a cookie from
+// and one better-auth will sign for are the same question, and answering it twice is how "signs in,
+// then loops back to sign-in" happens. There is no web app, so the list is the API itself (the
+// docs page) and the native scheme.
 const allowedOrigins = (env: Env): readonly string[] => [
-  env.APP_URL,
   env.API_URL,
   `${env.NATIVE_SCHEME}://`,
 ];
 
 const CORS_MAX_AGE_SECONDS = 600;
 
-// `credentials: true` is load-bearing and silent when missing: without it the browser sends no
-// cookie and every authenticated call simply comes back as "logged out".
+// `credentials: true` is load-bearing and silent when missing: without it a browser — the Scalar
+// page is one — sends no cookie and every authenticated call simply comes back as "logged out".
 export const corsPolicy = createMiddleware<AppEnv>((c, next) =>
   cors({
     allowHeaders: ["authorization", "content-type", "expo-origin"],
@@ -92,7 +90,7 @@ export const requestContext = createMiddleware<AppEnv>(async (c, next) => {
 
 type OtpEmail = Parameters<SessionsConfig["email"]["sendOtpEmail"]>[0];
 
-// The template ships no email provider, so the OTP is logged in development only — a one-time
+// The project ships no email provider yet, so the OTP is logged in development only — a one-time
 // password in a log line is one in everyone's log aggregator. Email sign-in therefore does not
 // work in production until a provider is wired in here.
 const otpEmail = (env: Env): SessionsConfig["email"] => ({
@@ -132,8 +130,8 @@ const sessionsFor = (env: Env): Sessions => {
 };
 
 // `null` is a normal outcome — the policies, not this middleware, decide where anonymous is
-// disallowed. The header check in front of `resolveActor` is what keeps a public event page from
-// paying a D1 round trip to discover it has no session.
+// disallowed. The header check in front of `resolveActor` is what keeps an anonymous request (the
+// health check, a sign-in) from paying a D1 round trip to discover it has no session.
 export const currentActor = createMiddleware<AppEnv>(async (c, next) => {
   const credentialled =
     c.req.header("cookie") !== undefined ||

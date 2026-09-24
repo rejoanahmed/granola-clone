@@ -39,7 +39,7 @@ jest.mock("expo-linking", () => ({
   useURL: () => null,
 }));
 
-/** The bKash hand-off. Returning "dismiss" is the "user came back" path. */
+/** The OAuth hand-off. Returning "dismiss" is the "user came back" path. */
 jest.mock("expo-web-browser", () => ({
   dismissBrowser: jest.fn(async () => undefined),
   openBrowserAsync: jest.fn(async () => ({ type: "dismiss" })),

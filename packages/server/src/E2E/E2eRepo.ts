@@ -1,16 +1,8 @@
-import {
-  events,
-  type NewEventRow,
-  type NewTicketTypeRow,
-  RESET_ORDER,
-  session,
-  ticketTypes,
-  user,
-} from "@gc/db";
+import { RESET_ORDER, session, user } from "@gc/db";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
-import type { E2eFixture, E2eUser } from "./Fixtures";
+import type { E2eUser } from "./Fixtures";
 
 export type E2eSessionRow = {
   readonly expiresAt: Timestamp;
@@ -21,20 +13,6 @@ export type E2eSessionRow = {
 };
 
 export const makeE2eRepo = (db: DrizzleClient) => ({
-  stageFixture: (stage: Stage, fixture: E2eFixture): void => {
-    stage.add({
-      query: db
-        .insert(events)
-        .values(fixture.event satisfies NewEventRow)
-        .onConflictDoNothing(),
-    });
-    stage.add({
-      query: db
-        .insert(ticketTypes)
-        .values(fixture.ticketType satisfies NewTicketTypeRow)
-        .onConflictDoNothing(),
-    });
-  },
   // One atomic batch in RESET_ORDER — children before parents, which is what lets the delete run
   // with foreign keys on. The better-auth tables are deliberately not in it: a reset between
   // journeys must not sign the suite out.

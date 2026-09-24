@@ -5,7 +5,6 @@
   "main": "expo-router/entry",
   "scripts": {
     "align-deps": "expo install --fix",
-    "android": "expo run:android",
     "dev": "expo start --dev-client --clear",
     "eas:build": "eas build",
     "eas:submit": "eas submit",
@@ -20,7 +19,6 @@
     "@gc/apiclient": "workspace:*",
     "@gc/auth": "workspace:*",
     "@gc/domain": "workspace:*",
-    "@gc/shared": "workspace:*",
     "@tanstack/react-query": "5.103.2",
     "babel-preset-expo": "57.0.12",
     "expo": "~57.0.24",

@@ -35,9 +35,9 @@ export function useAuth(): AuthContextValue {
 }
 
 // `returnTo` is attacker-controlled the moment the app has a URL scheme, so anything that is not a
-// relative path under a route this app owns collapses to the feed.
+// relative path under a route this app owns collapses to home.
 export function sanitizeReturnPath(path: string | undefined): string {
-  const fallback = "/(tabs)";
+  const fallback = "/";
   if (path == null || path.trim() === "") {
     return fallback;
   }
@@ -50,11 +50,8 @@ export function sanitizeReturnPath(path: string | undefined): string {
     return fallback;
   }
   const pathOnly = trimmed.split("?")[0] ?? "";
-  const allowed =
-    pathOnly.startsWith("/(tabs)") ||
-    pathOnly.startsWith("/events/") ||
-    pathOnly.startsWith("/registrations/") ||
-    pathOnly.startsWith("/screens/");
+  // Extend this list with each new top-level route; an unlisted one returns home after sign-in.
+  const allowed = pathOnly === "/" || pathOnly.startsWith("/screens/");
   return allowed ? trimmed : fallback;
 }
 
@@ -84,18 +81,10 @@ export function welcomeHrefWithReturn(returnPath: string): Href {
   return `/screens/welcome?returnTo=${encodeURIComponent(safe)}` as Href;
 }
 
+// Home is not public: every note belongs to somebody, so a signed-out launch lands on welcome.
 export function isPublicNativeRoute(segments: readonly string[]): boolean {
-  if (segments.length === 0) {
-    return true;
-  }
   const root = segments[0];
   // Decides what we render, never what is allowed — the server authorises regardless.
-  if (root === "(tabs)") {
-    return segments[1] === undefined || segments[1] === "index";
-  }
-  if (root === "events") {
-    return true;
-  }
   if (root === "screens") {
     return typeof segments[1] === "string" && PUBLIC_SCREENS.has(segments[1]);
   }

@@ -12,8 +12,10 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "dev"
       },
-      "android": { "gradleCommand": ":app:assembleDebug" },
-      "ios": { "buildConfiguration": "Debug", "simulator": true }
+      "ios": {
+        "buildConfiguration": "Debug",
+        "simulator": true
+      }
     },
     "dev-device": {
       "extends": "dev",
@@ -22,7 +24,10 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "dev"
       },
-      "ios": { "buildConfiguration": "Debug", "simulator": false }
+      "ios": {
+        "buildConfiguration": "Debug",
+        "simulator": false
+      }
     },
     "internal": {
       "extends": "production",
@@ -41,14 +46,6 @@
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
         "EXPO_PUBLIC_APP_ENV": "prod"
       }
-    }
-  },
-  "submit": {
-    "internal": {
-      "android": { "track": "internal", "releaseStatus": "completed" }
-    },
-    "production": {
-      "android": { "track": "production", "releaseStatus": "completed" }
     }
   }
 }

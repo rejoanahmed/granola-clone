@@ -1,22 +1,17 @@
-import { SoldOut } from "@gc/domain/Ticket/Errors";
+import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { AppEnv, Env } from "@gc/server";
 import { Hono } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import { app } from "./app";
 import { onError } from "./on-error";
 
-// `DB` and `KV` are inert handles: `buildContainer` is synchronous and dereferences neither, and
-// the routes exercised below never issue a query.
+// `DB` is an inert handle: `buildContainer` is synchronous and dereferences nothing, and the routes
+// exercised below never issue a query.
 const env = {
   API_URL: "http://localhost:3001",
-  APP_URL: "http://localhost:3003",
   BETTER_AUTH_SECRET: "test-secret-not-used-by-these-routes",
   BETTER_AUTH_URL: "http://localhost:3001",
-  BKASH_CALLBACK_URL: "http://localhost:3001/payments/bkash/callback",
-  BKASH_MODE: "fake",
-  BKASH_WEBHOOK_SECRET: "test-webhook-secret",
   DB: {} as D1Database,
-  KV: {} as KVNamespace,
   NATIVE_SCHEME: "gcnotes",
   NODE_ENV: "test",
 } satisfies Env;
@@ -42,6 +37,22 @@ describe("the worker's HTTP assembly", () => {
     expect(response.headers.get("x-request-id")).toBe("req_fixed");
   });
 
+  it("mounts GET /me, and answers it with a 401 in the error envelope without a session", async () => {
+    const response = await app.request("/me", {}, env);
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      _tag: "Unauthorized",
+    });
+  });
+
+  it("publishes the contract's routes in the OpenAPI document", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as { paths: Record<string, unknown> };
+
+    expect(Object.keys(doc.paths)).toEqual(["/me"]);
+  });
+
   it("answers an unknown route in the same envelope as every other failure", async () => {
     const response = await app.request("/no/such/route", {}, env);
 
@@ -53,7 +64,7 @@ describe("the worker's HTTP assembly", () => {
 describe("on-error, the one place a status is decided", () => {
   const failing = new Hono<AppEnv>()
     .get("/domain", () => {
-      throw new SoldOut({ ticketTypeIds: ["tty_general_admission"] });
+      throw new ProfileNotFound({ id: "usr_person_0001" });
     })
     .get("/bug", () => {
       throw new TypeError("undefined is not a function");
@@ -63,11 +74,11 @@ describe("on-error, the one place a status is decided", () => {
   it("gives a domain error its own status and serialises details verbatim", async () => {
     const response = await failing.request("/domain");
 
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
-      _tag: "SoldOut",
-      details: { ticketTypeIds: ["tty_general_admission"] },
-      message: "SoldOut",
+      _tag: "ProfileNotFound",
+      details: { id: "usr_person_0001" },
+      message: "ProfileNotFound",
     });
   });
 
