@@ -540,7 +540,9 @@ apps/native/.maestro/
     request-code.yaml    EMAIL param: type the address, Continue, wait for the code step
     enter-code.yaml      EMAIL param: GET /e2e/otp (scripts/read-otp.js), type it; digit 6 submits
     sign-in.yaml         EMAIL param: request-code + enter-code; the caller asserts where it lands
-    open-home-as.yaml    EMAIL param: start-clean + sign in as a seeded, onboarded person, on home
+    sign-in-fast.yaml    ROLE param: stopApp, reset, mint a session (scripts/e2e-session.js), clean
+                         launch that adopts it; see "Fast sign-in" below
+    open-home-as.yaml    ROLE param: sign-in-fast as a seeded, onboarded person, then settle on home
     open-home.yaml       open-home-as with e2e-person
     open-note.yaml       NOTE_ID param: from home, wait for the row, open its detail
     open-editor.yaml     from a detail, More → Edit notes, wait for the editor
@@ -586,6 +588,37 @@ passes `API_URL` (default `http://localhost:3001`) and reads `E2E_SECRET` from `
   `POST /touch` in the XCTest runner's log. Rerun once the simulator is free; do not "fix" the flow.
 - **Tag every flow.** `smoke` is for "the build is not broken" and must stay under a minute and
   independent of the API; journeys that sign in get their own tag and their own seeded backend.
+
+### Fast sign-in
+
+A typed sign-in (email, Continue, read the code from the outbox, six digits) costs 15–25 s, and
+almost every flow used to pay it before reaching the screen it is about. So only the flows whose
+subject *is* signing in type a code: everything in `phase-3/` (sign in, sign up, the wrong code,
+resend, onboarding and its resume, sign-out, a relaunch staying signed in). Every other flow
+reaches home through `open-home.yaml` / `open-home-as.yaml`, which use `subflows/sign-in-fast.yaml`:
+
+1. `stopApp`, so the previous flow's app cannot write into the world about to be reset.
+2. `e2e-reset.yaml`: reset and seed, as before.
+3. `scripts/e2e-session.js`: `POST /e2e/session/<ROLE>` on the harness (the same guard as
+   `/e2e/reset` — 404 unless the harness is armed, 401 without `E2E_SECRET`). It writes a real
+   better-auth `session` row for the seeded person and answers the cookie signed with better-auth's
+   own `makeSignature`, which the script turns into a Set-Cookie header.
+4. `launch-app.yaml` with `E2E_SESSION` set: a clean launch (`clearState` + `clearKeychain`) that
+   passes the header as the `-gcE2eSession` launch argument.
+
+The app (`apps/native/src/lib/auth-client.ts`, development builds only — the branch sits under
+`__DEV__`) reads the argument through React Native's `Settings`, which on iOS is the
+NSUserDefaults argument domain, and stores it with `storeSessionCookie` from `@gc/auth/client-native`
+— better-auth's own `getSetCookie` into the same SecureStore jar under the same key that a typed code
+fills. That happens at module scope, before the first render, so the first `get-session` already
+carries it, the server verifies it against the session row, and the gate sends the account where its
+profile says: home, for every seeded person. From there nothing differs from a typed sign-in —
+the same cookie on every request, the same `GET /me`, and a relaunch without the argument keeps the
+jar (the argument domain lasts one launch). A Release build has no such branch, and a deploy with the
+harness disarmed has no endpoint to mint a session with.
+
+Roles are the keys of `E2E_USERS` (`person`, `other`, `empty`); the newcomer has no account to
+mint a session for, which is why sign-up stays on the typed path anyway.
 
 ### Why the launch subflow passes launch arguments
 

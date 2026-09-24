@@ -157,11 +157,11 @@
 
 ## Deferred review items (phase 5)
 
-- **Flows still sign in one by one.** Every flow runs `clearState` + reset + the OTP sign-in through
-  `open-home.yaml`, as the Maestro rules in `phases.md` require, so flows stay order-independent.
-  Sharing one sign-in across the flows that do not test sign-in would save more wall-clock than the
-  10 s End wait did (now removed by `recording-skip-ahead`). It is left for a decision about the
-  rule itself, not made inside one phase's review.
+- **Flows still sign in one by one — resolved (e2e-fast-signin).** Every flow still starts from
+  `clearState`, a reset and a session of its own, so the suite stays order-independent. What
+  changed is how the session arrives: flows that are not about sign-in adopt one the harness minted
+  (`subflows/sign-in-fast.yaml`, docs/TESTING.md §8 "Fast sign-in"), and only `phase-3/*` types a
+  code. Sharing one sign-in across flows was not needed.
 - **"Disabled until `POST /recordings` answers" is not flowed.** The meta pill and Add to folder
   carry `accessibilityState.disabled` until the note exists, but locally the POST answers before
   Maestro's first assertion, so no flow can see the disabled window without the scripted-response
