@@ -8,7 +8,7 @@ tags:
 env:
   APP_ID: com.rejoan.gcnotes
 ---
-- runFlow: ../subflows/open-dev-home.yaml
+- runFlow: ../subflows/open-home.yaml
 # AC1
 - assertVisible:
     id: home-screen
@@ -24,10 +24,10 @@ env:
     id: home-settings-button
 - assertVisible:
     id: home-title
-# No session on /dev/home, so the avatar falls back to "N".
+# Signed in as the seeded person, whose name starts with "E".
 - assertVisible:
     id: home-avatar-initial
-    text: N
+    text: E
 # AC2
 - assertVisible:
     id: home-events-card
