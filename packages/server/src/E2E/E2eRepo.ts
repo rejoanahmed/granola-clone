@@ -1,6 +1,8 @@
 import {
   eq,
   inArray,
+  noteAttendees,
+  notes,
   profiles,
   RESET_ORDER,
   session,
@@ -12,6 +14,24 @@ import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { E2eProfileDetails, E2eUser } from "./Fixtures";
+
+export type E2eAttendeeRow = {
+  readonly email: string | null;
+  readonly id: string;
+  readonly name: string | null;
+  readonly position: number;
+  readonly userId: string | null;
+};
+
+export type E2eNoteRow = {
+  readonly attendees: readonly E2eAttendeeRow[];
+  readonly bodyMarkdown: string;
+  readonly id: string;
+  readonly ownerId: string;
+  readonly startedAt: Timestamp;
+  readonly title: string;
+  readonly trashedAt: Timestamp | null;
+};
 
 export type E2eSessionRow = {
   readonly expiresAt: Timestamp;
@@ -48,6 +68,48 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
         )
       ),
     });
+  },
+
+  // Upserts, so a re-seed restores a fixture a journey renamed, edited, trashed or restored. The
+  // fixtures' attendees are deleted and rewritten rather than upserted, so one a journey added
+  // cannot outlive the seed. Stamps are the note's own `startedAt` (the trash stamp, for a trashed
+  // one), never the clock: the seeded world is the same on every run.
+  stageNotes: (stage: Stage, rows: readonly E2eNoteRow[]): void => {
+    stage.add({
+      query: db.delete(noteAttendees).where(
+        inArray(
+          noteAttendees.noteId,
+          rows.map((row) => row.id)
+        )
+      ),
+    });
+    for (const row of rows) {
+      const columns = {
+        bodyMarkdown: row.bodyMarkdown,
+        createdAt: row.startedAt,
+        ownerId: row.ownerId,
+        source: "phone",
+        startedAt: row.startedAt,
+        title: row.title,
+        trashedAt: row.trashedAt,
+        updatedAt: row.trashedAt ?? row.startedAt,
+      };
+      stage.add({
+        query: db
+          .insert(notes)
+          .values({ ...columns, id: row.id })
+          .onConflictDoUpdate({ set: columns, target: notes.id }),
+      });
+      stage.add({
+        query: db.insert(noteAttendees).values(
+          row.attendees.map((attendee) => ({
+            ...attendee,
+            createdAt: row.startedAt,
+            noteId: row.id,
+          }))
+        ),
+      });
+    }
   },
 
   // An upsert, so re-seeding restores the fixture details a journey edited. `onboardedAt` keeps

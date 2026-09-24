@@ -124,7 +124,6 @@ describe("the E2E harness, phase 4", () => {
       .all<{ id: string }>();
     expect(rows.results.map((row) => row.id)).toEqual(FIXTURE_IDS);
     type Named = { id: string; ownerRole: string; title: string };
-    // @ts-expect-error phase 4: the seed does not answer its notes yet
     const named: Named[] = seeded.notes;
     expect([...named].sort((a, b) => a.id.localeCompare(b.id))).toEqual([
       {
@@ -154,7 +153,6 @@ describe("the E2E harness, phase 4", () => {
   it("lists exactly person's three live notes, newest first", async () => {
     await fresh();
 
-    // @ts-expect-error phase 4: the container has no notes service yet
     const page = await container.notes.list(E2E_USERS.person, {
       cursor: null,
       limit: 20,
@@ -170,7 +168,6 @@ describe("the E2E harness, phase 4", () => {
   // §7 case 26
   it("seeds an onboarded `empty` person who has no notes", async () => {
     await fresh();
-    // @ts-expect-error phase 4: E2E_USERS has no `empty` person yet
     const empty = E2E_USERS.empty;
     expect(empty).toEqual({
       email: "e2e-empty@gcnotes.test",
@@ -178,7 +175,6 @@ describe("the E2E harness, phase 4", () => {
       name: "E2E Empty",
     });
 
-    // @ts-expect-error phase 4: the container has no notes service yet
     const page = await container.notes.list(empty, { cursor: null, limit: 20 });
     const profile = await container.profiles.me(empty);
 
@@ -189,7 +185,6 @@ describe("the E2E harness, phase 4", () => {
   // §7 case 27
   it("leaves no notes or attendees after a reset, and a re-seed restores a renamed fixture", async () => {
     await fresh();
-    // @ts-expect-error phase 4: the container has no notes service yet
     await container.notes.update(E2E_USERS.person, "not_e2e_launch", {
       title: "Renamed by a journey",
     });
@@ -199,7 +194,6 @@ describe("the E2E harness, phase 4", () => {
     expect(await countOf("note_attendees")).toBe(0);
 
     await harness.seed();
-    // @ts-expect-error phase 4: the container has no notes service yet
     const restored = await container.notes.get(
       E2E_USERS.person,
       "not_e2e_launch"
