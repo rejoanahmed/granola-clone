@@ -1,5 +1,10 @@
 import { ToastProvider } from "@native/design";
 import { BootError } from "@native/features/auth/BootError";
+import { connectLiveRecording } from "@native/features/recording/liveRecording";
+import {
+  connectUploads,
+  resumeUploads,
+} from "@native/features/recording/uploadQueue";
 import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { STALE_TIME_MS } from "@native/lib/api";
 import {
@@ -7,13 +12,19 @@ import {
   useAuth,
   useProtectedRoute,
 } from "@native/lib/auth-provider";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Stack } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 const ATTENDEES_DETENT = 0.7;
+// #13's sheet starts just under the status bar: a large sheet, not the attendees' 0.7.
+const TRANSCRIPT_DETENT = 0.94;
 
 /**
  * Built through `useState(factory)`: a module constant survives Fast Refresh wired to a dead tree,
@@ -39,6 +50,24 @@ const SHEET = {
   sheetGrabberVisible: false,
 } as const;
 
+// The recording store and the upload queue live outside React, so they are handed the one cache
+// here; an upload left on disk by a previous launch resumes once somebody is signed in.
+function RecordingRuntime() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const signedIn = session != null;
+  useEffect(() => {
+    connectLiveRecording(queryClient);
+    connectUploads(queryClient);
+  }, [queryClient]);
+  useEffect(() => {
+    if (signedIn) {
+      resumeUploads().catch(() => undefined);
+    }
+  }, [signedIn]);
+  return null;
+}
+
 function ThemedLayout() {
   const { ThemedStatusBar, screenOptions } = useThemedNavigation();
   // Must be called under AuthProvider — it reads the session context.
@@ -60,10 +89,20 @@ function ThemedLayout() {
           options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
         />
         <Stack.Screen
+          name="notes/[id]/transcript"
+          options={{ ...SHEET, sheetAllowedDetents: [TRANSCRIPT_DETENT] }}
+        />
+        <Stack.Screen
+          name="record/[id]"
+          // A full-height card over the dimmed home (#102). Swiping it down is a Minimize.
+          options={{ ...SHEET, sheetAllowedDetents: [1] }}
+        />
+        <Stack.Screen
           name="notes/[id]/edit"
           options={{ gestureEnabled: false, presentation: "fullScreenModal" }}
         />
       </Stack>
+      <RecordingRuntime />
       {me.status === "error" ? <BootError /> : null}
     </>
   );

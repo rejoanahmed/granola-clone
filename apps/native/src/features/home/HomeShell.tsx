@@ -13,8 +13,24 @@ import {
   ToolbarCapsule,
 } from "@native/design";
 import { useShareNote } from "@native/features/notes/useShareNote";
-import { type NoteListItem, useTrashNote } from "@native/lib/api";
-import { useRouter } from "expo-router";
+import { RECORDING_COPY } from "@native/features/recording/copy";
+import {
+  liveSessionId,
+  useIsRecording,
+  useLiveNoteId,
+  whenSettled,
+} from "@native/features/recording/liveRecording";
+import { MicCard } from "@native/features/recording/MicCard";
+import { MiniPill } from "@native/features/recording/MiniPill";
+import { useNewRecording } from "@native/features/recording/useNewRecording";
+import {
+  invalidate,
+  keys,
+  type NoteListItem,
+  useTrashNote,
+} from "@native/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   CalendarDays,
   Folder,
@@ -25,7 +41,7 @@ import {
   Search,
   Share as ShareIcon,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   SafeAreaView,
@@ -55,6 +71,35 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
     readonly note: NoteListItem;
   } | null>(null);
   const closeMenu = () => setMenu(null);
+  const queryClient = useQueryClient();
+  const recording = useNewRecording();
+  const isRecording = useIsRecording();
+  const liveNoteId = useLiveNoteId();
+
+  // Back from the live card or a post-End page, the list refetches so the new row appears (or a
+  // cancelled one goes) without a pull. It waits for any discard still deleting, or the refetch
+  // could bring the row straight back.
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      whenSettled()
+        .then(() => invalidate(queryClient, [keys.notes.list()]))
+        .catch(() => undefined);
+    }, [queryClient])
+  );
+
+  const openNote = (note: NoteListItem) => {
+    const live = liveSessionId();
+    if (live && note.id === liveNoteId) {
+      recording.openLive(live);
+      return;
+    }
+    router.push({ params: { id: note.id }, pathname: "/notes/[id]" });
+  };
 
   return (
     <View style={styles.screen} testID="home-screen">
@@ -130,10 +175,9 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
       </SafeAreaView>
 
       <NoteList
+        liveNoteId={liveNoteId}
         onLongPress={(note, frame) => setMenu({ frame, note })}
-        onOpen={(note) =>
-          router.push({ params: { id: note.id }, pathname: "/notes/[id]" })
-        }
+        onOpen={openNote}
         onTrash={(note) => trash.mutate(note.id)}
       />
 
@@ -150,8 +194,36 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
           testID="home-ask-button"
           tone="glass"
         />
-        <Fab accessibilityLabel="New note" testID="home-new-note-button" />
+        {isRecording ? (
+          <MiniPill
+            accessibilityLabel={RECORDING_COPY.returnToRecording}
+            height={sizes.fab}
+            onPress={() => {
+              const live = liveSessionId();
+              if (live) {
+                recording.openLive(live);
+              }
+            }}
+            testID="home-recording-pill"
+          />
+        ) : (
+          <Fab
+            accessibilityLabel="New note"
+            onPress={() => {
+              recording.onPress().catch(() => undefined);
+            }}
+            testID="home-new-note-button"
+          />
+        )}
       </View>
+
+      <MicCard
+        kind={recording.card}
+        onClose={recording.onClose}
+        onPrimary={() => {
+          recording.onPrimary().catch(() => undefined);
+        }}
+      />
 
       {/* #02: Edit title and Share notes. Add to folder waits for phase 9 rather than doing nothing. */}
       <ActionMenu

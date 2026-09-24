@@ -47,6 +47,8 @@ export const LIST_COPY = {
 } as const;
 
 type Props = {
+  /** The note whose recording is live on this device: its row draws the lime waveform. */
+  readonly liveNoteId: string | null;
   readonly onLongPress: (note: NoteListItem, frame: Frame) => void;
   readonly onOpen: (note: NoteListItem) => void;
   readonly onTrash: (note: NoteListItem) => void;
@@ -112,7 +114,7 @@ function ListError({ onRetry }: { readonly onRetry: () => void }) {
 
 // The home list (#01, docs/spec/phase-4.md §2.1, §3): notes by local day, newest first, the next
 // page on scroll, pull to refresh, and the designed loading, error and empty states in its place.
-export function NoteList({ onLongPress, onOpen, onTrash }: Props) {
+export function NoteList({ liveNoteId, onLongPress, onOpen, onTrash }: Props) {
   const insets = useSafeAreaInsets();
   const query = useInfiniteQuery(notesInfiniteQuery());
   const [pulling, setPulling] = useState(false);
@@ -174,6 +176,7 @@ export function NoteList({ onLongPress, onOpen, onTrash }: Props) {
       contentContainerStyle={{
         paddingBottom: sizes.askPill + spacing.md + insets.bottom,
       }}
+      extraData={liveNoteId}
       keyExtractor={(note) => note.id}
       ListEmptyComponent={placeholder}
       ListFooterComponent={footer}
@@ -199,6 +202,7 @@ export function NoteList({ onLongPress, onOpen, onTrash }: Props) {
       }
       renderItem={({ item }) => (
         <NoteRow
+          live={item.id === liveNoteId}
           note={item}
           onLongPress={onLongPress}
           onOpen={(note) => {

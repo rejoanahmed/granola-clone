@@ -318,3 +318,27 @@ export function useTrashNote() {
     },
   });
 }
+
+// ---- Recordings (docs/spec/phase-5.md §6.1) ----
+
+export type RecordingDetail = Awaited<ReturnType<typeof client.getRecording>>;
+export type TranscriptDetail = Awaited<
+  ReturnType<typeof client.getNoteTranscript>
+>;
+
+export const transcriptQuery = (noteId: string) =>
+  api.query(keys.notes.transcript(noteId), ({ signal }) =>
+    client.getNoteTranscript({ params: { id: noteId } }, { signal })
+  );
+
+/**
+ * Drops a row from the cached list at once. A cancelled or discarded recording's note must not
+ * flash back in while its delete is still in flight.
+ */
+export async function removeNoteFromList(
+  queryClient: QueryClient,
+  id: string
+): Promise<void> {
+  await queryClient.cancelQueries({ queryKey: keys.notes.list() });
+  mapItems(queryClient, (items) => items.filter((item) => item.id !== id));
+}
