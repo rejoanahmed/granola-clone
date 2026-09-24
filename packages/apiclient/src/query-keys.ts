@@ -53,6 +53,11 @@ export const invalidationKeys = {
     queryKeys.notes.detail(id),
     queryKeys.notes.list(),
   ],
+  // The generation rides on the note's detail, and the generated title will land on its row.
+  retryNoteGeneration: (id: string) => [
+    queryKeys.notes.detail(id),
+    queryKeys.notes.list(),
+  ],
   retryRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
   trashNote: (id: string) => [

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NoteGeneration } from "./Generation";
 import { branded, NoteId } from "./Ids";
 import { NoteRecording, RecordingStatus } from "./Recording";
 import { Timestamp } from "./Time";
@@ -43,6 +44,9 @@ export const Note = z.object({
   attendees: z.array(Attendee),
   bodyMarkdown: NoteBody,
   createdAt: Timestamp,
+  // Null for a note typed by hand, or one whose transcript has not landed. On the detail, not the
+  // summary: home reads the generated title, never the job.
+  generation: NoteGeneration.nullable(),
   id: NoteId,
   // Null for a note typed by hand. On the detail so the page needs one fetch to choose its status
   // row and its menu.

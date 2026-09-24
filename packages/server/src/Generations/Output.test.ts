@@ -1,4 +1,3 @@
-// @ts-expect-error phase 6: the generation errors are specified (phase-6.md §6.6, §11 API 2), not built
 import * as GenErrors from "@gc/domain/Generations/Errors";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error phase 6: the output parser is specified (phase-6.md §6.5, §11 API 5), not built

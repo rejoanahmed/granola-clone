@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 6: the generation shapes are specified (phase-6.md §6.2, §11 API 1), not built
 import * as Gen from "./Generation";
 import { NOTE_TITLE_MAX } from "./Note";
 

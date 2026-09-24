@@ -180,3 +180,16 @@
   sweep resubmits a stranded `transcribing` row after 5 minutes when its object is stored, and
   releases it only after 30 when it is not, so a slow 100 MB put is never cut off mid-stream. If the
   client has already given up by then, the row joins the abandoned-upload entry above.
+
+## Phase 6 API
+
+- **No live LLM client.** No vendor has been chosen, so there is no `LlmClient.ts` (a prompt
+  builder, the JSON contract of phase-6.md §6.5, `LLM_TIMEOUT_MS`, and a finish-reason mapping onto
+  `truncated`). `LLM_MODE=live` is refused at startup until it exists, and production sets `live`,
+  so production fails at startup alongside `EMAIL_MODE` and `TRANSCRIPTION_MODE`. The stub:
+  `LlmFake` runs everywhere else. The fake's notes prove the pipeline, the parser and the renderer,
+  not note quality, which needs the live client and a hand check.
+- **The generation queues must exist before a deploy.** `gcnotes-generation-dev` and
+  `gcnotes-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
+  agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy. The
+  top-level `gcnotes-generation-local` is simulated by `wrangler dev` and never created.

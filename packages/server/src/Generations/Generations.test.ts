@@ -1,8 +1,5 @@
-// @ts-expect-error phase 6: the generation shapes are specified (phase-6.md §6.2, §11 API 1), not built
 import * as Gen from "@gc/domain/Domain/Generation";
-// @ts-expect-error phase 6: the generation errors are specified (phase-6.md §6.6, §11 API 2), not built
 import * as GenErrors from "@gc/domain/Generations/Errors";
-// @ts-expect-error phase 6: the LLM port's errors are specified (phase-6.md §6.6, §11 API 2), not built
 import * as LlmErrors from "@gc/domain/Llm/Errors";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

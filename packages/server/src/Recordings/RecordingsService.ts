@@ -338,6 +338,8 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         ],
         bodyMarkdown: "",
         createdAt: now,
+        // Nothing to generate from until the transcript lands.
+        generation: null,
         id: noteId,
         recording: { durationMs: null, id, status: "recording" },
         source: "phone",

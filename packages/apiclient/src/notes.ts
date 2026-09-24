@@ -5,6 +5,7 @@ import type {
   listNotesRoute,
   patchNoteRoute,
   restoreNoteRoute,
+  retryNoteGenerationRoute,
   trashNoteRoute,
 } from "@gc/domain/Notes/Contract";
 import type { Endpoint } from "./client";
@@ -20,6 +21,10 @@ export const makeNotesApi = (endpoint: Endpoint) => ({
   ),
   listNotes: endpoint<typeof listNotesRoute>("get", "/notes"),
   restoreNote: endpoint<typeof restoreNoteRoute>("post", "/notes/{id}/restore"),
+  retryNoteGeneration: endpoint<typeof retryNoteGenerationRoute>(
+    "post",
+    "/notes/{id}/generation/retry"
+  ),
   trashNote: endpoint<typeof trashNoteRoute>("post", "/notes/{id}/trash"),
   updateNote: endpoint<typeof patchNoteRoute>("patch", "/notes/{id}"),
 });

@@ -365,9 +365,10 @@ describe("POST /notes/{id}/generation/retry", () => {
   });
 
   it("answers 200 with the NoteGeneration shape, taking no body", async () => {
-    // @ts-expect-error phase 6: the generation shapes are specified (phase-6.md §6.2), not built
     const shapes = await import("@gc/domain/Domain/Generation");
-    const { NoteGeneration } = shapes as { NoteGeneration: typeof Note };
+    const { NoteGeneration } = shapes as unknown as {
+      NoteGeneration: typeof Note;
+    };
     const { app, calls } = await retryAppAs(actor());
 
     const res = await send(app, "POST", RETRY_PATH);
@@ -394,9 +395,8 @@ describe("POST /notes/{id}/generation/retry", () => {
   });
 
   it("is 409 GenerationNotRetryable for a generation that has not failed", async () => {
-    // @ts-expect-error phase 6: the generation errors are specified (phase-6.md §6.6), not built
     const errors = await import("@gc/domain/Generations/Errors");
-    const { GenerationNotRetryable } = errors as {
+    const { GenerationNotRetryable } = errors as unknown as {
       GenerationNotRetryable: typeof NoteTrashed;
     };
     const { app } = await retryAppAs(actor(), () => {
