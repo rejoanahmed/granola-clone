@@ -15,9 +15,7 @@ import {
   sequentialIds,
   type TestD1,
 } from "../Testing";
-// @ts-expect-error phase 4: the repository is specified (phase-4.md §6.4), not built
 import { makeNotesRepo } from "./NotesRepo";
-// @ts-expect-error phase 4: the service is specified (phase-4.md §6.4), not built
 import { makeNotesService } from "./NotesService";
 
 // docs/spec/phase-4.md §7 cases 1–17: the service over the real repository, against the real

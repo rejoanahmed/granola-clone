@@ -8,7 +8,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 4: the router is specified (phase-4.md §6.4), not built
 import { notesRouter } from "./Http";
 
 // docs/spec/phase-4.md §7 cases 18–24. Wire shape only — the paths, `c.var.svc`, the verbatim
