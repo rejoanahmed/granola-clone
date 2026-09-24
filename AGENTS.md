@@ -26,6 +26,11 @@ Two traps make a green run a lie:
 - **`bun test` must be scoped** (`bun test src`) in any package that emits a `dist`, or every suite
   runs twice — once from source, once from the build.
 
+`bun run test` runs the unit suites. UI flows on the iOS simulator are separate and slower:
+`bun run e2e:ios`, then `bun run maestro:smoke` in a second terminal — see
+[docs/TESTING.md](docs/TESTING.md) §8. They target the simulator by UDID; never point them at a
+physical device.
+
 ## The three-package shape
 
 ```
@@ -129,7 +134,8 @@ is the pattern in the tree today.
 - **`betterAuth` is imported from `better-auth/minimal`**, never the barrel — the barrel drags
   kysely into the Worker bundle with no error and about 648 KiB of dead weight.
 - **The app is iPhone-only.** `apps/native/app.json` declares `platforms: ["ios"]` and no tablet
-  support.
+  support. Maestro selects by `testID`, so every screen root and every control a flow touches gets
+  one (`<screen>-<thing>`, e.g. `welcome-email`).
 
 ## Testing
 

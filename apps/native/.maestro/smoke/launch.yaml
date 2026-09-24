@@ -1,0 +1,21 @@
+# The app starts, loads its bundle, resolves "no session" and lands on sign-in. Nothing else — a
+# smoke flow that signs in would need the API and a code, and would fail for reasons that are not
+# "the build is broken".
+appId: ${APP_ID}
+name: Launches signed out onto the welcome screen
+tags:
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/launch-app.yaml
+# The first bundle from a cold Metro takes most of this; a warm one takes seconds. Waiting on the
+# screen's own id rather than sleeping means the flow is exactly as slow as the app.
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertVisible:
+    id: welcome-email
+- assertVisible:
+    id: welcome-submit

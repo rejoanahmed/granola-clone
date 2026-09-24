@@ -1,0 +1,11 @@
+# Workspace config for `maestro test apps/native/.maestro`.
+#
+# Only the directories listed here are flows. `subflows/` is deliberately absent: a subflow run on
+# its own would launch the app and assert nothing, which reads as a pass.
+flows:
+  - smoke/*
+
+# Everything under this workspace runs against the simulator build; no flow may depend on the
+# order it runs in, because `clearState` is how each one starts from a known place.
+executionOrder:
+  continueOnFailure: true

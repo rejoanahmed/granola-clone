@@ -1,0 +1,28 @@
+# Start the app from nothing: no stored session, no dev-launcher history.
+#
+# `clearKeychain` as well as `clearState`: the session cookie lives in SecureStore, which on iOS is
+# the Keychain, and the Keychain survives `clearState` — without it a "fresh" launch is signed in.
+#
+# A Debug build is a dev client with no JavaScript inside it, so a clean launch would show the dev
+# launcher rather than the app. Two launch arguments, both read by expo-dev-client itself, get past
+# it — and past the dev menu — without touching a screen that is not ours:
+#   --initialUrl                   the dev launcher loads this Metro URL straight away. A deep link
+#                                  (`gcnotes://expo-development-client/?url=…`) does the same but
+#                                  raises iOS's "Open in Notes?" sheet, which has no testID.
+#   -EXDevMenu…                    user defaults, set for this launch only: without them the dev
+#                                  menu's first-run sheet, then the menu itself, then its floating
+#                                  button cover the app on every clean launch.
+# All are inert in a Release build, which has neither the launcher nor the menu.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+  DEV_SERVER_URL: http://localhost:8081
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+    arguments:
+      --initialUrl: ${DEV_SERVER_URL}
+      -EXDevMenuIsOnboardingFinished: "YES"
+      -EXDevMenuShowsAtLaunch: "NO"
+      -EXDevMenuShowFloatingActionButton: "NO"

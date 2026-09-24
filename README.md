@@ -36,6 +36,7 @@ service.** `bun run check` fails if either breaks — Biome covers the import pa
 apps/
   api/                 the Worker: fetch, OpenAPI doc at /api/doc, Scalar at /api/reference   :3001
   native/              Expo app for iPhone — sign-in (email OTP) and a home screen           Metro
+    .maestro/          UI flows on the iOS simulator
 packages/
   domain/    @gc/domain     schemas, route contracts, error classes. Isomorphic; the app imports it.
   server/    @gc/server     services, repositories, policies, handlers, Runtime, provider ports
@@ -47,7 +48,7 @@ packages/
 docs/
   architecture/        README (the spec), D1-NOTES, DEPLOYMENT
   DECISIONS.md         numbered rulings; ambiguity is resolved here, not re-litigated in code
-  TESTING.md           the SQLite harness, wire-shape tests, and the E2E gate
+  TESTING.md           the SQLite harness, wire-shape tests, the E2E gate, and Maestro
 ```
 
 The one module is **Profiles** (`GET /me`). It appears once in `packages/domain` (as `Profile`)
@@ -64,6 +65,9 @@ cd apps/api && bun run local:db:apply && cd ../..
 cp apps/api/.dev.vars.example apps/api/.dev.vars   # then set BETTER_AUTH_SECRET
 bun run db:seed               # two users with long-lived sessions, printed to the console
 bun run dev:api               # the API on :3001
+
+bun run e2e:ios               # build the dev client, run it on the "iPhone 17 Pro" simulator, start Metro
+bun run maestro:smoke         # (second terminal) the Maestro smoke flow against that simulator
 ```
 
 Email sign-in logs the one-time code to the `wrangler dev` output in development: no email
@@ -78,6 +82,7 @@ provider is wired yet.
 | `bun run test` | every package's suite |
 | `bun run db:generate` / `db:migrate` / `db:seed` / `db:studio` | drizzle-kit, via `@gc/db` |
 | `bun run auth:generate-schema` | regenerate `packages/db/src/schema/auth.ts` — never hand-edit it |
+| `bun run e2e:ios` / `maestro:smoke` | the iOS simulator build and its Maestro smoke flow |
 
 **Turbo caches `type-check`**, so a green run reading "8 cached" has verified nothing:
 
@@ -131,5 +136,5 @@ anywhere but `container.ts`, the check says so with a file and a line.
 | [docs/architecture/D1-NOTES.md](docs/architecture/D1-NOTES.md) | Batch semantics and the bound-param arithmetic |
 | [docs/architecture/DEPLOYMENT.md](docs/architecture/DEPLOYMENT.md) | Trunk and flags, the pipeline, the rollback tiers, expand/contract, setup |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Numbered rulings |
-| [docs/TESTING.md](docs/TESTING.md) | The SQLite harness, wire-shape tests, and the E2E gate |
+| [docs/TESTING.md](docs/TESTING.md) | The SQLite harness, wire-shape tests, the E2E gate, Maestro |
 | [AGENTS.md](AGENTS.md) | The import rules and the module recipe, for coding agents |

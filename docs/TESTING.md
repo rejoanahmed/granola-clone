@@ -351,4 +351,65 @@ every test and fail the gate. That is the intended order of discovery.
 
 ## 8. Native UI flows (Maestro)
 
-See below — added with the Maestro harness.
+The app's UI is driven on the **iOS simulator** by [Maestro](https://maestro.mobile.dev) 2.8.0,
+from `apps/native/.maestro/`. It is not part of `bun run test` or the gate: it needs a simulator, a
+native build and Metro, none of which CI has yet.
+
+```bash
+bun run e2e:ios          # expo run:ios: prebuild if needed, pods, xcodebuild, install, launch,
+                         # then Metro in the foreground — leave it running
+bun run maestro:smoke    # second terminal: the flows tagged `smoke`
+```
+
+Both default to the simulator **"iPhone 17 Pro", UDID `351547D8-BD3B-4418-AB30-8568D8FFB8F3`**;
+set `IOS_SIMULATOR_UDID` to use another. `maestro:smoke` is `scripts/maestro.sh smoke`, which is
+exactly:
+
+```bash
+maestro --device 351547D8-BD3B-4418-AB30-8568D8FFB8F3 test \
+  -e APP_ID=com.rejoan.gcnotes --include-tags smoke apps/native/.maestro
+```
+
+Never run a flow against a physical device by accident: every flow starts with `clearState`, so
+the device is always named by UDID and never left to "whichever is booted".
+
+### Layout
+
+```
+apps/native/.maestro/
+  config.yaml            which directories are flows (smoke/*); subflows/ is deliberately not one
+  subflows/
+    launch-app.yaml      clean launch: clearState + clearKeychain, straight into the JS bundle
+  smoke/
+    launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
+```
+
+### Rules for writing a flow
+
+- **Select by `id`, never by text.** Every screen root and every control a flow touches gets a
+  `testID` named `<screen>-<thing>` (`welcome-screen`, `welcome-email`, `welcome-submit`,
+  `home-screen`, `home-sign-out`). Copy changes; ids do not. The one exception is a sheet the
+  system owns, which has no id to select.
+- **No sleeps.** Wait for the thing you need with `extendedWaitUntil` (`visible: { id: … }`, a
+  generous `timeout`); the flow is then exactly as slow as the app.
+- **`appId: ${APP_ID}`**, with the default in each flow's `env:` and the real value passed by
+  `-e APP_ID=…`, so a second bundle id (a staging build) needs no edit to any flow.
+- **Start from a known place.** Reuse `subflows/launch-app.yaml`. It clears the Keychain as well as
+  the app's state, because the session cookie lives in SecureStore — the Keychain — and survives
+  `clearState`.
+- **Tag every flow.** `smoke` is for "the build is not broken" and must stay under a minute and
+  independent of the API; journeys that sign in get their own tag and their own seeded backend.
+
+### Why the launch subflow passes launch arguments
+
+A Debug build is an expo-dev-client: no JavaScript inside, so a clean launch shows the dev launcher
+instead of the app. `launch-app.yaml` passes `--initialUrl http://localhost:8081`, which the
+launcher reads at startup and loads directly. The obvious alternative — `openLink` to
+`gcnotes://expo-development-client/?url=…` — raises iOS's "Open in Notes?" confirmation, and that
+sheet **survives an app relaunch**, so one failed run leaves it covering the next. It also passes
+three dev-menu user defaults (`-EXDevMenuIsOnboardingFinished YES`, `-EXDevMenuShowsAtLaunch NO`,
+`-EXDevMenuShowFloatingActionButton NO`), without which the menu's first-run sheet and then the menu
+itself cover the app on every clean launch. All of them are inert in a Release build.
+
+If a smoke run fails on `welcome-screen is visible`, look at the simulator before the flow: a stale
+system sheet or Metro not running are the usual causes, and `scripts/maestro.sh` checks the second.
