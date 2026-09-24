@@ -1,24 +1,61 @@
-import type { Profile } from "@gc/domain/Domain/Profile";
+import type { Profile, ProfilePatch } from "@gc/domain/Domain/Profile";
 import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { Authorized } from "../Auth/Policy";
-import { canReadProfile } from "./Policy";
+import type { Clock } from "../Runtime/Clock";
+import { canEditProfile, canReadProfile } from "./Policy";
 import type { ProfilesRepo } from "./ProfilesRepo";
 
 export type ProfilesDeps = {
+  readonly clock: Clock;
   readonly repo: ProfilesRepo;
 };
 
-export const makeProfilesService = (deps: ProfilesDeps) => ({
+const hasChanges = (patch: ProfilePatch): boolean =>
+  Object.values(patch).some((value) => value !== undefined);
+
+export const makeProfilesService = (deps: ProfilesDeps) => {
   // A live session whose user row is gone is a 404, not a 401: the credential is valid, the thing
   // it names is not, and the client's answer to the two differs (re-sign-in vs. "account deleted").
-  me: async (actor: Actor): Promise<Authorized<Profile>> => {
+  const existing = async (actor: Actor): Promise<Profile> => {
     const profile = await deps.repo.byId(actor.id);
     if (profile === null) {
       throw new ProfileNotFound({ id: actor.id });
     }
-    return canReadProfile(profile, actor);
-  },
-});
+    return profile;
+  };
+
+  const me = async (actor: Actor): Promise<Authorized<Profile>> =>
+    canReadProfile(await existing(actor), actor);
+
+  // Read, check, write, read again. The first read is what turns a deleted account into
+  // `ProfileNotFound` instead of the foreign key's 500, and it is also the subject the policy
+  // needs. The id written is the actor's, never one from input, so no patch can reach another row.
+  const editing = async (actor: Actor): Promise<Authorized<Profile>> =>
+    canEditProfile(await existing(actor), actor);
+
+  return {
+    completeOnboarding: async (actor: Actor): Promise<Authorized<Profile>> => {
+      const subject = await editing(actor);
+      await deps.repo.markOnboarded(subject.id, deps.clock.now());
+      return me(actor);
+    },
+
+    me,
+
+    // `{}` writes nothing: a no-op PATCH must not create a row or move `updatedAt`.
+    update: async (
+      actor: Actor,
+      patch: ProfilePatch
+    ): Promise<Authorized<Profile>> => {
+      const subject = await editing(actor);
+      if (!hasChanges(patch)) {
+        return subject;
+      }
+      await deps.repo.upsertDetails(subject.id, patch, deps.clock.now());
+      return me(actor);
+    },
+  };
+};
 
 export type ProfilesService = ReturnType<typeof makeProfilesService>;

@@ -67,18 +67,9 @@ afterEach(() => {
   d1.close();
 });
 
-// Phase 3 (docs/spec/phase-3.md §6.3) was specified before it was built: `update`,
-// `completeOnboarding` and the `clock` dep are what the spec adds. The directive goes when they
-// exist — it fails type-check the moment it has nothing left to expect.
-type Phase3Profiles = ProfilesService & {
-  completeOnboarding(actor: Actor): Promise<unknown>;
-  update(actor: Actor, patch: object): Promise<unknown>;
-};
-
 const repo = () => makeProfilesRepo(makeDrizzle(d1));
 
-const service = (clock: Clock = fixedClock(AT)): Phase3Profiles =>
-  // @ts-expect-error phase 3: makeProfilesService takes no clock and has no update yet
+const service = (clock: Clock = fixedClock(AT)): ProfilesService =>
   makeProfilesService({ clock, repo: repo() });
 
 const count = async (sql: string): Promise<number> =>
@@ -142,7 +133,7 @@ describe("ProfilesService.update", () => {
       companyName: "Acme",
       jobTitle: "Designer",
       userType: "investing",
-    };
+    } as const;
 
     await expect(service().update(actor(), patch)).resolves.toMatchObject(
       patch

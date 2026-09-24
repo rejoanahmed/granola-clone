@@ -58,6 +58,16 @@ env:
     timeout: 20000
 - scrollUntilVisible:
     element:
+      id: gallery-text-field
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: gallery-form-row
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
       id: gallery-sheets
     direction: DOWN
     timeout: 20000

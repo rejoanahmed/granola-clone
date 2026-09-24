@@ -7,6 +7,11 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 // database layer the drizzle adapter replaces, shipping ~648 KiB of kysely inside the Worker.
 import { betterAuth } from "better-auth/minimal";
 import { emailOTP } from "better-auth/plugins";
+import {
+  OTP_ALLOWED_ATTEMPTS,
+  OTP_EXPIRES_IN_SECONDS,
+  OTP_LENGTH,
+} from "./otp";
 
 /** The plugin always passes `type`, so the API's one dispatch function must branch on it. */
 export type OtpType =
@@ -69,6 +74,12 @@ export const createAuth = (config: AuthConfig) => {
   // and the inferred `Auth` loses every plugin endpoint with it.
   const expoPlugin = expo();
   const emailOtpPlugin = emailOTP({
+    // Stated rather than left to the plugin's defaults (which match today): the email copy and the
+    // app's error messages promise these numbers, and a default that moved would break the promise
+    // silently.
+    allowedAttempts: OTP_ALLOWED_ATTEMPTS,
+    expiresIn: OTP_EXPIRES_IN_SECONDS,
+    otpLength: OTP_LENGTH,
     // Without this the library's link-based `sendVerificationEmail` path stays alive alongside the
     // plugin's, and one action can send the user two different things.
     overrideDefaultEmailVerification: true,

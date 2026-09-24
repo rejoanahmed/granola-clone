@@ -1,5 +1,10 @@
 import type { LucideIcon } from "lucide-react-native";
-import { Pressable, StyleSheet, type ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  type ViewStyle,
+} from "react-native";
 import { Text } from "./Text";
 import {
   colors,
@@ -21,6 +26,8 @@ type Props = {
   readonly filledIcon?: boolean;
   readonly icon?: LucideIcon;
   readonly label: string;
+  /** In flight: a spinner replaces the label, taps are ignored, and the testID stays put. */
+  readonly loading?: boolean;
   readonly onPress?: () => void;
   readonly size?: PillSize;
   readonly style?: ViewStyle;
@@ -68,6 +75,7 @@ export function PillButton({
   filledIcon = false,
   icon: Icon,
   label,
+  loading = false,
   onPress,
   size = "md",
   style,
@@ -83,8 +91,8 @@ export function PillButton({
     <Pressable
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ busy: loading, disabled }}
+      disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.pill,
@@ -96,7 +104,8 @@ export function PillButton({
       ]}
       testID={testID}
     >
-      {Icon ? (
+      {loading ? <ActivityIndicator color={palette.text} /> : null}
+      {!loading && Icon ? (
         <Icon
           color={palette.text}
           fill={filledIcon ? palette.text : "none"}
@@ -104,9 +113,11 @@ export function PillButton({
           strokeWidth={ICON_STROKE}
         />
       ) : null}
-      <Text color={palette.text} numberOfLines={1} variant={variant}>
-        {label}
-      </Text>
+      {loading ? null : (
+        <Text color={palette.text} numberOfLines={1} variant={variant}>
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
