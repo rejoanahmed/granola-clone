@@ -1,3 +1,4 @@
+import { ToastProvider } from "@native/design";
 import { BootError } from "@native/features/auth/BootError";
 import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { STALE_TIME_MS } from "@native/lib/api";
@@ -27,6 +28,15 @@ function createAppQueryClient() {
   });
 }
 
+// The phase-2 sheet presentation (docs/spec/phase-2.md): UIKit owns the detents and the dimming,
+// `SheetChrome` draws the fill, the corners and the grabber.
+const SHEET = {
+  contentStyle: { backgroundColor: "transparent" },
+  presentation: "formSheet",
+  sheetCornerRadius: 40,
+  sheetGrabberVisible: false,
+} as const;
+
 function ThemedLayout() {
   const { ThemedStatusBar, screenOptions } = useThemedNavigation();
   // Must be called under AuthProvider — it reads the session context.
@@ -38,6 +48,18 @@ function ThemedLayout() {
       <ThemedStatusBar />
       <Stack screenOptions={screenOptions}>
         <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
+        <Stack.Screen
+          name="notes/[id]/attendees"
+          options={{ ...SHEET, sheetAllowedDetents: [0.5] }}
+        />
+        <Stack.Screen
+          name="notes/[id]/rename"
+          options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
+        />
+        <Stack.Screen
+          name="notes/[id]/edit"
+          options={{ gestureEnabled: false, presentation: "fullScreenModal" }}
+        />
       </Stack>
       {me.status === "error" ? <BootError /> : null}
     </>
@@ -54,7 +76,9 @@ export default function RootLayout() {
       <KeyboardProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <ThemedLayout />
+            <ToastProvider>
+              <ThemedLayout />
+            </ToastProvider>
           </AuthProvider>
         </QueryClientProvider>
       </KeyboardProvider>
