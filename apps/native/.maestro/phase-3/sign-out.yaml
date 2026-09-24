@@ -1,0 +1,65 @@
+# AC3 (docs/spec/phase-3.md §8), and the phase-3 exit: a signed-in person leaves home through a
+# control on it — the avatar, then Sign out — never through `clearKeychain`. The relaunch at the end
+# keeps the Keychain, so landing on welcome proves the credential was deleted, not hidden.
+appId: ${APP_ID}
+name: Sign out from home, and stay signed out across a relaunch
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+
+# Settings opens from the avatar, and Back returns home.
+- tapOn:
+    id: home-settings-button
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- tapOn:
+    id: settings-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+
+# Second visit: sign out.
+- tapOn:
+    id: home-settings-button
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- assertVisible:
+    id: settings-sign-out
+- assertVisible:
+    id: settings-version
+- takeScreenshot: phase-3-settings
+- tapOn:
+    id: settings-sign-out
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 30000
+- assertNotVisible:
+    id: welcome-email
+    text: ".*e2e-person.*"
+
+# Relaunch with the Keychain intact.
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertNotVisible:
+    id: home-screen

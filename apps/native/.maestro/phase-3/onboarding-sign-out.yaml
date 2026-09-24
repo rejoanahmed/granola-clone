@@ -1,0 +1,33 @@
+# AC7 (docs/spec/phase-3.md §8): step 1 has no Back, so "Not you? Sign out" is the way out for
+# somebody who typed the wrong address — and it signs out for real, across a relaunch.
+appId: ${APP_ID}
+name: Not you? Sign out leaves onboarding for welcome
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-newcomer@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: onboarding-name-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-sign-out
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 30000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertNotVisible:
+    id: onboarding-name-screen

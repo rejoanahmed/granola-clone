@@ -1,0 +1,56 @@
+# AC2 (docs/spec/phase-3.md §8): a seeded, onboarded person signs in with a code from the outbox
+# and goes straight home — onboarding never appears. The steps are the sign-in subflow's, written
+# out, because this flow is the one that pins the welcome copy and screenshots both steps.
+appId: ${APP_ID}
+name: Sign in — a seeded, onboarded person goes straight home
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+
+# Email step (§2.1).
+- assertVisible:
+    id: welcome-title
+- assertVisible:
+    id: welcome-submit
+    enabled: false
+- tapOn:
+    id: welcome-email
+- inputText: e2e-person@gcnotes.test
+- assertVisible:
+    id: welcome-submit
+    enabled: true
+- takeScreenshot: phase-3-welcome-email
+- tapOn:
+    id: welcome-submit
+
+# Code step (§2.2): the same screen, naming the address the code went to.
+- extendedWaitUntil:
+    visible:
+      id: welcome-otp
+    timeout: 30000
+- assertVisible:
+    id: welcome-sent-to
+    text: ".*e2e-person@gcnotes\\.test.*"
+- assertVisible:
+    id: welcome-resend
+- assertVisible:
+    id: welcome-change-email
+- takeScreenshot: phase-3-welcome-code
+- runFlow:
+    file: ../subflows/enter-code.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- assertNotVisible:
+    id: onboarding-name-screen
+- assertVisible:
+    id: home-avatar-initial
+    text: E

@@ -1,0 +1,30 @@
+# AC4 (docs/spec/phase-3.md §8): a signed-in person who quits and relaunches is still signed in.
+# The splash is held until the session and `GET /me` resolve, so welcome must never flash.
+appId: ${APP_ID}
+name: A relaunch stays signed in
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- assertNotVisible:
+    id: welcome-screen
+- assertVisible:
+    id: home-avatar-initial
+    text: E

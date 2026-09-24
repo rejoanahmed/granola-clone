@@ -1,0 +1,88 @@
+# AC1 (docs/spec/phase-3.md §8): an address with no account signs up by signing in, and goes
+# through all three onboarding steps to home. The newcomer is never seeded, and every reset deletes
+# them, so this always meets an unknown address.
+appId: ${APP_ID}
+name: Sign up — a new address goes through onboarding to home
+tags:
+  - phase-3
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/start-clean.yaml
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-newcomer@gcnotes.test
+
+# Step 1: name. An OTP sign-up has no name, so the field is empty and Continue is off. Emptiness
+# is asserted through Continue rather than the field's text: iOS reports an empty field's
+# placeholder as its text, so "no text" is not something the field itself can be asked.
+- extendedWaitUntil:
+    visible:
+      id: onboarding-name-screen
+    timeout: 30000
+- assertVisible:
+    id: onboarding-progress
+- assertVisible:
+    id: onboarding-name-input
+- assertVisible:
+    id: onboarding-name-continue
+    enabled: false
+- takeScreenshot: phase-3-onboarding-name
+- tapOn:
+    id: onboarding-name-input
+- inputText: Rita Newcomer
+- tapOn:
+    id: onboarding-name-continue
+
+# Step 2: about your work (#82), with the user type menu (#84).
+- extendedWaitUntil:
+    visible:
+      id: onboarding-about-screen
+    timeout: 30000
+- tapOn:
+    id: onboarding-job-title
+- inputText: Designer
+- tapOn:
+    id: onboarding-company
+- inputText: Acme
+- takeScreenshot: phase-3-onboarding-about
+- tapOn:
+    id: onboarding-user-type
+- extendedWaitUntil:
+    visible:
+      id: onboarding-user-type-menu
+    timeout: 10000
+- takeScreenshot: phase-3-onboarding-menu
+- tapOn:
+    id: onboarding-user-type-option-investing
+- extendedWaitUntil:
+    notVisible:
+      id: onboarding-user-type-menu
+    timeout: 10000
+- assertVisible:
+    id: onboarding-user-type
+    text: ".*Investing.*"
+- tapOn:
+    id: onboarding-about-continue
+
+# Step 3: ready, greeting the first name only.
+- extendedWaitUntil:
+    visible:
+      id: onboarding-ready-screen
+    timeout: 30000
+- assertVisible:
+    id: onboarding-ready-title
+    text: "You.re all set, Rita"
+- takeScreenshot: phase-3-onboarding-ready
+- tapOn:
+    id: onboarding-ready-finish
+
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 30000
+- assertVisible:
+    id: home-avatar-initial
+    text: R

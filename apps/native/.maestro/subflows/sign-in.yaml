@@ -1,0 +1,24 @@
+# Sign in as EMAIL with a real code from the outbox (docs/spec/phase-3.md §8). Starts on
+# welcome-screen and ends wherever the gate sends that account — home for a seeded person,
+# onboarding for the newcomer — so each caller asserts where it landed.
+#
+#   - runFlow:
+#       file: ../subflows/sign-in.yaml
+#       env:
+#         EMAIL: e2e-person@gcnotes.test
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- runFlow:
+    file: request-code.yaml
+    env:
+      EMAIL: ${EMAIL}
+- runFlow:
+    file: enter-code.yaml
+    env:
+      EMAIL: ${EMAIL}

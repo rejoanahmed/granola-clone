@@ -1,0 +1,13 @@
+# Every phase-3 flow's first two steps (docs/spec/phase-3.md §8): a clean launch — no app state, no
+# Keychain, so no stored session — and a reset, seeded backend. Then wait for welcome, which a
+# signed-out launch must land on.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: launch-app.yaml
+- runFlow: e2e-reset.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000

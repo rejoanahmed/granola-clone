@@ -1,0 +1,13 @@
+# The code step of sign-in: read the newest code the fake email provider wrote for EMAIL, and type
+# it. The sixth digit submits (phase-3.md §2.2), so there is deliberately no tap on Verify.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/read-otp.js
+    env:
+      EMAIL: ${EMAIL}
+- tapOn:
+    id: welcome-otp
+- inputText: ${output.otp}

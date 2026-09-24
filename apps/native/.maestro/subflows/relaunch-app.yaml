@@ -1,0 +1,16 @@
+# Quit and relaunch WITHOUT clearing anything: the app state and the Keychain (where SecureStore
+# keeps the session) both survive, which is exactly what a relaunch test is asking about. The
+# launch arguments are `launch-app.yaml`'s and are explained there.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- stopApp
+- launchApp:
+    clearState: false
+    clearKeychain: false
+    arguments:
+      --initialUrl: "${typeof DEV_SERVER_URL === 'undefined' ? 'http://localhost:8081' : DEV_SERVER_URL}"
+      -EXDevMenuIsOnboardingFinished: "YES"
+      -EXDevMenuShowsAtLaunch: "NO"
+      -EXDevMenuShowFloatingActionButton: "NO"

@@ -13,6 +13,12 @@
   },
   "overrides": [
     {
+      "includes": [".maestro/scripts/**"],
+      "javascript": {
+        "globals": ["API_URL", "E2E_SECRET", "EMAIL", "http", "json", "output"]
+      }
+    },
+    {
       "includes": ["test/**/*"],
       "javascript": {
         "globals": [

@@ -57,3 +57,30 @@ describe("dev routes", () => {
     }
   });
 });
+
+// AC9 (docs/spec/phase-3.md §8): onboarding and settings are private, a returnTo may land on
+// settings, and none may land inside onboarding — that would let a link skip or re-enter it.
+describe("phase-3 routes", () => {
+  it("keeps onboarding and settings private in either build", () => {
+    for (const dev of [true, false]) {
+      withDev(dev);
+      expect(isPublicNativeRoute(["onboarding", "name"])).toBe(false);
+      expect(isPublicNativeRoute(["onboarding", "about"])).toBe(false);
+      expect(isPublicNativeRoute(["settings"])).toBe(false);
+    }
+  });
+
+  it("lets a returnTo land on /settings", () => {
+    expect(sanitizeReturnPath("/settings")).toBe("/settings");
+  });
+
+  it("never lets a returnTo land inside onboarding", () => {
+    for (const path of [
+      "/onboarding/name",
+      "/onboarding/about",
+      "/onboarding/ready",
+    ]) {
+      expect(sanitizeReturnPath(path)).toBe("/");
+    }
+  });
+});

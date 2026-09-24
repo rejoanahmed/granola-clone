@@ -311,3 +311,40 @@ describe("makeApiClient", () => {
     expect((error as ApiError).status).toBe(0);
   });
 });
+
+// §7 case 26 (docs/spec/phase-3.md §6.8). The directives go when `makeProfilesApi` grows the two
+// methods — each fails type-check the moment it has nothing left to expect.
+describe("the phase-3 profile endpoints", () => {
+  it("sends PATCH /me with a JSON body and hands back the decoded profile", async () => {
+    const patched = { id: "usr_1", jobTitle: "Designer" };
+    const { calls, stub } = recording(jsonResponse(patched));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    // @ts-expect-error phase 3: updateMe is not on the client yet
+    const result = await client.updateMe({ body: { jobTitle: "Designer" } });
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/me`);
+    expect(call.init.method).toBe("PATCH");
+    expect(headerOf(call, "content-type")).toBe("application/json");
+    expect(JSON.parse(String(call.init.body))).toEqual({
+      jobTitle: "Designer",
+    });
+    expect(result).toEqual(patched);
+  });
+
+  it("sends POST /me/onboarding with no body", async () => {
+    const onboarded = { id: "usr_1", onboardedAt: 1_700_000_000_000 };
+    const { calls, stub } = recording(jsonResponse(onboarded));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    // @ts-expect-error phase 3: completeOnboarding is not on the client yet
+    const result = await client.completeOnboarding();
+
+    const call = only(calls);
+    expect(call.url).toBe(`${BASE_URL}/me/onboarding`);
+    expect(call.init.method).toBe("POST");
+    expect(call.init.body ?? null).toBeNull();
+    expect(result).toEqual(onboarded);
+  });
+});

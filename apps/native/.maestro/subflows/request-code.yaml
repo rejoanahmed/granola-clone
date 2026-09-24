@@ -1,0 +1,19 @@
+# The email step of sign-in: type EMAIL and continue, then wait for the code step. Split from
+# `sign-in.yaml` so a flow that needs the code step itself (a wrong code, a resend) starts here.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: welcome-email
+    timeout: 60000
+- tapOn:
+    id: welcome-email
+- inputText: ${EMAIL}
+- tapOn:
+    id: welcome-submit
+- extendedWaitUntil:
+    visible:
+      id: welcome-otp
+    timeout: 30000
