@@ -219,6 +219,30 @@ Evidence: `architecture/DEPLOYMENT.md`; `.github/workflows/deploy.yml` and `ci.y
 
 ---
 
+## D018 · An owned resource the caller cannot see is a 404, never a 403 — **STANDING**
+
+Phase 4's notes are the first owned resource, and the rule is set for every one that follows
+(folders, transcripts, chats). Another user's note answers `404 NoteNotFound`, byte-identical to an
+id that never existed: the same `_tag`, the same status, and `details: { id }` carrying only the id
+the caller sent. A 403 would confirm the id exists, and ids are not secret. They appear in share
+text, logs and screenshots, and a prefix plus a nanoid is guessable enough to probe.
+
+**How it is enforced.** The policy predicates (`canReadNote`, `canEditNote`) stay pure and return
+`Authorized<Note>`, so a service method that skips the check still fails to compile. The service
+does not throw `Forbidden` when a predicate fails. It routes both "absent" and "not yours" through
+one local helper that throws the context's `NotFound`, so the two paths cannot drift into
+different bodies. Lists are scoped by construction: the repository filters on the caller's id, and
+no route takes a parameter naming an owner. The wire `Note` carries no `ownerId`.
+
+**What it costs.** A real ownership bug and a deleted row look the same from the client, so the
+evidence lives in the server logs rather than the status code. `Forbidden` (403) is kept for
+actions on a resource the caller *can* see but may not perform, which no context has yet.
+
+Reverse cost: one helper per context. Evidence: `docs/spec/phase-4.md` §6.3;
+`packages/domain/src/Notes/Errors.ts`; `Notes.test.ts` cases 4–6 and `Notes.http.test.ts` case 23.
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.

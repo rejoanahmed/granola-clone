@@ -12,6 +12,14 @@
   substance: before phase 3, production email sign-in silently logged `provider: "none"` and sent
   nothing. Stubbed: local and the deployed dev Worker run the fake. Unblocked by a phase that picks
   a provider, writes `Integrations/Email/EmailClient.ts`, and adds its credential to `parseConfig`.
+- **No trash viewer or purge (phase 4, deferred).** Trash is a soft delete (`notes.trashed_at`),
+  and a trashed note can be brought back only through the Undo toast or
+  `POST /notes/{id}/restore`. Discovery showed no trash screen, so none is designed. Nothing purges
+  a trashed row either: it is kept indefinitely, and `GET /notes/{id}` still returns it with
+  `trashedAt`. Stubbed: nothing. The list excludes trashed notes through the partial index
+  `notes_owner_live_idx`. Unblocked by a phase that designs a trash screen and a retention period.
+  The purge would be a cron calling a service method (R8), and the cascade on `note_attendees`
+  already cleans up after it.
 
 ## Deferred review items (phase 3)
 

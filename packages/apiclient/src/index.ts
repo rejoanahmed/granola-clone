@@ -25,10 +25,13 @@ export {
   UNEXPECTED_ERROR_TAG,
   unwrap,
 } from "./errors";
+export { makeNotesApi } from "./notes";
 export { makeProfilesApi } from "./profiles";
 export {
+  type ApiInfiniteQueryOptions,
   type ApiMutationOptions,
   type ApiQueryOptions,
+  type InfiniteQueryContext,
   invalidate,
   makeQueryApi,
   type QueryApi,

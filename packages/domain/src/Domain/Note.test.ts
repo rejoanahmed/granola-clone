@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 4: the note vocabulary is specified (phase-4.md §6.2), not built
 import { AttendeeInput, NoteCreate, NotePatch, NoteTitle } from "./Note";
 
 // The contract is the only thing between a phone's form and the `notes` row, so the rules the

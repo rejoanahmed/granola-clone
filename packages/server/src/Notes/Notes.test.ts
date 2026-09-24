@@ -1,5 +1,4 @@
 import { ValidationFailed } from "@gc/domain/Errors";
-// @ts-expect-error phase 4: the notes errors are specified (phase-4.md §6.3), not built
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";

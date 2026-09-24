@@ -1,8 +1,6 @@
-// @ts-expect-error phase 4: the note vocabulary is specified (phase-4.md §6.2), not built
 import { Note, NoteSummary } from "@gc/domain/Domain/Note";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { PageOf } from "@gc/domain/Http";
-// @ts-expect-error phase 4: the notes errors are specified (phase-4.md §6.3), not built
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { describe, expect, it } from "vitest";

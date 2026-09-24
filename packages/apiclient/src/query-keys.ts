@@ -10,6 +10,13 @@ export const queryKeys = {
     all: ["me"] as const,
     profile: () => ["me", "profile"] as const,
   },
+  // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. The list
+  // takes no filter, so one key covers every page of the infinite query.
+  notes: {
+    all: ["notes"] as const,
+    detail: (id: string) => ["notes", "detail", id] as const,
+    list: () => ["notes", "list"] as const,
+  },
 } as const;
 
 export const queryDefaults = {
@@ -20,5 +27,19 @@ export const queryDefaults = {
 // cache rather than naming keys.
 export const invalidationKeys = {
   completeOnboarding: () => [queryKeys.me.profile()],
+  createNote: () => [queryKeys.notes.list()],
+  // The list too, not only the detail: a title shows on its row, and trash and restore move it.
+  restoreNote: (id: string) => [
+    queryKeys.notes.detail(id),
+    queryKeys.notes.list(),
+  ],
+  trashNote: (id: string) => [
+    queryKeys.notes.detail(id),
+    queryKeys.notes.list(),
+  ],
   updateMe: () => [queryKeys.me.profile()],
+  updateNote: (id: string) => [
+    queryKeys.notes.detail(id),
+    queryKeys.notes.list(),
+  ],
 } as const satisfies Record<string, (...ids: string[]) => readonly QueryKey[]>;
