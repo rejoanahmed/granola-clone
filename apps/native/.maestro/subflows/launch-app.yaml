@@ -14,6 +14,11 @@
 #                                  button cover the app on every clean launch.
 # All are inert in a Release build, which has neither the launcher nor the menu.
 #
+# MIC is the microphone permission the app launches with (docs/spec/phase-5.md §8): `allow` (the
+# default, and what Maestro grants without being asked), `deny`, or `unset` for the undetermined
+# state the primer card is for. It defaults in the expression, for the reason below. `all: allow`
+# first keeps every other permission where Maestro's own default puts it.
+#
 # The Metro URL defaults in the expression rather than in `env:`: a subflow's own `env:` default
 # wins over `-e DEV_SERVER_URL=…` from the command line, so a second Metro on another port (another
 # project already holding :8081) was silently ignored and the app loaded the wrong bundle.
@@ -24,6 +29,9 @@ env:
 - launchApp:
     clearState: true
     clearKeychain: true
+    permissions:
+      all: allow
+      microphone: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
     arguments:
       --initialUrl: "${typeof DEV_SERVER_URL === 'undefined' ? 'http://localhost:8081' : DEV_SERVER_URL}"
       -EXDevMenuIsOnboardingFinished: "YES"

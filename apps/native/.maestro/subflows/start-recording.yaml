@@ -1,0 +1,20 @@
+# From home, with the microphone allowed: tap + and wait for the live card (docs/spec/phase-5.md
+# §3.4, §3.11). The caller asserts what the card shows.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-new-note-button
+    timeout: 30000
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: recording-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: recording-timer
+    timeout: 15000

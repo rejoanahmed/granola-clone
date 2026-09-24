@@ -1,0 +1,39 @@
+# AC8 (docs/spec/phase-5.md §8, §3.4): Pause swaps the meter for "Paused" and holds the timer;
+# tapping it again brings the meter back.
+appId: ${APP_ID}
+name: Pausing and resuming a recording
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/start-recording.yaml
+- extendedWaitUntil:
+    visible:
+      id: recording-meter
+    timeout: 10000
+- assertNotVisible:
+    id: recording-paused
+
+- tapOn:
+    id: recording-pause
+- extendedWaitUntil:
+    visible:
+      id: recording-paused
+      text: Paused
+    timeout: 5000
+- assertNotVisible:
+    id: recording-meter
+- assertVisible:
+    id: recording-timer
+
+- tapOn:
+    id: recording-pause
+- extendedWaitUntil:
+    visible:
+      id: recording-meter
+    timeout: 5000
+- assertNotVisible:
+    id: recording-paused

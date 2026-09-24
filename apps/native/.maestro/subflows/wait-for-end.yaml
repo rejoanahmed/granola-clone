@@ -1,0 +1,12 @@
+# On the live card: wait until the recorded time passes 10 s and Cancel becomes End
+# (docs/spec/phase-5.md §3.4). A wait, never a sleep: the flow is exactly as slow as the timer.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: recording-end
+    timeout: 30000
+- assertNotVisible:
+    id: recording-cancel

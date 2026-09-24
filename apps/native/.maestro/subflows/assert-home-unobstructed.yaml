@@ -18,6 +18,12 @@ env:
     id: attendees-sheet
 - assertNotVisible:
     id: rename-sheet
+- assertNotVisible:
+    id: mic-primer-card
+- assertNotVisible:
+    id: mic-denied-card
+- assertNotVisible:
+    id: recording-screen
 - assertVisible:
     id: home-ask-button
 - assertVisible:

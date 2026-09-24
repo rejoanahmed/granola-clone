@@ -5,7 +5,7 @@ import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, type TestD1 } from "../Testing/Database";
 import type { E2eService } from "./E2eService";
-import { E2E_USERS } from "./Fixtures";
+import { E2E_USERS, type E2eUser } from "./Fixtures";
 
 const AUTH_SECRET = "auth-secret-32-characters-long-000000";
 
@@ -224,5 +224,226 @@ describe("the E2E harness, phase 4", () => {
     );
     expect(restored).toMatchObject({ title: "Launch planning review" });
     expect(restored.attendees).toHaveLength(3);
+  });
+});
+
+// ── Phase 5: seeded transcripts and the transcription switch (docs/spec/phase-5.md §6.4, §7) ──
+//
+// Read through loose views of the container and the harness: neither has its phase-5 members yet,
+// and a cast through `unknown` keeps this file compiling on both sides of that change.
+
+type Utterance = { readonly speaker: string; readonly text: string };
+type RecordingView = { readonly id: string; readonly status: string };
+type RecordingsView = {
+  create: (
+    who: E2eUser,
+    input: object
+  ) => Promise<{ recording: RecordingView }>;
+  end: (
+    who: E2eUser,
+    id: string,
+    input: { durationMs: number }
+  ) => Promise<RecordingView>;
+  get: (who: E2eUser, id: string) => Promise<RecordingView>;
+  transcript: (
+    who: E2eUser,
+    noteId: string
+  ) => Promise<{ utterances: readonly Utterance[] }>;
+  uploadAudio: (
+    who: E2eUser,
+    id: string,
+    upload: {
+      body: ReadableStream<Uint8Array>;
+      contentLength: string;
+      contentType: string;
+    }
+  ) => Promise<RecordingView>;
+};
+type HarnessView = {
+  releaseTranscription: () => Promise<{
+    completed: number;
+    failed: number;
+    pending: number;
+  }>;
+  setTranscriptionMode: (mode: string) => Promise<{ mode: string }>;
+};
+
+// Enough of R2 for the audio store: what was put is kept, bytes and all.
+const memoryBucket = () => {
+  const objects = new Map<string, Uint8Array>();
+  const bytesOf = async (value: unknown): Promise<Uint8Array> =>
+    new Uint8Array(await new Response(value as BodyInit).arrayBuffer());
+  return {
+    delete: (keys: string | string[]) => {
+      for (const key of Array.isArray(keys) ? keys : [keys]) {
+        objects.delete(key);
+      }
+      return Promise.resolve();
+    },
+    get: (key: string) => {
+      const bytes = objects.get(key);
+      return Promise.resolve(
+        bytes === undefined
+          ? null
+          : {
+              arrayBuffer: () => Promise.resolve(bytes.buffer),
+              body: new Blob([bytes]).stream(),
+              key,
+              size: bytes.byteLength,
+            }
+      );
+    },
+    head: (key: string) =>
+      Promise.resolve(
+        objects.has(key)
+          ? { key, size: objects.get(key)?.byteLength ?? 0 }
+          : null
+      ),
+    objects,
+    put: async (key: string, value: unknown) => {
+      objects.set(key, await bytesOf(value));
+      return { key };
+    },
+  };
+};
+
+describe("the E2E harness, phase 5", () => {
+  let d1: TestD1;
+  let container: ReturnType<typeof buildContainer>;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    container = buildContainer({
+      ...envOver(d1),
+      AUDIO: memoryBucket(),
+    } as unknown as Env);
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const recordings = () =>
+    (container as unknown as { recordings: RecordingsView }).recordings;
+  const switches = () => harness as unknown as HarnessView;
+
+  const fresh = async () => {
+    await harness.reset();
+    return await harness.seed();
+  };
+
+  it("gives not_e2e_launch a transcript of at least 8 utterances, A and B in turn, A first", async () => {
+    await fresh();
+
+    const { utterances } = await recordings().transcript(
+      E2E_USERS.person,
+      "not_e2e_launch"
+    );
+
+    expect(utterances.length).toBeGreaterThanOrEqual(8);
+    expect(utterances[0]?.speaker).toBe("A");
+    expect(new Set(utterances.map((u) => u.speaker))).toEqual(
+      new Set(["A", "B"])
+    );
+    utterances.forEach((utterance, index) => {
+      expect(utterance.speaker).toBe(index % 2 === 0 ? "A" : "B");
+    });
+  });
+
+  it("gives not_e2e_solo exactly one utterance: A, “Hello. How are you?” (#42)", async () => {
+    await fresh();
+
+    const { utterances } = await recordings().transcript(
+      E2E_USERS.person,
+      "not_e2e_solo"
+    );
+
+    expect(utterances).toEqual([
+      expect.objectContaining({ speaker: "A", text: "Hello. How are you?" }),
+    ]);
+  });
+
+  it("gives not_e2e_other a transcript only its owner can read, and not_e2e_standup none", async () => {
+    await fresh();
+
+    await expect(
+      recordings().transcript(E2E_USERS.other, "not_e2e_other")
+    ).resolves.toMatchObject({ utterances: expect.any(Array) });
+    await expect(
+      recordings().transcript(E2E_USERS.person, "not_e2e_other")
+    ).rejects.toMatchObject({ _tag: "NoteNotFound" });
+    await expect(
+      recordings().transcript(E2E_USERS.person, "not_e2e_standup")
+    ).rejects.toMatchObject({ _tag: "TranscriptNotFound" });
+  });
+
+  it("marks the seeded recordings transcribed on the notes list", async () => {
+    await fresh();
+
+    const page = await container.notes.list(E2E_USERS.person, {
+      cursor: null,
+      limit: 20,
+    });
+
+    expect(
+      page.items.map((item) => ({
+        id: item.id,
+        recordingStatus: (item as { recordingStatus?: unknown })
+          .recordingStatus,
+      }))
+    ).toEqual([
+      { id: "not_e2e_launch", recordingStatus: "transcribed" },
+      { id: "not_e2e_standup", recordingStatus: null },
+      { id: "not_e2e_solo", recordingStatus: "transcribed" },
+    ]);
+  });
+
+  it("answers the mode it set, and a reset clears the switch", async () => {
+    await fresh();
+
+    await expect(switches().setTranscriptionMode("hold")).resolves.toEqual({
+      mode: "hold",
+    });
+    expect(
+      Number(
+        await d1.prepare("SELECT count(*) AS n FROM e2e_switches").first("n")
+      )
+    ).toBe(1);
+
+    await harness.reset();
+    expect(
+      Number(
+        await d1.prepare("SELECT count(*) AS n FROM e2e_switches").first("n")
+      )
+    ).toBe(0);
+  });
+
+  it("refuses a mode it does not know", async () => {
+    await expect(
+      switches().setTranscriptionMode("sometimes")
+    ).rejects.toMatchObject({ _tag: "ValidationFailed" });
+  });
+
+  it("releases a held recording: the switch goes to auto and the sweep completes it", async () => {
+    await fresh();
+    await switches().setTranscriptionMode("hold");
+    const person = E2E_USERS.person;
+    const { recording } = await recordings().create(person, {});
+    await recordings().end(person, recording.id, { durationMs: 12_000 });
+    const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
+    const held = await recordings().uploadAudio(person, recording.id, {
+      body: new Blob([bytes]).stream(),
+      contentLength: String(bytes.byteLength),
+      contentType: "audio/mp4",
+    });
+    expect(held.status).toBe("transcribing");
+
+    const released = await switches().releaseTranscription();
+
+    expect(released).toEqual({ completed: 1, failed: 0, pending: 0 });
+    await expect(recordings().get(person, recording.id)).resolves.toMatchObject(
+      { status: "transcribed" }
+    );
   });
 });

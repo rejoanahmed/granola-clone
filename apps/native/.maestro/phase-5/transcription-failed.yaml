@@ -1,0 +1,76 @@
+# AC11 (docs/spec/phase-5.md §8, §3.8): with the transcriber failing, the ended recording's page
+# says so with a Retry, and its More has no View transcript. With the switch back to auto, Retry
+# clears the row and the transcript opens.
+appId: ${APP_ID}
+name: A failed transcription, retried
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: fail
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Couldn.t transcribe this recording\.
+    timeout: 30000
+- assertVisible:
+    id: note-status-retry
+- assertVisible:
+    id: note-more
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-edit
+- assertNotVisible:
+    id: note-menu-transcript
+- tapOn:
+    id: action-menu-scrim
+- extendedWaitUntil:
+    notVisible:
+      id: note-menu
+    timeout: 5000
+
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- tapOn:
+    id: note-status-retry
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 30000
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- tapOn:
+    id: note-menu-transcript
+- extendedWaitUntil:
+    visible:
+      id: transcript-sheet
+    timeout: 15000
+- assertVisible:
+    id: transcript-text-0
+    text: Hello\. How are you\?

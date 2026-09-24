@@ -1,0 +1,8 @@
+# Let a held transcription finish now: the switch back to `auto` and one sweep
+# (docs/spec/phase-5.md §6.4).
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-release.js

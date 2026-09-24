@@ -469,3 +469,98 @@ describe("POST /e2e/reset, phase 4", () => {
     });
   });
 });
+
+// ── Phase 5: the transcription switch over the real app (docs/spec/phase-5.md §6.4) ──────────
+// The two routes the Maestro scripts `e2e-transcription.js` and `e2e-release.js` call.
+
+const harnessJson = (path: string, body: unknown) =>
+  app.request(
+    path,
+    {
+      body: JSON.stringify(body),
+      headers: { "content-type": "application/json", "x-e2e-secret": SECRET },
+      method: "POST",
+    },
+    live
+  );
+
+describe("POST /e2e/transcription, phase 5", () => {
+  it("does not exist when the harness is off", async () => {
+    const response = await app.request(
+      "/e2e/transcription",
+      {
+        body: JSON.stringify({ mode: "hold" }),
+        headers: { "content-type": "application/json", "x-e2e-secret": SECRET },
+        method: "POST",
+      },
+      off
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("answers the mode it set, and 422 for one it does not know", async () => {
+    await freshWorld();
+
+    const set = await harnessJson("/e2e/transcription", { mode: "hold" });
+    const refused = await harnessJson("/e2e/transcription", { mode: "maybe" });
+
+    expect(set.status).toBe(200);
+    await expect(set.json()).resolves.toEqual({ mode: "hold" });
+    expect(refused.status).toBe(422);
+  });
+
+  it("is cleared by a reset", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/transcription", { mode: "fail" });
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+
+    expect(await countOf("SELECT count(*) AS n FROM e2e_switches")).toBe(0);
+  });
+
+  it("releases: the switch back to auto and the sweep's counts in the answer", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/transcription", { mode: "hold" });
+
+    const released = await harness("POST", "/e2e/transcription/release");
+
+    expect(released.status).toBe(200);
+    await expect(released.json()).resolves.toEqual({
+      completed: 0,
+      failed: 0,
+      pending: 0,
+    });
+    expect(
+      await rows(
+        "SELECT name, value FROM e2e_switches WHERE name = ?",
+        "transcription"
+      )
+    ).toEqual([{ name: "transcription", value: "auto" }]);
+  });
+});
+
+describe("POST /e2e/seed, phase 5", () => {
+  it("gives person's launch note a transcript over the wire, and standup none", async () => {
+    await freshWorld();
+
+    const launch = await asRole(
+      "person",
+      "GET",
+      "/notes/not_e2e_launch/transcript"
+    );
+    const standup = await asRole(
+      "person",
+      "GET",
+      "/notes/not_e2e_standup/transcript"
+    );
+
+    expect(launch.status).toBe(200);
+    const body = (await launch.json()) as { utterances: unknown[] };
+    expect(body.utterances.length).toBeGreaterThanOrEqual(8);
+    expect(standup.status).toBe(404);
+    await expect(standup.json()).resolves.toMatchObject({
+      _tag: "TranscriptNotFound",
+    });
+  });
+});

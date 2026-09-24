@@ -1,0 +1,29 @@
+# AC2 (docs/spec/phase-5.md §8, §3.6): Cancel in the first 10 s throws the recording away with no
+# confirm and no toast. Home shows again with the FAB, and only the seeded rows.
+appId: ${APP_ID}
+name: Cancelling a recording in its first seconds leaves nothing behind
+tags:
+  - phase-5
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/start-recording.yaml
+- assertVisible:
+    id: recording-cancel
+- assertNotVisible:
+    id: recording-end
+- tapOn:
+    id: recording-cancel
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 15000
+- assertNotVisible:
+    id: recording-screen
+- runFlow: ../subflows/assert-no-new-note.yaml
+- assertNotVisible:
+    id: home-recording-pill
+- assertNotVisible:
+    id: toast

@@ -1,11 +1,14 @@
 # Every phase-3 flow's first two steps (docs/spec/phase-3.md §8): a clean launch — no app state, no
 # Keychain, so no stored session — and a reset, seeded backend. Then wait for welcome, which a
-# signed-out launch must land on.
+# signed-out launch must land on. MIC passes through to `launch-app.yaml`.
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
 ---
-- runFlow: launch-app.yaml
+- runFlow:
+    file: launch-app.yaml
+    env:
+      MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
 - runFlow: e2e-reset.yaml
 - extendedWaitUntil:
     visible:

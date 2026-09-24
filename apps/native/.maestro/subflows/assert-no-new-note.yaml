@@ -1,0 +1,16 @@
+# On home, after a recording was cancelled, discarded or never started: the list holds the seeded
+# rows and nothing else (docs/spec/phase-5.md §8). A new note's id is minted, so it is the one row
+# whose id does not start with the fixtures' `not_e2e_`. The seeded row is waited for first, so the
+# assertion runs against a list that has answered.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 30000
+- assertVisible:
+    id: home-new-note-button
+- assertNotVisible:
+    id: "home-note-(?!not_e2e_).*"

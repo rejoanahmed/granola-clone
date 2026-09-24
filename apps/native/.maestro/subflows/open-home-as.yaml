@@ -5,11 +5,15 @@
 #       file: ../subflows/open-home-as.yaml
 #       env:
 #         EMAIL: e2e-empty@gcnotes.test
+#         MIC: deny            # optional; the microphone permission, see launch-app.yaml
 appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
 ---
-- runFlow: start-clean.yaml
+- runFlow:
+    file: start-clean.yaml
+    env:
+      MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
 - runFlow:
     file: sign-in.yaml
     env:
