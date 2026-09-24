@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 3: ProfilePatch and UserType are specified (phase-3.md §6.2), not built
 import { ProfilePatch, UserType } from "./Profile";
 
 // The patch is the only thing between a phone's form and the `profiles` row, so every rule the

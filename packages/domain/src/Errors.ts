@@ -9,7 +9,8 @@ export type ErrorStatus =
   | 422
   | 429
   | 500
-  | 502;
+  | 502
+  | 503;
 
 /**
  * `details` is serialised to the client verbatim — identifiers only, never prose. `message` is for

@@ -267,11 +267,17 @@ describe("the profiles table", () => {
 
 describe("canReadProfile", () => {
   const profile = {
+    companyDescription: null,
+    companyName: null,
     createdAt: AT,
     email: actor().email,
     emailVerified: true,
     id: UserId.parse(actor().id),
+    jobTitle: null,
+    linkedinUsername: null,
     name: actor().name,
+    onboardedAt: null,
+    userType: null,
   };
 
   it("lets a person read their own profile", () => {

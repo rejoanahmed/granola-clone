@@ -23,12 +23,20 @@ export const makeProfilesRepo = (db: DrizzleClient) => ({
     }
     // better-auth's columns are `timestamp_ms`, so drizzle hands back a `Date`; the domain speaks
     // epoch milliseconds everywhere, and this mapper is where the two meet.
+    // Phase-3 contract stub: the details are what a missing `profiles` row reads as, until the
+    // left join (phase-3.md §6.3) replaces them.
     return {
+      companyDescription: null,
+      companyName: null,
       createdAt: row.createdAt.getTime(),
       email: row.email,
       emailVerified: row.emailVerified,
       id: UserId.parse(row.id),
+      jobTitle: null,
+      linkedinUsername: null,
       name: row.name,
+      onboardedAt: null,
+      userType: null,
     };
   },
 });

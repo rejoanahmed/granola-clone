@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import type { Profile } from "@gc/domain/Domain/Profile";
 import { z } from "zod";
 import { makeApiClient, makeEndpoint } from "./client";
 import {
@@ -315,12 +316,25 @@ describe("makeApiClient", () => {
 // §7 case 26 (docs/spec/phase-3.md §6.8). The directives go when `makeProfilesApi` grows the two
 // methods — each fails type-check the moment it has nothing left to expect.
 describe("the phase-3 profile endpoints", () => {
+  const PROFILE = {
+    companyDescription: null,
+    companyName: null,
+    createdAt: 1_690_000_000_000,
+    email: "rita@example.test",
+    emailVerified: true,
+    id: "usr_1" as Profile["id"],
+    jobTitle: null,
+    linkedinUsername: null,
+    name: "Rita",
+    onboardedAt: null,
+    userType: null,
+  } satisfies Profile;
+
   it("sends PATCH /me with a JSON body and hands back the decoded profile", async () => {
-    const patched = { id: "usr_1", jobTitle: "Designer" };
+    const patched = { ...PROFILE, jobTitle: "Designer" };
     const { calls, stub } = recording(jsonResponse(patched));
     const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
 
-    // @ts-expect-error phase 3: updateMe is not on the client yet
     const result = await client.updateMe({ body: { jobTitle: "Designer" } });
 
     const call = only(calls);
@@ -334,11 +348,10 @@ describe("the phase-3 profile endpoints", () => {
   });
 
   it("sends POST /me/onboarding with no body", async () => {
-    const onboarded = { id: "usr_1", onboardedAt: 1_700_000_000_000 };
+    const onboarded = { ...PROFILE, onboardedAt: 1_700_000_000_000 };
     const { calls, stub } = recording(jsonResponse(onboarded));
     const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
 
-    // @ts-expect-error phase 3: completeOnboarding is not on the client yet
     const result = await client.completeOnboarding();
 
     const call = only(calls);
