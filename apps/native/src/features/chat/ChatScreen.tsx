@@ -10,7 +10,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { handOverActivity } from "./activity";
 import { chatModelsQuery, chatThreadQuery, useSelectChatModel } from "./api";
@@ -62,6 +63,14 @@ export function ChatScreen({
   const models = useQuery(chatModelsQuery());
   const selectModel = useSelectChatModel();
   const { load, reset } = chat;
+  // Both presentations end at the screen's bottom edge, so the composer rides the keyboard's own
+  // height: 12 above it when it is up (#70), the bottom safe area when it is down. KeyboardAvoidingView
+  // measured the page sheet's frame against the window and left the composer under the keys.
+  const keyboard = useReanimatedKeyboardAnimation();
+  const restBottom = Math.max(insets.bottom, spacing.sm);
+  const composerLift = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(restBottom, -keyboard.height.value + spacing.sm),
+  }));
 
   useEffect(() => {
     if (
@@ -161,10 +170,10 @@ export function ChatScreen({
         }}
         title={title}
       />
-      <KeyboardAvoidingView behavior="padding" style={styles.flex}>
+      <View style={styles.flex}>
         <View style={styles.flex}>{body}</View>
         {gone ? null : (
-          <View style={{ paddingBottom: Math.max(insets.bottom, spacing.sm) }}>
+          <Animated.View style={composerLift}>
             <Composer
               autoFocus={threadParam === undefined}
               draft={draft}
@@ -181,9 +190,9 @@ export function ChatScreen({
               scope={scope.kind}
               sendDisabled={chat.busy || opening !== null}
             />
-          </View>
+          </Animated.View>
         )}
-      </KeyboardAvoidingView>
+      </View>
       <ModelMenu
         anchor={menu ? { align: "left", frame: menu, gap: MENU_GAP } : null}
         models={models.data?.models ?? []}

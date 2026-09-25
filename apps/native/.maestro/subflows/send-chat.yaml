@@ -18,5 +18,8 @@ env:
       id: chat-send
       text: Send
     timeout: 5000
+# The keyboard may still be rising under the composer; a tap aimed mid-rise lands where Send was.
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     id: chat-send

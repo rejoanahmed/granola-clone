@@ -1,12 +1,9 @@
-import { colors, spacing, Text } from "@native/design";
-import type { ReactNode } from "react";
-import { Text as NativeText, StyleSheet, View } from "react-native";
-import {
-  type Block,
-  gapBefore,
-  parseNoteMarkdown,
-  type Span,
-} from "./markdown";
+import { colors, spacing } from "@native/design";
+import { StyleSheet, View } from "react-native";
+import { BlockText, type Markers } from "./BlockText";
+import { type Block, gapBefore, parseNoteMarkdown } from "./markdown";
+
+export type { Markers } from "./BlockText";
 
 // #10's line pitch, measured: looser than the 22pt `body` token, which is tuned for single lines.
 const LINE_HEIGHT = 24;
@@ -18,35 +15,10 @@ const INDENT = {
   1: { dot: 34, text: 48 },
 } as const;
 
-/** Turns a span's text into inline content: the chat answer's citation chips (phase 7). */
-export type RenderText = (text: string) => ReactNode;
-
 type Options = {
   readonly lineHeight: number;
-  readonly renderText?: RenderText;
+  readonly markers?: Markers;
 };
-
-function Spans({
-  options,
-  spans,
-}: {
-  readonly options: Options;
-  readonly spans: readonly Span[];
-}) {
-  return spans.map((span, index) => (
-    // A bare native Text, so a span inherits its block's type and changes only weight or slant.
-    <NativeText
-      // biome-ignore lint/suspicious/noArrayIndexKey: spans are positional and never reorder.
-      key={index}
-      style={[
-        span.bold ? styles.bold : null,
-        span.italic ? styles.italic : null,
-      ]}
-    >
-      {options.renderText ? options.renderText(span.text) : span.text}
-    </NativeText>
-  ));
-}
 
 function BlockView({
   block,
@@ -60,24 +32,25 @@ function BlockView({
   readonly testID: string;
 }) {
   const line = [styles.line, { lineHeight: options.lineHeight }];
+  const common = {
+    lineHeight: options.lineHeight,
+    markers: options.markers,
+    spans: block.spans,
+    style: line,
+    testID,
+  };
   if (block.kind === "heading") {
     return (
-      <Text
+      <BlockText
+        {...common}
         accessibilityRole="header"
-        style={[line, { marginTop: gap }]}
-        testID={testID}
+        outer={{ marginTop: gap }}
         variant="rowTitle"
-      >
-        <Spans options={options} spans={block.spans} />
-      </Text>
+      />
     );
   }
   if (block.kind === "paragraph") {
-    return (
-      <Text style={[line, { marginTop: gap }]} testID={testID} variant="body">
-        <Spans options={options} spans={block.spans} />
-      </Text>
-    );
+    return <BlockText {...common} outer={{ marginTop: gap }} variant="body" />;
   }
   const indent = INDENT[block.level];
   return (
@@ -94,13 +67,11 @@ function BlockView({
           ]}
         />
       ) : null}
-      <Text
-        style={[line, { marginLeft: indent.text }]}
-        testID={testID}
+      <BlockText
+        {...common}
+        outer={{ marginLeft: indent.text }}
         variant="body"
-      >
-        <Spans options={options} spans={block.spans} />
-      </Text>
+      />
     </View>
   );
 }
@@ -112,16 +83,16 @@ function BlockView({
 export function NoteMarkdown({
   blockPrefix = "note-block",
   lineHeight = LINE_HEIGHT,
-  renderText,
+  markers,
   source,
 }: {
   readonly blockPrefix?: string;
   readonly lineHeight?: number;
-  readonly renderText?: RenderText;
+  readonly markers?: Markers;
   readonly source: string;
 }) {
   const blocks = parseNoteMarkdown(source);
-  const options = { lineHeight, renderText };
+  const options = { lineHeight, markers };
   return (
     <View>
       {blocks.map((block, index) => (
@@ -142,7 +113,6 @@ export const hasBlocks = (source: string): boolean =>
   parseNoteMarkdown(source).length > 0;
 
 const styles = StyleSheet.create({
-  bold: { fontWeight: "600" },
   dot: {
     borderRadius: DOT / 2,
     height: DOT,
@@ -151,7 +121,6 @@ const styles = StyleSheet.create({
   },
   filled: { backgroundColor: colors.text.secondary },
   hollow: { borderColor: colors.text.secondary, borderWidth: DOT_STROKE },
-  italic: { fontStyle: "italic" },
   line: { flexShrink: 1, lineHeight: LINE_HEIGHT },
   row: { flexDirection: "row", paddingRight: spacing.xxs },
 });

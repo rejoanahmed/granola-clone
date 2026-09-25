@@ -7,7 +7,6 @@ import {
   Text,
   useToast,
 } from "@native/design";
-import { NoteMarkdown } from "@native/features/notes/NoteMarkdown";
 import { setStringAsync } from "expo-clipboard";
 import type { LucideIcon } from "lucide-react-native";
 import {
@@ -16,10 +15,10 @@ import {
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react-native";
-import { Fragment } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { ActivityRow, CitationChip, ThinkingLine } from "./AnswerParts";
-import { segmentCitations, stripMarkers } from "./citations";
+import { ActivityRow, ThinkingLine } from "./AnswerParts";
+import { CitedMarkdown } from "./CitedMarkdown";
+import { stripMarkers } from "./citations";
 import { CHAT_COPY } from "./copy";
 
 const ANSWER_LINE = 32;
@@ -80,28 +79,6 @@ export function AnswerView({
 }: Props) {
   const toast = useToast();
   const id = `chat-answer-${n}`;
-  const byIndex = new Map(message.citations.map((c) => [c.index, c]));
-  const known = new Set(byIndex.keys());
-
-  const renderText = (text: string) =>
-    segmentCitations(text, known).map((segment, i) => {
-      if (segment.kind === "text") {
-        // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional.
-        return <Fragment key={i}>{segment.text}</Fragment>;
-      }
-      const citation = byIndex.get(segment.index);
-      return (
-        <CitationChip
-          index={segment.index}
-          // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional.
-          key={i}
-          label={`Source ${segment.index}: ${citation?.title ?? ""}`}
-          onPress={() => citation && onCitation(citation.noteId)}
-          testID={`${id}-cite-${segment.index}`}
-        />
-      );
-    });
-
   const toggle = (value: ChatFeedback) =>
     onFeedback(message.feedback === value ? null : value);
 
@@ -120,11 +97,13 @@ export function AnswerView({
       />
       {message.content === "" ? null : (
         <View style={styles.body} testID={`${id}-body`}>
-          <NoteMarkdown
+          <CitedMarkdown
             blockPrefix={`${id}-block`}
+            citations={message.citations}
             lineHeight={ANSWER_LINE}
-            renderText={renderText}
+            onCitation={onCitation}
             source={message.content}
+            testIDPrefix={id}
           />
         </View>
       )}

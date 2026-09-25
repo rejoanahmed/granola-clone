@@ -26,11 +26,22 @@ env:
 - assertVisible:
     id: chat-chip-1
     text: What needs my attention first\?
-# The row scrolls; the last two chips may sit past the right edge (#71), so they are scrolled to.
-- scrollUntilVisible:
-    element:
+# The row scrolls; the last two chips may sit past the right edge (#71), so the row is swiped.
+# scrollUntilVisible swipes the middle of the screen, and with no software keyboard (the simulator's
+# hardware keyboard) the chips sit at the bottom, above the composer, where it never reaches.
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: chat-chip-3
+    commands:
+      - swipe:
+          from:
+            id: chat-chips
+          direction: LEFT
+- extendedWaitUntil:
+    visible:
       id: chat-chip-3
-    direction: RIGHT
     timeout: 5000
 - assertVisible:
     id: chat-chip-2

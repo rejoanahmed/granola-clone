@@ -23,7 +23,8 @@ const TILE = 22;
 const CHEVRON = 13;
 const DOC_GLYPH = 14;
 const ROW_HEIGHT = 28;
-const CHIP = 26;
+export const CHIP_SIZE = 26;
+const CHIP = CHIP_SIZE;
 const PULSE_MS = 600;
 
 /** #25's "Loaded notes >" row: a doc tile, the label, then a chevron, or a spinner while it runs. */
@@ -139,8 +140,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     height: CHIP,
     justifyContent: "center",
-    marginLeft: spacing.xxs,
-    transform: [{ translateY: 6 }],
     width: CHIP,
   },
   chipDigit: { color: colors.text.primary, lineHeight: CHIP },

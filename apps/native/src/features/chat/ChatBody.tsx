@@ -51,6 +51,7 @@ export function ChatEmpty({
         horizontal
         keyboardShouldPersistTaps="handled"
         showsHorizontalScrollIndicator={false}
+        style={styles.chipRow}
         testID="chat-chips"
       >
         {chips.map((chip, i) => (
@@ -205,6 +206,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: spacing.sm,
   },
+  // A horizontal scroller in a column otherwise grows to fill it and centres the chips in the gap.
+  chipRow: { flexGrow: 0 },
   chips: { gap: spacing.xs, paddingHorizontal: spacing.md },
   empty: { flex: 1, paddingBottom: spacing.sm },
   greeting: { marginHorizontal: spacing.lg + 3 },
