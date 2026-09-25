@@ -8,7 +8,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 7: the chats router is specified (phase-7.md §6.1, §11 API 5), not built
 import { chatsRouter } from "./Http";
 
 // docs/spec/phase-7.md §7 "Chats/Chats.http.test.ts". Wire shape only: the paths, `c.var.svc`, the

@@ -1,4 +1,5 @@
 import { CHAT_TITLE_MAX } from "@gc/domain/Domain/Chat";
+import { searchTerms, wordsOf } from "../../Chats/Retrieval";
 import type { ChatAnswerRequest, ChatContextNote } from "./Port";
 
 // The fake's chat answers as pure functions of the request (docs/spec/phase-7.md §6.6), apart from
@@ -11,20 +12,6 @@ export const GLOBAL_LEAD = "Here’s what I found in your notes:";
 
 const LINE_MAX = 140;
 const NOTE_BULLETS = 3;
-
-// A word is letters and digits, joined by an inner apostrophe or hyphen: "follow-ups" is one word,
-// so the question's "follow" does not match it. Retrieval's scoring tokenises the same way.
-const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
-
-const wordsOf = (text: string): Set<string> =>
-  new Set(text.toLowerCase().match(WORD) ?? []);
-
-const MIN_TERM = 3;
-const questionTerms = (question: string): string[] => [
-  ...new Set(
-    [...wordsOf(question)].filter((word) => [...word].length >= MIN_TERM)
-  ),
-];
 
 const TRAILING = /[?.!]+$/;
 
@@ -62,7 +49,7 @@ export const bestLinesOf = (
   question: string,
   count: number
 ): string[] => {
-  const terms = questionTerms(question);
+  const terms = searchTerms(question);
   const lines = [
     ...plainLinesOf(note.bodyMarkdown),
     ...plainLinesOf(note.transcriptText),

@@ -77,12 +77,13 @@ const STOPWORDS = new Set([
 ]);
 
 // A word is letters and digits joined by an inner apostrophe or hyphen, so "follow-ups" is one
-// word and the question's "follow" does not match it. The fake's line picker splits the same way.
+// word and the question's "follow" does not match it. The fake's line picker reads through the same
+// two functions, so what "a term in this line" means cannot drift from what it means for a note.
 const WORD = /[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu;
 
 const straightened = (word: string): string => word.replaceAll("’", "'");
 
-const wordsOf = (text: string): Set<string> =>
+export const wordsOf = (text: string): Set<string> =>
   new Set((text.toLowerCase().match(WORD) ?? []).map(straightened));
 
 export const searchTerms = (question: string): string[] =>

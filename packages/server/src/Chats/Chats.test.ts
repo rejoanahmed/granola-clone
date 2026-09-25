@@ -13,11 +13,8 @@ import type { Ids } from "../Runtime/Ids";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
 import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, sequentialIds, type TestD1 } from "../Testing";
-// @ts-expect-error phase 7: the chats repository is specified (phase-7.md §6.3, §11 API 5), not built
 import * as Repo from "./ChatsRepo";
-// @ts-expect-error phase 7: the chats service is specified (phase-7.md §6.4, §11 API 5), not built
 import * as Svc from "./ChatsService";
-// @ts-expect-error phase 7: the one pipe helper the SSE handlers use (phase-7.md §6.4), not built
 import * as Pipe from "./Pipe";
 
 // docs/spec/phase-7.md §7 cases 1–21: the chats service over the real repository and the shipped
@@ -281,12 +278,13 @@ const serviceWith = (port: unknown): ChatsService =>
   Svc.makeChatsService({
     clock,
     ids,
-    llm: port,
+    // The test's own shapes carry plain strings where the service's carry brands.
+    llm: port as Svc.ChatsDeps["llm"],
     logger: (event: string, fields: Record<string, unknown> = {}) => {
       logged.push({ event, fields });
     },
     repo: Repo.makeChatsRepo(makeDrizzle(d1)),
-  });
+  }) as unknown as ChatsService;
 const service = (): ChatsService => serviceWith(llm);
 
 const notes = () =>
@@ -996,7 +994,10 @@ describe("ChatsService, failure and retry", () => {
     };
 
     await Pipe.pipe(
-      await service().ask(person, { content: PRICING, scope: GLOBAL }),
+      (await service().ask(person, {
+        content: PRICING,
+        scope: GLOBAL,
+      })) as Parameters<typeof Pipe.pipe>[0],
       sink
     );
 
