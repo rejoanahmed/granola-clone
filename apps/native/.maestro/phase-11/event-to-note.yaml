@@ -77,14 +77,19 @@ env:
     id: "attendees-row-.*"
     index: 0
     text: "E2E Person \\(me\\)"
+# `index` counts after the text filter too, so the order is asserted with `below` instead.
 - assertVisible:
     id: "attendees-row-.*"
-    index: 1
     text: "Priya Raman.*"
+    below:
+      id: "attendees-row-.*"
+      text: "E2E Person \\(me\\)"
 - assertVisible:
     id: "attendees-row-.*"
-    index: 2
     text: "Sam Okafor.*"
+    below:
+      id: "attendees-row-.*"
+      text: "Priya Raman.*"
 - assertNotVisible:
     id: "attendees-row-.*"
     index: 3
