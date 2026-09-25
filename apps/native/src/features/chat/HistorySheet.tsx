@@ -107,6 +107,7 @@ export function HistorySheet({ onClose }: { readonly onClose: () => void }) {
   } else {
     content = (
       <SectionList
+        contentInsetAdjustmentBehavior="never"
         keyboardShouldPersistTaps="handled"
         keyExtractor={(thread) => thread.id}
         onEndReached={() => {

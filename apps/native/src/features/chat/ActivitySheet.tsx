@@ -129,7 +129,10 @@ export function ActivitySheet({ onClose, onNote, steps }: Props) {
       testID="chat-activity-sheet"
       title={CHAT_COPY.activity.title}
     >
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        contentContainerStyle={styles.body}
+        contentInsetAdjustmentBehavior="never"
+      >
         {steps.map((step, i) => {
           const Icon = STEP_GLYPH[step.kind];
           const notes = step.kind === "done" ? [] : step.notes;

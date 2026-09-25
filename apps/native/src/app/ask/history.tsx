@@ -1,4 +1,4 @@
-import { ToastProvider } from "@native/design";
+import { SheetScrollDecoy, ToastProvider } from "@native/design";
 import { HistorySheet } from "@native/features/chat/HistorySheet";
 import { useRouter } from "expo-router";
 
@@ -7,8 +7,11 @@ export default function ChatHistory() {
   const router = useRouter();
   // "Chat deleted" belongs on the sheet, which covers whatever the root provider would draw on.
   return (
-    <ToastProvider>
-      <HistorySheet onClose={() => router.back()} />
-    </ToastProvider>
+    <>
+      <SheetScrollDecoy />
+      <ToastProvider>
+        <HistorySheet onClose={() => router.back()} />
+      </ToastProvider>
+    </>
   );
 }

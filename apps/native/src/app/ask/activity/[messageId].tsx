@@ -1,3 +1,4 @@
+import { SheetScrollDecoy } from "@native/design";
 import { ActivitySheet } from "@native/features/chat/ActivitySheet";
 import { takeActivity } from "@native/features/chat/activity";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,15 +8,18 @@ export default function ChatActivity() {
   const { messageId } = useLocalSearchParams<{ messageId: string }>();
   const router = useRouter();
   return (
-    <ActivitySheet
-      onClose={() => router.back()}
-      onNote={(noteId) =>
-        router.replace({
-          params: { noteId },
-          pathname: "/ask/citation/[noteId]",
-        })
-      }
-      steps={takeActivity(messageId) ?? []}
-    />
+    <>
+      <SheetScrollDecoy />
+      <ActivitySheet
+        onClose={() => router.back()}
+        onNote={(noteId) =>
+          router.replace({
+            params: { noteId },
+            pathname: "/ask/citation/[noteId]",
+          })
+        }
+        steps={takeActivity(messageId) ?? []}
+      />
+    </>
   );
 }

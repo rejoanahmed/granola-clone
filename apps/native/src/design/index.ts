@@ -15,6 +15,7 @@ export { ListRow } from "./ListRow";
 export { PillButton, type PillSize, type PillTone } from "./PillButton";
 export { SendButton } from "./SendButton";
 export { SheetChrome } from "./SheetChrome";
+export { SheetScrollDecoy } from "./SheetScrollDecoy";
 export { Text } from "./Text";
 export { TextField } from "./TextField";
 export {

@@ -262,3 +262,8 @@
 - **Toasts from the chat modal and Chat History.** The root `ToastProvider` draws under any native
   presentation, so the global chat route and the history sheet each wrap their own provider. A
   `FullWindowOverlay` was tried first and lost phase 4's "Moved to trash" toast after a pop.
+- **Chat History and Activity keep a decoy scroller.** Both need a fixed header (and History a
+  docked search) around their list, so the list cannot be the sheet's root as the transcript's is.
+  react-native-screens resized the list to the whole sheet anyway and drew the rows over the
+  header, so each route renders `SheetScrollDecoy`, an empty inert `ScrollView`, as its first
+  child: the frame correction lands on it and the real list keeps its layout.
