@@ -66,4 +66,41 @@ describe("the email fake", () => {
 
     expect(written).toHaveLength(1);
   });
+
+  // Phase 10: support messages go through the same port, so every kind is recorded and written
+  // with the payload it was rendered from — the harness's `GET /e2e/support` reads it back.
+  it("records and writes the support kinds with their payloads", async () => {
+    const { sink, written } = arraySink();
+    const email = makeEmailFake({ sink });
+    const support = [
+      {
+        body: "It crashed.",
+        kind: "bug-report",
+        payload: { appVersion: "1.0.0 (1)", includeDiagnostics: "true" },
+        subject: "Bug report",
+        to: "support@notes.example",
+      },
+      {
+        body: "Love it.",
+        kind: "feedback",
+        payload: { appVersion: "1.0.0 (1)" },
+        subject: "Feedback",
+        to: "support@notes.example",
+      },
+      {
+        body: "Here is the link.",
+        kind: "desktop-reminder",
+        payload: { link: "https://notes.example/desktop" },
+        subject: "Get Notes for Mac or Windows",
+        to: "rita@example.test",
+      },
+    ] as const;
+
+    for (const message of support) {
+      await email.send(message);
+    }
+
+    expect(email.calls).toEqual(support);
+    expect(written).toEqual(support);
+  });
 });
