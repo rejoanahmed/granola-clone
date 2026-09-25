@@ -13,17 +13,12 @@ env:
 - runFlow: ../subflows/open-global-chat.yaml
 - tapOn:
     id: chat-chip-0
-- extendedWaitUntil:
-    visible:
-      id: chat-user-0
-      text: Who have I promised to follow up with\?
-    timeout: 10000
-- assertNotVisible:
-    id: chat-chips
 - runFlow:
     file: ../subflows/wait-for-answer.yaml
     env:
       N: "0"
+- assertNotVisible:
+    id: chat-chips
 - assertVisible:
     id: chat-answer-0-cite-1
 - assertVisible:
@@ -33,3 +28,21 @@ env:
 - assertVisible:
     id: chat-title
     text: Who have I promised to follow up with
+# The thread follows the bottom while the answer streams (§3.1 State B). With the keyboard up the
+# fallback answer is taller than the thread, so the question bubble sits above the top and the
+# thread is scrolled back to it.
+- repeat:
+    times: 3
+    while:
+      notVisible:
+        id: chat-user-0
+    commands:
+      - swipe:
+          from:
+            id: chat-thread
+          direction: DOWN
+- extendedWaitUntil:
+    visible:
+      id: chat-user-0
+      text: Who have I promised to follow up with\?
+    timeout: 5000
