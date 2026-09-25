@@ -364,3 +364,27 @@
   be added to `FolderList` without breaking clients.
 - **The drawer's home "push" is a dim, not a translate.** #50's shot shows home at its normal x,
   although the discovery README says "pushed". Recorded for the parity pass.
+
+## Phase 10 (settings, profile and upsells)
+
+- **The toggles control nothing yet.** Upcoming meetings needs phase 11's calendar and a push
+  channel, and push is out of scope. Auto-send dictation needs dictation, which phase 7 left out.
+  Use my data has no training pipeline behind a fake LLM. All three are stored in `user_settings`
+  and read back, so the phase that gives them meaning only reads them and migrates nothing.
+- **No avatar photos.** #82 shows a photo; the clone draws an initial. Uploading needs image
+  storage, and an R2 bucket for avatars is a later decision.
+- **Send feedback is an in-app form, not `mailto:`.** Discovery's hand-off to Mail cannot run on the
+  simulator and would bypass the fake `Email` port. The form keeps the discovered subject line.
+- **Support messages have no rate limit.** A signed-in caller can send as many as they like to the
+  fake outbox. A live email client (the phase-3 blocker) should add one per user per hour before
+  production.
+- **Placeholder links.** `notes.example/*` does not resolve. The help, data and privacy content is
+  not part of the app, and the URLs are one constant object (`features/settings/links.ts`).
+- **"Remind me later" is an email, not a calendar or notification reminder.** Discovery never
+  tapped it, and the fake email port is the clone's only outbound channel.
+- **"Sign up with work email" signs out.** Discovery never tapped it. Signing out is the only route
+  in the clone to an account under another address, and it asks no confirmation (phase 3's rule).
+- **Account deletion leaves the fake outbox rows and the R2 audio behind.** The audio half is the
+  phase-5 blocker "Audio objects outlive a deleted user"; the outbox exists only in the fake.
+- **#04's grain texture is not reproduced.** It is bitmap noise over `#252525`, recorded for the
+  parity pass.

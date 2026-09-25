@@ -1,4 +1,3 @@
-// @ts-expect-error phase 10: the support shapes are specified (phase-10.md §6.2, §11 API 1), not built
 import * as Shapes from "@gc/domain/Domain/Support";
 import { EmailUnavailable } from "@gc/domain/Email/Errors";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
@@ -69,7 +68,8 @@ const post = (app: OpenAPIHono<AppEnv>, path: string, body?: unknown) =>
   });
 
 const receiptShape = (): Schema => {
-  const found = (Shapes as Record<string, Schema | undefined>).SupportReceipt;
+  const found = (Shapes as unknown as Record<string, Schema | undefined>)
+    .SupportReceipt;
   if (found === undefined) {
     throw new Error("no SupportReceipt in @gc/domain/Domain/Support");
   }

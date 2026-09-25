@@ -1,4 +1,3 @@
-// @ts-expect-error phase 10: the settings shapes are specified (phase-10.md §6.2, §11 API 1), not built
 import * as Shapes from "@gc/domain/Domain/Settings";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -76,7 +75,8 @@ const patch = (who: Actor | null, body: unknown) => {
 };
 
 const userSettings = (): Schema => {
-  const found = (Shapes as Record<string, Schema | undefined>).UserSettings;
+  const found = (Shapes as unknown as Record<string, Schema | undefined>)
+    .UserSettings;
   if (found === undefined) {
     throw new Error("no UserSettings in @gc/domain/Domain/Settings");
   }

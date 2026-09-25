@@ -1,5 +1,7 @@
 import type {
   completeOnboardingRoute,
+  deleteMeRoute,
+  getDeletionPreviewRoute,
   getMeRoute,
   patchMeRoute,
 } from "@gc/domain/Profile/Contract";
@@ -12,6 +14,11 @@ export const makeProfilesApi = (endpoint: Endpoint) => ({
   completeOnboarding: endpoint<typeof completeOnboardingRoute>(
     "post",
     "/me/onboarding"
+  ),
+  deleteMe: endpoint<typeof deleteMeRoute>("delete", "/me"),
+  getDeletionPreview: endpoint<typeof getDeletionPreviewRoute>(
+    "get",
+    "/me/deletion-preview"
   ),
   getMe: endpoint<typeof getMeRoute>("get", "/me"),
   updateMe: endpoint<typeof patchMeRoute>("patch", "/me"),

@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
-import { Profile, ProfilePatch } from "../Domain/Profile";
+import { DeletionPreview, Profile, ProfilePatch } from "../Domain/Profile";
 import { commonErrors, ErrorBody, json, jsonBody } from "../Http";
 
 export const getMeRoute = createRoute({
@@ -45,5 +45,35 @@ export const completeOnboardingRoute = createRoute({
   },
   security: [{ sessionCookie: [] }],
   summary: "Finish onboarding",
+  tags: ["Profile"],
+});
+
+export const getDeletionPreviewRoute = createRoute({
+  description:
+    "How many live notes deleting the account would remove. Trashed notes are not counted, because the caller cannot see them.",
+  method: "get",
+  path: "/me/deletion-preview",
+  responses: {
+    200: json(DeletionPreview, "What the caller would lose"),
+    404: json(ErrorBody, "The session outlived its user"),
+    ...commonErrors,
+  },
+  security: [{ sessionCookie: [] }],
+  summary: "Preview deleting my account",
+  tags: ["Profile"],
+});
+
+export const deleteMeRoute = createRoute({
+  description:
+    "Deletes the caller's account for good: the user row, and by cascade their sessions, profile, settings, notes, recordings, chats and folders. The session cookie stops working at once. This is the only way to delete an account; better-auth's delete-user stays disabled.",
+  method: "delete",
+  path: "/me",
+  responses: {
+    204: { description: "Deleted" },
+    404: json(ErrorBody, "ProfileNotFound: nothing was deleted"),
+    ...commonErrors,
+  },
+  security: [{ sessionCookie: [] }],
+  summary: "Delete my account",
   tags: ["Profile"],
 });

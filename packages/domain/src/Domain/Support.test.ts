@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 10: the settings shapes are specified (phase-10.md §6.2, §11 API 1), not built
 import * as Settings from "./Settings";
-// @ts-expect-error phase 10: the support shapes are specified (phase-10.md §6.2, §11 API 1), not built
 import * as Support from "./Support";
 
 // docs/spec/phase-10.md §6.2 and §7 case 16. The contract is the only thing between a support form
