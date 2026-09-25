@@ -4,7 +4,7 @@ import type {
   GenerationsService,
   InlineSweepResult,
 } from "../Generations/GenerationsService";
-import type { LlmMode } from "../Integrations/Llm/Port";
+import type { ChatLlmMode, LlmMode } from "../Integrations/Llm/Port";
 import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import type { LatestOtp, OutboxRepo } from "../Outbox/OutboxRepo";
 import type { RecordingsService } from "../Recordings/RecordingsService";
@@ -14,6 +14,7 @@ import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { E2eRepo } from "./E2eRepo";
 import { NoOutboxMail } from "./Errors";
 import {
+  E2E_CHATS,
   E2E_NEWCOMER,
   E2E_NOTES,
   E2E_PROFILES,
@@ -52,6 +53,17 @@ export const llmModeOf = (value: string | null): LlmMode => {
   return parsed.success ? parsed.data : "auto";
 };
 
+// The row the fake LLM's chat half reads (`readChatMode` in container.ts). Separate from `llm`,
+// because a flow holds an answer at "Thinking..." without touching note generation.
+export const CHAT_SWITCH = "chat";
+
+const ChatModeInput = z.enum(["auto", "fail", "hold"]);
+
+export const chatModeOf = (value: string | null): ChatLlmMode => {
+  const parsed = ChatModeInput.safeParse(value);
+  return parsed.success ? parsed.data : "auto";
+};
+
 const MAX_LLM_RUNS = 5;
 const LlmRuns = z.number().int().min(1).max(MAX_LLM_RUNS);
 
@@ -86,6 +98,12 @@ export const makeE2eService = (deps: E2eDeps) => ({
       throw new NoOutboxMail({ email });
     }
     return mail;
+  },
+
+  // Back to auto. A held answer sees it on its next poll; there is no job to run.
+  releaseChat: async () => {
+    await deps.repo.setSwitch(CHAT_SWITCH, "auto");
+    return { mode: "auto" as const };
   },
 
   // Back to auto, then the job run here. `ignoreStale`, because the row a flow is holding was
@@ -192,6 +210,24 @@ export const makeE2eService = (deps: E2eDeps) => ({
           };
         })
       );
+      deps.repo.stageChats(
+        stage,
+        E2E_CHATS.map((chat) => ({
+          id: chat.id,
+          messages: chat.messages.map((message, position) => ({
+            activity: JSON.stringify(message.activity),
+            citations: JSON.stringify(message.citations),
+            content: message.content,
+            id: `msg_${chat.id.slice("cht_".length)}_${position}`,
+            model: message.role === "assistant" ? "auto" : null,
+            role: message.role,
+          })),
+          ownerId: E2E_USERS[chat.ownerRole].id,
+          scopeNoteId: chat.scopeNoteId,
+          title: chat.title,
+          updatedAt: chat.updatedAt,
+        }))
+      );
     });
     return {
       newcomer: E2E_NEWCOMER,
@@ -202,6 +238,15 @@ export const makeE2eService = (deps: E2eDeps) => ({
       })),
       users: E2E_USERS,
     };
+  },
+
+  setChatMode: async (mode: unknown) => {
+    const parsed = ChatModeInput.safeParse(mode);
+    if (!parsed.success) {
+      throw new ValidationFailed({ mode }, "Unknown chat mode");
+    }
+    await deps.repo.setSwitch(CHAT_SWITCH, parsed.data);
+    return { mode: parsed.data };
   },
 
   setLlmMode: async (mode: unknown) => {
