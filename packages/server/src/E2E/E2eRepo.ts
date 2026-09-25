@@ -2,7 +2,9 @@ import {
   and,
   chatMessages,
   chatThreads,
+  desc,
   e2eSwitches,
+  emailOutbox,
   eq,
   folderNotes,
   folders,
@@ -24,6 +26,32 @@ import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { E2eProfileDetails, E2eUser } from "./Fixtures";
+
+export type E2eSupportMessage = {
+  readonly body: string;
+  readonly createdAt: Timestamp;
+  readonly payload: Readonly<Record<string, string>>;
+  readonly subject: string;
+  readonly to: string;
+};
+
+// The column is JSON text with no shape guarantee; anything that is not a flat string record reads
+// as empty rather than failing a flow's read with a 500.
+const payloadOf = (raw: string): Readonly<Record<string, string>> => {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) {
+      return {};
+    }
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string"
+      )
+    );
+  } catch {
+    return {};
+  }
+};
 
 export type E2eAttendeeRow = {
   readonly email: string | null;
@@ -422,6 +450,28 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
       });
     }
   },
+
+  // Newest first, `id` breaking a same-millisecond tie, and at most `limit`: a flow asserts on the
+  // message it just sent, which is always the first.
+  supportMessages: async (
+    kind: string,
+    limit: number
+  ): Promise<E2eSupportMessage[]> =>
+    (
+      await db
+        .select({
+          body: emailOutbox.body,
+          createdAt: emailOutbox.createdAt,
+          payload: emailOutbox.payload,
+          subject: emailOutbox.subject,
+          to: emailOutbox.recipient,
+        })
+        .from(emailOutbox)
+        .where(eq(emailOutbox.kind, kind))
+        .orderBy(desc(emailOutbox.createdAt), desc(emailOutbox.id))
+        .limit(limit)
+        .all()
+    ).map((row) => ({ ...row, payload: payloadOf(row.payload) })),
 
   // What a flow last told the fake transcriber; `null` when nothing has, which reads as auto.
   switchValue: async (name: string): Promise<string | null> => {

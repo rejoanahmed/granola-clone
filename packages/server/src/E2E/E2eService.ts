@@ -12,7 +12,7 @@ import type { RecordingsService } from "../Recordings/RecordingsService";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
-import type { E2eRepo } from "./E2eRepo";
+import type { E2eRepo, E2eSupportMessage } from "./E2eRepo";
 import { NoOutboxMail } from "./Errors";
 import {
   E2E_CHATS,
@@ -45,6 +45,11 @@ export const transcriptionModeOf = (
   const parsed = TranscriptionModeInput.safeParse(value);
   return parsed.success ? parsed.data : "auto";
 };
+
+// The support kinds only: `otp` carries plaintext sign-in codes and has its own read, `/e2e/otp`,
+// which asks for an address. A list of every code sent would hand them all out at once.
+const SupportKind = z.enum(["bug-report", "feedback", "desktop-reminder"]);
+const SUPPORT_LIMIT = 10;
 
 // The row the fake LLM's `readMode` reads (container.ts).
 export const LLM_SWITCH = "llm";
@@ -320,6 +325,18 @@ export const makeE2eService = (deps: E2eDeps) => ({
         token,
       }),
       user: person,
+    };
+  },
+
+  supportMessages: async (
+    kind: unknown
+  ): Promise<{ readonly items: readonly E2eSupportMessage[] }> => {
+    const parsed = SupportKind.safeParse(kind);
+    if (!parsed.success) {
+      throw new ValidationFailed({ kind }, "Unknown support kind");
+    }
+    return {
+      items: await deps.repo.supportMessages(parsed.data, SUPPORT_LIMIT),
     };
   },
 });
