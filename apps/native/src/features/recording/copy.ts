@@ -22,6 +22,8 @@ export const RECORDING_COPY = {
   discardFailed: "Couldn’t discard the note",
   discardNote: "Discard note",
   end: "End",
+  eventGone: "This event is no longer on your calendar.",
+  eventHasNote: "This meeting already has notes.",
   hideKeyboard: "Hide keyboard",
   minimize: "Minimize note",
   more: "More",

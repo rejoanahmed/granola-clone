@@ -92,6 +92,22 @@ export default function RecordingScreen() {
     }
   }, [ending, isCurrent, router]);
 
+  // Another device already started this meeting's note (docs/spec/phase-11.md §3.2): the card
+  // closes onto that note instead of failing.
+  const takenNoteId = live?.phase === "taken" && isCurrent ? live.noteId : null;
+  useEffect(() => {
+    if (!takenNoteId) {
+      return;
+    }
+    leaving.current = true;
+    dismissFailed();
+    if (router.canGoBack()) {
+      router.back();
+    }
+    router.push({ params: { id: takenNoteId }, pathname: "/notes/[id]" });
+    toast.show({ message: RECORDING_COPY.eventHasNote });
+  }, [router, takenNoteId, toast]);
+
   // Swiping the card down is a Minimize too: the notes are saved on the way out.
   useEffect(() => () => flushNotes(), []);
 
@@ -178,11 +194,15 @@ export default function RecordingScreen() {
 
   const owner = session?.user.name ?? "";
   const pillDate = formatLiveStart(live.startedAt);
+  const attendeeNames = live.attendeeNames ?? [owner];
 
   let bottom: React.ReactElement;
   if (live.phase === "failed") {
     bottom = (
       <RecordingError
+        message={
+          live.failure === "eventGone" ? RECORDING_COPY.eventGone : undefined
+        }
         onClose={() => {
           dismissFailed();
           close();
@@ -269,17 +289,17 @@ export default function RecordingScreen() {
 
       <Text
         accessibilityRole="header"
-        color={colors.text.secondary}
+        color={live.title ? colors.text.primary : colors.text.secondary}
         style={styles.title}
         testID="recording-title"
         variant="display"
       >
-        Untitled note
+        {live.title ?? "Untitled note"}
       </Text>
 
       <View style={styles.metaRow}>
         <Pressable
-          accessibilityLabel={`${pillDate}, ${owner}`}
+          accessibilityLabel={[pillDate, ...attendeeNames].join(", ")}
           accessibilityRole="button"
           accessibilityState={{ disabled: !ready }}
           accessible
@@ -306,7 +326,7 @@ export default function RecordingScreen() {
             style={styles.metaGroup}
           />
           <Text style={styles.metaCount} variant="body">
-            +1
+            {`+${attendeeNames.length}`}
           </Text>
         </Pressable>
         <Pressable

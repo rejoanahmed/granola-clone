@@ -5,11 +5,17 @@ import {
   invalidationKeys,
   keys,
   removeNoteFromList,
+  type UpcomingEvent,
 } from "@native/lib/api";
 import type { QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
 import { deleteLooseFile, keepRecordingFile } from "./files";
+import {
+  meetingAttendeeNames,
+  type StartFailure,
+  startFailureOf,
+} from "./fromMeeting";
 import type { Recorder } from "./Recorder";
 import { createRecorder } from "./selectRecorder";
 import { enqueueUpload } from "./uploadQueue";
@@ -17,10 +23,15 @@ import { enqueueUpload } from "./uploadQueue";
 // The one live recording app-wide (docs/spec/phase-5.md §3.7): the card, the home pill and the
 // row's tile all read this, so minimising and coming back finds the timer, the notes and the
 // paused state exactly where they were. Module scope, because the card unmounts on Minimize.
-export type LivePhase = "starting" | "live" | "failed";
+// `taken` is a meeting another device already started a note for (docs/spec/phase-11.md §3.2): the
+// card hands off to that note rather than showing a failure.
+export type LivePhase = "starting" | "live" | "failed" | "taken";
 
 export type LiveRecording = {
+  /** The owner, then the meeting's guests; null for a recording not started from a meeting. */
+  readonly attendeeNames: readonly string[] | null;
   readonly elapsedMs: number;
+  readonly failure: StartFailure["kind"] | null;
   readonly level: number;
   readonly noteId: string | null;
   readonly notes: string;
@@ -29,6 +40,8 @@ export type LiveRecording = {
   readonly recordingId: string | null;
   readonly sessionId: string;
   readonly startedAt: number;
+  /** The meeting's title, or null for a placeholder "Untitled note". */
+  readonly title: string | null;
 };
 
 export const NOTES_AUTOSAVE_MS = 800;
@@ -68,6 +81,11 @@ const subscribe = (listener: () => void) => {
 export function connectLiveRecording(client: QueryClient): void {
   queryClient = client;
 }
+
+const refreshCalendar = () =>
+  queryClient
+    ? invalidate(queryClient, [keys.calendar.all]).catch(() => undefined)
+    : Promise.resolve();
 
 const refreshList = () =>
   queryClient
@@ -164,10 +182,11 @@ async function launch(
     update({ ...ids, phase: "live" });
     startTicker();
     refreshList();
+    refreshCalendar();
     if (live.notes !== savedNotes) {
       await saveNotes();
     }
-  } catch {
+  } catch (error) {
     if (live?.sessionId !== sessionId) {
       return;
     }
@@ -178,7 +197,14 @@ async function launch(
     if (ids) {
       await discardQuietly(ids.recordingId);
     }
-    update({ phase: "failed" });
+    const failure = startFailureOf(error);
+    if (failure.kind === "taken") {
+      recorder = null;
+      refreshCalendar();
+      update({ failure: "taken", noteId: failure.noteId, phase: "taken" });
+      return;
+    }
+    update({ failure: failure.kind, phase: "failed" });
   }
 }
 
@@ -186,14 +212,22 @@ async function launch(
  * Starts a recording: the recorder and `POST /recordings` at once (§3.4). Answers the session id
  * at once, so the card can open before either has finished.
  */
-export function startRecording(): string {
+export function startRecording(meeting?: {
+  readonly event: UpcomingEvent;
+  readonly ownerName: string;
+}): string {
   if (live) {
     return live.sessionId;
   }
   const startedAt = Date.now();
   const sessionId = `live-${startedAt}`;
+  const event = meeting?.event ?? null;
   live = {
+    attendeeNames: meeting
+      ? meetingAttendeeNames(meeting.event, meeting.ownerName)
+      : null,
     elapsedMs: 0,
+    failure: null,
     level: 0,
     noteId: null,
     notes: "",
@@ -202,13 +236,16 @@ export function startRecording(): string {
     recordingId: null,
     sessionId,
     startedAt,
+    title: event?.title ?? null,
   };
   emit();
 
   const own = createRecorder();
   recorder = own;
   const creating = client
-    .createRecording({ body: { startedAt } })
+    .createRecording({
+      body: event ? { calendarEventId: event.id, startedAt } : { startedAt },
+    })
     .then(({ note, recording }) => ({
       noteId: note.id as string,
       recordingId: recording.id as string,
@@ -257,8 +294,9 @@ export function flushNotes(): void {
 
 /** The failed card's Close: nothing is left to tidy but the state. */
 export function dismissFailed(): void {
-  if (live?.phase === "failed") {
+  if (live?.phase === "failed" || live?.phase === "taken") {
     reset();
+    refreshCalendar();
   }
 }
 

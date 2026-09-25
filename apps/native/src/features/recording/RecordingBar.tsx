@@ -93,13 +93,24 @@ export function RecordingBar({
 }
 
 /** Start failed (designed): where the bar was, an error row and a Close. */
-export function RecordingError({ onClose }: { readonly onClose: () => void }) {
+export function RecordingError({
+  message = RECORDING_COPY.startFailed,
+  onClose,
+}: {
+  readonly message?: string;
+  readonly onClose: () => void;
+}) {
   return (
     <View style={styles.errorRow}>
       <View style={styles.error} testID="recording-error">
         <AlertCircle color={colors.destructive} size={20} strokeWidth={2} />
-        <Text numberOfLines={1} style={styles.errorText} variant="body">
-          {RECORDING_COPY.startFailed}
+        <Text
+          numberOfLines={2}
+          style={styles.errorText}
+          testID="recording-error-message"
+          variant="body"
+        >
+          {message}
         </Text>
       </View>
       <Pressable
