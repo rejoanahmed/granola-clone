@@ -1,6 +1,5 @@
 import * as GenErrors from "@gc/domain/Generations/Errors";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 6: the output parser is specified (phase-6.md §6.5, §11 API 5), not built
 import * as Output from "./Output";
 
 // docs/spec/phase-6.md §6.5 and §7 "Generations/Output.test.ts" — the parser the phase exit

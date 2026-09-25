@@ -1,8 +1,6 @@
 import * as LlmErrors from "@gc/domain/Llm/Errors";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 6: the output parser is specified (phase-6.md §6.5, §11 API 5), not built
 import * as Output from "../../Generations/Output";
-// @ts-expect-error phase 6: the LLM fake is specified (phase-6.md §6.6, §11 API 4), not built
 import * as Fake from "./LlmFake";
 
 // docs/spec/phase-6.md §6.6 and §7 "Integrations/Llm/Llm.test.ts". The fake stands in for a vendor
