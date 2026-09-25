@@ -1,0 +1,78 @@
+# AC4 (docs/spec/phase-7.md §8, §3.7, #16, #66): an attendee row in the attendees sheet opens a chat
+# scoped to that person (the designed interim entry until phase 8's person page). Priya attended the
+# launch review alone, so the answer cites that note and nothing else, and its chip opens the preview.
+appId: ${APP_ID}
+name: Asking about one person
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- tapOn:
+    id: note-meta-pill
+- extendedWaitUntil:
+    visible:
+      id: attendees-row-att_e2e_launch_1
+    timeout: 10000
+- tapOn:
+    id: attendees-row-att_e2e_launch_1
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
+- assertNotVisible:
+    id: attendees-sheet
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: chat-back
+- assertVisible:
+    id: chat-title
+    text: Priya Raman
+- assertNotVisible:
+    id: chat-greeting
+- assertVisible:
+    id: chat-chip-0
+    text: List action items
+- assertVisible:
+    id: chat-chip-1
+    text: Write follow-up email
+- assertVisible:
+    id: chat-chip-2
+    text: List Q&A
+
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: What did Priya work on?
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+# The answer's first block and its action row on screen together bracket the whole answer, so
+# the absence below means "not rendered", not "scrolled off" (assertNotVisible alone passes on both).
+- assertVisible:
+    id: chat-answer-0-block-0
+- assertVisible:
+    id: chat-answer-0-actions
+- assertVisible:
+    id: chat-answer-0-cite-1
+- assertNotVisible:
+    id: chat-answer-0-cite-2
+- tapOn:
+    id: chat-answer-0-cite-1
+- extendedWaitUntil:
+    visible:
+      id: citation-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: citation-title
+      text: Launch planning review
+    timeout: 10000

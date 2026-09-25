@@ -17,7 +17,12 @@ import {
 } from "@tanstack/react-query";
 import { createURL } from "expo-linking";
 
-export { ApiError, hasTag } from "@gc/apiclient";
+export {
+  ApiError,
+  askChat,
+  EXPO_ORIGIN_HEADER,
+  hasTag,
+} from "@gc/apiclient";
 
 export const API_URL = Config.API_URL;
 

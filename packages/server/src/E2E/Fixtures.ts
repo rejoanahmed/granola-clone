@@ -243,3 +243,102 @@ export const E2E_RECORDINGS: readonly E2eRecording[] = [
     ]),
   },
 ];
+
+export type E2eChatMessage = {
+  readonly activity: readonly (
+    | { readonly kind: "done" }
+    | {
+        readonly kind: "open" | "search";
+        readonly notes: readonly { noteId: string; title: string }[];
+      }
+  )[];
+  readonly citations: readonly {
+    readonly index: number;
+    readonly noteId: string;
+    readonly startedAt: number;
+    readonly title: string;
+  }[];
+  readonly content: string;
+  readonly role: "assistant" | "user";
+};
+
+export type E2eChat = {
+  readonly id: string;
+  readonly messages: readonly E2eChatMessage[];
+  readonly ownerRole: E2eRole;
+  readonly scopeNoteId: string | null;
+  readonly title: string;
+  readonly updatedAt: number;
+};
+
+const LAUNCH_REF = {
+  noteId: "not_e2e_launch",
+  title: "Launch planning review",
+};
+const SOLO_REF = { noteId: "not_e2e_solo", title: "Solo reflection thoughts" };
+
+const question = (content: string): E2eChatMessage => ({
+  activity: [],
+  citations: [],
+  content,
+  role: "user",
+});
+
+// Both of `person`'s threads fall in Older on any date after 19 Sep 2026, which is where the flows
+// assert them (#24). `other`'s is there so a flow can prove it never lists. Every message is
+// complete, and no chat preference is seeded, so `person`'s model is Auto.
+export const E2E_CHATS: readonly E2eChat[] = [
+  {
+    id: "cht_e2e_cohort",
+    messages: [
+      question("How many teams are in the beta cohort?"),
+      {
+        activity: [
+          { kind: "search", notes: [LAUNCH_REF] },
+          { kind: "open", notes: [LAUNCH_REF] },
+          { kind: "done" },
+        ],
+        citations: [{ index: 1, startedAt: at(9, 12, 10), ...LAUNCH_REF }],
+        content: "The beta cohort is **forty teams** across three regions [1].",
+        role: "assistant",
+      },
+    ],
+    ownerRole: "person",
+    scopeNoteId: null,
+    title: "Beta cohort size",
+    updatedAt: at(9, 12, 14),
+  },
+  {
+    id: "cht_e2e_solo",
+    messages: [
+      question("What did I say?"),
+      {
+        activity: [{ kind: "open", notes: [SOLO_REF] }, { kind: "done" }],
+        citations: [{ index: 1, startedAt: at(8, 5, 9), ...SOLO_REF }],
+        content:
+          "You only recorded a brief greeting, with no decisions or follow-ups [1].",
+        role: "assistant",
+      },
+    ],
+    ownerRole: "person",
+    scopeNoteId: "not_e2e_solo",
+    title: "Solo note recap",
+    updatedAt: at(8, 5, 12),
+  },
+  {
+    id: "cht_e2e_other",
+    messages: [
+      question("Secret question"),
+      {
+        activity: [],
+        citations: [],
+        content: "Nobody but other should read this.",
+        role: "assistant",
+      },
+    ],
+    ownerRole: "other",
+    scopeNoteId: null,
+    title: "Other person’s chat",
+    updatedAt: at(9, 12, 9),
+  },
+];

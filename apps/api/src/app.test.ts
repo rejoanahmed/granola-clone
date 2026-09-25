@@ -77,12 +77,21 @@ describe("the worker's HTTP assembly", () => {
         "/recordings/{id}/end",
         "/recordings/{id}/audio",
         "/recordings/{id}/retry",
+        // Phase 7 (docs/spec/phase-7.md §6.1).
+        "/chat/models",
+        "/chat/model",
+        "/chats",
+        "/chats/{id}",
+        "/chats/{id}/messages",
+        "/chats/{id}/messages/{messageId}/retry",
+        "/chats/{id}/messages/{messageId}/feedback",
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
       "Profile",
       "Notes",
       "Recordings",
+      "Chats",
     ]);
   });
 
@@ -665,4 +674,102 @@ describe("wrangler.jsonc, the generation queue", () => {
 
     expect(new Set(names).size).toBe(environments.length);
   });
+});
+
+// ── Phase 7: the chats router is mounted, documented, and its errors keep their statuses ──────
+// (docs/spec/phase-7.md §6.1, §6.2, §7 "apps/api app.test.ts"). The errors module does not exist
+// yet, so it is imported inside each test and the phase 1–6 cases above keep running.
+
+type ErrorClass = new (details?: Record<string, unknown>) => Error;
+
+describe("the chats routes, phase 7", () => {
+  it.each([
+    ["GET", "/chat/models"],
+    ["PUT", "/chat/model"],
+    ["POST", "/chats"],
+    ["GET", "/chats"],
+    ["GET", "/chats/cht_0000000000000001"],
+    ["PATCH", "/chats/cht_0000000000000001"],
+    ["DELETE", "/chats/cht_0000000000000001"],
+    ["POST", "/chats/cht_0000000000000001/messages"],
+    ["POST", "/chats/cht_0000000000000001/messages/msg_0000000000000002/retry"],
+    [
+      "PUT",
+      "/chats/cht_0000000000000001/messages/msg_0000000000000002/feedback",
+    ],
+  ])(
+    "mounts %s %s, answering 401 Unauthorized without a session",
+    async (method, route) => {
+      const response = await app.request(route, { method }, env);
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: "Unauthorized",
+      });
+    }
+  );
+
+  it("documents the streaming routes' 200 as text/event-stream, under the Chats tag", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as {
+      paths: Record<
+        string,
+        Record<
+          string,
+          { responses: Record<string, { content?: object }>; tags?: string[] }
+        >
+      >;
+    };
+
+    for (const [route, method] of [
+      ["/chats", "post"],
+      ["/chats/{id}/messages", "post"],
+      ["/chats/{id}/messages/{messageId}/retry", "post"],
+    ] as const) {
+      const operation = doc.paths[route]?.[method];
+      expect(operation?.tags).toEqual(["Chats"]);
+      expect(Object.keys(operation?.responses["200"]?.content ?? {})).toEqual([
+        "text/event-stream",
+      ]);
+    }
+    expect(doc.paths["/chats/{id}"]?.delete?.tags).toEqual(["Chats"]);
+    expect(
+      Object.keys(doc.paths["/chats/{id}"]?.delete?.responses ?? {})
+    ).toContain("204");
+  });
+
+  it.each([
+    ["ChatNotFound", 404],
+    ["ChatMessageNotFound", 404],
+    ["PersonNotFound", 404],
+    ["ChatBusy", 409],
+    ["ChatMessageNotRetryable", 409],
+    ["ChatModelUnavailable", 422],
+    ["FeedbackNotAllowed", 422],
+  ] as const)(
+    "renders %s through on-error as %i with its details",
+    async (tag, status) => {
+      const errors = (await import("@gc/domain/Chats/Errors")) as Record<
+        string,
+        ErrorClass
+      >;
+      const ErrorOf = errors[tag];
+      if (ErrorOf === undefined) {
+        throw new Error(`no ${tag} in @gc/domain/Chats/Errors`);
+      }
+      const failing = new Hono<AppEnv>()
+        .get("/", () => {
+          throw new ErrorOf({ id: "cht_0000000000000001" });
+        })
+        .onError(onError);
+
+      const response = await failing.request("/");
+
+      expect(response.status).toBe(status);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: tag,
+        details: { id: "cht_0000000000000001" },
+      });
+    }
+  );
 });

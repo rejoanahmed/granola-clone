@@ -3,8 +3,12 @@ import {
   type AuthEmailsService,
   makeAuthEmailsService,
 } from "./AuthEmails/AuthEmailsService";
+import { makeChatsRepo } from "./Chats/ChatsRepo";
+import { type ChatsService, makeChatsService } from "./Chats/ChatsService";
 import { makeE2eRepo } from "./E2E/E2eRepo";
 import {
+  CHAT_SWITCH,
+  chatModeOf,
   type E2eService,
   LLM_SWITCH,
   llmModeOf,
@@ -24,7 +28,7 @@ import { makeFeatureFlagsClient } from "./Integrations/FeatureFlags/FeatureFlags
 import { makeFeatureFlagsFake } from "./Integrations/FeatureFlags/FeatureFlagsFake";
 import type { FeatureFlagsPort } from "./Integrations/FeatureFlags/Port";
 import { makeLlmFake } from "./Integrations/Llm/LlmFake";
-import type { LlmMode, LlmPort } from "./Integrations/Llm/Port";
+import type { ChatLlmMode, LlmMode, LlmPort } from "./Integrations/Llm/Port";
 import type {
   TranscriptionMode,
   TranscriptionPort,
@@ -54,6 +58,10 @@ import { makeR2AudioStore } from "./Runtime/R2AudioStore";
 import { traced } from "./Runtime/traced";
 import { makeUnitOfWork } from "./Runtime/UnitOfWork";
 import type { Env } from "./Runtime/WorkerEnv";
+
+// Between the fake's words: slow enough that an answer visibly grows on the phone, fast enough that
+// a flow's thirty-second wait is never close.
+const CHAT_TOKEN_DELAY_MS = 25;
 
 // The composition root: the only file allowed to read `Env` (R5) and the only one that constructs
 // a repository (R3). Rebuilt per request; `overrides` gives a test the whole graph with one leaf
@@ -155,10 +163,24 @@ export const buildContainer = (
     e2eRepo === null
       ? () => Promise.resolve("auto")
       : async () => llmModeOf(await e2eRepo.switchValue(LLM_SWITCH));
+  // The chat half reads its own switch, so a flow can hold an answer at "Thinking..." without
+  // touching note generation. Real timers, and a delay between words so an answer visibly streams.
+  const readChatMode: () => Promise<ChatLlmMode> =
+    e2eRepo === null
+      ? () => Promise.resolve("auto")
+      : async () => chatModeOf(await e2eRepo.switchValue(CHAT_SWITCH));
   const llmFor = (mode: typeof config.llm.mode): LlmPort => {
     switch (mode) {
       case "fake":
-        return makeLlmFake({ readMode: readLlmMode });
+        return makeLlmFake({
+          readChatMode,
+          readMode: readLlmMode,
+          sleep: (ms) =>
+            new Promise((resolve) => {
+              setTimeout(resolve, ms);
+            }),
+          tokenDelayMs: CHAT_TOKEN_DELAY_MS,
+        });
       default:
         return mode satisfies never;
     }
@@ -174,6 +196,17 @@ export const buildContainer = (
       queue: generationQueue,
       repo: traced("GenerationsRepo", makeGenerationsRepo(db)),
       uow,
+    })
+  );
+
+  const chats = traced(
+    "Chats",
+    makeChatsService({
+      clock,
+      ids,
+      llm,
+      logger: logEvent,
+      repo: traced("ChatsRepo", makeChatsRepo(db)),
     })
   );
 
@@ -214,6 +247,7 @@ export const buildContainer = (
 
   return {
     authEmails,
+    chats,
     e2e,
     flags,
     generations,
@@ -228,6 +262,7 @@ export const buildContainer = (
 // `Partial<Container>`, so a self-referential inference is a compile error.
 export type Container = {
   authEmails: AuthEmailsService;
+  chats: ChatsService;
   e2e: E2eService | null;
   flags: FeatureFlagsPort;
   generations: GenerationsService;

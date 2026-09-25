@@ -1,0 +1,22 @@
+# In the Chat History sheet, swipe row THREAD_ID left until its trailing Delete and Pin capsules
+# show (docs/spec/phase-7.md §3.5, #73). Leaves them open; the caller taps one. A swipe that opened
+# nothing (the sheet was still settling) is retried once, as on home.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: chat-history-row-${THREAD_ID}
+    timeout: 15000
+- retry:
+    maxRetries: 1
+    commands:
+      - swipe:
+          from:
+            id: chat-history-row-${THREAD_ID}
+          direction: LEFT
+      - extendedWaitUntil:
+          visible:
+            id: chat-history-row-${THREAD_ID}-pin
+          timeout: 5000

@@ -24,6 +24,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 const ATTENDEES_DETENT = 0.7;
+// #24, #26 and #28 all put the grabber a little over half-way down (y 942 of 2000).
+const CHAT_SHEET_DETENT = 0.55;
 
 /**
  * Built through `useState(factory)`: a module constant survives Fast Refresh wired to a dead tree,
@@ -48,6 +50,7 @@ const SHEET = {
   sheetCornerRadius: 40,
   sheetGrabberVisible: false,
 } as const;
+const CHAT_SHEET = { ...SHEET, sheetAllowedDetents: [CHAT_SHEET_DETENT] };
 
 // The recording store and the upload queue live outside React, so they are handed the one cache
 // here; an upload left on disk by a previous launch resumes once somebody is signed in.
@@ -96,6 +99,18 @@ function ThemedLayout() {
           // A full-height card over the dimmed home (screen 102). Swiping it down is a Minimize.
           options={{ ...SHEET, sheetAllowedDetents: [1] }}
         />
+        <Stack.Screen name="ask/index" options={{ presentation: "modal" }} />
+        <Stack.Screen
+          name="ask/history"
+          // The large detent too, so the sheet can rise with the keyboard when Search is focused
+          // and the rows stay above it.
+          options={{
+            ...SHEET,
+            sheetAllowedDetents: [CHAT_SHEET_DETENT, 1],
+          }}
+        />
+        <Stack.Screen name="ask/activity/[messageId]" options={CHAT_SHEET} />
+        <Stack.Screen name="ask/citation/[noteId]" options={CHAT_SHEET} />
         <Stack.Screen
           name="notes/[id]/edit"
           options={{ gestureEnabled: false, presentation: "fullScreenModal" }}

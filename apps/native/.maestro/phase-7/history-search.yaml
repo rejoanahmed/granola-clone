@@ -1,0 +1,68 @@
+# AC7 (docs/spec/phase-7.md §8, #24): history groups person's two seeded threads under Older and
+# never shows other's. The search matches a title, then a message's content, then nothing ("No
+# results"), and clearing it brings both rows back.
+appId: ${APP_ID}
+name: Searching chat history
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-section-older
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort
+    below:
+      id: chat-history-section-older
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo
+    below:
+      id: chat-history-section-older
+- assertNotVisible:
+    id: chat-history-row-cht_e2e_other
+- assertNotVisible:
+    id: chat-history-section-pinned
+- takeScreenshot: phase-7-history
+
+- tapOn:
+    id: chat-history-search
+- inputText: cohort
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-row-cht_e2e_solo
+    timeout: 10000
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort
+
+- eraseText
+- inputText: forty
+- extendedWaitUntil:
+    visible:
+      id: chat-history-row-cht_e2e_cohort
+    timeout: 10000
+- assertNotVisible:
+    id: chat-history-row-cht_e2e_solo
+
+- eraseText
+- inputText: zzqx
+- extendedWaitUntil:
+    visible:
+      id: chat-history-no-results
+    timeout: 10000
+- assertNotVisible:
+    id: chat-history-row-cht_e2e_cohort
+
+- tapOn:
+    id: chat-history-search-clear
+- extendedWaitUntil:
+    visible:
+      id: chat-history-row-cht_e2e_solo
+    timeout: 10000
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort
+- assertNotVisible:
+    id: chat-history-no-results

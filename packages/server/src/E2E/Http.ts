@@ -50,6 +50,21 @@ export const e2eRouter = new Hono<E2eEnv>()
   .post("/e2e/transcription/release", async (c) =>
     c.json(await c.var.e2e.releaseTranscription(), 200)
   )
+  .post("/e2e/chat", async (c) =>
+    c.json(
+      await c.var.e2e.setChatMode(
+        (
+          await c.req
+            .json<{ mode?: unknown }>()
+            .catch((): { mode?: unknown } => ({}))
+        ).mode
+      ),
+      200
+    )
+  )
+  .post("/e2e/chat/release", async (c) =>
+    c.json(await c.var.e2e.releaseChat(), 200)
+  )
   .post("/e2e/llm", async (c) =>
     c.json(
       await c.var.e2e.setLlmMode(

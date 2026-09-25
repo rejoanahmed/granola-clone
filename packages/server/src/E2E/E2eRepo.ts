@@ -1,5 +1,7 @@
 import {
   and,
+  chatMessages,
+  chatThreads,
   e2eSwitches,
   eq,
   inArray,
@@ -68,6 +70,22 @@ export type E2eRecordingRow = {
   readonly startedAt: Timestamp;
 };
 
+export type E2eChatRow = {
+  readonly id: string;
+  readonly messages: readonly {
+    readonly activity: string;
+    readonly citations: string;
+    readonly content: string;
+    readonly id: string;
+    readonly model: string | null;
+    readonly role: string;
+  }[];
+  readonly ownerId: string;
+  readonly scopeNoteId: string | null;
+  readonly title: string;
+  readonly updatedAt: Timestamp;
+};
+
 // Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
 const SEGMENT_COLUMNS = 7;
 
@@ -87,6 +105,55 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
       .values({ name, value })
       .onConflictDoUpdate({ set: { value }, target: e2eSwitches.name })
       .run();
+  },
+
+  // Upserts, unpinned, and the messages deleted and rewritten, so a re-seed restores exactly the
+  // fixture thread whatever a journey asked, pinned or rated in it. A thread a journey deleted comes
+  // back. Stamps are the fixture's, never the clock.
+  stageChats: (stage: Stage, rows: readonly E2eChatRow[]): void => {
+    stage.add({
+      query: db.delete(chatMessages).where(
+        inArray(
+          chatMessages.threadId,
+          rows.map((row) => row.id)
+        )
+      ),
+    });
+    for (const row of rows) {
+      const columns = {
+        createdAt: row.updatedAt,
+        ownerId: row.ownerId,
+        pinnedAt: null,
+        scopeKind: row.scopeNoteId === null ? "global" : "note",
+        scopeNoteId: row.scopeNoteId,
+        scopePersonKey: null,
+        scopePersonName: null,
+        title: row.title,
+        updatedAt: row.updatedAt,
+      };
+      stage.add({
+        query: db
+          .insert(chatThreads)
+          .values({ ...columns, id: row.id })
+          .onConflictDoUpdate({ set: columns, target: chatThreads.id }),
+      });
+      stage.add({
+        query: db.insert(chatMessages).values(
+          row.messages.map((message, position) => ({
+            ...message,
+            attempt: 1,
+            createdAt: row.updatedAt,
+            failure: null,
+            feedback: null,
+            ownerId: row.ownerId,
+            position,
+            status: "complete",
+            threadId: row.id,
+            updatedAt: row.updatedAt,
+          }))
+        ),
+      });
+    }
   },
   // The newcomer's account is the one better-auth tables row a reset does delete: the sign-up flow
   // must always meet an unknown address. Deleting the `user` row cascades its sessions, accounts

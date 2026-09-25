@@ -24,6 +24,10 @@ env:
     id: mic-denied-card
 - assertNotVisible:
     id: recording-screen
+- assertNotVisible:
+    id: chat-screen
+- assertNotVisible:
+    id: chat-history-sheet
 - assertVisible:
     id: home-ask-button
 - assertVisible:

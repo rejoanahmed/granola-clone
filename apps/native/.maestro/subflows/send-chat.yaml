@@ -1,0 +1,25 @@
+# In an open chat, type TEXT into the composer and send it with the Send button, waiting until the
+# button reads "Send" first: the mic and the send arrow share one control (#19, #20), and a tap
+# taken before the draft landed would dictate instead.
+#
+#   - runFlow:
+#       file: ../subflows/send-chat.yaml
+#       env:
+#         TEXT: What did we decide about pricing?
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: chat-input
+- inputText: ${TEXT}
+- extendedWaitUntil:
+    visible:
+      id: chat-send
+      text: Send
+    timeout: 5000
+# The keyboard may still be rising under the composer; a tap aimed mid-rise lands where Send was.
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    id: chat-send

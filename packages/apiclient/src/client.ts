@@ -1,5 +1,6 @@
 import type { StatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
+import { makeChatsApi } from "./chats";
 import {
   type ApiClientConfig,
   DEFAULT_CREDENTIALS,
@@ -285,6 +286,7 @@ export const makeEndpoint = (config: ApiClientConfig): Endpoint => {
 export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   const endpoint = makeEndpoint(config);
   return {
+    ...makeChatsApi(endpoint),
     ...makeNotesApi(endpoint),
     ...makeProfilesApi(endpoint),
     ...makeRecordingsApi(endpoint),
@@ -292,6 +294,7 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
 };
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
-export type ApiClient = ReturnType<typeof makeNotesApi> &
+export type ApiClient = ReturnType<typeof makeChatsApi> &
+  ReturnType<typeof makeNotesApi> &
   ReturnType<typeof makeProfilesApi> &
   ReturnType<typeof makeRecordingsApi>;

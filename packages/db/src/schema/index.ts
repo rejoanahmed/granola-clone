@@ -1,4 +1,7 @@
 export * from "./auth";
+export * from "./chat-messages";
+export * from "./chat-preferences";
+export * from "./chat-threads";
 export * from "./e2e-switches";
 export * from "./email-outbox";
 export * from "./note-attendees";

@@ -12,6 +12,7 @@ import type { NoteListItem } from "@native/lib/api";
 import { AudioLines, Smartphone, Trash2 } from "lucide-react-native";
 import { useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable as GesturePressable } from "react-native-gesture-handler";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -148,24 +149,27 @@ export function NoteRow({
       )}
       rightThreshold={ACTION_WIDTH / 2}
     >
-      <Pressable
-        accessibilityLabel={
-          live ? `${rowLabel(note)}${LIVE_SUFFIX}` : rowLabel(note)
-        }
-        accessibilityRole="button"
-        accessible
-        delayLongPress={LONG_PRESS_MS}
-        onLongPress={openMenu}
-        onPress={() => onOpen(note)}
-        ref={row}
-        style={({ pressed }) => [
-          styles.row,
-          pressed ? styles.rowPressed : null,
-        ]}
-        testID={`home-note-${note.id}`}
-      >
-        <NoteRowContent live={live} note={note} />
-      </Pressable>
+      {/* Gesture handler's Pressable, so a quick swipe yields to the swipeable rather than the
+          JS responder claiming it as a tap and opening the note (docs/plan/BLOCKERS.md). */}
+      <View ref={row}>
+        <GesturePressable
+          accessibilityLabel={
+            live ? `${rowLabel(note)}${LIVE_SUFFIX}` : rowLabel(note)
+          }
+          accessibilityRole="button"
+          accessible
+          delayLongPress={LONG_PRESS_MS}
+          onLongPress={openMenu}
+          onPress={() => onOpen(note)}
+          style={({ pressed }) => [
+            styles.row,
+            pressed ? styles.rowPressed : null,
+          ]}
+          testID={`home-note-${note.id}`}
+        >
+          <NoteRowContent live={live} note={note} />
+        </GesturePressable>
+      </View>
     </ReanimatedSwipeable>
   );
 }

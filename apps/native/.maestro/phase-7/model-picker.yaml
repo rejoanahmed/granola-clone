@@ -1,0 +1,71 @@
+# AC10 (docs/spec/phase-7.md §8, §3.6, #22): the model pill opens the fake model list with Auto
+# last and Premium disabled; picking Balanced relabels the pill at once, and the choice is per user,
+# so it survives closing the chat and relaunching the app.
+appId: ${APP_ID}
+name: Choosing a chat model
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- assertVisible:
+    id: chat-model-label
+    text: Auto
+- tapOn:
+    id: chat-model-button
+- extendedWaitUntil:
+    visible:
+      id: chat-model-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-model-swift-thinking
+- assertVisible:
+    id: chat-model-swift
+- assertVisible:
+    id: chat-model-balanced-thinking
+- assertVisible:
+    id: chat-model-balanced
+- assertVisible:
+    id: chat-model-compact
+- assertVisible:
+    id: chat-model-classic
+- assertVisible:
+    id: chat-model-wide-context
+- assertVisible:
+    id: chat-model-premium
+    enabled: false
+- assertVisible:
+    id: chat-model-auto
+    below:
+      id: chat-model-premium
+- takeScreenshot: phase-7-model-menu
+- tapOn:
+    id: chat-model-balanced
+- extendedWaitUntil:
+    notVisible:
+      id: chat-model-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-model-label
+    text: Balanced
+
+- tapOn:
+    id: chat-close
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- runFlow: ../subflows/open-global-chat.yaml
+- extendedWaitUntil:
+    visible:
+      id: chat-model-label
+      text: Balanced
+    timeout: 10000

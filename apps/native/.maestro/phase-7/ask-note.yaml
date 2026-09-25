@@ -1,0 +1,83 @@
+# AC3 (docs/spec/phase-7.md §8, #19, #43, #44): the note page's Ask pill pushes a chat scoped to
+# that note: Back, the note's title, no greeting, and the three scoped chips. A chip answers from
+# that note alone, and Back returns to the note.
+appId: ${APP_ID}
+name: Asking about one note
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: note-ask-button
+    timeout: 10000
+- tapOn:
+    id: note-ask-button
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: chat-back
+- assertNotVisible:
+    id: chat-close
+- assertVisible:
+    id: chat-title
+    text: Launch planning review
+- assertNotVisible:
+    id: chat-greeting
+- assertVisible:
+    id: chat-chip-0
+    text: List action items
+- assertVisible:
+    id: chat-chip-1
+    text: Write follow-up email
+- assertVisible:
+    id: chat-chip-2
+    text: List Q&A
+- assertNotVisible:
+    id: chat-chip-3
+- takeScreenshot: phase-7-note-empty
+
+- tapOn:
+    id: chat-chip-0
+- extendedWaitUntil:
+    visible:
+      id: chat-user-0
+      text: List action items
+    timeout: 10000
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+- assertVisible:
+    id: chat-answer-0-block-0
+    text: "From Launch planning review:"
+- assertVisible:
+    id: chat-answer-0-cite-1
+# The answer's first block and its action row on screen together bracket the whole answer, so
+# the absence below means "not rendered", not "scrolled off" (assertNotVisible alone passes on both).
+- assertVisible:
+    id: chat-answer-0-block-0
+- assertVisible:
+    id: chat-answer-0-actions
+- assertNotVisible:
+    id: chat-answer-0-cite-2
+
+- tapOn:
+    id: chat-back
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- assertNotVisible:
+    id: chat-screen

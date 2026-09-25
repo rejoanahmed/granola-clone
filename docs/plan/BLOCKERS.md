@@ -212,3 +212,81 @@
 - **An edit to the fallback body while generating is covered by a unit test, not a flow.** The
   page hides the body while generating, so no flow can reach it; `Generations.test.ts` "keeps a body
   edited while generating" pins the user-wins rule through the service.
+
+## Phase 7 API
+
+- **No live LLM for chat.** `streamAnswer` and `titleChat` exist only in `LlmFake`. A live client
+  needs a prompt that emits `[k]` markers from the numbered context, a streaming transport, and a
+  real model list behind the `ChatModelId` ids; the model list is fake by design, with neutral
+  names. The stub: the fake runs everywhere, under the phase-6 `LLM_MODE`, and `live` is still
+  refused at startup.
+- **Retrieval is keyword scoring, not semantic.** `searchTerms` and `scoreNote` are enough to prove
+  scoping and ownership and to drive the UI; a real product would embed the notes. Recorded, not
+  built.
+- **Person scope has an interim entry.** The attendees-sheet row opens person chat until phase 8's
+  person page (#65) exists and takes over the entry through its Ask pill (phase-7.md §3.7).
+- **Streaming on device relies on `expo/fetch`.** React Native's global `fetch` exposes no response
+  body stream on iOS, so `askChat` takes the fetch as a parameter and native passes `expo/fetch`.
+  If it does not stream through a dev build, the stub is to read the whole body at `done` and render
+  it at once: the UI's states are unchanged and only the token-by-token growth is lost. Record it
+  here if that happens.
+- **The turn write is ordered, not atomic.** `ChatsService` takes no `UnitOfWork` (its deps are
+  `{ clock, ids, llm, logger, repo }`), so `ChatsRepo.writeTurn` writes the thread, then both
+  messages in one statement, then the thread's clock. A failure between the first two leaves an
+  empty thread in history (preview ""), never a message without its thread. A concurrent send into
+  the same thread loses on the unique `(thread_id, position)` and answers `ChatBusy`.
+- **A `name:` person key is matched on `lower(trim(name))` in SQL.** `personKeyOf` also collapses
+  inner whitespace, which SQLite cannot express without a function; a stored name with a double
+  space is not found under its key. Attendees with an address (every seeded one) use `email:`.
+- **A client that disconnects mid-answer relies on the request staying alive.** The service runs
+  the answer detached from its reader and `pipe` drains it without writing, so the answer is stored
+  as long as the Worker keeps the request's promise. If the runtime cancels it after the client
+  goes, the row stays `streaming`, reads as `failed` after two minutes, and Retry recovers it. No
+  `waitUntil` is wired: the handler has no seam for it without Hono reaching the service.
+- **`traced()` spans `Llm.streamAnswer` for the call only, not the stream.** The wrapper ends a span
+  when a function returns a non-promise, so the span measures creating the iterator; the answer's
+  duration is visible only through the `chat.answer.*` log events.
+- **`expo/fetch` streams through the dev build.** The answer grows token by token on the iPhone 17
+  Pro simulator, so the whole-body fallback above was not needed.
+- **A quick swipe on a row read as a tap (native, found in phase 7).** With React Native's
+  `Pressable` as the swipeable's child, Maestro's 400 ms swipe opened the note or the thread instead
+  of revealing the trailing actions: `phase-4/trash-by-swipe.yaml` failed the same way on the
+  pre-phase-7 tree, and Chat History's rows inside their sheet failed every time. Both rows now use
+  react-native-gesture-handler's `Pressable`, which yields to the swipe, and the history sheet has
+  its own `GestureHandlerRootView` because a formSheet is outside the app root's.
+- **Citation chips cannot be inline views (native).** iOS makes a paragraph one accessibility
+  element and drops every view nested in it from the tree, attachments included, so an inline chip
+  was invisible to VoiceOver and to Maestro. `BlockText` lifts a block's `[k]` markers out of its
+  text, reserves their room at the end of its last line (`onTextLayout`) and draws the chips over it
+  as siblings. The cost: a marker in the middle of a block is drawn at the block's end.
+- **Toasts from the chat modal and Chat History.** The root `ToastProvider` draws under any native
+  presentation, so the global chat route and the history sheet each wrap their own provider. A
+  `FullWindowOverlay` was tried first and lost phase 4's "Moved to trash" toast after a pop.
+- **Chat History and Activity keep a decoy scroller.** Both need a fixed header (and History a
+  docked search) around their list, so the list cannot be the sheet's root as the transcript's is.
+  react-native-screens resized the list to the whole sheet anyway and drew the rows over the
+  header, so each route renders `SheetScrollDecoy`, an empty inert `ScrollView`, as its first
+  child: the frame correction lands on it and the real list keeps its layout.
+
+## Deferred review items (phase 7)
+
+- **SQL case folding is ASCII only.** `personKeyOf` lowercases with JavaScript's full Unicode
+  `toLowerCase`, while the attendee match (`attendeeMatches`) and retrieval's LIKE prefilter
+  (`mentionsAny`, `containing`) compare against SQLite's `lower()`, which folds only A–Z. A `name:`
+  key for an attendee with no address and a non-ASCII capital ("Élodie") is not found, so person
+  Ask answers `PersonNotFound`, and a non-ASCII question term misses a note that capitalises it.
+  The fix is a normalised column written at insert time (`note_attendees.name_key`, and a folded
+  search text on notes and segments), which is a migration plus a backfill, or matching in the
+  repository in JavaScript over the owner's attendees. Every seeded attendee has an address, and
+  `email:` keys are ASCII in practice. What was fixed: `personKeyOf` no longer returns the invalid
+  `name:` for an attendee with neither an address nor a name; it answers `null`, and the attendees
+  sheet leaves that row inert.
+- **The dimmed home barely peeks above the global chat sheet.** The route is a native page sheet,
+  so the peek and its dimming are UIKit's; the home's `#262626` header dims to near the status bar's
+  black, which is why the strip above the card reads as dark rather than as the home (#70). The
+  grabber #70 draws is now drawn in the sheet (`chat-grabber`).
+- **The soft-keyboard half of "a thread from history does not autofocus" is not asserted.** The
+  screen now dismisses the keyboard when history loads a thread, but the simulator runs with a
+  hardware keyboard, so no flow can see the software keys stay down.
+- **The pin layout animation is not asserted.** `LayoutAnimation` moves the row into or out of
+  Pinned; no flow can observe an animation.

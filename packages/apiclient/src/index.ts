@@ -1,4 +1,12 @@
 export {
+  type AskChatOptions,
+  askChat,
+  type ChatFetch,
+  parseChatEvents,
+  STREAM_ENDED_CODE,
+} from "./chatStream";
+export { makeChatsApi } from "./chats";
+export {
   type AnyRoute,
   type ApiClient,
   type Call,

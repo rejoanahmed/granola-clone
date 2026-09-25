@@ -82,6 +82,9 @@ describe("makeTestD1", () => {
 
     expect(tables.results.map((row) => row.name)).toEqual([
       "account",
+      "chat_messages",
+      "chat_preferences",
+      "chat_threads",
       "e2e_switches",
       "email_outbox",
       "note_attendees",

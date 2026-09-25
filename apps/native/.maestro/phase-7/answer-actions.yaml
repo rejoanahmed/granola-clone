@@ -1,0 +1,81 @@
+# AC14 (docs/spec/phase-7.md §8, #25): the thumbs are exclusive and the choice is stored, so it is
+# still selected when the thread is reopened from history; Copy, the paperclip and the idle mic each
+# answer with their toast.
+appId: ${APP_ID}
+name: Answer actions and composer toasts
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: What did we decide about pricing?
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+
+- tapOn:
+    id: chat-answer-0-up
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-up
+      selected: true
+    timeout: 5000
+- tapOn:
+    id: chat-answer-0-down
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-down
+      selected: true
+    timeout: 5000
+- assertVisible:
+    id: chat-answer-0-up
+    selected: false
+
+# The new thread's id is minted by the server, so its row is found by its title.
+- runFlow: ../subflows/open-history.yaml
+- tapOn:
+    id: chat-history-row-.*-title
+    text: What did we decide about pricing
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-actions
+    timeout: 15000
+- assertVisible:
+    id: chat-answer-0-down
+    selected: true
+- assertVisible:
+    id: chat-answer-0-up
+    selected: false
+
+- tapOn:
+    id: chat-answer-0-copy
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Copied to clipboard
+    timeout: 5000
+- tapOn:
+    id: chat-attach
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Attachments aren’t available yet\.
+    timeout: 5000
+- tapOn:
+    id: chat-send
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Dictation isn’t available yet\.
+    timeout: 5000

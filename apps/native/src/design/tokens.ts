@@ -14,6 +14,8 @@ export const colors = {
   ask: { pill: "#525252D9", pillEdge: "#717171" },
   bg: {
     app: "#262626",
+    // The Chat History sheet (#24), a shade darker than every other sheet.
+    history: "#1C1C1C",
     iconButton: "#1E1E1E",
     list: "#1A1A1A",
     scrim: "#00000073",
@@ -38,6 +40,8 @@ export const colors = {
     statusStrip: "#1B1B1B",
   },
   speaker: { avatar: "#E4CD75", text: "#E8E8E3" },
+  // Chat History's swipe Pin capsule (#73).
+  swipe: { pin: "#525252" },
   switch: { on: "#30D159" },
   text: {
     onLight: "#1A1A1A",

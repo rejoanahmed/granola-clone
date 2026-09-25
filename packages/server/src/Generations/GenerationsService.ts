@@ -15,7 +15,7 @@ import { LlmRateLimited, LlmRejected, LlmTimeout } from "@gc/domain/Llm/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { ensure } from "../Auth/Policy";
-import type { LlmPort, NoteAnswer } from "../Integrations/Llm/Port";
+import type { NoteAnswer, NoteLlmPort } from "../Integrations/Llm/Port";
 import type { Clock } from "../Runtime/Clock";
 import type { LogEvent } from "../Runtime/Logger";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
@@ -26,7 +26,7 @@ import { canRetryGeneration } from "./Policy";
 
 export type GenerationsDeps = {
   readonly clock: Clock;
-  readonly llm: LlmPort;
+  readonly llm: NoteLlmPort;
   readonly log: LogEvent;
   readonly queue: GenerationQueue;
   readonly repo: GenerationsRepo;

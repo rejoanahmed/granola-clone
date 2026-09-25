@@ -6,6 +6,21 @@ import type { QueryKey } from "./query";
 // method rather than hand-writing it: a key describing a request the client cannot make is a
 // silent miss.
 export const queryKeys = {
+  // Singular: the model list is one per user, not a collection of chats.
+  chat: {
+    models: () => ["chat", "models"] as const,
+  },
+  // Every thread id starts `cht_`, so `"list"` cannot collide with one at `detail`'s position. The
+  // search is part of the list key, so each query caches its own pages; `list()` with no argument
+  // is also the prefix that invalidates every query's pages at once.
+  chats: {
+    all: ["chats"] as const,
+    detail: (id: string) => ["chats", "detail", id] as const,
+    list: (q?: string) =>
+      q === undefined
+        ? (["chats", "list"] as const)
+        : (["chats", "list", q] as const),
+  },
   me: {
     all: ["me"] as const,
     profile: () => ["me", "profile"] as const,
@@ -39,9 +54,19 @@ const recordingTransition = (recordingId: string, noteId: string) => [
 // What each mutation invalidates, so a screen never decides it alone. Sign-out clears the whole
 // cache rather than naming keys.
 export const invalidationKeys = {
+  // A finished answer moves the thread's preview and updatedAt (its place in history) as well as
+  // its messages. The same keys serve a failed answer and a retry.
+  chatAnswered: (threadId: string) => [
+    queryKeys.chats.detail(threadId),
+    queryKeys.chats.list(),
+  ],
   completeOnboarding: () => [queryKeys.me.profile()],
   createNote: () => [queryKeys.notes.list()],
   createRecording: () => [queryKeys.notes.list()],
+  deleteChat: (threadId: string) => [
+    queryKeys.chats.detail(threadId),
+    queryKeys.chats.list(),
+  ],
   // Every step after the live card moves the status that the note's row and detail draw, so each
   // one names the recording, the note (which carries the transcript key) and the list.
   discardRecording: (recordingId: string, noteId: string) =>
@@ -49,6 +74,7 @@ export const invalidationKeys = {
   endRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
   // The list too, not only the detail: a title shows on its row, and trash and restore move it.
+  putChatFeedback: (threadId: string) => [queryKeys.chats.detail(threadId)],
   restoreNote: (id: string) => [
     queryKeys.notes.detail(id),
     queryKeys.notes.list(),
@@ -60,9 +86,15 @@ export const invalidationKeys = {
   ],
   retryRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
+  selectChatModel: () => [queryKeys.chat.models()],
   trashNote: (id: string) => [
     queryKeys.notes.detail(id),
     queryKeys.notes.list(),
+  ],
+  // Pinning moves the row between sections and changes the detail's `pinned`.
+  updateChat: (threadId: string) => [
+    queryKeys.chats.detail(threadId),
+    queryKeys.chats.list(),
   ],
   updateMe: () => [queryKeys.me.profile()],
   updateNote: (id: string) => [

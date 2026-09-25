@@ -1,11 +1,9 @@
-import { colors, spacing, Text } from "@native/design";
-import { Text as NativeText, StyleSheet, View } from "react-native";
-import {
-  type Block,
-  gapBefore,
-  parseNoteMarkdown,
-  type Span,
-} from "./markdown";
+import { colors, spacing } from "@native/design";
+import { StyleSheet, View } from "react-native";
+import { BlockText, type Markers } from "./BlockText";
+import { type Block, gapBefore, parseNoteMarkdown } from "./markdown";
+
+export type { Markers } from "./BlockText";
 
 // #10's line pitch, measured: looser than the 22pt `body` token, which is tuned for single lines.
 const LINE_HEIGHT = 24;
@@ -17,53 +15,42 @@ const INDENT = {
   1: { dot: 34, text: 48 },
 } as const;
 
-function Spans({ spans }: { readonly spans: readonly Span[] }) {
-  return spans.map((span, index) => (
-    // A bare native Text, so a span inherits its block's type and changes only weight or slant.
-    <NativeText
-      // biome-ignore lint/suspicious/noArrayIndexKey: spans are positional and never reorder.
-      key={index}
-      style={[
-        span.bold ? styles.bold : null,
-        span.italic ? styles.italic : null,
-      ]}
-    >
-      {span.text}
-    </NativeText>
-  ));
-}
+type Options = {
+  readonly lineHeight: number;
+  readonly markers?: Markers;
+};
 
 function BlockView({
   block,
   gap,
+  options,
   testID,
 }: {
   readonly block: Block;
   readonly gap: number;
+  readonly options: Options;
   readonly testID: string;
 }) {
+  const line = [styles.line, { lineHeight: options.lineHeight }];
+  const common = {
+    lineHeight: options.lineHeight,
+    markers: options.markers,
+    spans: block.spans,
+    style: line,
+    testID,
+  };
   if (block.kind === "heading") {
     return (
-      <Text
+      <BlockText
+        {...common}
         accessibilityRole="header"
-        style={[styles.line, { marginTop: gap }]}
-        testID={testID}
+        outer={{ marginTop: gap }}
         variant="rowTitle"
-      >
-        <Spans spans={block.spans} />
-      </Text>
+      />
     );
   }
   if (block.kind === "paragraph") {
-    return (
-      <Text
-        style={[styles.line, { marginTop: gap }]}
-        testID={testID}
-        variant="body"
-      >
-        <Spans spans={block.spans} />
-      </Text>
-    );
+    return <BlockText {...common} outer={{ marginTop: gap }} variant="body" />;
   }
   const indent = INDENT[block.level];
   return (
@@ -72,25 +59,40 @@ function BlockView({
         <View
           style={[
             styles.dot,
-            { left: indent.dot - DOT / 2 },
+            {
+              left: indent.dot - DOT / 2,
+              top: (options.lineHeight - DOT) / 2,
+            },
             block.level === 1 ? styles.hollow : styles.filled,
           ]}
         />
       ) : null}
-      <Text
-        style={[styles.line, { marginLeft: indent.text }]}
-        testID={testID}
+      <BlockText
+        {...common}
+        outer={{ marginLeft: indent.text }}
         variant="body"
-      >
-        <Spans spans={block.spans} />
-      </Text>
+      />
     </View>
   );
 }
 
-/** The #10 rendering of a note's markdown. Each top-level block is `note-block-<n>`. */
-export function NoteMarkdown({ source }: { readonly source: string }) {
+/**
+ * The #10 rendering of a note's markdown. Each top-level block is `<blockPrefix>-<n>`, by default
+ * `note-block-<n>`; the chat answer (#25) passes its own prefix, a looser line and its chips.
+ */
+export function NoteMarkdown({
+  blockPrefix = "note-block",
+  lineHeight = LINE_HEIGHT,
+  markers,
+  source,
+}: {
+  readonly blockPrefix?: string;
+  readonly lineHeight?: number;
+  readonly markers?: Markers;
+  readonly source: string;
+}) {
   const blocks = parseNoteMarkdown(source);
+  const options = { lineHeight, markers };
   return (
     <View>
       {blocks.map((block, index) => (
@@ -99,7 +101,8 @@ export function NoteMarkdown({ source }: { readonly source: string }) {
           gap={gapBefore(blocks[index - 1], block)}
           // biome-ignore lint/suspicious/noArrayIndexKey: a block's position is its identity here.
           key={index}
-          testID={`note-block-${index}`}
+          options={options}
+          testID={`${blockPrefix}-${index}`}
         />
       ))}
     </View>
@@ -110,17 +113,14 @@ export const hasBlocks = (source: string): boolean =>
   parseNoteMarkdown(source).length > 0;
 
 const styles = StyleSheet.create({
-  bold: { fontWeight: "600" },
   dot: {
     borderRadius: DOT / 2,
     height: DOT,
     position: "absolute",
-    top: (LINE_HEIGHT - DOT) / 2,
     width: DOT,
   },
   filled: { backgroundColor: colors.text.secondary },
   hollow: { borderColor: colors.text.secondary, borderWidth: DOT_STROKE },
-  italic: { fontStyle: "italic" },
   line: { flexShrink: 1, lineHeight: LINE_HEIGHT },
   row: { flexDirection: "row", paddingRight: spacing.xxs },
 });
