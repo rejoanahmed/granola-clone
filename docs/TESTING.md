@@ -395,6 +395,38 @@ These must exist. The names are the specification; the phrasing in the test file
 - an unknown person and another user's guest are empty pages; `?person=` with a malformed key is 422
 - the chat person-scope cases stay green after the match moves to `personMatches` in `@gc/db`
 
+### `Folders/Folders.test.ts` (phase 9)
+
+- create trims and collapses `" Product  Ideas "` to "Product Ideas", `noteCount` 0, a `fld_` id,
+  `createdAt === updatedAt === clock`; "product" and " PRODUCT " after "Product" are
+  `FolderNameTaken`, while `other` may still make "Product"
+- the 101st folder is `FolderLimitReached`, and one delete makes room again
+- the list is Personal (1) then Product (2), the trashed archived note uncounted; `other`'s folder is
+  never listed to `person`, and `empty` lists `[]`
+- add is idempotent (a second add keeps the count and `updatedAt`) and fills the detail's
+  `folderIds`; its refusals are checked folder first (`FolderNotFound`, even with a foreign note),
+  then note (`NoteNotFound`), then trash (`NoteTrashed`)
+- remove is idempotent, removes a trashed member for good (a restore does not bring it back), and a
+  foreign folder is `FolderNotFound`
+- delete keeps the notes and drops the memberships; a second delete and `other`'s folder are
+  `FolderNotFound`; trash drops a member from the count and the filtered list, restore puts it back
+
+### `Folders/Folders.http.test.ts`, `Domain/Folder.test.ts` (phase 9)
+
+- every route is 401 without a session; `GET` parses as `FolderList`; `POST` is 201 `Folder`, 422 on
+  `{}`, a blank name, 61 characters and an extra key, and 409 `FolderNameTaken` by name
+- `DELETE /folders/{id}` is 204 with no body, 404 `FolderNotFound` and 422 on `not-a-folder`;
+  `POST …/notes` is 200 `Folder`, 404 `NoteNotFound`, 409 `NoteTrashed` and 422 on an extra key;
+  `DELETE …/notes/{noteId}` is 200
+- `folderNameKey` trims, collapses and lower-cases (“Élan” included); `FolderName` refuses "   " and
+  61 characters
+
+### `Notes/Notes.test.ts` and `Notes/Notes.http.test.ts` — the folder filter (phase 9)
+
+- `?folder=fld_e2e_product` is launch then standup, never archived, and pages with the same cursor;
+  with Priya's key it is launch alone; an unknown folder and `other`'s are `FolderNotFound` (404)
+- `?folder=bad` is 422; the detail carries `folderIds`, `[]` for a note in no folder
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -419,6 +451,9 @@ These must exist. The names are the specification; the phrasing in the test file
   "Hello. How are you?"; `not_e2e_other` is readable only by `other`; `not_e2e_standup` has none;
   the mode switch answers what it set, refuses an unknown mode, is cleared by a reset, and release
   completes a held recording
+- (phase 9) the base seed gives `person` no folders and `other` `fld_e2e_other` holding their note;
+  `seedFolders()` (`POST /e2e/folders`) writes Personal (solo) and Product (launch, standup,
+  archived) at fixed instants, a second call changes nothing, and a reset clears every folder
 
 ### `Integrations/Email/Email.test.ts` and `AuthEmails/AuthEmails.test.ts`
 
@@ -687,9 +722,15 @@ apps/native/.maestro/
     search-for.yaml      QUERY param: tap the search field, erase it, type QUERY; the caller waits
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
+    seed-folders.yaml    person's two folders, Personal and Product (scripts/e2e-folders.js); run after
+                         open-home.yaml's reset and before the drawer is first opened
+    open-folders.yaml    from home, the folder button, then wait for the drawer and its first fetch
+    open-add-to-folder.yaml  NOTE_ID param: open the note, its folder+ button, wait for the sheet to load
+    create-folder.yaml   NAME param: on the New folder sheet, type NAME and tap Create; the caller waits
+    filter-by-folder.yaml  FOLDER_ID/NAME: open the drawer, pick the folder, wait for home's title
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-8/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-9/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -772,8 +813,9 @@ phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-
 (gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
 (#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
 `phase-6-short` (#40, #107) from short-recording.yaml; phase 7 adds the eleven `phase-7-*` shots
-listed in docs/spec/phase-7.md §8, and phase 8 the seven `phase-8-*` shots listed in
-docs/spec/phase-8.md §8 (#60–#66). Run with
+listed in docs/spec/phase-7.md §8, phase 8 the seven `phase-8-*` shots listed in
+docs/spec/phase-8.md §8 (#60–#66), and phase 9 the ten `phase-9-*` shots listed in
+docs/spec/phase-9.md §8 (#17, #18, #50). Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

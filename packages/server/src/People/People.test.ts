@@ -3,6 +3,7 @@ import { PersonNotFound } from "@gc/domain/People/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildContainer } from "../container";
 import { E2E_USERS } from "../E2E/Fixtures";
+import { makeFoldersRepo } from "../Folders/FoldersRepo";
 import { makeNotesRepo } from "../Notes/NotesRepo";
 import { makeNotesService } from "../Notes/NotesService";
 import type { Clock } from "../Runtime/Clock";
@@ -58,6 +59,7 @@ const service = () =>
 const notes = () =>
   makeNotesService({
     clock,
+    folders: makeFoldersRepo(makeDrizzle(d1)),
     ids,
     repo: makeNotesRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),

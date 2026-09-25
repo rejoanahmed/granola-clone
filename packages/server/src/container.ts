@@ -16,6 +16,11 @@ import {
   TRANSCRIPTION_SWITCH,
   transcriptionModeOf,
 } from "./E2E/E2eService";
+import { makeFoldersRepo } from "./Folders/FoldersRepo";
+import {
+  type FoldersService,
+  makeFoldersService,
+} from "./Folders/FoldersService";
 import type { GenerationQueue } from "./Generations/GenerationQueue";
 import { makeGenerationsRepo } from "./Generations/GenerationsRepo";
 import {
@@ -88,12 +93,29 @@ export const buildContainer = (
     makeProfilesService({ clock, repo: profilesRepo })
   );
 
+  const notesRepo = traced("NotesRepo", makeNotesRepo(db));
+  const foldersRepo = traced("FoldersRepo", makeFoldersRepo(db));
+
   const notes = traced(
     "Notes",
     makeNotesService({
       clock,
+      folders: foldersRepo,
       ids,
-      repo: traced("NotesRepo", makeNotesRepo(db)),
+      repo: notesRepo,
+      uow,
+    })
+  );
+
+  // The notes repo is shared rather than rebuilt: a folder reads a note to decide whether the
+  // caller may file it, and never writes one.
+  const folders = traced(
+    "Folders",
+    makeFoldersService({
+      clock,
+      ids,
+      notes: notesRepo,
+      repo: foldersRepo,
       uow,
     })
   );
@@ -265,6 +287,7 @@ export const buildContainer = (
     chats,
     e2e,
     flags,
+    folders,
     generations,
     notes,
     people,
@@ -282,6 +305,7 @@ export type Container = {
   chats: ChatsService;
   e2e: E2eService | null;
   flags: FeatureFlagsPort;
+  folders: FoldersService;
   generations: GenerationsService;
   notes: NotesService;
   people: PeopleService;

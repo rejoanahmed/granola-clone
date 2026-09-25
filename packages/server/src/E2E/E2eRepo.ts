@@ -4,6 +4,8 @@ import {
   chatThreads,
   e2eSwitches,
   eq,
+  folderNotes,
+  folders,
   inArray,
   ne,
   noteAttendees,
@@ -29,6 +31,15 @@ export type E2eAttendeeRow = {
   readonly name: string | null;
   readonly position: number;
   readonly userId: string | null;
+};
+
+export type E2eFolderRow = {
+  readonly createdAt: Timestamp;
+  readonly id: string;
+  readonly name: string;
+  readonly nameKey: string;
+  readonly noteIds: readonly string[];
+  readonly ownerId: string;
 };
 
 export type E2eNoteRow = {
@@ -155,6 +166,40 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
       });
     }
   },
+  // Insert-or-keep, at the fixture's instants, so a second call writes nothing. Run only after a
+  // reset in practice; a flow's own same-named folder would otherwise refuse the unique index.
+  stageFolders: (stage: Stage, rows: readonly E2eFolderRow[]): void => {
+    for (const row of rows) {
+      stage.add({
+        query: db
+          .insert(folders)
+          .values({
+            createdAt: row.createdAt,
+            id: row.id,
+            name: row.name,
+            nameKey: row.nameKey,
+            ownerId: row.ownerId,
+            updatedAt: row.createdAt,
+          })
+          .onConflictDoNothing(),
+      });
+      if (row.noteIds.length > 0) {
+        stage.add({
+          query: db
+            .insert(folderNotes)
+            .values(
+              row.noteIds.map((noteId) => ({
+                addedAt: row.createdAt,
+                folderId: row.id,
+                noteId,
+              }))
+            )
+            .onConflictDoNothing(),
+        });
+      }
+    }
+  },
+
   // The newcomer's account is the one better-auth tables row a reset does delete: the sign-up flow
   // must always meet an unknown address. Deleting the `user` row cascades its sessions, accounts
   // and profile. Pending codes live in `verification` under better-auth's `${type}-otp-${email}`,

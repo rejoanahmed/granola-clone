@@ -342,3 +342,45 @@ export const E2E_CHATS: readonly E2eChat[] = [
     updatedAt: at(9, 12, 9),
   },
 ];
+
+export type E2eFolder = {
+  readonly createdAt: number;
+  readonly id: string;
+  /** In the base seed, or only behind `POST /e2e/folders`. */
+  readonly inBaseSeed: boolean;
+  readonly name: string;
+  /** Member notes, each added at the folder's `createdAt`. */
+  readonly noteIds: readonly string[];
+  readonly ownerRole: E2eRole;
+};
+
+// `person` has no folder until a flow asks for them, so the empty drawer and the empty Add to
+// folder sheet are reachable as the ordinary signed-in user and no earlier flow ever sees one.
+// `other`'s is in the base seed so ownership can be proven. Product holds the trashed archived note,
+// which is what makes its live count 2 rather than 3 (docs/spec/phase-9.md §6.5).
+export const E2E_FOLDERS: readonly E2eFolder[] = [
+  {
+    createdAt: at(9, 10, 9),
+    id: "fld_e2e_other",
+    inBaseSeed: true,
+    name: "Other’s folder",
+    noteIds: ["not_e2e_other"],
+    ownerRole: "other",
+  },
+  {
+    createdAt: at(9, 14, 9),
+    id: "fld_e2e_personal",
+    inBaseSeed: false,
+    name: "Personal",
+    noteIds: ["not_e2e_solo"],
+    ownerRole: "person",
+  },
+  {
+    createdAt: at(9, 14, 10),
+    id: "fld_e2e_product",
+    inBaseSeed: false,
+    name: "Product",
+    noteIds: ["not_e2e_launch", "not_e2e_standup", "not_e2e_archived"],
+    ownerRole: "person",
+  },
+];

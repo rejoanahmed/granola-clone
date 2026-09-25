@@ -186,6 +186,19 @@ export default function GalleryScreen() {
             testID="gallery-pill-glass"
             tone="glass"
           />
+          <PillButton
+            label="Delete folder"
+            size="lg"
+            testID="gallery-pill-destructive"
+            tone="destructive"
+          />
+          <PillButton
+            disabled
+            disabledLook="solid"
+            label="Add to folder"
+            testID="gallery-pill-solid-disabled"
+            tone="light"
+          />
           <View style={styles.wrap}>
             <Fab accessibilityLabel="New note" testID="gallery-fab" />
             <SendButton state="idle" testID="gallery-send-idle" />

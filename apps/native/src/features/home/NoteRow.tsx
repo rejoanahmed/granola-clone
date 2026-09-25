@@ -12,6 +12,7 @@ import type { NoteListItem } from "@native/lib/api";
 import { AudioLines, Smartphone, Trash2 } from "lucide-react-native";
 import { useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import type { PanGesture } from "react-native-gesture-handler";
 import { Pressable as GesturePressable } from "react-native-gesture-handler";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
@@ -96,6 +97,9 @@ export function NoteRowContent({
 }
 
 type Props = {
+  // Home's edge pan: the row's swipe waits for it to fail, so a drag from the left edge opens the
+  // drawer rather than the row taking it.
+  readonly edgeGesture?: PanGesture;
   readonly live: boolean;
   readonly note: NoteListItem;
   readonly onLongPress: (note: NoteListItem, frame: Frame) => void;
@@ -108,6 +112,7 @@ type Props = {
 // One trailing action and no leading one: #03 showed a short right swipe opening the note, and a
 // leading action would steal it. A full swipe does not trash on release — only the tap does.
 export function NoteRow({
+  edgeGesture,
   live,
   note,
   onLongPress,
@@ -169,6 +174,7 @@ export function NoteRow({
           </Pressable>
         </View>
       )}
+      requireExternalGestureToFail={edgeGesture}
       rightThreshold={ACTION_WIDTH / 2}
     >
       {/* Gesture handler's Pressable, so a quick swipe yields to the swipeable rather than the

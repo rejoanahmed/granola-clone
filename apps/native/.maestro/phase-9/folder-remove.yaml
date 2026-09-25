@@ -1,0 +1,90 @@
+# AC8 (docs/spec/phase-9.md §8, §3.5): [folders] in Product's view, the row menu's Remove from folder
+# takes standup out at once with an Undo toast; Undo puts it back. Removed again and left to expire,
+# the drawer counts one note, and standup is still on My notes — nothing was deleted.
+appId: ${APP_ID}
+name: Removing a note from a folder, with Undo
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow:
+    file: ../subflows/filter-by-folder.yaml
+    env:
+      FOLDER_ID: fld_e2e_product
+      NAME: Product
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 15000
+
+- longPressOn:
+    id: home-note-not_e2e_standup
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- tapOn:
+    id: home-note-menu-remove-from-folder
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-not_e2e_standup
+    timeout: 10000
+- assertVisible:
+    id: home-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: "Removed from “Product”"
+    timeout: 10000
+- assertVisible:
+    id: toast-action
+    text: Undo
+
+- tapOn:
+    id: toast-action
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 10000
+
+- longPressOn:
+    id: home-note-not_e2e_standup
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- tapOn:
+    id: home-note-menu-remove-from-folder
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: "Removed from “Product”"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: toast-message
+    timeout: 20000
+- assertNotVisible:
+    id: home-note-not_e2e_standup
+
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-row-fld_e2e_product
+      text: "Product, 1 note"
+    timeout: 10000
+- tapOn:
+    id: folders-all
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: My notes
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 15000

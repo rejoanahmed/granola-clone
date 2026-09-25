@@ -1,0 +1,106 @@
+# AC9 (docs/spec/phase-9.md §8, §3.4): [folders] with home filtered to Product, a long-press on its
+# drawer row offers Delete folder; the confirm sheet names it and Close changes nothing. Confirming
+# deletes it with a toast, leaves Personal, and returns home to My notes with Product's notes intact,
+# and never with the "no longer exists" toast: that one is for a folder somebody else removed (§3.2).
+appId: ${APP_ID}
+name: Deleting the folder home is filtered by
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow:
+    file: ../subflows/filter-by-folder.yaml
+    env:
+      FOLDER_ID: fld_e2e_product
+      NAME: Product
+
+- runFlow: ../subflows/open-folders.yaml
+- longPressOn:
+    id: folders-row-fld_e2e_product
+- extendedWaitUntil:
+    visible:
+      id: folders-menu
+    timeout: 5000
+- assertVisible:
+    id: folders-menu-delete
+- tapOn:
+    id: folders-menu-delete
+- extendedWaitUntil:
+    visible:
+      id: folder-delete-sheet
+    timeout: 10000
+- assertVisible:
+    id: folder-delete-body
+    text: "“Product” will be deleted\\. Its notes stay in My notes\\."
+- assertVisible:
+    id: folder-delete-confirm
+    text: Delete folder
+- takeScreenshot: phase-9-delete-folder
+- tapOn:
+    id: folder-delete-close
+- extendedWaitUntil:
+    notVisible:
+      id: folder-delete-sheet
+    timeout: 10000
+- assertVisible:
+    id: folders-row-fld_e2e_product
+    text: "Product, 2 notes"
+
+- longPressOn:
+    id: folders-row-fld_e2e_product
+- extendedWaitUntil:
+    visible:
+      id: folders-menu
+    timeout: 5000
+- tapOn:
+    id: folders-menu-delete
+- extendedWaitUntil:
+    visible:
+      id: folder-delete-confirm
+    timeout: 10000
+- tapOn:
+    id: folder-delete-confirm
+- extendedWaitUntil:
+    notVisible:
+      id: folder-delete-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Folder deleted
+    timeout: 10000
+- assertNotVisible:
+    id: toast-message
+    text: "That folder no longer exists\\."
+- extendedWaitUntil:
+    notVisible:
+      id: folders-row-fld_e2e_product
+    timeout: 10000
+- assertVisible:
+    id: folders-row-fld_e2e_personal
+
+- tapOn:
+    id: folders-drawer-scrim
+    point: "92%,50%"
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: My notes
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 15000
+- assertVisible:
+    id: home-note-not_e2e_standup
+- assertNotVisible:
+    id: toast-message
+    text: "That folder no longer exists\\."

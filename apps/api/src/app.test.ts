@@ -89,6 +89,11 @@ describe("the worker's HTTP assembly", () => {
         // Phase 8 (docs/spec/phase-8.md §6.1).
         "/search",
         "/people/{personKey}",
+        // Phase 9 (docs/spec/phase-9.md §6.1).
+        "/folders",
+        "/folders/{id}",
+        "/folders/{id}/notes",
+        "/folders/{id}/notes/{noteId}",
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
@@ -98,6 +103,7 @@ describe("the worker's HTTP assembly", () => {
       "Chats",
       "Search",
       "People",
+      "Folders",
     ]);
   });
 
@@ -823,4 +829,85 @@ describe("the chats routes, phase 7", () => {
       details: { personKey: "email:nobody@example.com" },
     });
   });
+});
+
+// ── Phase 9: the folders router is mounted, documented, and its errors keep their statuses ─────
+// (docs/spec/phase-9.md §6.1, §6.2, §7 "apps/api app.test.ts"). The errors module does not exist
+// yet, so it is imported inside the test and the phase 1–8 cases above keep running.
+
+describe("the folders routes, phase 9", () => {
+  it.each([
+    ["GET", "/folders"],
+    ["POST", "/folders"],
+    ["DELETE", "/folders/fld_0000000000000001"],
+    ["POST", "/folders/fld_0000000000000001/notes"],
+    ["DELETE", "/folders/fld_0000000000000001/notes/not_0000000000000001"],
+  ])(
+    "mounts %s %s, answering 401 Unauthorized without a session",
+    async (method, route) => {
+      const response = await app.request(route, { method }, env);
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: "Unauthorized",
+      });
+    }
+  );
+
+  it("documents every folder route under the Folders tag, and the delete's 204", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as {
+      paths: Record<
+        string,
+        Record<string, { responses?: Record<string, unknown>; tags?: string[] }>
+      >;
+    };
+
+    for (const [route, method] of [
+      ["/folders", "get"],
+      ["/folders", "post"],
+      ["/folders/{id}", "delete"],
+      ["/folders/{id}/notes", "post"],
+      ["/folders/{id}/notes/{noteId}", "delete"],
+    ] as const) {
+      expect(doc.paths[route]?.[method]?.tags).toEqual(["Folders"]);
+    }
+    expect(
+      Object.keys(doc.paths["/folders/{id}"]?.delete?.responses ?? {})
+    ).toContain("204");
+    expect(Object.keys(doc.paths["/notes"]?.get?.responses ?? {})).toContain(
+      "404"
+    );
+  });
+
+  it.each([
+    ["FolderNotFound", 404],
+    ["FolderNameTaken", 409],
+    ["FolderLimitReached", 409],
+  ] as const)(
+    "renders %s through on-error as %i with its details",
+    async (tag, status) => {
+      const errors = (await import("@gc/domain/Folders/Errors")) as Record<
+        string,
+        ErrorClass | undefined
+      >;
+      const ErrorOf = errors[tag];
+      if (ErrorOf === undefined) {
+        throw new Error(`no ${tag} in @gc/domain/Folders/Errors`);
+      }
+      const failing = new Hono<AppEnv>()
+        .get("/", () => {
+          throw new ErrorOf({ id: "fld_0000000000000001" });
+        })
+        .onError(onError);
+
+      const response = await failing.request("/");
+
+      expect(response.status).toBe(status);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: tag,
+        details: { id: "fld_0000000000000001" },
+      });
+    }
+  );
 });

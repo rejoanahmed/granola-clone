@@ -1,0 +1,69 @@
+# docs/spec/phase-9.md §3.2 List and §6.4: [folders] in Product's view, swiping standup to trash
+# removes the row with the usual Undo toast, and Undo puts it back in the folder view. Trashed again
+# and left to expire, the drawer's count drops to one: a trash moves the folder's count.
+appId: ${APP_ID}
+name: Trashing a note from a folder view, with Undo
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow:
+    file: ../subflows/filter-by-folder.yaml
+    env:
+      FOLDER_ID: fld_e2e_product
+      NAME: Product
+- runFlow:
+    file: ../subflows/swipe-to-trash.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- tapOn:
+    id: home-note-not_e2e_standup-trash
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-not_e2e_standup
+    timeout: 5000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Moved to trash
+    timeout: 10000
+- assertVisible:
+    id: home-note-not_e2e_launch
+
+- tapOn:
+    id: toast-action
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 10000
+- assertVisible:
+    id: home-title
+    text: Product
+
+- runFlow:
+    file: ../subflows/swipe-to-trash.yaml
+    env:
+      NOTE_ID: not_e2e_standup
+- tapOn:
+    id: home-note-not_e2e_standup-trash
+- extendedWaitUntil:
+    visible:
+      id: toast
+    timeout: 5000
+- extendedWaitUntil:
+    notVisible:
+      id: toast
+    timeout: 15000
+- assertNotVisible:
+    id: home-note-not_e2e_standup
+
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-row-fld_e2e_product
+      text: "Product, 1 note"
+    timeout: 10000

@@ -1,0 +1,70 @@
+# AC3 (docs/spec/phase-9.md §8, #17, #18): with no folders, a note's folder+ button opens the Add to
+# folder sheet — Close, a disabled "Add to folder", the lone "Create folder" and the search pill with
+# the keyboard down. A search with no match says so by name and keeps submit disabled; Hide keyboard
+# goes with the keyboard; Close returns to the note.
+appId: ${APP_ID}
+name: The empty Add to folder sheet and its search
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-add-to-folder.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- assertVisible:
+    id: add-to-folder-close
+- assertVisible:
+    id: add-to-folder-submit
+    text: Add to folder
+    enabled: false
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-empty
+    timeout: 10000
+- assertVisible:
+    id: add-to-folder-empty-create
+    text: Create folder
+- assertVisible:
+    id: add-to-folder-search
+- assertNotVisible:
+    id: add-to-folder-keyboard-dismiss
+- assertNotVisible:
+    id: add-to-folder-list
+- takeScreenshot: phase-9-add-to-folder-empty
+
+- tapOn:
+    id: add-to-folder-search-input
+- inputText: pro
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-no-results-text
+      text: "No results for “pro”"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-keyboard-dismiss
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: false
+- takeScreenshot: phase-9-add-to-folder-no-results
+
+- tapOn:
+    id: add-to-folder-keyboard-dismiss
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-keyboard-dismiss
+    timeout: 5000
+
+- tapOn:
+    id: add-to-folder-close
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- assertVisible:
+    id: note-screen

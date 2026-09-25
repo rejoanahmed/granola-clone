@@ -1,0 +1,10 @@
+# person's two seeded folders (docs/spec/phase-9.md §6.5): fld_e2e_personal "Personal" holding solo,
+# and fld_e2e_product "Product" holding launch, standup and the trashed archived note. Run after
+# open-home.yaml (whose reset clears them) and before the drawer is first opened: the drawer's query
+# fetches on open, so nothing on screen needs refreshing. Fails the flow on anything but a 200.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-folders.js

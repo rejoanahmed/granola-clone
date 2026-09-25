@@ -1,0 +1,63 @@
+# AC1 (docs/spec/phase-9.md §8, #50): with no folders, the folder button opens the empty drawer —
+# "No folders yet", the sync sentence, Create new folder, and no My notes row. The scrim closes it;
+# a swipe off the left edge opens it again, and a leftward swipe across it closes it.
+appId: ${APP_ID}
+name: The empty folders drawer opens and closes
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-empty
+    timeout: 10000
+- assertVisible:
+    id: folders-empty-title
+    text: No folders yet
+- assertVisible:
+    id: folders-empty-body
+    text: Folders will appear here after they are synced.
+- assertVisible:
+    id: folders-create
+    text: Create new folder
+- assertNotVisible:
+    id: folders-all
+- assertNotVisible:
+    id: folders-list
+- takeScreenshot: phase-9-drawer-empty
+
+# The drawer covers the left 316pt of 402; the scrim's right-hand strip is outside it.
+- tapOn:
+    id: folders-drawer-scrim
+    point: "92%,50%"
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 5000
+- runFlow: ../subflows/assert-home-unobstructed.yaml
+
+# The edge pan (§3.1 Gestures): a gesture, not a selector, so the testID-only rule holds.
+- swipe:
+    start: "1%,50%"
+    end: "75%,50%"
+    duration: 400
+- extendedWaitUntil:
+    visible:
+      id: folders-drawer
+    timeout: 5000
+- assertVisible:
+    id: folders-empty-title
+
+- swipe:
+    start: "70%,50%"
+    end: "2%,50%"
+    duration: 400
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 5000
+- runFlow: ../subflows/assert-home-unobstructed.yaml

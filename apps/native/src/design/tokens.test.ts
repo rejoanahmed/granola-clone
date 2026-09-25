@@ -25,6 +25,7 @@ const SPEC_COLORS: Record<string, string> = {
   "bg.tile": "#282828",
   "bg.tileRaised": "#333333",
   "border.hairline": "#333333",
+  "button.disabled": "#555555",
   "button.light": "#EAEBE4",
   "button.lightAlt": "#D2D2D2",
   "calendar.bar": "#DB35F2",

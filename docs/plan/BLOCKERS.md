@@ -346,3 +346,21 @@
   person cases now seed through `NotesService.create`. A shared fixture helper for the others would
   have to build the E2E repo, and `scripts/check-architecture.mjs` forbids importing a repo as a
   value outside `container.ts` and a `*.test.ts`. Left as is.
+
+## Phase 9 (folders)
+
+- **Folders never sync.** #50's empty-state copy promises folders "appear here after they are
+  synced", and there is no desktop app. The string is kept verbatim, as COPY.md requires. A later
+  wording change is a copy decision, not a code change.
+- **No rename.** Discovery shows no rename entry. `PATCH /folders/{id}` can be added with the same
+  `folderNameKey` uniqueness rule, and the drawer row menu is where it would go. Not built.
+- **The live recording card's Add to folder (#102) stays inert.** The note exists by then, so the
+  same sheet could open over the card, but presenting a modal over the `fullScreenModal` recording
+  route while audio is capturing needs its own device check. Deferred to phase 12's parity pass.
+- **Recording from a folder view does not file the note.** A new note lands in My notes only;
+  `RecordingsService.start` answers `folderIds: []`. Auto-filing is a guess about intent that
+  discovery cannot settle.
+- **The folder list is capped at 100 (`FOLDERS_PER_OWNER_MAX`) and not paged.** A `nextCursor` can
+  be added to `FolderList` without breaking clients.
+- **The drawer's home "push" is a dim, not a translate.** #50's shot shows home at its normal x,
+  although the discovery README says "pushed". Recorded for the parity pass.

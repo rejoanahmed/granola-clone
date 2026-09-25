@@ -29,3 +29,8 @@ export type UserId = z.infer<typeof UserId>;
 // schema before it was initialised.
 export const NoteId = branded("NoteId", "not_");
 export type NoteId = z.infer<typeof NoteId>;
+
+// Here for the same reason as `NoteId`: a note's detail carries its folder ids and a folder's
+// add-note body names a note, so each module would otherwise import the other.
+export const FolderId = branded("FolderId", "fld_");
+export type FolderId = z.infer<typeof FolderId>;

@@ -131,9 +131,23 @@ export type NotePatchBody = NonNullable<
 
 export const NOTES_PAGE_SIZE = 20;
 
-export const notesInfiniteQuery = () =>
-  api.infinite<NoteListItem>(keys.notes.list(), (cursor, { signal }) =>
-    client.listNotes({ query: { cursor, limit: NOTES_PAGE_SIZE } }, { signal })
+/**
+ * Home's list, or one folder's (docs/spec/phase-9.md §3.2): a distinct entry under the same
+ * `notes.list()` prefix, so every write that refreshes home refreshes the folder view with it.
+ */
+export const notesInfiniteQuery = (folder: string | null = null) =>
+  api.infinite<NoteListItem>(
+    folder === null ? keys.notes.list() : keys.notes.list({ folder }),
+    (cursor, { signal }) =>
+      client.listNotes(
+        {
+          query:
+            folder === null
+              ? { cursor, limit: NOTES_PAGE_SIZE }
+              : { cursor, folder, limit: NOTES_PAGE_SIZE },
+        },
+        { signal }
+      )
   );
 
 export const noteQuery = (id: string) =>
@@ -143,8 +157,11 @@ export const noteQuery = (id: string) =>
 
 type NotesCache = { pageParams: unknown[]; pages: NotesPage[] };
 
-const readList = (queryClient: QueryClient) =>
-  queryClient.getQueryData<NotesCache>(keys.notes.list());
+// Every cached list: home's, each folder's and each person's all sit under the `notes.list()` prefix.
+const readLists = (queryClient: QueryClient) =>
+  queryClient
+    .getQueriesData<NotesCache>({ queryKey: keys.notes.list() })
+    .map(([, data]) => data);
 
 /**
  * The row the list already holds for this note, so the detail can paint its title and pill before
@@ -155,20 +172,24 @@ export function findNoteSummary(
   queryClient: QueryClient,
   id: string
 ): NoteListItem | null {
-  for (const page of readList(queryClient)?.pages ?? []) {
-    const found = page.items.find((item) => item.id === id);
-    if (found) {
-      return found;
+  for (const list of readLists(queryClient)) {
+    for (const page of list?.pages ?? []) {
+      const found = page.items.find((item) => item.id === id);
+      if (found) {
+        return found;
+      }
     }
   }
   return null;
 }
 
+// Every list at once, filtered ones included: a trashed or renamed note is the same row in each.
 const mapItems = (
   queryClient: QueryClient,
-  map: (items: NoteListItem[]) => NoteListItem[]
+  map: (items: NoteListItem[]) => NoteListItem[],
+  queryKey: readonly unknown[] = keys.notes.list()
 ) => {
-  queryClient.setQueryData<NotesCache>(keys.notes.list(), (data) =>
+  queryClient.setQueriesData<NotesCache>({ queryKey }, (data) =>
     data
       ? {
           ...data,
@@ -189,8 +210,12 @@ const comesBefore = (a: NoteListItem, b: NoteListItem): boolean =>
 // than everything loaded belongs on the last page only when that page is the list's end: while a
 // next page exists, its cursor sits above the row, so the fetch would bring the row a second time
 // and the list would draw it twice. There the next page is left to bring it.
-const insertSummary = (queryClient: QueryClient, summary: NoteListItem) => {
-  queryClient.setQueryData<NotesCache>(keys.notes.list(), (data) => {
+const insertSummary = (
+  queryClient: QueryClient,
+  summary: NoteListItem,
+  queryKey: readonly unknown[] = keys.notes.list()
+) => {
+  queryClient.setQueryData<NotesCache>(queryKey, (data) => {
     if (!data || data.pages.length === 0) {
       return data;
     }
@@ -301,6 +326,8 @@ export function useTrashNote() {
       if (context?.removed) {
         insertSummary(queryClient, context.removed);
       }
+      // A folder or person view dropped the row too, and only home's is put back by hand.
+      invalidate(queryClient, [keys.notes.list()]).catch(() => undefined);
       toast.show({ message: TRASH_COPY.failed });
     },
     onMutate: async (id) => {
@@ -376,3 +403,41 @@ export const personNotesInfiniteQuery = (person: string) =>
         { signal }
       )
   );
+
+// ---- Folders (docs/spec/phase-9.md §3, §6.4) ----
+
+export type FolderList = Awaited<ReturnType<typeof client.listFolders>>;
+export type Folder = FolderList["items"][number];
+
+export const foldersQuery = () =>
+  api.query(keys.folders.list(), ({ signal }) =>
+    client.listFolders(undefined, { signal })
+  );
+
+/** The folders the cache already holds, for a sheet that must not wait on a request to name one. */
+export const cachedFolders = (queryClient: QueryClient): readonly Folder[] =>
+  queryClient.getQueryData<FolderList>(keys.folders.list())?.items ?? [];
+
+/** Takes one row out of one folder's list at once, and hands it back for an Undo or a failure. */
+export async function dropFromFolderList(
+  queryClient: QueryClient,
+  folder: string,
+  id: string
+): Promise<NoteListItem | null> {
+  const queryKey = keys.notes.list({ folder });
+  await queryClient.cancelQueries({ queryKey });
+  const data = queryClient.getQueryData<NotesCache>(queryKey);
+  const removed =
+    data?.pages.flatMap((page) => page.items).find((i) => i.id === id) ?? null;
+  mapItems(queryClient, (items) => items.filter((i) => i.id !== id), queryKey);
+  return removed;
+}
+
+/** Puts a row back into one folder's list, where the list's order says it goes. */
+export function restoreToFolderList(
+  queryClient: QueryClient,
+  folder: string,
+  summary: NoteListItem
+): void {
+  insertSummary(queryClient, summary, keys.notes.list({ folder }));
+}

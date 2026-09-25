@@ -1,0 +1,89 @@
+# AC6 (docs/spec/phase-9.md §8, #18): [folders] the sheet's search filters the list on the client as
+# the query changes, hides the create row while there is a query, and says "No results" by name. A
+# selection the filter hides stays selected, so submit stays enabled and files the note there.
+appId: ${APP_ID}
+name: Searching the Add to folder sheet keeps a hidden selection
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow:
+    file: ../subflows/open-add-to-folder.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-list
+    timeout: 15000
+
+- tapOn:
+    id: add-to-folder-search-input
+- inputText: pro
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-row-fld_e2e_personal
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_product
+    text: "Product, 2 notes"
+- assertNotVisible:
+    id: add-to-folder-create
+
+- tapOn:
+    id: add-to-folder-row-fld_e2e_product
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+      enabled: true
+    timeout: 5000
+
+- tapOn:
+    id: add-to-folder-search-input
+- eraseText: 10
+- inputText: per
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-row-fld_e2e_product
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_personal
+    text: "Personal, 1 note, added"
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: true
+
+- tapOn:
+    id: add-to-folder-search-input
+- eraseText: 10
+- inputText: zz
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-no-results-text
+      text: "No results for “zz”"
+    timeout: 5000
+
+- tapOn:
+    id: add-to-folder-search-input
+- eraseText: 10
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-create
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_product
+    selected: true
+- tapOn:
+    id: add-to-folder-submit
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: "Added to “Product”"
+    timeout: 10000

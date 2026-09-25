@@ -1,3 +1,4 @@
+import { FolderId } from "@gc/domain/Domain/Folder";
 import {
   AttendeeId,
   type AttendeeInput,
@@ -11,9 +12,11 @@ import {
 import type { Page, PageQuery } from "@gc/domain/Domain/Page";
 import type { PersonKey } from "@gc/domain/Domain/Person";
 import { ValidationFailed } from "@gc/domain/Errors";
+import { FolderNotFound } from "@gc/domain/Folders/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
+import type { FoldersRepo } from "../Folders/FoldersRepo";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
@@ -23,6 +26,10 @@ import { canEditNote, canReadNote } from "./Policy";
 
 export type NotesDeps = {
   readonly clock: Clock;
+  // Only the owner-scoped read, and owner scoping is the whole rule here: the filter asks whether
+  // the folder is the caller's, not the folders policy, so the day a folder is shared this read
+  // must be revisited with it. Without the check a foreign folder would answer as an empty page.
+  readonly folders: Pick<FoldersRepo, "findForOwner">;
   readonly ids: Ids;
   readonly repo: NotesRepo;
   readonly uow: UnitOfWork;
@@ -43,7 +50,11 @@ const hasChanges = (patch: NotePatch): boolean =>
 
 // The wire shape. Taking `Authorized<NoteRecord>` is what makes a method that skipped its check
 // fail to compile where it answers.
-const present = (note: Authorized<NoteRecord>, actor: Actor): Note => ({
+const present = (
+  note: Authorized<NoteRecord>,
+  actor: Actor,
+  folderIds: readonly FolderId[]
+): Note => ({
   attendees: [...note.attendees]
     .map((attendee) => ({
       email: attendee.email,
@@ -55,6 +66,7 @@ const present = (note: Authorized<NoteRecord>, actor: Actor): Note => ({
     .sort((a, b) => Number(b.isMe) - Number(a.isMe)),
   bodyMarkdown: note.bodyMarkdown,
   createdAt: note.createdAt,
+  folderIds: [...folderIds],
   generation: note.generation,
   id: note.id,
   recording: note.recording,
@@ -94,8 +106,30 @@ export const makeNotesService = (deps: NotesDeps) => {
 
   // Every write answers through this, so the answer to an edit can never be a read that skipped
   // the read policy.
-  const get = async (actor: Actor, id: NoteRef): Promise<Note> =>
-    present(await visible(canReadNote, actor, id), actor);
+  const get = async (actor: Actor, id: NoteRef): Promise<Note> => {
+    const note = await visible(canReadNote, actor, id);
+    return present(note, actor, await deps.repo.folderIdsOf(note.id, actor.id));
+  };
+
+  // Unknown and another owner's folder are one 404: unlike a person, a folder is an entity the
+  // caller can lose, and the client draws a "gone" state for it. Over HTTP a malformed id is a 422
+  // before this runs; a cron or a test holding one gets the same 404.
+  const folderOf = async (
+    actor: Actor,
+    folder: string | undefined
+  ): Promise<FolderId | null> => {
+    if (folder === undefined) {
+      return null;
+    }
+    const parsed = FolderId.safeParse(folder);
+    const found = parsed.success
+      ? await deps.folders.findForOwner(actor.id, parsed.data)
+      : null;
+    if (found === null) {
+      throw new FolderNotFound({ id: folder });
+    }
+    return found.id;
+  };
 
   return {
     create: async (actor: Actor, input: NewNoteInput): Promise<Note> => {
@@ -142,13 +176,19 @@ export const makeNotesService = (deps: NotesDeps) => {
     // count, and no second query that could disagree with the page it describes.
     list: async (
       actor: Actor,
-      query: PageQuery & { readonly person?: PersonKey }
+      query: PageQuery & {
+        readonly folder?: string;
+        readonly person?: PersonKey;
+      }
     ): Promise<Page<NoteSummary>> => {
+      const position = cursorOf(query.cursor);
+      const folder = await folderOf(actor, query.folder);
       const rows = await deps.repo.listLive(
         actor.id,
-        cursorOf(query.cursor),
+        position,
         query.limit + 1,
-        query.person ?? null
+        query.person ?? null,
+        folder
       );
       const items = rows.slice(0, query.limit);
       const last = items.at(-1);

@@ -1,0 +1,24 @@
+# From home, open the folders drawer (docs/spec/phase-9.md §3.1, §8) with the folder button and wait
+# for it to settle: the drawer, then its first fetch finished.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-folders-button
+    timeout: 30000
+- tapOn:
+    id: home-folders-button
+- extendedWaitUntil:
+    visible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: folders-loading
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: folders-create
+    timeout: 10000

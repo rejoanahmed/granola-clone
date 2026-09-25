@@ -869,3 +869,129 @@ describe("the E2E harness, phase 7", () => {
     expect(await rows("SELECT user_id FROM chat_preferences")).toEqual([]);
   });
 });
+
+// ── Phase 9: the folder fixtures (docs/spec/phase-9.md §6.5, §7 "E2E/E2E.test.ts") ─────────────
+// The base seed gives `other` one folder, so ownership can be proven, and `person` none, so the empty
+// drawer and sheet are reachable. `seedFolders()` (behind `POST /e2e/folders`) writes person's two.
+
+type FolderHarness = { seedFolders: () => Promise<unknown> };
+
+describe("the E2E harness, phase 9", () => {
+  let d1: TestD1;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    const container = buildContainer(envOver(d1));
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const folders = () => harness as unknown as FolderHarness;
+
+  const fresh = async () => {
+    await harness.reset();
+    return await harness.seed();
+  };
+
+  const rows = async (sql: string) => (await d1.prepare(sql).all()).results;
+
+  const folderRows = () =>
+    rows("SELECT id, name, name_key, owner_id FROM folders ORDER BY id");
+  const memberRows = () =>
+    rows(
+      "SELECT folder_id, note_id FROM folder_notes ORDER BY folder_id, note_id"
+    );
+
+  const OTHERS_FOLDER = {
+    id: "fld_e2e_other",
+    name: "Other’s folder",
+    name_key: "other’s folder",
+    owner_id: "usr_e2e_other",
+  };
+
+  it("gives person no folders in the base seed, and other one holding their note", async () => {
+    await fresh();
+
+    expect(await folderRows()).toEqual([OTHERS_FOLDER]);
+    expect(await memberRows()).toEqual([
+      { folder_id: "fld_e2e_other", note_id: "not_e2e_other" },
+    ]);
+  });
+
+  it("writes person's Personal and Product with their members, at fixed instants", async () => {
+    await fresh();
+
+    await folders().seedFolders();
+
+    expect(await folderRows()).toEqual([
+      OTHERS_FOLDER,
+      {
+        id: "fld_e2e_personal",
+        name: "Personal",
+        name_key: "personal",
+        owner_id: "usr_e2e_person",
+      },
+      {
+        id: "fld_e2e_product",
+        name: "Product",
+        name_key: "product",
+        owner_id: "usr_e2e_person",
+      },
+    ]);
+    expect(await memberRows()).toEqual([
+      { folder_id: "fld_e2e_other", note_id: "not_e2e_other" },
+      { folder_id: "fld_e2e_personal", note_id: "not_e2e_solo" },
+      { folder_id: "fld_e2e_product", note_id: "not_e2e_archived" },
+      { folder_id: "fld_e2e_product", note_id: "not_e2e_launch" },
+      { folder_id: "fld_e2e_product", note_id: "not_e2e_standup" },
+    ]);
+    const stamps = await rows(
+      "SELECT created_at, updated_at FROM folders WHERE owner_id = 'usr_e2e_person'"
+    );
+    const added = await rows("SELECT added_at FROM folder_notes");
+    expect(stamps.length).toBe(2);
+    // Fixed instants, never now: every one is before the day this phase was specified.
+    for (const value of [
+      ...stamps.flatMap((row) => Object.values(row)),
+      ...added.map((row) => row.added_at),
+    ]) {
+      expect(Number(value)).toBeLessThan(Date.UTC(2026, 8, 25));
+    }
+  });
+
+  it("changes nothing when called a second time", async () => {
+    await fresh();
+    await folders().seedFolders();
+    const folderSnapshot = await rows("SELECT * FROM folders ORDER BY id");
+    const memberSnapshot = await rows(
+      "SELECT * FROM folder_notes ORDER BY folder_id, note_id"
+    );
+
+    await folders().seedFolders();
+
+    expect(await rows("SELECT * FROM folders ORDER BY id")).toEqual(
+      folderSnapshot
+    );
+    expect(
+      await rows("SELECT * FROM folder_notes ORDER BY folder_id, note_id")
+    ).toEqual(memberSnapshot);
+  });
+
+  it("clears every folder and membership on reset, a folder a flow created included", async () => {
+    await fresh();
+    await folders().seedFolders();
+    await d1
+      .prepare(
+        "INSERT INTO folders (id, name, name_key, owner_id, created_at, updated_at) VALUES ('fld_made_by_a_flow', 'Research', 'research', 'usr_e2e_person', 0, 0)"
+      )
+      .run();
+
+    await harness.reset();
+
+    expect(await rows("SELECT id FROM folders")).toEqual([]);
+    expect(await rows("SELECT folder_id FROM folder_notes")).toEqual([]);
+  });
+});

@@ -501,8 +501,9 @@ describe("the phase-4 notes query keys", () => {
     const withSearch = [...both, ["search"], ["people"]];
 
     expect(keys.updateNote?.(ID)).toEqual(withSearch);
-    expect(keys.trashNote?.(ID)).toEqual(withSearch);
-    expect(keys.restoreNote?.(ID)).toEqual(withSearch);
+    // Phase 9: a trash or restore moves a folder's count.
+    expect(keys.trashNote?.(ID)).toEqual([...withSearch, ["folders"]]);
+    expect(keys.restoreNote?.(ID)).toEqual([...withSearch, ["folders"]]);
     expect(keys.retryNoteGeneration?.(ID)).toEqual(both);
     expect(keys.updateMe?.()).toEqual([
       ["me", "profile"],
@@ -607,5 +608,116 @@ describe("the infinite-query helper (phase 4)", () => {
     ).toBeNull();
     await options.queryFn({ pageParam: "c1" });
     expect(seen).toEqual(["c1"]);
+  });
+});
+
+// ── Phase 9: the folder endpoints and keys (docs/spec/phase-9.md §6.4) ────────────────────────
+// The endpoints and keys do not exist yet, so they are read through casts and the phase 1–8 cases
+// above keep compiling.
+
+describe("the phase-9 folder endpoints and keys", () => {
+  const NOTE = "not_e2e_launch";
+  const FOLDER = "fld_e2e_product";
+  type Callable = (options?: unknown) => Promise<unknown>;
+  type KeyFn = (...args: unknown[]) => readonly unknown[];
+
+  const endpointOf = (client: unknown, name: string): Callable => {
+    const found = (client as Record<string, Callable | undefined>)[name];
+    if (found === undefined) {
+      throw new Error(`the client has no ${name}`);
+    }
+    return found;
+  };
+
+  it("sends GET /folders, POST /folders and the membership writes", async () => {
+    const { calls, stub } = recording(jsonResponse({ items: [] }));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await endpointOf(client, "listFolders")();
+    await endpointOf(client, "createFolder")({ body: { name: "Research" } });
+    await endpointOf(
+      client,
+      "addFolderNote"
+    )({
+      body: { noteId: NOTE },
+      params: { id: FOLDER },
+    });
+    await endpointOf(
+      client,
+      "removeFolderNote"
+    )({
+      params: { id: FOLDER, noteId: NOTE },
+    });
+
+    expect(
+      calls.map((call) => [
+        call.init.method ?? "GET",
+        new URL(call.url).pathname,
+      ])
+    ).toEqual([
+      ["GET", "/folders"],
+      ["POST", "/folders"],
+      ["POST", `/folders/${FOLDER}/notes`],
+      ["DELETE", `/folders/${FOLDER}/notes/${NOTE}`],
+    ]);
+  });
+
+  it("sends the folder filter on GET /notes", async () => {
+    const { calls, stub } = recording(
+      jsonResponse({ items: [], nextCursor: null })
+    );
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await client.listNotes({
+      query: { cursor: null, folder: FOLDER, limit: 20 } as never,
+    });
+
+    expect(new URL(only(calls).url).searchParams.get("folder")).toBe(FOLDER);
+  });
+
+  it("keys folders, and keys a filtered notes list the same whatever order the filter was written in", () => {
+    const keys = queryKeys as unknown as {
+      folders?: { all: readonly unknown[]; list: () => readonly unknown[] };
+      notes: { list: KeyFn };
+    };
+
+    expect(keys.folders?.all).toEqual(["folders"]);
+    expect(keys.folders?.list()).toEqual(["folders", "list"]);
+    expect(keys.notes.list({ folder: FOLDER })).toEqual([
+      "notes",
+      "list",
+      { folder: FOLDER },
+    ]);
+    const both = keys.notes.list({ folder: FOLDER, person: "name:dana lee" });
+    const reversed = keys.notes.list({
+      folder: FOLDER,
+      person: "name:dana lee",
+    });
+    expect(both).toEqual([
+      "notes",
+      "list",
+      { folder: FOLDER, person: "name:dana lee" },
+    ]);
+    expect(JSON.stringify(reversed)).toBe(JSON.stringify(both));
+    expect(keys.notes.list()).toEqual(["notes", "list"]);
+  });
+
+  it("invalidates the folder list and the notes it counts on every folder write, and on trash and restore", () => {
+    const keys = invalidationKeys as unknown as Record<
+      string,
+      KeyFn | undefined
+    >;
+
+    expect(keys.createFolder?.()).toEqual([["folders"]]);
+    expect(keys.deleteFolder?.()).toEqual([["folders"], ["notes", "list"]]);
+    for (const name of ["addFolderNote", "removeFolderNote"]) {
+      expect(keys[name]?.(NOTE)).toEqual([
+        ["folders"],
+        ["notes", "list"],
+        ["notes", "detail", NOTE],
+      ]);
+    }
+    expect(keys.trashNote?.(NOTE)).toContainEqual(["folders"]);
+    expect(keys.restoreNote?.(NOTE)).toContainEqual(["folders"]);
   });
 });

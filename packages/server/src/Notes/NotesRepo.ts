@@ -3,6 +3,8 @@ import {
   asc,
   desc,
   eq,
+  folderNotes,
+  folders,
   isNotNull,
   isNull,
   lt,
@@ -20,7 +22,7 @@ import {
   GenerationStatus,
   type NoteGeneration,
 } from "@gc/domain/Domain/Generation";
-import { UserId } from "@gc/domain/Domain/Ids";
+import { FolderId, UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
   type NoteBody,
@@ -108,6 +110,11 @@ const attendedBy = (key: PersonKey) =>
       name: sql`coalesce("u"."name", "a"."name")`,
     }
   )})`;
+
+// Qualified by hand, as `attendeeCount`. Membership only: the folder's owner was checked by the
+// service before the list was asked for.
+const inFolder = (folder: FolderId) =>
+  sql`exists (select 1 from "folder_notes" "fn" where "fn"."note_id" = "notes"."id" and "fn"."folder_id" = ${folder})`;
 
 // Strictly after the cursor in `startedAt desc, id desc` order. The tie on `startedAt` is broken by
 // id, which is unique, so no two rows can share a position and none is skipped or repeated.
@@ -197,20 +204,36 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
     };
   },
 
+  // Joined to the folder's owner though only the owner writes a membership today: the answer stays
+  // the caller's own folders once a note can be shared into somebody else's.
+  folderIdsOf: async (id: NoteId, ownerId: UserId): Promise<FolderId[]> =>
+    (
+      await db
+        .select({ id: folderNotes.folderId })
+        .from(folderNotes)
+        .innerJoin(folders, eq(folders.id, folderNotes.folderId))
+        .where(and(eq(folderNotes.noteId, id), eq(folders.ownerId, ownerId)))
+        .orderBy(asc(folderNotes.folderId))
+        .all()
+    ).map((row) => FolderId.parse(row.id)),
+
   // `limit` rows are asked for as given; the service asks for one more than a page so the extra
   // row's presence, not a count, says whether there is a next page. The filter on `ownerId` is the
   // whole of the list's scoping — there is no parameter that names anybody else. `person` narrows
-  // within it and leaves the keyset alone, so the same cursor pages the filtered list.
+  // within it and leaves the keyset alone, so the same cursor pages the filtered list; `folder`
+  // does the same, and the two combine as AND.
   listLive: async (
     ownerId: UserId,
     position: NotesPosition | null,
     limit: number,
-    person: PersonKey | null = null
+    person: PersonKey | null = null,
+    folder: FolderId | null = null
   ): Promise<NoteSummary[]> => {
     const live = and(
       eq(notes.ownerId, ownerId),
       isNull(notes.trashedAt),
-      person === null ? undefined : attendedBy(person)
+      person === null ? undefined : attendedBy(person),
+      folder === null ? undefined : inFolder(folder)
     );
     const rows = await db
       .select({

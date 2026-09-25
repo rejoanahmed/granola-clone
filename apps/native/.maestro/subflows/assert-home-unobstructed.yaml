@@ -28,6 +28,14 @@ env:
     id: chat-screen
 - assertNotVisible:
     id: chat-history-sheet
+- assertNotVisible:
+    id: folders-drawer
+- assertNotVisible:
+    id: folder-new-sheet
+- assertNotVisible:
+    id: folder-delete-sheet
+- assertNotVisible:
+    id: add-to-folder-sheet
 - assertVisible:
     id: home-ask-button
 - assertVisible:

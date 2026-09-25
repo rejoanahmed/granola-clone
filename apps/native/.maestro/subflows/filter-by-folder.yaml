@@ -1,0 +1,28 @@
+# From home, open the drawer and pick folder FOLDER_ID, then wait for home to be that folder's view:
+# the drawer gone and the title reading NAME (docs/spec/phase-9.md §3.1 "Picking a row", §3.2).
+#
+#   - runFlow:
+#       file: ../subflows/filter-by-folder.yaml
+#       env:
+#         FOLDER_ID: fld_e2e_product
+#         NAME: Product
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-row-${FOLDER_ID}
+    timeout: 10000
+- tapOn:
+    id: folders-row-${FOLDER_ID}
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: ${NAME}
+    timeout: 10000

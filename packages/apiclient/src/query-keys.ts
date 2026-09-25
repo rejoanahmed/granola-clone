@@ -5,6 +5,16 @@ import type { QueryKey } from "./query";
 // id carries a type prefix. When a list key is added, derive its filter type from the client
 // method rather than hand-writing it: a key describing a request the client cannot make is a
 // silent miss.
+type NotesListFilter = {
+  readonly folder?: string;
+  readonly person?: string;
+};
+
+const normalFilter = (filter: NotesListFilter): NotesListFilter => ({
+  ...(filter.folder === undefined ? {} : { folder: filter.folder }),
+  ...(filter.person === undefined ? {} : { person: filter.person }),
+});
+
 export const queryKeys = {
   // Singular: the model list is one per user, not a collection of chats.
   chat: {
@@ -21,20 +31,28 @@ export const queryKeys = {
         ? (["chats", "list"] as const)
         : (["chats", "list", q] as const),
   },
+  // Unpaged and one per user, so `list()` has no refinement. Every write to a membership names
+  // `all`, because the counts on every row can move.
+  folders: {
+    all: ["folders"] as const,
+    list: () => ["folders", "list"] as const,
+  },
   me: {
     all: ["me"] as const,
     profile: () => ["me", "profile"] as const,
   },
   // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. Home's
-  // list is `list()`; a person page's is `list({ person })`, a distinct entry under the same prefix,
-  // so invalidating `list()` after a trash or rename refreshes every person page with it.
+  // list is `list()`; a person page's or a folder's is `list({ person })` or `list({ folder })`, a
+  // distinct entry under the same prefix, so invalidating `list()` after a trash or rename refreshes
+  // every filtered list with it. The filter is rebuilt with its keys in a fixed order and its absent
+  // members dropped, so one filter is always one key however the caller wrote it.
   notes: {
     all: ["notes"] as const,
     detail: (id: string) => ["notes", "detail", id] as const,
-    list: (filter?: { readonly person: string }) =>
+    list: (filter?: NotesListFilter) =>
       filter === undefined
         ? (["notes", "list"] as const)
-        : (["notes", "list", { person: filter.person }] as const),
+        : (["notes", "list", normalFilter(filter)] as const),
     // Under the detail, so invalidating a note's detail refreshes its transcript with it.
     transcript: (id: string) => ["notes", "detail", id, "transcript"] as const,
   },
@@ -69,6 +87,13 @@ const noteWrite = (id: string) => [
   queryKeys.people.all,
 ];
 
+// A membership write moves the folder's count, its filtered list, and the note's `folderIds`.
+const folderMembership = (noteId: string) => [
+  queryKeys.folders.all,
+  queryKeys.notes.list(),
+  queryKeys.notes.detail(noteId),
+];
+
 const recordingTransition = (recordingId: string, noteId: string) => [
   queryKeys.recordings.detail(recordingId),
   queryKeys.notes.detail(noteId),
@@ -78,6 +103,7 @@ const recordingTransition = (recordingId: string, noteId: string) => [
 // What each mutation invalidates, so a screen never decides it alone. Sign-out clears the whole
 // cache rather than naming keys.
 export const invalidationKeys = {
+  addFolderNote: (noteId: string) => folderMembership(noteId),
   // A finished answer moves the thread's preview and updatedAt (its place in history) as well as
   // its messages. The same keys serve a failed answer and a retry.
   chatAnswered: (threadId: string) => [
@@ -85,12 +111,15 @@ export const invalidationKeys = {
     queryKeys.chats.list(),
   ],
   completeOnboarding: () => [queryKeys.me.profile()],
+  createFolder: () => [queryKeys.folders.all],
   createNote: () => [queryKeys.notes.list()],
   createRecording: () => [queryKeys.notes.list()],
   deleteChat: (threadId: string) => [
     queryKeys.chats.detail(threadId),
     queryKeys.chats.list(),
   ],
+  // The notes stay, but a folder view of the deleted folder must not keep drawing its cached page.
+  deleteFolder: () => [queryKeys.folders.all, queryKeys.notes.list()],
   // Every step after the live card moves the status that the note's row and detail draw, so each
   // one names the recording, the note (which carries the transcript key) and the list.
   discardRecording: (recordingId: string, noteId: string) =>
@@ -99,7 +128,9 @@ export const invalidationKeys = {
     recordingTransition(recordingId, noteId),
   // The list too, not only the detail: a title shows on its row, and trash and restore move it.
   putChatFeedback: (threadId: string) => [queryKeys.chats.detail(threadId)],
-  restoreNote: (id: string) => noteWrite(id),
+  removeFolderNote: (noteId: string) => folderMembership(noteId),
+  // A trashed note leaves every folder's count, and a restored one comes back to it.
+  restoreNote: (id: string) => [...noteWrite(id), queryKeys.folders.all],
   // The generation rides on the note's detail, and the generated title will land on its row.
   retryNoteGeneration: (id: string) => [
     queryKeys.notes.detail(id),
@@ -108,7 +139,7 @@ export const invalidationKeys = {
   retryRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
   selectChatModel: () => [queryKeys.chat.models()],
-  trashNote: (id: string) => noteWrite(id),
+  trashNote: (id: string) => [...noteWrite(id), queryKeys.folders.all],
   // Pinning moves the row between sections and changes the detail's `pinned`.
   updateChat: (threadId: string) => [
     queryKeys.chats.detail(threadId),
