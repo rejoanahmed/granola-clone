@@ -1,11 +1,32 @@
 import type { Utterance } from "@gc/domain/Domain/Recording";
-import { LlmRateLimited, LlmUnavailable } from "@gc/domain/Llm/Errors";
-import type { LlmMode, LlmPort, NoteAnswer, NoteRequest } from "./Port";
+import {
+  LlmRateLimited,
+  LlmTimeout,
+  LlmUnavailable,
+} from "@gc/domain/Llm/Errors";
+import { answerTextOf, deltasOf, titleOf } from "./ChatAnswer";
+import type {
+  ChatAnswerRequest,
+  ChatLlmMode,
+  LlmMode,
+  LlmPort,
+  NoteAnswer,
+  NoteRequest,
+} from "./Port";
 
 export type LlmFakeDeps = {
   // Asked on every call, so a switch flipped between two attempts is seen by the second.
   readonly readMode: () => Promise<LlmMode>;
+  // The chat half's switch, asked before the first delta and on every poll while held. Optional,
+  // like the two below, so a suite that only generates notes need not script chat: absent, it is
+  // `auto`, sleeping is instant and there is no delay between deltas.
+  readonly readChatMode?: () => Promise<ChatLlmMode>;
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly tokenDelayMs?: number;
 };
+
+// How often a held answer asks whether it has been let go.
+const HOLD_POLL_MS = 250;
 
 const BRIEF_TITLE = "Brief check-in";
 const TITLE_MAX = 60;
@@ -135,10 +156,38 @@ const fullAnswer = (request: NoteRequest): string => {
 const answerFor = (request: NoteRequest): string =>
   request.kind === "brief" ? briefAnswer(request) : fullAnswer(request);
 
+// Before the first delta: `hold` polls through the injected sleep until the switch moves, and
+// gives up with `LlmTimeout` once the request's deadline is spent. Time is counted in sleeps, not
+// read from a clock, so a test with an instant sleep still sees the deadline.
+const settledChatMode = async (
+  read: () => Promise<ChatLlmMode>,
+  sleep: (ms: number) => Promise<void>,
+  request: ChatAnswerRequest
+): Promise<Exclude<ChatLlmMode, "hold">> => {
+  let waited = 0;
+  for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: each poll must see the switch as it is now
+    const mode = await read();
+    if (mode !== "hold") {
+      return mode;
+    }
+    if (waited >= request.timeoutMs) {
+      throw new LlmTimeout({ key: request.key }, "fake held past its deadline");
+    }
+    await sleep(HOLD_POLL_MS);
+    waited += HOLD_POLL_MS;
+  }
+};
+
 // Deterministic (a pure function of the request, never Math.random), and records every call,
 // including the ones it failed.
 export const makeLlmFake = (deps: LlmFakeDeps) => {
   const calls: NoteRequest[] = [];
+  const chatCalls: ChatAnswerRequest[] = [];
+  const readChatMode =
+    deps.readChatMode ?? (() => Promise.resolve<ChatLlmMode>("auto"));
+  const sleep = deps.sleep ?? (() => Promise.resolve());
+  const tokenDelayMs = deps.tokenDelayMs ?? 0;
 
   const port: LlmPort = {
     generateNote: async (request): Promise<NoteAnswer> => {
@@ -162,12 +211,33 @@ export const makeLlmFake = (deps: LlmFakeDeps) => {
           return { raw: answerFor(request), truncated: false };
       }
     },
+
+    async *streamAnswer(request) {
+      chatCalls.push(request);
+      const mode = await settledChatMode(readChatMode, sleep, request);
+      if (mode === "fail") {
+        throw new LlmUnavailable({ key: request.key }, "fake in fail mode");
+      }
+      const deltas = deltasOf(answerTextOf(request));
+      for (const [position, delta] of deltas.entries()) {
+        if (position > 0 && tokenDelayMs > 0) {
+          // biome-ignore lint/performance/noAwaitInLoops: the delay is between deltas, in order
+          await sleep(tokenDelayMs);
+        }
+        yield delta;
+      }
+    },
+
+    titleChat: (request) => Promise.resolve(titleOf(request.question)),
   };
 
   return {
     ...port,
     get calls(): readonly NoteRequest[] {
       return calls;
+    },
+    get chatCalls(): readonly ChatAnswerRequest[] {
+      return chatCalls;
     },
   };
 };

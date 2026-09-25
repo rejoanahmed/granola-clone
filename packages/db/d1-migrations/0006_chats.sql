@@ -1,5 +1,6 @@
 CREATE TABLE `chat_messages` (
 	`activity` text DEFAULT '[]' NOT NULL,
+	`attempt` integer DEFAULT 1 NOT NULL,
 	`citations` text DEFAULT '[]' NOT NULL,
 	`content` text DEFAULT '' NOT NULL,
 	`created_at` integer NOT NULL,

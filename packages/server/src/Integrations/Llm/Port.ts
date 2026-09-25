@@ -28,8 +28,9 @@ export type NoteRequest = {
 export type NoteAnswer = { readonly raw: string; readonly truncated: boolean };
 
 // Failures are thrown as the classes in `@gc/domain/Llm/Errors` (R7); the generations service maps
-// each onto a queue decision and, in the end, a `GenerationFailure`.
-export type LlmPort = {
+// each onto a queue decision and, in the end, a `GenerationFailure`. Each consumer names only its
+// half, so a note-generation test need not stub chat and the reverse.
+export type NoteLlmPort = {
   generateNote: (request: NoteRequest) => Promise<NoteAnswer>;
 };
 
@@ -67,9 +68,11 @@ export type ChatAnswerRequest = {
   readonly timeoutMs: number;
 };
 
-// Merged into `LlmPort` by the build that implements the fake's chat half. Deltas are words with
-// their trailing space; failures are thrown as the `@gc/domain/Llm/Errors` classes.
+// Deltas are words with their trailing space; failures are thrown as the `@gc/domain/Llm/Errors`
+// classes, before or between deltas. The chat path never retries on its own.
 export type ChatLlmPort = {
   streamAnswer: (request: ChatAnswerRequest) => AsyncIterable<string>;
   titleChat: (request: { readonly question: string }) => Promise<string>;
 };
+
+export type LlmPort = NoteLlmPort & ChatLlmPort;

@@ -16,6 +16,9 @@ export const chatMessages = sqliteTable(
   "chat_messages",
   {
     activity: text("activity").notNull().default("[]"),
+    // Which answer this is, from 1: the retry claim bumps it, so every attempt reaches the model
+    // under an idempotency key of its own (`<id>:<attempt>`), as a recording's retries do.
+    attempt: integer("attempt").notNull().default(1),
     citations: text("citations").notNull().default("[]"),
     content: text("content").notNull().default(""),
     createdAt: integer("created_at").notNull(),

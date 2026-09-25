@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import * as Fake from "../Integrations/Llm/LlmFake";
-// @ts-expect-error phase 7: retrieval is specified (phase-7.md §6.4, §11 API 5), not built
 import * as Retrieval from "./Retrieval";
 
 // docs/spec/phase-7.md §7 case 22: the pure halves of asking. Retrieval is keyword scoring in the
