@@ -1,0 +1,108 @@
+# AC1 (docs/spec/phase-12.md §3.1, §8): home (#01), its row menu (#02), the row's swipe (#03) and the
+# work-email sheet (#04), each asserted by testID immediately before its parity screenshot. The shots
+# are what `bun run parity` collects for docs/parity/REPORT.md.
+appId: ${APP_ID}
+name: "Parity: home, row menu, swipe, work-email sheet"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 30000
+# Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
+- extendedWaitUntil:
+    visible:
+      id: home-events-card
+    timeout: 10000
+
+# #01
+- assertVisible:
+    id: home-screen
+- assertVisible:
+    id: home-folders-button
+- assertVisible:
+    id: home-get-desktop-button
+- assertVisible:
+    id: home-phone-button
+- assertVisible:
+    id: home-search-button
+- assertVisible:
+    id: home-settings-button
+- assertVisible:
+    id: home-title
+    text: My notes
+- assertVisible:
+    id: home-list
+- assertVisible:
+    id: home-ask-button
+- assertVisible:
+    id: home-new-note-button
+- takeScreenshot: parity-01-home
+
+# #02
+- longPressOn:
+    id: home-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- assertVisible:
+    id: home-note-menu-edit-title
+    text: Edit title
+- assertVisible:
+    id: home-note-menu-share
+    text: Share notes
+- assertVisible:
+    id: home-note-menu-add-to-folder
+    text: Add to folder
+- takeScreenshot: parity-02-row-menu
+- runFlow:
+    file: ../subflows/dismiss-menu.yaml
+    env:
+      MENU: home-note-menu
+
+# #03: the swipe only; its action is left untapped.
+- runFlow:
+    file: ../subflows/swipe-to-trash.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- assertVisible:
+    id: home-note-not_e2e_launch-trash
+    text: Move to trash
+- takeScreenshot: parity-03-row-swipe
+- swipe:
+    from:
+      id: home-note-not_e2e_launch
+    direction: RIGHT
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-not_e2e_launch-trash
+    timeout: 5000
+
+# #04
+- tapOn:
+    id: home-events-card
+- extendedWaitUntil:
+    visible:
+      id: work-email-sheet
+    timeout: 10000
+- assertVisible:
+    id: work-email-mark
+- assertVisible:
+    id: work-email-title
+- assertVisible:
+    id: work-email-body
+    text: .*your meetings in Notes\.
+- assertVisible:
+    id: work-email-benefits
+- assertVisible:
+    id: work-email-sign-up
+- assertVisible:
+    id: work-email-continue
+- takeScreenshot: parity-04-work-email

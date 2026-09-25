@@ -1,0 +1,110 @@
+# AC10, K1 (docs/spec/phase-12.md §6.1, §8, #102): the live card's Add to folder opens phase 9's Add to
+# folder sheet for the recording's note, over the card. The recording keeps counting while the sheet
+# is up, submit returns to the card rather than to home or the note, and the folder is applied at
+# once, so the finished note lists under it.
+appId: ${APP_ID}
+name: Adding the live recording's note to a folder
+tags:
+  - phase-12
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: auto
+- runFlow: ../subflows/start-recording.yaml
+
+# Disabled until POST /recordings answers (§6.1 "Now"), so the tap waits for the card to be ready.
+- extendedWaitUntil:
+    visible:
+      id: recording-add-to-folder
+      enabled: true
+    timeout: 15000
+- copyTextFrom:
+    id: recording-timer
+- evalScript: ${output.timerBefore = maestro.copiedText}
+- tapOn:
+    id: recording-add-to-folder
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-list
+    timeout: 15000
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_personal
+- takeScreenshot: phase-12-recording-add-to-folder
+
+- tapOn:
+    id: add-to-folder-row-fld_e2e_personal
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+      enabled: true
+    timeout: 5000
+- tapOn:
+    id: add-to-folder-submit
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-sheet
+    timeout: 10000
+# Back on the card, not on home or the note page, and still recording.
+- assertVisible:
+    id: recording-screen
+- assertNotVisible:
+    id: home-screen
+- assertNotVisible:
+    id: note-screen
+- extendedWaitUntil:
+    visible:
+      id: recording-timer
+    timeout: 5000
+# `mm:ss` is fixed-width below an hour, so a later time compares greater as a string.
+- extendedWaitUntil:
+    notVisible:
+      id: recording-timer
+      text: ${output.timerBefore}
+    timeout: 5000
+- copyTextFrom:
+    id: recording-timer
+- assertTrue: ${maestro.copiedText > output.timerBefore}
+
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+# The short-recording path's canned title (phase-6/short-recording.yaml) is the proof the job ran.
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Brief check-in
+    timeout: 30000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: ../subflows/filter-by-folder.yaml
+    env:
+      FOLDER_ID: fld_e2e_personal
+      NAME: Personal
+- extendedWaitUntil:
+    visible:
+      id: "home-note-(?!not_e2e_).*"
+      text: "Brief check-in, .*"
+    timeout: 15000

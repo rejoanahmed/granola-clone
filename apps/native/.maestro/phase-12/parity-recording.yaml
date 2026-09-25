@@ -1,0 +1,163 @@
+# AC4 (docs/spec/phase-12.md §3.4, §8): the microphone primer (#100) and the system alert with the
+# Notes purpose string (#101), the live card (#102), typing (#103), More (#104), then End through
+# "Uploading transcript..." (#105) and "Generating notes..." (#106) to the finished short note (#107).
+# The transcriber and the LLM are held so that #105 and #106 stay on screen long enough to capture;
+# the recording ends just past 10 s, so the short-recording path writes the canned body.
+appId: ${APP_ID}
+name: "Parity: primer, alert, live card, post-record"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: ../subflows/open-home.yaml
+    env:
+      MIC: unset
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: hold
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: hold
+
+# #100
+- tapOn:
+    id: home-new-note-button
+- extendedWaitUntil:
+    visible:
+      id: mic-primer-card
+    timeout: 15000
+- assertVisible:
+    id: mic-primer-close
+- assertVisible:
+    id: mic-primer-title
+    text: Enable your microphone to start transcribing
+- assertVisible:
+    id: mic-primer-continue
+    text: Continue
+- takeScreenshot: parity-100-mic-primer
+
+# #101: the system's alert, so it is read and tapped by text (phase-5/mic-primer.yaml).
+- tapOn:
+    id: mic-primer-continue
+- extendedWaitUntil:
+    visible:
+      text: Notes needs microphone access to transcribe your meeting
+    timeout: 15000
+- assertVisible:
+    text: Allow
+- takeScreenshot: parity-101-mic-alert
+
+# #102
+- tapOn:
+    text: Allow
+- extendedWaitUntil:
+    visible:
+      id: recording-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: recording-timer
+    timeout: 15000
+- assertVisible:
+    id: recording-minimize
+- assertVisible:
+    id: recording-attach
+- assertVisible:
+    id: recording-more
+- assertVisible:
+    id: recording-title
+    text: Untitled note
+- assertVisible:
+    id: recording-meta-pill
+- assertVisible:
+    id: recording-add-to-folder
+- assertVisible:
+    id: recording-notes-input
+- assertVisible:
+    id: recording-bar
+- takeScreenshot: parity-102-live-card
+
+# #103
+- tapOn:
+    id: recording-notes-input
+- inputText: throwaway test note
+- extendedWaitUntil:
+    visible:
+      id: recording-mini-pill
+    timeout: 10000
+- assertVisible:
+    id: recording-keyboard-dismiss
+- takeScreenshot: parity-103-live-typing
+
+# #104
+- tapOn:
+    id: recording-keyboard-dismiss
+- extendedWaitUntil:
+    visible:
+      id: recording-bar
+    timeout: 10000
+- tapOn:
+    id: recording-more
+- extendedWaitUntil:
+    visible:
+      id: recording-menu
+    timeout: 5000
+- assertVisible:
+    id: recording-menu-discard
+    text: Discard note
+- takeScreenshot: parity-104-live-menu
+- runFlow:
+    file: ../subflows/dismiss-menu.yaml
+    env:
+      MENU: recording-menu
+
+# #105
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-status
+    timeout: 10000
+- assertVisible:
+    id: note-status-text
+    text: Uploading transcript\.\.\.
+- takeScreenshot: parity-105-uploading
+
+# #106
+- runFlow: ../subflows/release-transcription.yaml
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
+- takeScreenshot: parity-106-generating
+
+# #107
+- runFlow: ../subflows/release-llm.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-share
+    timeout: 10000
+- assertVisible:
+    id: note-more
+- assertVisible:
+    id: note-body
+- assertVisible:
+    id: "note-block-\\d+"
+    text: Notes works best with real conversations.*
+- takeScreenshot: parity-107-finished

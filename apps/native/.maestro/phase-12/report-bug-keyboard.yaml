@@ -1,0 +1,67 @@
+# AC11, K2 (docs/spec/phase-12.md §6.2, §8, #90): with the message field focused and the keyboard up,
+# the form scrolls the Diagnostics card clear of the keyboard, so a tap on its toggle flips it rather
+# than landing on a key. Typing again afterwards is the proof the keyboard stayed up: the field kept
+# its focus. The sent report carries the flipped value.
+appId: ${APP_ID}
+name: Report a bug's Diagnostics toggle is reachable with the keyboard up
+tags:
+  - phase-12
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-report-bug.yaml
+- assertVisible:
+    id: report-bug-diagnostics
+    selected: true
+
+- tapOn:
+    id: report-bug-message
+- inputText: "Steps: tap Send"
+- extendedWaitUntil:
+    visible:
+      id: report-bug-send
+      enabled: true
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: report-bug-diagnostics
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: report-bug-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: report-bug-diagnostics
+      selected: false
+    timeout: 5000
+- takeScreenshot: phase-12-report-bug-keyboard
+
+- inputText: " again"
+- extendedWaitUntil:
+    visible:
+      id: report-bug-message
+      text: "Steps: tap Send again"
+    timeout: 5000
+- assertVisible:
+    id: report-bug-send
+    enabled: true
+- tapOn:
+    id: report-bug-send
+- extendedWaitUntil:
+    notVisible:
+      id: report-bug-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Thanks — your report was sent\.
+    timeout: 10000
+- runScript:
+    file: ../scripts/e2e-support.js
+    env:
+      KIND: bug-report
+      EXPECT_SUBJECT: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      EXPECT_BODY: "Diagnostics: not included"

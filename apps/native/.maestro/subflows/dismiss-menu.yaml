@@ -1,0 +1,19 @@
+# Close an open ActionMenu (a row menu, More, the model menu, the history menu) with no change by
+# tapping its scrim near the top edge, where no menu item ever sits (docs/spec/phase-4.md §2.2), then
+# wait for MENU to go.
+#
+#   - runFlow:
+#       file: ../subflows/dismiss-menu.yaml
+#       env:
+#         MENU: note-menu
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: action-menu-scrim
+    point: "50%,12%"
+- extendedWaitUntil:
+    notVisible:
+      id: ${MENU}
+    timeout: 5000

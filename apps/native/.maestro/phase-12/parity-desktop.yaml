@@ -1,0 +1,39 @@
+# AC9 (docs/spec/phase-12.md §3.10, §5, §8): the Get desktop sheet from home's button (#51) and from
+# the settings banner (#89), the same ids and the same Notes copy from both.
+appId: ${APP_ID}
+name: "Parity: the Get desktop sheet, from both entries"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+
+# #51
+- tapOn:
+    id: home-get-desktop-button
+- extendedWaitUntil:
+    visible:
+      id: desktop-sheet
+    timeout: 10000
+- runFlow: ../subflows/assert-desktop-sheet.yaml
+- takeScreenshot: parity-51-desktop
+- tapOn:
+    id: desktop-done
+- extendedWaitUntil:
+    notVisible:
+      id: desktop-sheet
+    timeout: 10000
+
+# #89
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: settings-desktop-banner
+- extendedWaitUntil:
+    visible:
+      id: desktop-sheet
+    timeout: 10000
+- runFlow: ../subflows/assert-desktop-sheet.yaml
+- takeScreenshot: parity-89-desktop-from-settings

@@ -1,0 +1,279 @@
+# AC9 (docs/spec/phase-12.md §3.9, §5, §8): Settings top and bottom (#80, #81), Profile top, bottom and
+# its user-type menu (#82–#84), Notifications (#85), Chat (#86), Phone calls (#87), Watch (#88) and
+# Report a bug (#90), with the product-naming strings in their Notes form.
+appId: ${APP_ID}
+name: "Parity: settings, profile and their pages"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-settings.yaml
+
+# #80
+- assertVisible:
+    id: settings-back
+- assertVisible:
+    id: settings-desktop-banner
+    text: Get Notes for Mac or Windows
+- assertVisible:
+    id: settings-section-account
+- assertVisible:
+    id: settings-profile
+- assertVisible:
+    id: settings-notifications
+- assertVisible:
+    id: settings-subscription
+- assertVisible:
+    id: settings-subscription-badge
+    text: Coming soon
+- assertVisible:
+    id: settings-section-features
+- assertVisible:
+    id: settings-section-support
+- takeScreenshot: parity-80-settings
+
+# #81
+- scrollUntilVisible:
+    element:
+      id: settings-version
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-section-data
+- assertVisible:
+    id: settings-use-my-data
+- assertVisible:
+    id: settings-data-learn-more
+- assertVisible:
+    id: settings-data-privacy
+- assertVisible:
+    id: settings-sign-out
+- assertVisible:
+    id: settings-version
+- takeScreenshot: parity-81-settings-bottom
+
+# #82
+- scrollUntilVisible:
+    element:
+      id: settings-profile
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- assertVisible:
+    id: profile-title
+    text: Your profile
+- assertVisible:
+    id: profile-lead
+    text: Notes works best when it knows a little about you\..*Notes\.
+- assertVisible:
+    id: profile-avatar
+- assertVisible:
+    id: profile-email
+- assertVisible:
+    id: profile-name
+- assertVisible:
+    id: profile-job-title
+- assertVisible:
+    id: profile-company-name
+- assertVisible:
+    id: profile-user-type
+- takeScreenshot: parity-82-profile
+
+# #83
+- scrollUntilVisible:
+    element:
+      id: profile-delete-note
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: profile-company-description-card
+- assertVisible:
+    id: profile-linkedin-card
+- assertVisible:
+    id: profile-delete
+    text: Delete Account
+- assertVisible:
+    id: profile-delete-note
+- takeScreenshot: parity-83-profile-bottom
+
+# #84: the five options are UserType's values, in its order (packages/domain Profile.ts).
+- scrollUntilVisible:
+    element:
+      id: profile-user-type
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: profile-user-type
+- extendedWaitUntil:
+    visible:
+      id: profile-user-type-menu
+    timeout: 5000
+- assertVisible:
+    id: profile-user-type-option-investing
+- assertVisible:
+    id: profile-user-type-option-recruiting
+- assertVisible:
+    id: profile-user-type-option-customer_facing
+- assertVisible:
+    id: profile-user-type-option-startup_generalist
+- assertVisible:
+    id: profile-user-type-option-other
+- takeScreenshot: parity-84-user-type
+# Picking the value it already holds closes the menu with nothing changed.
+- tapOn:
+    id: profile-user-type-option-startup_generalist
+- extendedWaitUntil:
+    notVisible:
+      id: profile-user-type-menu
+    timeout: 5000
+- tapOn:
+    id: profile-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+# #85
+- tapOn:
+    id: settings-notifications
+- extendedWaitUntil:
+    visible:
+      id: notifications-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: notifications-upcoming-toggle
+    timeout: 10000
+- assertVisible:
+    id: notifications-upcoming-row
+- assertVisible:
+    id: notifications-preview
+- takeScreenshot: parity-85-notifications
+- tapOn:
+    id: notifications-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+# #86
+- scrollUntilVisible:
+    element:
+      id: settings-chat
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: settings-chat
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-auto-send
+    timeout: 10000
+- assertVisible:
+    id: chat-settings-dictation-row
+- takeScreenshot: parity-86-chat-settings
+- tapOn:
+    id: chat-settings-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+# #87
+- scrollUntilVisible:
+    element:
+      id: settings-phone-calls
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: settings-phone-calls
+- extendedWaitUntil:
+    visible:
+      id: phone-calls-screen
+    timeout: 10000
+- assertVisible:
+    id: phone-calls-title
+    text: Make Calls From Notes
+- assertVisible:
+    id: phone-calls-get-started
+- takeScreenshot: parity-87-phone-calls
+- tapOn:
+    id: phone-calls-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+# #88
+- scrollUntilVisible:
+    element:
+      id: settings-watch
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: settings-watch
+- extendedWaitUntil:
+    visible:
+      id: watch-screen
+    timeout: 10000
+- assertVisible:
+    id: watch-title
+    text: Apple Watch
+- assertVisible:
+    id: watch-status
+- assertVisible:
+    id: watch-info
+    text: .*to use Notes from your wrist\.
+- takeScreenshot: parity-88-watch
+- tapOn:
+    id: watch-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+# #90
+- scrollUntilVisible:
+    element:
+      id: settings-report-bug
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: settings-report-bug
+- extendedWaitUntil:
+    visible:
+      id: report-bug-sheet
+    timeout: 10000
+- assertVisible:
+    id: report-bug-close
+- assertVisible:
+    id: report-bug-send
+    enabled: false
+- assertVisible:
+    id: report-bug-message-card
+- assertVisible:
+    id: report-bug-message
+- assertVisible:
+    id: report-bug-diagnostics-row
+# The row's subtitle is its own node (§5's #90 string, in its Notes form).
+- assertVisible:
+    text: Shares up to 7 days of logs with the Notes team.*
+- assertVisible:
+    id: report-bug-diagnostics
+- takeScreenshot: parity-90-report-bug
