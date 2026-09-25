@@ -1,0 +1,10 @@
+# Script the fake LLM's chat answers for this run: MODE is `auto`, `hold` or `fail`
+# (docs/spec/phase-7.md §6.6). Every reset puts it back to `auto`.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-chat.js
+    env:
+      MODE: ${MODE}

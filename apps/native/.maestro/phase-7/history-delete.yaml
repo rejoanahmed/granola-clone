@@ -1,0 +1,60 @@
+# AC9 (docs/spec/phase-7.md §8, #73, #74): Delete from the long-press menu and from the swipe both
+# remove a thread at once, with the "Chat deleted" toast; with both gone the sheet shows its empty
+# state, and still does after a relaunch.
+appId: ${APP_ID}
+name: Deleting chats
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- longPressOn:
+    id: chat-history-row-cht_e2e_cohort
+- extendedWaitUntil:
+    visible:
+      id: chat-history-menu
+    timeout: 5000
+- tapOn:
+    id: chat-history-menu-delete
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-row-cht_e2e_cohort
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Chat deleted
+    timeout: 10000
+
+- runFlow:
+    file: ../subflows/swipe-history-row.yaml
+    env:
+      THREAD_ID: cht_e2e_solo
+- tapOn:
+    id: chat-history-row-cht_e2e_solo-delete
+- extendedWaitUntil:
+    visible:
+      id: chat-history-empty
+    timeout: 10000
+- assertNotVisible:
+    id: chat-history-row-cht_e2e_solo
+
+- tapOn:
+    id: chat-history-close
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-empty

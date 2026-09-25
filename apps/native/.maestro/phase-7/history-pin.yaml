@@ -1,0 +1,69 @@
+# AC8 (docs/spec/phase-7.md §8, #73, #74): a swipe's Pin moves a thread into a Pinned section that
+# survives closing and reopening the sheet; the long-press menu's Unpin takes it back to Older.
+appId: ${APP_ID}
+name: Pinning and unpinning a chat
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- runFlow:
+    file: ../subflows/swipe-history-row.yaml
+    env:
+      THREAD_ID: cht_e2e_solo
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo-delete
+- takeScreenshot: phase-7-history-swipe
+- tapOn:
+    id: chat-history-row-cht_e2e_solo-pin
+- extendedWaitUntil:
+    visible:
+      id: chat-history-section-pinned
+    timeout: 10000
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo
+    below:
+      id: chat-history-section-pinned
+    above:
+      id: chat-history-section-older
+
+- tapOn:
+    id: chat-history-close
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-section-pinned
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo
+    below:
+      id: chat-history-section-pinned
+    above:
+      id: chat-history-section-older
+
+- longPressOn:
+    id: chat-history-row-cht_e2e_solo
+- extendedWaitUntil:
+    visible:
+      id: chat-history-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-history-menu-pin
+    text: .*Unpin.*
+- takeScreenshot: phase-7-history-menu
+- tapOn:
+    id: chat-history-menu-pin
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-section-pinned
+    timeout: 10000
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo
+    below:
+      id: chat-history-section-older

@@ -317,6 +317,52 @@ These must exist. The names are the specification; the phrasing in the test file
   of §6.6, and `hold`/`fail`/`malformed`/`truncated` do as the harness promises
 - `isLowContent` at 0, 4, 11, 12 and 16 words and across utterances; the tip and the title bound
 
+### `Chats/Chats.test.ts` (phase 7)
+
+- a global ask streams `turn, activity, citations, token+, done`; the answer is the tokens, the
+  title is `titleChat(question)`, `get` returns both messages and `updatedAt` is now; the activity is
+  `search, open, done` and the citations come before the first token, numbered in retrieval order
+- "What did we decide about pricing?" cites `not_e2e_launch` alone with the pinned §6.6 answer; "Who
+  have I promised to follow up with?" falls back to launch, standup, solo
+- a note-scoped ask cites only its note with no `search` step; a person-scoped ask (Priya) cites only
+  the notes she attended, labelled with her name; an unknown key is `PersonNotFound` before any
+  write; the caller's own key covers all their notes
+- retrieval never crosses users: `other`'s "zebracorn" note is never cited nor handed to the fake;
+  a note-scoped ask on `other`'s note is `NoteNotFound` with no thread; a key only `other`'s notes
+  hold is `PersonNotFound`; a send into `cht_e2e_other` is `ChatNotFound`
+- a trashed note is never cited; a note-scoped ask on one is `NoteNotFound`; a thread whose note was
+  trashed since answers the couldn’t-find line; `empty` gets `search([]), done`, no citations
+- only the citations the answer uses are stored; `fail` ends in `error` with the row `failed` and
+  the question kept; `retry` streams with no `turn` into the same id; a complete answer or a
+  question is `ChatMessageNotRetryable`
+- `hold` makes a second send `ChatBusy` until the row is stale, when `get` reads it `failed`, a send
+  is allowed and `retry` claims it; releasing `hold` finishes the answer; a reader that stops after
+  `citations`, or an SSE stream that aborts through `pipe`, still leaves the answer `complete`
+- the list is pinned first, then `updatedAt` desc, `id` desc, paged once each; pinning keeps
+  `updatedAt`; `q` matches a title or a message, escapes `%`/`_`, never another user's thread
+- pin, unpin and delete (with its messages); a second delete and another user's thread are
+  `ChatNotFound`; feedback round-trips, a question is `FeedbackNotAllowed`, another user's message
+  `ChatMessageNotFound`; nine models, Auto last and selected with no row written, a selection
+  persists and is recorded on the next answer, `premium` and unknown ids `ChatModelUnavailable`
+- a deleted user cascades threads, messages and the preference; the scope check refuses a note
+  thread without its note
+
+### `Chats/Chats.http.test.ts`, `Chats/Retrieval.test.ts`, `chatStream.test.ts`, `Domain/Chat.test.ts`, `Domain/Person.test.ts` (phase 7)
+
+- every route is 401 without a session and never reaches the service; the three streaming routes
+  answer `text/event-stream` whose frames parse through `ChatEvent` and end with `done`; failures
+  before the stream are JSON (`ChatBusy` 409, `ChatNotFound` 404, `PersonNotFound` 404,
+  `ChatMessageNotRetryable` 409); blank, whitespace-only and 4 001-character content and a scope
+  with an extra key are 422; `PATCH` is strict; `DELETE` is 204
+- `searchTerms` keeps lowercased words of three letters or more, minus stopwords, at most twelve;
+  `scoreNote` gives two per distinct title term and one per distinct body/transcript term, and a
+  hyphenated compound is one word; the fake's `titleChat` and best-line picker
+- the SSE parser joins split frames (inside a multi-byte character too), reads CRLF and multi-line
+  `data:`, skips unknown events and comments, and ends a stream with no `done` as `stream_ended`;
+  `askChat` posts through the fetch it is given
+- `personKeyOf` lowercases the email and prefers it, else normalises the name; the chips, the
+  placeholders and the limits are the §4 constants; content trims before it measures
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -598,11 +644,18 @@ apps/native/.maestro/
     run-llm.yaml         TIMES param: that many inline passes, one attempt each, mode left alone
                          (scripts/e2e-llm-run.js); three in `fail` end a job failed
     wait-for-long.yaml   skip the fake recorder 60 s ahead, so the note is generated in full
+    set-chat.yaml        MODE param: script the fake LLM's chat answers (scripts/e2e-chat.js)
+    release-chat.yaml    chat switch back to auto, so a held answer finishes (scripts/e2e-chat-release.js)
+    open-global-chat.yaml  from home, the Ask pill, then wait for the chat and its composer
+    open-history.yaml    from a chat, open Chat History and wait for its first page
+    send-chat.yaml       TEXT param: type into the composer, wait for Send, tap it
+    wait-for-answer.yaml N param: wait for answer N's action row, which appears only after `done`
+    swipe-history-row.yaml  THREAD_ID param: swipe a history row left until Delete and Pin show
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-6/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-7/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -684,7 +737,8 @@ No assertion notices that Newsreader fell back to the system font or that a colo
 phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-gallery`
 (gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
 (#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
-`phase-6-short` (#40, #107) from short-recording.yaml. Run with
+`phase-6-short` (#40, #107) from short-recording.yaml; phase 7 adds the eleven `phase-7-*` shots
+listed in docs/spec/phase-7.md §8. Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

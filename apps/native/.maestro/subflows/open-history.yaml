@@ -1,0 +1,18 @@
+# From a chat screen, open the Chat History sheet (docs/spec/phase-7.md §3.5, #24) and wait for its
+# first page to answer: the rows are what every caller asserts on.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: chat-history-button
+- extendedWaitUntil:
+    visible:
+      id: chat-history-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-loading
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000

@@ -1,0 +1,15 @@
+# Wait for answer N (0-based) to finish: its action row appears only once `done` has arrived
+# (docs/spec/phase-7.md §3.1). The fake streams one word per 25 ms, so 30 s is generous.
+#
+#   - runFlow:
+#       file: ../subflows/wait-for-answer.yaml
+#       env:
+#         N: "0"
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-${N}-actions
+    timeout: 30000

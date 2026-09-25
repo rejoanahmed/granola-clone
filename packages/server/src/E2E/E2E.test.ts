@@ -700,3 +700,172 @@ describe("the E2E harness, phase 6", () => {
     });
   });
 });
+
+// ── Phase 7: the chat fixtures and the chat switch (docs/spec/phase-7.md §6.3, §6.6) ─────────
+// `E2E_CHATS` and the harness's chat members do not exist yet, so they are read through casts.
+
+type ChatHarness = {
+  releaseChat: () => Promise<{ mode: string }>;
+  setChatMode: (mode: unknown) => Promise<{ mode: string }>;
+};
+
+describe("the E2E harness, phase 7", () => {
+  let d1: TestD1;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    const container = buildContainer(envOver(d1));
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const switches = () => harness as unknown as ChatHarness;
+
+  const fresh = async () => {
+    await harness.reset();
+    return await harness.seed();
+  };
+
+  const rows = async (sql: string) => (await d1.prepare(sql).all()).results;
+
+  const chatSwitch = async () =>
+    await rows("SELECT name, value FROM e2e_switches WHERE name = 'chat'");
+
+  it("seeds the three threads with their fixed ids, owners, scopes and instants", async () => {
+    await fresh();
+
+    expect(
+      await rows(
+        "SELECT id, owner_id, pinned_at, scope_kind, scope_note_id, title, updated_at FROM chat_threads ORDER BY id"
+      )
+    ).toEqual([
+      {
+        id: "cht_e2e_cohort",
+        owner_id: "usr_e2e_person",
+        pinned_at: null,
+        scope_kind: "global",
+        scope_note_id: null,
+        title: "Beta cohort size",
+        updated_at: Date.UTC(2026, 8, 12, 14),
+      },
+      {
+        id: "cht_e2e_other",
+        owner_id: "usr_e2e_other",
+        pinned_at: null,
+        scope_kind: "global",
+        scope_note_id: null,
+        title: "Other person’s chat",
+        updated_at: Date.UTC(2026, 8, 12, 9),
+      },
+      {
+        id: "cht_e2e_solo",
+        owner_id: "usr_e2e_person",
+        pinned_at: null,
+        scope_kind: "note",
+        scope_note_id: "not_e2e_solo",
+        title: "Solo note recap",
+        updated_at: Date.UTC(2026, 7, 5, 12),
+      },
+    ]);
+  });
+
+  it("seeds each thread a question and a complete answer, citing the launch note for cohort", async () => {
+    await fresh();
+
+    const messages = await rows(
+      "SELECT thread_id, position, role, status, content, citations, model FROM chat_messages ORDER BY thread_id, position"
+    );
+
+    expect(
+      messages.map((row) => [row.thread_id, row.role, row.status])
+    ).toEqual([
+      ["cht_e2e_cohort", "user", "complete"],
+      ["cht_e2e_cohort", "assistant", "complete"],
+      ["cht_e2e_other", "user", "complete"],
+      ["cht_e2e_other", "assistant", "complete"],
+      ["cht_e2e_solo", "user", "complete"],
+      ["cht_e2e_solo", "assistant", "complete"],
+    ]);
+    expect(messages[0]?.content).toBe("How many teams are in the beta cohort?");
+    expect(messages[1]?.content).toBe(
+      "The beta cohort is **forty teams** across three regions [1]."
+    );
+    expect(messages[1]?.model).toBe("auto");
+    expect(JSON.parse(String(messages[1]?.citations))).toEqual([
+      expect.objectContaining({ index: 1, noteId: "not_e2e_launch" }),
+    ]);
+    expect(messages[4]?.content).toBe("What did I say?");
+  });
+
+  it("seeds no chat preference, so person's model is Auto", async () => {
+    await fresh();
+
+    expect(await rows("SELECT user_id FROM chat_preferences")).toEqual([]);
+  });
+
+  it("seeds the same threads twice without a second copy", async () => {
+    await fresh();
+    await harness.seed();
+
+    expect(await rows("SELECT id FROM chat_threads ORDER BY id")).toEqual([
+      { id: "cht_e2e_cohort" },
+      { id: "cht_e2e_other" },
+      { id: "cht_e2e_solo" },
+    ]);
+  });
+
+  it("answers the chat mode it set, and stores it as the chat switch", async () => {
+    await fresh();
+
+    for (const mode of ["hold", "fail", "auto"]) {
+      // biome-ignore lint/performance/noAwaitInLoops: each mode overwrites the one before
+      await expect(switches().setChatMode(mode)).resolves.toEqual({ mode });
+    }
+    await switches().setChatMode("hold");
+
+    expect(await chatSwitch()).toEqual([{ name: "chat", value: "hold" }]);
+  });
+
+  it.each(["sometimes", "malformed", "", undefined])(
+    "refuses the chat mode %s",
+    async (mode) => {
+      await expect(switches().setChatMode(mode)).rejects.toMatchObject({
+        _tag: "ValidationFailed",
+      });
+    }
+  );
+
+  it("releases: the chat switch back to auto", async () => {
+    await fresh();
+    await switches().setChatMode("hold");
+
+    await expect(switches().releaseChat()).resolves.toEqual({ mode: "auto" });
+
+    expect(await chatSwitch()).toEqual([{ name: "chat", value: "auto" }]);
+  });
+
+  it("clears the switch and every thread on reset, a thread a flow created included", async () => {
+    await fresh();
+    await switches().setChatMode("fail");
+    await d1
+      .prepare(
+        "INSERT INTO chat_threads (id, owner_id, scope_kind, title, created_at, updated_at) VALUES ('cht_made_by_a_flow', 'usr_e2e_person', 'global', 'Made', 0, 0)"
+      )
+      .run();
+    await d1
+      .prepare(
+        "INSERT INTO chat_preferences (user_id, model, updated_at) VALUES ('usr_e2e_person', 'balanced', 0)"
+      )
+      .run();
+
+    await harness.reset();
+
+    expect(await chatSwitch()).toEqual([]);
+    expect(await rows("SELECT id FROM chat_threads")).toEqual([]);
+    expect(await rows("SELECT id FROM chat_messages")).toEqual([]);
+    expect(await rows("SELECT user_id FROM chat_preferences")).toEqual([]);
+  });
+});

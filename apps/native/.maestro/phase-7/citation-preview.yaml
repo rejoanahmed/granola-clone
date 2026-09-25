@@ -1,0 +1,92 @@
+# AC5 (docs/spec/phase-7.md §8, #25–#28): a thread opened from history loads into the chat screen;
+# its citation chip opens the note preview; the activity row opens the Activity sheet, whose search
+# step expands to the notes it found, and one of those opens the same preview.
+appId: ${APP_ID}
+name: Citations and tool activity
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- tapOn:
+    id: chat-history-row-cht_e2e_cohort
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-block-0
+    timeout: 15000
+- assertVisible:
+    id: chat-title
+    text: Beta cohort size
+- assertVisible:
+    id: chat-user-0
+    text: How many teams are in the beta cohort\?
+- assertVisible:
+    id: chat-answer-0-block-0
+    text: .*forty teams.*
+- takeScreenshot: phase-7-thread
+
+- tapOn:
+    id: chat-answer-0-cite-1
+- extendedWaitUntil:
+    visible:
+      id: citation-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: citation-title
+      text: Launch planning review
+    timeout: 10000
+- assertVisible:
+    id: citation-meta-pill
+- assertVisible:
+    id: citation-block-0
+    text: Launch checklist
+- takeScreenshot: phase-7-citation
+- tapOn:
+    id: citation-close
+- extendedWaitUntil:
+    notVisible:
+      id: citation-sheet
+    timeout: 10000
+
+- tapOn:
+    id: chat-answer-0-activity
+- extendedWaitUntil:
+    visible:
+      id: chat-activity-sheet
+    timeout: 10000
+- assertVisible:
+    id: chat-activity-step-0
+    text: 1 note result
+- assertVisible:
+    id: chat-activity-step-1
+    text: Opened 1 meeting
+# "Done" on screen, "All tool activity complete" to VoiceOver (§3.3); Maestro may read either.
+- assertVisible:
+    id: chat-activity-step-2
+    text: (Done|All tool activity complete)
+- takeScreenshot: phase-7-activity
+- tapOn:
+    id: chat-activity-step-0
+- extendedWaitUntil:
+    visible:
+      id: chat-activity-step-0-note-not_e2e_launch
+    timeout: 5000
+- takeScreenshot: phase-7-activity-expanded
+- tapOn:
+    id: chat-activity-step-0-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: citation-title
+      text: Launch planning review
+    timeout: 10000
+- assertNotVisible:
+    id: chat-activity-sheet

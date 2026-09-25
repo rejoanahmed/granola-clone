@@ -1,0 +1,65 @@
+# AC6 (docs/spec/phase-7.md §8, #25, #30): a follow-up in a thread from history is answered as turn
+# 1; New chat then empties the screen back to the greeting and chips, and the thread's history row
+# now previews the follow-up's answer, under Today because its updatedAt moved to now.
+appId: ${APP_ID}
+name: A follow-up, then a new chat
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- tapOn:
+    id: chat-history-row-cht_e2e_cohort
+- extendedWaitUntil:
+    visible:
+      id: chat-title
+      text: Beta cohort size
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-actions
+    timeout: 15000
+
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: Which regions?
+- extendedWaitUntil:
+    visible:
+      id: chat-user-1
+      text: Which regions\?
+    timeout: 10000
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "1"
+
+- tapOn:
+    id: chat-new-button
+- extendedWaitUntil:
+    visible:
+      id: chat-greeting
+    timeout: 10000
+- assertVisible:
+    id: chat-chip-0
+- assertNotVisible:
+    id: chat-user-0
+- assertNotVisible:
+    id: chat-new-button
+
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort-preview
+    text: .*Here’s what I found.*
+- assertVisible:
+    id: chat-history-section-today
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort
+    below:
+      id: chat-history-section-today
+    above:
+      id: chat-history-section-older

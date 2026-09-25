@@ -1,0 +1,35 @@
+# AC2 (docs/spec/phase-7.md §8, #70): a suggestion chip sends itself, with no typing. The seeded
+# person's notes hold nothing about promises or follow-ups, so retrieval falls back to the three
+# most recent notes and the answer cites all three (§6.6).
+appId: ${APP_ID}
+name: A suggestion chip sends immediately
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- tapOn:
+    id: chat-chip-0
+- extendedWaitUntil:
+    visible:
+      id: chat-user-0
+      text: Who have I promised to follow up with\?
+    timeout: 10000
+- assertNotVisible:
+    id: chat-chips
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+- assertVisible:
+    id: chat-answer-0-cite-1
+- assertVisible:
+    id: chat-answer-0-cite-2
+- assertVisible:
+    id: chat-answer-0-cite-3
+- assertVisible:
+    id: chat-title
+    text: Who have I promised to follow up with

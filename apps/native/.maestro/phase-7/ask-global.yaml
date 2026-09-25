@@ -1,0 +1,86 @@
+# AC1 (docs/spec/phase-7.md §8, #70, #25): home's Ask pill opens the global chat as a modal with the
+# greeting, the four global chips and the mic; a typed question turns the mic into Send, and sending
+# it streams an answer that cites the launch note and titles the thread. Close goes back home.
+appId: ${APP_ID}
+name: Asking a global question
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+- assertVisible:
+    id: chat-close
+- assertVisible:
+    id: chat-history-button
+- assertNotVisible:
+    id: chat-new-button
+- assertVisible:
+    id: chat-greeting
+    text: Hi E2E, ask anything
+- assertVisible:
+    id: chat-chip-0
+    text: Who have I promised to follow up with\?
+- assertVisible:
+    id: chat-chip-1
+    text: What needs my attention first\?
+# The row scrolls; the last two chips may sit past the right edge (#71), so they are scrolled to.
+- scrollUntilVisible:
+    element:
+      id: chat-chip-3
+    direction: RIGHT
+    timeout: 5000
+- assertVisible:
+    id: chat-chip-2
+    text: Catch me up on what's important
+- assertVisible:
+    id: chat-chip-3
+    text: What are the top customer issues\?
+- assertVisible:
+    id: chat-send
+    text: Hold to dictate
+- takeScreenshot: phase-7-global-empty
+
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: What did we decide about pricing?
+- extendedWaitUntil:
+    visible:
+      id: chat-user-0
+      text: What did we decide about pricing\?
+    timeout: 10000
+- assertNotVisible:
+    id: chat-chips
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+# The row's accessibility label carries the tool count after the label (§3.1).
+- assertVisible:
+    id: chat-answer-0-activity
+    text: Loaded notes.*
+- assertVisible:
+    id: chat-answer-0-block-0
+    text: "Here’s what I found in your notes:"
+- assertVisible:
+    id: chat-answer-0-block-\d+
+    text: .*Launch planning review.*
+- assertVisible:
+    id: chat-answer-0-cite-1
+- assertVisible:
+    id: chat-title
+    text: What did we decide about pricing
+- assertVisible:
+    id: chat-new-button
+
+- tapOn:
+    id: chat-close
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- assertNotVisible:
+    id: chat-screen

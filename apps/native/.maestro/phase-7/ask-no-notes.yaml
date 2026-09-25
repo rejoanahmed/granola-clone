@@ -1,0 +1,40 @@
+# AC13 (docs/spec/phase-7.md §8, designed): the seeded `empty` person has no chats and no notes. Their
+# history shows the empty state, and a chip is answered with "Searched notes" and the couldn’t-find
+# line, citing nothing.
+appId: ${APP_ID}
+name: Asking with no notes
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: ../subflows/open-home-as.yaml
+    env:
+      ROLE: empty
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-empty
+- tapOn:
+    id: chat-history-close
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+
+- tapOn:
+    id: chat-chip-1
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+- assertVisible:
+    id: chat-answer-0-activity
+    text: Searched notes.*
+- assertVisible:
+    id: chat-answer-0-block-0
+    text: I couldn’t find anything in your notes about that\.
+- assertNotVisible:
+    id: chat-answer-0-cite-1

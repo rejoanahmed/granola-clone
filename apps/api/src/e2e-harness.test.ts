@@ -663,3 +663,98 @@ describe("POST /e2e/seed, phase 6", () => {
     expect(await standup.json()).toMatchObject({ generation: null });
   });
 });
+
+// ── Phase 7: the chat switch and the chat fixtures over the real app (docs/spec/phase-7.md §6.6) ──
+// The two routes the Maestro scripts `e2e-chat.js` and `e2e-chat-release.js` call. Their effect on
+// an answer is `packages/server/src/Chats/Chats.test.ts`'s; this is the wire.
+
+describe("POST /e2e/chat, phase 7", () => {
+  it.each(["/e2e/chat", "/e2e/chat/release"])(
+    "does not exist at %s when the harness is off",
+    async (path) => {
+      const response = await app.request(
+        path,
+        {
+          body: JSON.stringify({ mode: "hold" }),
+          headers: {
+            "content-type": "application/json",
+            "x-e2e-secret": SECRET,
+          },
+          method: "POST",
+        },
+        off
+      );
+
+      expect(response.status).toBe(404);
+    }
+  );
+
+  it("answers the mode it set, and 422 for one it does not know", async () => {
+    await freshWorld();
+
+    const set = await harnessJson("/e2e/chat", { mode: "hold" });
+    const refused = await harnessJson("/e2e/chat", { mode: "maybe" });
+
+    expect(set.status).toBe(200);
+    await expect(set.json()).resolves.toEqual({ mode: "hold" });
+    expect(refused.status).toBe(422);
+    expect(
+      await rows("SELECT name, value FROM e2e_switches WHERE name = ?", "chat")
+    ).toEqual([{ name: "chat", value: "hold" }]);
+  });
+
+  it("releases: the switch back to auto", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/chat", { mode: "hold" });
+
+    const released = await harness("POST", "/e2e/chat/release");
+
+    expect(released.status).toBe(200);
+    expect(
+      await rows("SELECT name, value FROM e2e_switches WHERE name = ?", "chat")
+    ).toEqual([{ name: "chat", value: "auto" }]);
+  });
+
+  it("is cleared by a reset", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/chat", { mode: "fail" });
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+
+    expect(
+      await countOf(
+        "SELECT count(*) AS n FROM e2e_switches WHERE name = 'chat'"
+      )
+    ).toBe(0);
+    expect(await countOf("SELECT count(*) AS n FROM chat_threads")).toBe(0);
+  });
+});
+
+describe("POST /e2e/seed, phase 7", () => {
+  it("serves person's two seeded threads over the wire, and never other's", async () => {
+    await freshWorld();
+
+    const response = await asRole("person", "GET", "/chats");
+    const theirs = await asRole("person", "GET", "/chats/cht_e2e_other");
+
+    expect(response.status).toBe(200);
+    const page = (await response.json()) as { items: { id: string }[] };
+    expect(page.items.map((item) => item.id)).toEqual([
+      "cht_e2e_cohort",
+      "cht_e2e_solo",
+    ]);
+    expect(theirs.status).toBe(404);
+    await expect(theirs.json()).resolves.toMatchObject({
+      _tag: "ChatNotFound",
+    });
+  });
+
+  it("answers person's model list with Auto selected", async () => {
+    await freshWorld();
+
+    const response = await asRole("person", "GET", "/chat/models");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ selected: "auto" });
+  });
+});

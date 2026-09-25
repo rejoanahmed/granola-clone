@@ -1,0 +1,52 @@
+# AC11 (docs/spec/phase-7.md §8, §3.1 "Streaming", designed): with the chat switch in `hold`, a sent
+# question shows its bubble at once and its answer at "Thinking..." under "Loaded notes", with Send
+# disabled and no actions; releasing the switch finishes the answer.
+appId: ${APP_ID}
+name: An answer streaming in
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-chat.yaml
+    env:
+      MODE: hold
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: What did we decide about pricing?
+- extendedWaitUntil:
+    visible:
+      id: chat-user-0
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-status
+      text: Thinking\.\.\.
+    timeout: 10000
+# The citations event arrives before the fake holds, so the row has already moved on (§6.4).
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-activity
+      text: Loaded notes.*
+    timeout: 10000
+- assertVisible:
+    id: chat-send
+    enabled: false
+- assertNotVisible:
+    id: chat-answer-0-actions
+- takeScreenshot: phase-7-streaming
+
+- runFlow: ../subflows/release-chat.yaml
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+- assertNotVisible:
+    id: chat-answer-0-status
+- assertVisible:
+    id: chat-answer-0-cite-1

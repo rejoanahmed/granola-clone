@@ -335,3 +335,232 @@ describe("LlmFake, scripted modes", () => {
     expect(new LlmErrors.LlmTimeout({}).status).toBe(504);
   });
 });
+
+// ── Phase 7: the chat half (docs/spec/phase-7.md §6.5, §6.6, §7 "Llm.test.ts, extended") ──────
+// `streamAnswer` and `titleChat` do not exist yet, so the fake is read through the shape §6.5
+// gives it. It is built from a variable so the phase-6 deps type does not refuse the chat deps.
+
+type ChatMode = "auto" | "fail" | "hold";
+type ChatContextNote = {
+  readonly bodyMarkdown: string;
+  readonly index: number;
+  readonly startedAt: number;
+  readonly title: string;
+  readonly transcriptText: string;
+};
+type ChatAnswerRequest = {
+  readonly history: readonly { content: string; role: string }[];
+  readonly key: string;
+  readonly model: string;
+  readonly notes: readonly ChatContextNote[];
+  readonly question: string;
+  readonly scope: "global" | "note" | "person";
+  readonly timeoutMs: number;
+};
+type ChatFake = {
+  readonly chatCalls: readonly ChatAnswerRequest[];
+  streamAnswer: (request: ChatAnswerRequest) => AsyncIterable<string>;
+  titleChat: (request: { question: string }) => Promise<string>;
+};
+
+const NO_NOTES_LINE = "I couldn’t find anything in your notes about that.";
+const ONE_WORD_DELTA = /^\S+\s*$/;
+
+const chatFakeWith = (options: {
+  readonly modes?: readonly ChatMode[];
+  readonly tokenDelayMs?: number;
+}) => {
+  const modes = [...(options.modes ?? ["auto"])];
+  const slept: number[] = [];
+  const deps = {
+    // Each read takes the next scripted mode and then keeps answering the last one.
+    readChatMode: () =>
+      Promise.resolve(
+        (modes.length > 1 ? modes.shift() : modes[0]) ?? ("auto" as ChatMode)
+      ),
+    readMode: () => Promise.resolve("auto" as const),
+    sleep: (ms: number) => {
+      slept.push(ms);
+      return Promise.resolve();
+    },
+    tokenDelayMs: options.tokenDelayMs ?? 0,
+  };
+  const fake = Fake.makeLlmFake(deps) as unknown as ChatFake;
+  return { fake, slept };
+};
+
+const LAUNCH_NOTE: ChatContextNote = {
+  bodyMarkdown:
+    "### Launch checklist\n\n- Confirmed the beta cohort: forty teams across three regions\n- Pricing page copy still needs legal review",
+  index: 1,
+  startedAt: AT,
+  title: "Launch planning review",
+  transcriptText: "",
+};
+const STANDUP_NOTE: ChatContextNote = {
+  bodyMarkdown: "### Updates\n\n- Pagination merged\n- Editor polish in review",
+  index: 2,
+  startedAt: AT - 1000,
+  title: "Weekly standup",
+  transcriptText: "",
+};
+
+const chatRequest = (
+  overrides: Partial<ChatAnswerRequest> = {}
+): ChatAnswerRequest => ({
+  history: [],
+  key: "msg_0000000000000002:1",
+  model: "auto",
+  notes: [LAUNCH_NOTE, STANDUP_NOTE],
+  question: "What did we decide about pricing?",
+  scope: "global",
+  timeoutMs: 60_000,
+  ...overrides,
+});
+
+const deltasOf = async (
+  fake: ChatFake,
+  input: ChatAnswerRequest
+): Promise<string[]> => {
+  const deltas: string[] = [];
+  for await (const delta of fake.streamAnswer(input)) {
+    deltas.push(delta);
+  }
+  return deltas;
+};
+
+describe("LlmFake, chat answers", () => {
+  it("answers the same text for the same request, one word per delta", async () => {
+    const { fake } = chatFakeWith({});
+
+    const first = await deltasOf(fake, chatRequest());
+    const second = await deltasOf(fake, chatRequest());
+
+    expect(second).toEqual(first);
+    expect(first.length).toBeGreaterThan(5);
+    for (const delta of first) {
+      expect(delta).toMatch(ONE_WORD_DELTA);
+    }
+  });
+
+  it("writes the global shape: the lead line, then one bullet per note with its index", async () => {
+    const { fake } = chatFakeWith({});
+
+    const text = (await deltasOf(fake, chatRequest())).join("");
+
+    expect(text.startsWith("Here’s what I found in your notes:\n\n")).toBe(
+      true
+    );
+    expect(text).toContain(
+      "- **Launch planning review** — Pricing page copy still needs legal review [1]"
+    );
+    expect(text).toContain("- **Weekly standup** — ");
+    expect(text).toContain("[2]");
+  });
+
+  it("writes the person scope in the global shape", async () => {
+    const { fake } = chatFakeWith({});
+
+    const text = (
+      await deltasOf(
+        fake,
+        chatRequest({ notes: [LAUNCH_NOTE], scope: "person" })
+      )
+    ).join("");
+
+    expect(text.startsWith("Here’s what I found in your notes:")).toBe(true);
+    expect(text).toContain("- **Launch planning review** — ");
+  });
+
+  it("writes the note shape: From **<title>**:, then its bullets citing [1]", async () => {
+    const { fake } = chatFakeWith({});
+
+    const text = (
+      await deltasOf(fake, chatRequest({ notes: [LAUNCH_NOTE], scope: "note" }))
+    ).join("");
+
+    expect(text.startsWith("From **Launch planning review**:\n\n")).toBe(true);
+    expect(text).toContain("- Pricing page copy still needs legal review [1]");
+    expect(text).not.toContain("[2]");
+  });
+
+  it("answers the couldn’t-find line when it was handed no notes", async () => {
+    const { fake } = chatFakeWith({});
+
+    const text = (await deltasOf(fake, chatRequest({ notes: [] }))).join("");
+
+    expect(text.trim()).toBe(NO_NOTES_LINE);
+  });
+
+  it("waits tokenDelayMs between deltas, through the injected sleep", async () => {
+    const { fake, slept } = chatFakeWith({ tokenDelayMs: 25 });
+
+    const deltas = await deltasOf(fake, chatRequest());
+
+    expect(slept.length).toBeGreaterThanOrEqual(deltas.length - 1);
+    expect(slept.every((ms) => ms === 25)).toBe(true);
+  });
+
+  it("records every chat call, including one it failed", async () => {
+    const { fake } = chatFakeWith({ modes: ["fail", "auto"] });
+
+    await expect(deltasOf(fake, chatRequest())).rejects.toBeInstanceOf(
+      LlmErrors.LlmUnavailable
+    );
+    await deltasOf(fake, chatRequest({ key: "msg_0000000000000002:2" }));
+
+    expect(fake.chatCalls.map((call) => call.key)).toEqual([
+      "msg_0000000000000002:1",
+      "msg_0000000000000002:2",
+    ]);
+    expect(fake.chatCalls[0]?.notes).toEqual([LAUNCH_NOTE, STANDUP_NOTE]);
+  });
+});
+
+describe("LlmFake, chat modes", () => {
+  it("fail throws LlmUnavailable before the first delta", async () => {
+    const { fake } = chatFakeWith({ modes: ["fail"] });
+    const received: string[] = [];
+
+    await expect(
+      (async () => {
+        for await (const delta of fake.streamAnswer(chatRequest())) {
+          received.push(delta);
+        }
+      })()
+    ).rejects.toBeInstanceOf(LlmErrors.LlmUnavailable);
+    expect(received).toEqual([]);
+  });
+
+  it("hold polls every 250 ms until the switch moves, then answers as that mode", async () => {
+    const { fake, slept } = chatFakeWith({
+      modes: ["hold", "hold", "hold", "auto"],
+    });
+
+    const held = (await deltasOf(fake, chatRequest())).join("");
+    const { fake: plain } = chatFakeWith({});
+    const unheld = (await deltasOf(plain, chatRequest())).join("");
+
+    expect(held).toBe(unheld);
+    expect(slept.filter((ms) => ms === 250).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("hold released into fail throws LlmUnavailable", async () => {
+    const { fake } = chatFakeWith({ modes: ["hold", "fail"] });
+
+    await expect(deltasOf(fake, chatRequest())).rejects.toBeInstanceOf(
+      LlmErrors.LlmUnavailable
+    );
+  });
+
+  it("hold that never moves times out with LlmTimeout after CHAT_LLM_TIMEOUT_MS", async () => {
+    const { fake, slept } = chatFakeWith({ modes: ["hold"] });
+
+    await expect(deltasOf(fake, chatRequest())).rejects.toBeInstanceOf(
+      LlmErrors.LlmTimeout
+    );
+    const waited = slept.reduce((sum, ms) => sum + ms, 0);
+    expect(waited).toBeGreaterThanOrEqual(60_000);
+    expect(waited).toBeLessThanOrEqual(60_000 + 250);
+  });
+});

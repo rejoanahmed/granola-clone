@@ -1,0 +1,49 @@
+# AC12 (docs/spec/phase-7.md §8, §3.1 "Answer failed", designed): with the chat switch in `fail`,
+# the answer reads "Couldn’t answer that." with an inline Retry and no actions; with the switch back
+# in `auto`, Retry streams into the same turn, so there is still one question and now an answer.
+appId: ${APP_ID}
+name: A failed answer, retried
+tags:
+  - phase-7
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-chat.yaml
+    env:
+      MODE: fail
+- runFlow: ../subflows/open-global-chat.yaml
+- runFlow:
+    file: ../subflows/send-chat.yaml
+    env:
+      TEXT: What did we decide about pricing?
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-status
+      text: Couldn’t answer that\..*
+    timeout: 15000
+- assertVisible:
+    id: chat-answer-0-retry
+- assertNotVisible:
+    id: chat-answer-0-actions
+
+- runFlow:
+    file: ../subflows/set-chat.yaml
+    env:
+      MODE: auto
+- tapOn:
+    id: chat-answer-0-retry
+- runFlow:
+    file: ../subflows/wait-for-answer.yaml
+    env:
+      N: "0"
+- assertVisible:
+    id: chat-answer-0-cite-1
+- assertNotVisible:
+    id: chat-answer-0-status
+- assertVisible:
+    id: chat-user-0
+- assertNotVisible:
+    id: chat-user-1
