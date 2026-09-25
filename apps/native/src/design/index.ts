@@ -16,6 +16,8 @@ export { ListRow } from "./ListRow";
 export { PillButton, type PillSize, type PillTone } from "./PillButton";
 export { SearchBar } from "./SearchBar";
 export { SendButton } from "./SendButton";
+export { SETTINGS_CARD_RADIUS, SettingsCard } from "./SettingsCard";
+export { type SettingsAccessory, SettingsRow } from "./SettingsRow";
 export { SheetChrome } from "./SheetChrome";
 export { SheetScrollDecoy } from "./SheetScrollDecoy";
 export { Text } from "./Text";
@@ -28,5 +30,6 @@ export {
   ToastProvider,
   useToast,
 } from "./Toast";
+export { Toggle, type ToggleTone } from "./Toggle";
 export { ToolbarCapsule } from "./ToolbarCapsule";
 export * from "./tokens";

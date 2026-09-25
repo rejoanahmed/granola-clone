@@ -18,6 +18,8 @@ export const colors = {
     history: "#1C1C1C",
     iconButton: "#1E1E1E",
     list: "#1A1A1A",
+    // The lock-screen notification mock on Notifications (#85).
+    preview: "#0F0F0F",
     scrim: "#00000073",
     sheet: "#2A2A2A",
     sheetControl: "#222222",
@@ -32,6 +34,8 @@ export const colors = {
   destructive: "#FE4346",
   grabber: "#5A5A5A",
   hero: { pink: "#E78BCE" },
+  // Phone calls (#87): the ring around the phone glyph, and the glyph colour on olive tiles.
+  olive: { glyph: "#8A9A2A", ring: "#515B1F" },
   // The live card (discovery screens 100–105): the status-bar strip over the card, the olive pause circle, the
   // meter's bars and the primer's half-black scrim.
   recording: {
@@ -43,8 +47,11 @@ export const colors = {
   speaker: { avatar: "#E4CD75", text: "#E8E8E3" },
   // Chat History's swipe Pin capsule (#73).
   swipe: { pin: "#525252" },
-  switch: { on: "#30D159" },
+  // `off` was never seen in discovery; it is the iOS system off track.
+  switch: { off: "#39393D", on: "#30D159" },
   text: {
+    // #81's "Learn more" and "Privacy policy".
+    link: "#0A84FF",
     onLight: "#1A1A1A",
     primary: "#FCFDF8",
     secondary: "#A8AAA1",

@@ -22,6 +22,8 @@ type Props = {
   readonly onClose: () => void;
   readonly onSelect: (value: UserType) => void;
   readonly selected: UserType | null;
+  /** Onboarding's ids by default; Profile passes `profile-user-type` (docs/spec/phase-10.md §3.2). */
+  readonly testIDPrefix?: string;
 };
 
 // Measured off #84 (428pt wide): a 248pt card whose top lands 16pt into the row it opened from,
@@ -35,7 +37,13 @@ const MENU_PADDING = 8;
 
 // Drawn here rather than as a native UIMenu: a UIMenu item carries no testID, and Maestro selects
 // by id only. At rest it looks like #84; tapping outside dismisses it with no change, as #84 does.
-export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
+export function UserTypeMenu({
+  anchor,
+  onClose,
+  onSelect,
+  selected,
+  testIDPrefix = "onboarding-user-type",
+}: Props) {
   return (
     <Modal
       animationType="fade"
@@ -47,7 +55,7 @@ export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
         accessibilityLabel="Close menu"
         onPress={onClose}
         style={StyleSheet.absoluteFill}
-        testID="onboarding-user-type-backdrop"
+        testID={`${testIDPrefix}-backdrop`}
       />
       {anchor ? (
         <View
@@ -55,7 +63,7 @@ export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
             styles.menu,
             { right: anchor.right, top: anchor.top + INTO_ROW },
           ]}
-          testID="onboarding-user-type-menu"
+          testID={`${testIDPrefix}-menu`}
         >
           {USER_TYPES.map((option) => {
             const isSelected = option.value === selected;
@@ -69,7 +77,7 @@ export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
                   styles.row,
                   pressed ? styles.pressed : null,
                 ]}
-                testID={`onboarding-user-type-option-${option.value}`}
+                testID={`${testIDPrefix}-option-${option.value}`}
               >
                 <View style={styles.check}>
                   {isSelected ? (

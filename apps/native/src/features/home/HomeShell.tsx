@@ -159,6 +159,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
                 <PillButton
                   icon={Laptop}
                   label="Get desktop"
+                  onPress={() => router.push("/desktop")}
                   testID="home-get-desktop-button"
                   tone="dark"
                 />
@@ -206,7 +207,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
             {folder ? null : (
               <Card
                 accessibilityLabel={EVENTS_LABEL}
-                pressable
+                onPress={() => router.push("/work-email")}
                 style={styles.card}
                 testID="home-events-card"
               >
