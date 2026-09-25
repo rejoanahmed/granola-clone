@@ -66,14 +66,17 @@ export function FoldersDrawer({ current, drawer, onPick }: Props) {
     readonly frame: Frame;
   } | null>(null);
 
+  // Only the shared value and the width cross to the UI thread: the gestures on `drawer` cannot.
+  const { progress, width } = drawer;
   const slide = useAnimatedStyle(() => ({
-    transform: [{ translateX: (drawer.progress.value - 1) * drawer.width }],
+    transform: [{ translateX: (progress.value - 1) * width }],
   }));
-  const fade = useAnimatedStyle(() => ({ opacity: drawer.progress.value }));
+  const fade = useAnimatedStyle(() => ({ opacity: progress.value }));
 
   return (
     <GestureDetector gesture={drawer.closePan}>
-      <View style={StyleSheet.absoluteFill}>
+      {/* Modal on the pair, not the drawer: VoiceOver stays in the drawer and its scrim. */}
+      <View accessibilityViewIsModal style={StyleSheet.absoluteFill}>
         <Animated.View style={[StyleSheet.absoluteFill, fade]}>
           <Pressable
             accessibilityLabel={FOLDERS_COPY.dismiss}
@@ -84,7 +87,6 @@ export function FoldersDrawer({ current, drawer, onPick }: Props) {
           />
         </Animated.View>
         <Animated.View
-          accessibilityViewIsModal
           style={[
             styles.drawer,
             { paddingTop: insets.top, width: drawer.width },

@@ -36,6 +36,9 @@ export function useDrawer(): Drawer {
   const width = Math.round(screen * WIDTH_FRACTION);
   const progress = useSharedValue(0);
   const [mounted, setMounted] = useState(false);
+  // Only a pan that activated settles the drawer: one that failed was a tap (the scrim's close, a
+  // row's pick), and settling it would race that tap's own open or close.
+  const dragging = useSharedValue(false);
 
   const settle = useCallback(
     (to: 0 | 1) => {
@@ -61,15 +64,20 @@ export function useDrawer(): Drawer {
         .activeOffsetX(ACTIVATE_X)
         .failOffsetY([-FAIL_Y, FAIL_Y])
         .onStart(() => {
+          dragging.value = true;
           scheduleOnRN(setMounted, true);
         })
         .onUpdate((event) => {
           progress.value = Math.min(1, Math.max(0, event.translationX / width));
         })
-        .onEnd((event) => {
+        .onFinalize((event) => {
+          if (!dragging.value) {
+            return;
+          }
+          dragging.value = false;
           settle(progress.value > SETTLE_AT || event.velocityX > FLICK ? 1 : 0);
         }),
-    [progress, settle, width]
+    [dragging, progress, settle, width]
   );
 
   const closePan = useMemo(
@@ -77,18 +85,25 @@ export function useDrawer(): Drawer {
       Gesture.Pan()
         .activeOffsetX(-ACTIVATE_X)
         .failOffsetY([-FAIL_Y, FAIL_Y])
+        .onStart(() => {
+          dragging.value = true;
+        })
         .onUpdate((event) => {
           progress.value = Math.min(
             1,
             Math.max(0, 1 + event.translationX / width)
           );
         })
-        .onEnd((event) => {
+        .onFinalize((event) => {
+          if (!dragging.value) {
+            return;
+          }
+          dragging.value = false;
           settle(
             1 - progress.value > SETTLE_AT || event.velocityX < -FLICK ? 0 : 1
           );
         }),
-    [progress, settle, width]
+    [dragging, progress, settle, width]
   );
 
   return { close, closePan, edgePan, mounted, open, progress, width };

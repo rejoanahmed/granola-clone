@@ -278,7 +278,8 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
         }}
       />
 
-      {menu || recording.card || drawer.mounted ? null : (
+      {/* Stays mounted while the drawer opens: unmounting it mid-drag would cancel the pan. */}
+      {menu || recording.card ? null : (
         <GestureDetector gesture={drawer.edgePan}>
           <View
             style={[styles.edge, { top: insets.top + EDGE_TOP }]}

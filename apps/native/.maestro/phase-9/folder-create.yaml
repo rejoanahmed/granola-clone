@@ -18,10 +18,11 @@ env:
     visible:
       id: folder-new-sheet
     timeout: 10000
+# Maestro reports `focused: false` for a focused RN TextInput on iOS, so autofocus is proved by
+# typing below without tapping the field first: the name only lands if it has the keyboard.
 - extendedWaitUntil:
     visible:
       id: folder-new-input
-      focused: true
     timeout: 5000
 - assertVisible:
     id: folder-new-save
@@ -83,6 +84,8 @@ env:
 - assertVisible:
     id: "folders-row-.*"
     text: "Research, No notes"
+# The rows' inner -name and -count ids match the pattern too; only a row's label has a comma.
 - assertNotVisible:
     id: "folders-row-.*"
+    text: ".*, .*"
     index: 1
