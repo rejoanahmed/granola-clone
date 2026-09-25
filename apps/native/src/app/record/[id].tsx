@@ -186,6 +186,18 @@ export default function RecordingScreen() {
     }
   };
 
+  // Phase 9's sheet, pushed over the card (docs/spec/phase-12.md §6.1): the card stays mounted
+  // underneath, so the recorder keeps running and close or submit lands back here.
+  const addToFolder = () => {
+    if (live.noteId) {
+      flushNotes();
+      router.push({
+        params: { id: live.noteId },
+        pathname: "/notes/[id]/folder",
+      });
+    }
+  };
+
   // Inside the sheet, `measureInWindow` answers relative to the sheet, which sits one status bar
   // below the window's top; the menu is drawn in window space, so that offset is added back.
   const openMenu = () =>
@@ -335,7 +347,7 @@ export default function RecordingScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: !ready }}
           disabled={!ready}
-          onPress={() => undefined}
+          onPress={addToFolder}
           style={({ pressed }) => [
             styles.folder,
             pressed ? styles.pressed : null,
