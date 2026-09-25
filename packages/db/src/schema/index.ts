@@ -11,3 +11,4 @@ export * from "./notes";
 export * from "./profiles";
 export * from "./recordings";
 export * from "./transcript-segments";
+export * from "./user-settings";
