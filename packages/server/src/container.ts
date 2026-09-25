@@ -72,6 +72,10 @@ import {
   makeSettingsService,
   type SettingsService,
 } from "./Settings/SettingsService";
+import {
+  makeSupportService,
+  type SupportService,
+} from "./Support/SupportService";
 
 // Between the fake's words: slow enough that an answer visibly grows on the phone, fast enough that
 // a flow's thirty-second wait is never close.
@@ -160,6 +164,11 @@ export const buildContainer = (
           id: ids.generate("eml_"),
         }),
     })
+  );
+
+  const support = traced(
+    "Support",
+    makeSupportService({ clock, email, ids, profiles: profilesRepo })
   );
 
   const authEmails = traced(
@@ -309,6 +318,7 @@ export const buildContainer = (
     recordings,
     search,
     settings,
+    support,
     ...overrides,
   };
 };
@@ -328,4 +338,5 @@ export type Container = {
   recordings: RecordingsService;
   search: SearchService;
   settings: SettingsService;
+  support: SupportService;
 };

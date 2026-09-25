@@ -7,7 +7,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 10: the support router is specified (phase-10.md §6.1, §11 API 6), not built
 import { supportRouter } from "./Http";
 
 // docs/spec/phase-10.md §7 "Support/Support.http.test.ts". Wire shape only: the three paths,

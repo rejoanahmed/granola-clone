@@ -9,7 +9,6 @@ import { makeProfilesRepo } from "../Profiles/ProfilesRepo";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Env } from "../Runtime/WorkerEnv";
 import { fixedClock, makeTestD1, sequentialIds, type TestD1 } from "../Testing";
-// @ts-expect-error phase 10: the support service is specified (phase-10.md §6.3, §11 API 6), not built
 import * as Svc from "./SupportService";
 
 // docs/spec/phase-10.md §7 cases 11–15: the support service over the email fake, with an array
