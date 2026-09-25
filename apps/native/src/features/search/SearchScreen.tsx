@@ -19,8 +19,6 @@ import {
   type TextStyle,
   View,
 } from "react-native";
-import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SEARCH_COPY } from "./copy";
 import { SearchField } from "./SearchField";
@@ -30,7 +28,6 @@ import { useSearch } from "./useSearch";
 const BAR_TOP = 8;
 const HEADER_TOP = 8;
 const STATE_GLYPH = 62;
-const KEYBOARD_GAP = 12;
 const SERIF: TextStyle = {
   fontFamily: fonts.serif,
   fontSize: 28,
@@ -198,13 +195,8 @@ export function SearchScreen() {
   const search = useSearch(draft);
   const top = insets.top + BAR_TOP + sizes.iconButton;
 
-  // The composer's mechanism (phase 7): ride the keyboard's own height, 12 above it when it is up,
-  // the bottom safe area when it is down.
-  const keyboard = useReanimatedKeyboardAnimation();
+  // The bottom safe area when the keyboard is down; SearchBar rides it when it is up.
   const restBottom = Math.max(insets.bottom, spacing.sm);
-  const lift = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(restBottom, -keyboard.height.value + KEYBOARD_GAP),
-  }));
 
   return (
     <View style={styles.screen} testID="search-screen">
@@ -226,9 +218,11 @@ export function SearchScreen() {
           <Body search={search} />
         </View>
       )}
-      <Animated.View style={lift}>
-        <SearchField draft={draft} onChangeDraft={setDraft} />
-      </Animated.View>
+      <SearchField
+        draft={draft}
+        onChangeDraft={setDraft}
+        restBottom={restBottom}
+      />
       <View style={[styles.bar, { top: insets.top + BAR_TOP }]}>
         <IconButton
           accessibilityLabel={SEARCH_COPY.back}

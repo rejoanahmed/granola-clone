@@ -14,6 +14,7 @@ export { IconButton } from "./IconButton";
 export { IconTile } from "./IconTile";
 export { ListRow } from "./ListRow";
 export { PillButton, type PillSize, type PillTone } from "./PillButton";
+export { SearchBar } from "./SearchBar";
 export { SendButton } from "./SendButton";
 export { SheetChrome } from "./SheetChrome";
 export { SheetScrollDecoy } from "./SheetScrollDecoy";

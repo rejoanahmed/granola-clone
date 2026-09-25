@@ -19,6 +19,7 @@ import {
 export type PillTone =
   | "ask"
   | "dark"
+  | "destructive"
   | "glass"
   | "light"
   | "lightAlt"
@@ -28,6 +29,11 @@ export type PillSize = "md" | "lg";
 type Props = {
   readonly accessibilityLabel?: string;
   readonly disabled?: boolean;
+  /**
+   * How a disabled pill reads: `dim` fades the tone (every pill before phase 9); `solid` is #17's
+   * submit, a flat `button.disabled` fill with a tertiary label, which a fade of `light` cannot hit.
+   */
+  readonly disabledLook?: "dim" | "solid";
   /** Draw the glyph filled rather than stroked, as the Ask pill's speech bubble is. */
   readonly filledIcon?: boolean;
   readonly icon?: LucideIcon;
@@ -59,6 +65,11 @@ const TONE = {
     },
     text: colors.text.primary,
   },
+  // A confirm that deletes something (docs/spec/phase-9.md §3.4): the destructive red, light label.
+  destructive: {
+    surface: { backgroundColor: colors.destructive },
+    text: colors.text.primary,
+  },
   glass: {
     surface: {
       backgroundColor: colors.ask.pill,
@@ -84,6 +95,11 @@ const TONE = {
   },
 } as const;
 
+const SOLID_DISABLED = {
+  surface: { backgroundColor: colors.button.disabled },
+  text: colors.text.tertiary,
+} as const;
+
 const HEIGHT: Record<PillSize, number> = {
   lg: sizes.pillLarge,
   md: sizes.iconButton,
@@ -92,6 +108,7 @@ const HEIGHT: Record<PillSize, number> = {
 export function PillButton({
   accessibilityLabel,
   disabled = false,
+  disabledLook = "dim",
   filledIcon = false,
   icon: Icon,
   label,
@@ -102,7 +119,8 @@ export function PillButton({
   testID,
   tone,
 }: Props) {
-  const palette = TONE[tone];
+  const solidDisabled = disabled && disabledLook === "solid";
+  const palette = solidDisabled ? SOLID_DISABLED : TONE[tone];
   const isGlass = tone === "glass" || tone === "ask";
   const variant: TypeVariant = isGlass ? "askLabel" : "pillLabel";
   const glyph = isGlass ? sizes.glyphLarge : sizes.glyph;
@@ -119,7 +137,7 @@ export function PillButton({
         palette.surface,
         { height: isGlass ? sizes.askPill : HEIGHT[size] },
         size === "lg" ? styles.fullWidth : null,
-        pressed || disabled ? styles.pressed : null,
+        pressed || (disabled && !solidDisabled) ? styles.pressed : null,
         style,
       ]}
       testID={testID}

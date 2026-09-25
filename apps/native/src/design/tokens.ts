@@ -26,7 +26,8 @@ export const colors = {
     tileRaised: "#333333",
   },
   border: { hairline: "#333333" },
-  button: { light: "#EAEBE4", lightAlt: "#D2D2D2" },
+  // `disabled` is #17's greyed "Add to folder" submit, a solid fill rather than a dimmed light pill.
+  button: { disabled: "#555555", light: "#EAEBE4", lightAlt: "#D2D2D2" },
   calendar: { bar: "#DB35F2" },
   destructive: "#FE4346",
   grabber: "#5A5A5A",
