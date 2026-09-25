@@ -399,3 +399,38 @@
   toggles first (nothing sent differs) and says why. The fix is keyboard-aware insets on the support
   form's ScrollView (`SupportForm.tsx`), as Profile's `keyboardClearance` does; it is left for the
   parity pass because the order is cosmetic to what the report carries.
+
+## Phase 11 (upcoming events)
+
+- **No live calendar client.** Meetings come through the `Calendar` port, and the only
+  implementation is `CalendarFake`, which reads `fake_calendar_events`. Only the E2E harness fills
+  that table. `AppConfig` refuses `CALENDAR_MODE=fake` under `NODE_ENV=production` and refuses
+  `live`, so production, which sets `live`, fails at startup for this reason too. Stubbed: local and
+  the deployed dev Worker run the fake, and `POST /e2e/calendar` with `preset: "demo"` gives a
+  hand-driven session something to show. Unblocked by the OAuth phase, which writes
+  `Integrations/Calendar/CalendarClient.ts`, stores each user's connection and token, and adds its
+  credential to `parseConfig`.
+- **Upcoming-meeting notifications are not sent.** The phase-10 toggle (`notifyUpcomingMeetings`)
+  is stored and read by nothing. Push is out of scope. Unblocked by a phase that adds push and a
+  cron (R8) over `CalendarService.upcoming`.
+- **The work-email upsell never reflects a connection.** The empty card still offers "Sign up with
+  your work email." for every account with no meetings, because the fake has no notion of a
+  connected calendar. Unblocked with the live client, when "no connection" and "no meetings" become
+  different states.
+
+### Deferred review items (phase 11)
+
+- **The real D1 error shape for the event conflict is not pinned.** `RecordingsRepo.isEventConflict`
+  now searches every message down the cause chain (tested with a drizzle → `D1_ERROR` → SQLite
+  nesting), but the only database under test is `makeTestD1`'s better-sqlite3 shim. A miniflare-backed
+  test would pin what real D1 throws; deferred as a new test harness rather than a fix. If D1 ever
+  words the constraint differently, the race answers 500 instead of 409.
+- **`makeCalendarApi` stays in the `@gc/apiclient` barrel.** The two tag constants are now
+  module-private, but every sibling (`makeChatsApi`, `makeNotesApi`, …) is exported the same way
+  for a client that wants one context's calls alone, so removing only this one would be the odd one
+  out.
+- **The minimised-card 409 hand-off (`useMeetingHandoff`) has no flow and no unit test.** No flow
+  can race a second device (§9), and the hook is a thin effect over `useSegments`; the store's
+  `taken` transition and the error mapping it reads are unit-tested.
+- **Two phase-11 flows have timing exposures** (local midnight; the card's 60 s refetch in
+  `event-gone.yaml`). Documented in docs/TESTING.md §8 rather than engineered away.

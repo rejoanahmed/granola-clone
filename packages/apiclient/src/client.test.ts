@@ -501,9 +501,17 @@ describe("the phase-4 notes query keys", () => {
     const withSearch = [...both, ["search"], ["people"]];
 
     expect(keys.updateNote?.(ID)).toEqual(withSearch);
-    // Phase 9: a trash or restore moves a folder's count.
-    expect(keys.trashNote?.(ID)).toEqual([...withSearch, ["folders"]]);
-    expect(keys.restoreNote?.(ID)).toEqual([...withSearch, ["folders"]]);
+    // Phase 9: a trash or restore moves a folder's count; phase 11: a meeting's notes mark.
+    expect(keys.trashNote?.(ID)).toEqual([
+      ...withSearch,
+      ["folders"],
+      ["calendar"],
+    ]);
+    expect(keys.restoreNote?.(ID)).toEqual([
+      ...withSearch,
+      ["folders"],
+      ["calendar"],
+    ]);
     expect(keys.retryNoteGeneration?.(ID)).toEqual(both);
     expect(keys.updateMe?.()).toEqual([
       ["me", "profile"],
@@ -817,5 +825,55 @@ describe("the phase-10 endpoints and keys", () => {
     >;
 
     expect(keys.patchSettings).toBeUndefined();
+  });
+});
+
+describe("the phase-11 calendar endpoint and keys", () => {
+  const UNTIL = Date.UTC(2026, 8, 26, 22);
+  type Callable = (options?: unknown) => Promise<unknown>;
+  type KeyFn = (...args: unknown[]) => readonly unknown[];
+
+  it("sends GET /calendar/events with until in the query", async () => {
+    const { calls, stub } = recording(jsonResponse({ items: [] }));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+    const list = (client as unknown as Record<string, Callable | undefined>)
+      .listUpcomingEvents;
+    if (list === undefined) {
+      throw new Error("the client has no listUpcomingEvents");
+    }
+
+    await list({ query: { until: UNTIL } });
+
+    const url = new URL(only(calls).url);
+    expect([only(calls).init.method ?? "GET", url.pathname]).toEqual([
+      "GET",
+      "/calendar/events",
+    ]);
+    expect(url.searchParams.get("until")).toBe(String(UNTIL));
+  });
+
+  it("keys the calendar under one prefix, by the window's end", () => {
+    const keys = queryKeys as unknown as {
+      calendar?: { all: readonly unknown[]; upcoming: KeyFn };
+    };
+
+    expect(keys.calendar?.all).toEqual(["calendar"]);
+    expect(keys.calendar?.upcoming(UNTIL)).toEqual([
+      "calendar",
+      "upcoming",
+      UNTIL,
+    ]);
+  });
+
+  it("invalidates the calendar when a recording starts and when a note is trashed or restored", () => {
+    const keys = invalidationKeys as unknown as Record<
+      string,
+      KeyFn | undefined
+    >;
+
+    expect(keys.createRecording?.()).toContainEqual(["calendar"]);
+    expect(keys.createRecording?.()).toContainEqual(["notes", "list"]);
+    expect(keys.trashNote?.(NOTE_ID)).toContainEqual(["calendar"]);
+    expect(keys.restoreNote?.(NOTE_ID)).toContainEqual(["calendar"]);
   });
 });

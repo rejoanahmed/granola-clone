@@ -38,6 +38,27 @@ export const e2eRouter = new Hono<E2eEnv>()
   .post("/e2e/reset", async (c) => c.json(await c.var.e2e.reset(), 200))
   .post("/e2e/seed", async (c) => c.json(await c.var.e2e.seed(), 200))
   .post("/e2e/folders", async (c) => c.json(await c.var.e2e.seedFolders(), 200))
+  // A body that is not JSON reads as `{}`, which the service refuses as a 422.
+  .post("/e2e/calendar", async (c) =>
+    c.json(
+      await c.var.e2e.stageCalendar(
+        await c.req.json<unknown>().catch((): unknown => ({}))
+      ),
+      200
+    )
+  )
+  .post("/e2e/calendar/mode", async (c) =>
+    c.json(
+      await c.var.e2e.setCalendarMode(
+        (
+          await c.req
+            .json<{ mode?: unknown }>()
+            .catch((): { mode?: unknown } => ({}))
+        ).mode
+      ),
+      200
+    )
+  )
   // A body that is not JSON reads as no mode, which the service refuses as a 422.
   .post("/e2e/transcription", async (c) =>
     c.json(

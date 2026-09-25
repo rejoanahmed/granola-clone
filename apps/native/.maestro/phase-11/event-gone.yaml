@@ -1,0 +1,51 @@
+# AC5 (docs/spec/phase-11.md §8, §3.2): a meeting removed from the calendar after the card loaded.
+# The tap reaches the server with an event it no longer holds, and the recording bar's error state
+# names why; Close leaves home unobstructed, the card refetched to its empty state, and no note.
+appId: ${APP_ID}
+name: Starting a note from a meeting that has left the calendar
+tags:
+  - phase-11
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/seed-calendar.yaml
+    env:
+      PRESET: standard
+- extendedWaitUntil:
+    visible:
+      id: home-event-cev_e2e_person_3
+    timeout: 15000
+# Emptied without a relaunch, so the card still shows the row the server no longer has.
+- runScript:
+    file: ../scripts/e2e-calendar.js
+    env:
+      PRESET: none
+- assertVisible:
+    id: home-event-cev_e2e_person_3
+- tapOn:
+    id: home-event-cev_e2e_person_3
+- extendedWaitUntil:
+    visible:
+      id: recording-error
+    timeout: 15000
+- assertVisible:
+    id: recording-error-message
+    text: This event is no longer on your calendar\.
+- takeScreenshot: phase-11-event-gone
+- tapOn:
+    id: recording-error-close
+- extendedWaitUntil:
+    notVisible:
+      id: recording-error
+    timeout: 10000
+- runFlow: ../subflows/assert-home-unobstructed.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-events-card
+    timeout: 15000
+- assertNotVisible:
+    id: home-events-list
+- runFlow: ../subflows/assert-no-new-note.yaml

@@ -4,6 +4,7 @@ import {
   eq,
   isNotNull,
   isNull,
+  liveEventNotes,
   lt,
   noteAttendees,
   noteGenerations,
@@ -37,8 +38,18 @@ export type RecordingRecord = Recording & {
   readonly providerJobId: string | null;
 };
 
+// A meeting's guest, as the service built it: in order, deduped and capped. Stored unlinked, as a
+// guest added by hand is, so the account join never rewrites it.
+export type NewRecordingGuest = {
+  readonly email: string | null;
+  readonly id: AttendeeId;
+  readonly name: string | null;
+};
+
 export type NewRecordingNote = {
+  readonly calendarEventId: string | null;
   readonly createdAt: Timestamp;
+  readonly guests: readonly NewRecordingGuest[];
   readonly id: NoteId;
   readonly ownerAttendeeId: AttendeeId;
   readonly ownerId: UserId;
@@ -61,6 +72,30 @@ export type SubmittedRecording = RecordingRecord & {
 };
 
 export type StoredSegment = Segment & { readonly id: string };
+
+// Columns per attendee insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
+const ATTENDEE_COLUMNS = 7;
+
+// Only the one-live-note-per-meeting index: any other constraint failing is a bug, and stays a 500.
+const EVENT_CONFLICT =
+  /UNIQUE constraint failed: notes\.owner_id, notes\.calendar_event_id/;
+
+// Every message down the cause chain: drizzle, D1's `D1_ERROR` wrapper and the SQLite error each
+// wrap the last, and how deep the constraint's text sits is theirs to change, not ours to guess.
+const CAUSE_DEPTH_MAX = 8;
+const causeChainOf = (error: unknown): string => {
+  const messages: string[] = [];
+  let current: unknown = error;
+  for (
+    let depth = 0;
+    depth < CAUSE_DEPTH_MAX && current !== undefined && current !== null;
+    depth += 1
+  ) {
+    messages.push(current instanceof Error ? current.message : String(current));
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return messages.join("\n");
+};
 
 // Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
 const SEGMENT_COLUMNS = 7;
@@ -115,6 +150,20 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       )
       .run();
     return result.meta.changes > 0;
+  };
+
+  // Read through `notes_owner_event_live_idx`: trashed notes are not in it, which is what unlinks
+  // a meeting once its note is trashed.
+  const liveNoteForEvent = async (
+    ownerId: UserId,
+    eventId: string
+  ): Promise<NoteId | null> => {
+    const row = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(liveEventNotes(ownerId, [eventId]))
+      .get();
+    return row === undefined ? null : NoteId.parse(row.id);
   };
 
   return {
@@ -193,6 +242,10 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         { failure, status: "failed", updatedAt: now },
         jobId
       ),
+    // Whether `error` is the one-live-note-per-meeting index refusing the insert. The caller reads
+    // the winner with `liveNoteForEvent`, which may already be gone again (trashed in between).
+    isEventConflict: (error: unknown): boolean =>
+      EVENT_CONFLICT.test(causeChainOf(error)),
 
     // The sweep's work list, oldest first so a backlog drains in order.
     listTranscribing: async (limit: number): Promise<SubmittedRecording[]> => {
@@ -235,6 +288,8 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         .all();
       return rows.map(toRecord);
     },
+
+    liveNoteForEvent,
 
     noteOwner: async (noteId: NoteId): Promise<UserId | null> => {
       const row = await db
@@ -386,6 +441,7 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       stage.add({
         query: db.insert(notes).values({
           bodyMarkdown: "",
+          calendarEventId: note.calendarEventId,
           createdAt: note.createdAt,
           id: note.id,
           ownerId: note.ownerId,
@@ -407,6 +463,23 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
           userId: note.ownerId,
         }),
       });
+      stage.addChunked(
+        note.guests.map((guest, index) => ({ ...guest, position: index + 1 })),
+        ATTENDEE_COLUMNS,
+        (chunk) => ({
+          query: db.insert(noteAttendees).values(
+            chunk.map((guest) => ({
+              createdAt: note.createdAt,
+              email: guest.email,
+              id: guest.id,
+              name: guest.name,
+              noteId: note.id,
+              position: guest.position,
+              userId: null,
+            }))
+          ),
+        })
+      );
       stage.add({
         query: db.insert(recordings).values({
           attempt: 0,

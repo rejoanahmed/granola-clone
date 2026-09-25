@@ -4,6 +4,7 @@ import { chatPreferences } from "./schema/chat-preferences";
 import { chatThreads } from "./schema/chat-threads";
 import { e2eSwitches } from "./schema/e2e-switches";
 import { emailOutbox } from "./schema/email-outbox";
+import { fakeCalendarEvents } from "./schema/fake-calendar-events";
 import { folderNotes, folders } from "./schema/folders";
 import { noteAttendees } from "./schema/note-attendees";
 import { noteGenerations } from "./schema/note-generations";
@@ -22,6 +23,7 @@ import { userSettings } from "./schema/user-settings";
 // lead, since a thread can reference a note; `chatPreferences` and `userSettings` precede `profiles`
 // by convention.
 // `folderNotes` then `folders` head the list: a membership references both a folder and a note.
+// `fakeCalendarEvents` sits beside `emailOutbox`: both are a fake vendor's store with no children.
 export const RESET_ORDER: readonly SQLiteTable[] = [
   folderNotes,
   folders,
@@ -33,6 +35,7 @@ export const RESET_ORDER: readonly SQLiteTable[] = [
   noteAttendees,
   notes,
   emailOutbox,
+  fakeCalendarEvents,
   chatPreferences,
   userSettings,
   profiles,

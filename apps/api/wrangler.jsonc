@@ -26,6 +26,9 @@
     // key "anonymous", and a Maestro run spends the default 20 in its first few flows.
     "AUTH_RATE_LIMIT": "600",
     "BETTER_AUTH_URL": "http://localhost:3001",
+    // The fake calendar (packages/server/src/Integrations/Calendar): meetings come from the
+    // `fake_calendar_events` table the harness fills. No client exists, so `live` refuses to start.
+    "CALENDAR_MODE": "fake",
     // Arms the dev-only E2E harness (packages/server/src/E2E). Its secret is NOT here: set
     // E2E_SECRET in `.dev.vars`, or the Worker refuses to start. Never added to `production`
     // below — `parseConfig` fails startup if NODE_ENV=production sees this armed.
@@ -155,6 +158,8 @@
       "vars": {
         "API_URL": "https://api-dev.gcnotes.example.com",
         "BETTER_AUTH_URL": "https://api-dev.gcnotes.example.com",
+        // The fake, so the E2E gate stages meetings rather than depending on a real calendar.
+        "CALENDAR_MODE": "fake",
         // The reason this environment exists: reset, seed and sign-in for the suite that gates
         // promotion. E2E_SECRET is a dashboard secret on this Worker, never a var.
         "E2E_HARNESS": "true",
@@ -237,6 +242,8 @@
       "vars": {
         "API_URL": "https://api.gcnotes.example.com",
         "BETTER_AUTH_URL": "https://api.gcnotes.example.com",
+        // Live, said out loud, and refused at startup until a client exists, as TRANSCRIPTION_MODE.
+        "CALENDAR_MODE": "live",
         // E2E_HARNESS is deliberately ABSENT and must stay so: wrangler does not inherit the top
         // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
         // pruned by removing it here, which is exactly why `parseConfig` refuses to start

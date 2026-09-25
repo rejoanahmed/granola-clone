@@ -5,6 +5,7 @@ import {
   connectUploads,
   resumeUploads,
 } from "@native/features/recording/uploadQueue";
+import { useMeetingHandoff } from "@native/features/recording/useMeetingHandoff";
 import { TRANSCRIPT_DETENT } from "@native/features/transcript/sheet";
 import useThemedNavigation from "@native/hooks/useThemedNavigation";
 import { STALE_TIME_MS } from "@native/lib/api";
@@ -58,6 +59,7 @@ function RecordingRuntime() {
   const queryClient = useQueryClient();
   const { session } = useAuth();
   const signedIn = session != null;
+  useMeetingHandoff();
   useEffect(() => {
     connectLiveRecording(queryClient);
     connectUploads(queryClient);

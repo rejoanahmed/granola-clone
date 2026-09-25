@@ -1,19 +1,22 @@
+import { useAuth } from "@native/lib/auth-provider";
 import { useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Linking } from "react-native";
+import { ownerLabelOf } from "./fromMeeting";
 import { liveSessionId, startRecording } from "./liveRecording";
 import type { MicCardKind } from "./MicCard";
+import {
+  makeNewRecordingFlow,
+  type NewRecordingPorts,
+} from "./newRecordingFlow";
 import { readMicPermission, requestMicPermission } from "./permissions";
 
-/**
- * What the + FAB does (docs/spec/phase-5.md §3.11): undetermined → the primer, denied → the denied
- * card, granted → the live card. A tap while the permission check is running is dropped, so a
- * double tap cannot start two recordings.
- */
+/** The + FAB and a meeting row's tap, over `makeNewRecordingFlow` (which holds the rules). */
 export function useNewRecording() {
   const router = useRouter();
   const [card, setCard] = useState<MicCardKind | null>(null);
-  const checking = useRef(false);
+  const { session } = useAuth();
+  const ownerName = ownerLabelOf(session?.user);
 
   const openLive = useCallback(
     (sessionId: string) =>
@@ -21,47 +24,32 @@ export function useNewRecording() {
     [router]
   );
 
-  const begin = useCallback(() => openLive(startRecording()), [openLive]);
-
-  const onPress = useCallback(async () => {
-    const live = liveSessionId();
-    if (live) {
-      openLive(live);
-      return;
-    }
-    if (checking.current) {
-      return;
-    }
-    checking.current = true;
-    try {
-      const permission = await readMicPermission();
-      if (permission === "granted") {
-        begin();
-      } else {
-        setCard(permission === "denied" ? "denied" : "primer");
-      }
-    } finally {
-      checking.current = false;
-    }
-  }, [begin, openLive]);
-
-  const onPrimary = useCallback(async () => {
-    if (card === "denied") {
-      setCard(null);
+  const ports = useRef<NewRecordingPorts | null>(null);
+  ports.current = {
+    liveSessionId,
+    openLive,
+    openSettings: () => {
       Linking.openSettings().catch(() => undefined);
-      return;
-    }
-    // The card goes as the system alert comes up; Allow opens the live card with no second tap.
-    setCard(null);
-    const permission = await requestMicPermission();
-    if (permission === "granted") {
-      begin();
-    } else {
-      setCard("denied");
-    }
-  }, [begin, card]);
+    },
+    readPermission: readMicPermission,
+    requestPermission: requestMicPermission,
+    setCard,
+    start: (event) => startRecording(event ? { event, ownerName } : undefined),
+  };
+  const [flow] = useState(() =>
+    makeNewRecordingFlow(() => {
+      if (!ports.current) {
+        throw new Error("useNewRecording: ports read before the first render");
+      }
+      return ports.current;
+    })
+  );
 
-  const onClose = useCallback(() => setCard(null), []);
-
-  return { card, onClose, onPress, onPrimary, openLive };
+  return {
+    card,
+    onClose: flow.onClose,
+    onPress: flow.onPress,
+    onPrimary: flow.onPrimary,
+    openLive,
+  };
 }

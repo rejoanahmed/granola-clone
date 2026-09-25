@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CalendarEventId } from "./Calendar";
 import { branded, NoteId } from "./Ids";
 import { Timestamp } from "./Time";
 
@@ -118,6 +119,8 @@ export const groupUtterances = (segments: readonly Segment[]): Utterance[] => {
 
 // Strict, so a body naming a status or an owner is a 422 rather than a 200 that dropped it.
 export const RecordingCreate = z.strictObject({
+  // The meeting this note is started from: the server takes its title and attendees from it.
+  calendarEventId: CalendarEventId.optional(),
   startedAt: Timestamp.optional(),
 });
 export type RecordingCreate = z.output<typeof RecordingCreate>;

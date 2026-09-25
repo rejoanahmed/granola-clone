@@ -20,6 +20,7 @@ import {
   seedD1,
   sequentialIds,
   type TestD1,
+  unreachableCalendar,
 } from "../Testing";
 import * as MemoryAudio from "../Testing/AudioStore";
 import { makeMemoryGenerationQueue } from "../Testing/GenerationQueue";
@@ -157,6 +158,7 @@ const service = (
 ): RecordingsService =>
   Svc.makeRecordingsService({
     audio,
+    calendar: unreachableCalendar,
     clock,
     generationQueue: makeMemoryGenerationQueue(),
     ids,
@@ -1185,5 +1187,398 @@ describe("the recordings tables", () => {
         },
       ])
     ).rejects.toThrow(UNIQUE_FAILED);
+  });
+});
+
+// ── Phase 11: starting a note from a meeting (docs/spec/phase-11.md §6.3, §7 cases 10–16) ─────────
+// The service gains `calendar: CalendarPort` (§6.3). The fake does not exist yet, so it is imported
+// inside the block and the phase 5–10 cases above keep running; it reads an array store standing in
+// for `fake_calendar_events`. The caller is the E2E `person`, because the owner's own entry on the
+// invite is dropped by comparing addresses, and the seeded address is what the flows sign in as.
+
+describe("RecordingsService.create from a meeting, phase 11", () => {
+  const person: Actor = {
+    email: "e2e-person@gcnotes.test",
+    id: "usr_e2e_person" as Actor["id"],
+    name: "E2E Person",
+  };
+  const HOUR = 60 * MINUTE;
+  const STARTED = AT - 5 * MINUTE;
+  const EVENT_ID = "cev_e2e_person_2";
+
+  type EventAttendee = {
+    readonly email: string | null;
+    readonly name: string | null;
+  };
+  type EventRecord = {
+    readonly attendees: readonly EventAttendee[];
+    readonly color: string | null;
+    readonly endAt: number;
+    readonly id: string;
+    readonly startAt: number;
+    readonly title: string | null;
+  };
+  type CalendarFake = {
+    readonly calls: readonly { readonly method: string }[];
+    failWith: (failure: "unavailable") => void;
+  };
+  type MeetingNote = Omit<Note, "attendees"> & {
+    readonly attendees: readonly {
+      readonly email: string | null;
+      readonly isMe: boolean;
+      readonly name: string | null;
+    }[];
+  };
+  type MeetingService = {
+    create: (
+      who: Actor,
+      input: { calendarEventId?: string; startedAt?: number }
+    ) => Promise<{ note: MeetingNote; recording: Recording }>;
+  };
+
+  const CATCH_UP: EventRecord = {
+    attendees: [
+      { email: "priya@example.com", name: "Priya Raman" },
+      { email: "sam@example.com", name: "Sam Okafor" },
+      { email: "E2E-Person@gcnotes.test", name: "E2E Person" },
+    ],
+    color: "#DB35F2",
+    endAt: AT + 25 * HOUR,
+    id: EVENT_ID,
+    startAt: AT + 24 * HOUR,
+    title: "Catch up with the team",
+  };
+
+  let events: EventRecord[];
+  let calendar: CalendarFake;
+
+  beforeEach(async () => {
+    events = [CATCH_UP];
+    await seedD1(d1, [{ rows: [userRow(person)], table: "user" }]);
+  });
+
+  const makeCalendar = async (): Promise<CalendarFake> => {
+    const module = (await import("../Integrations/Calendar/CalendarFake")) as {
+      makeCalendarFake: (deps: unknown) => CalendarFake;
+    };
+    return module.makeCalendarFake({
+      readMode: () => Promise.resolve("auto"),
+      store: {
+        byId: (q: { eventId: string; userId: string }) =>
+          Promise.resolve(
+            q.userId === person.id
+              ? (events.find((row) => row.id === q.eventId) ?? null)
+              : null
+          ),
+        listOverlapping: (q: { from: number; until: number; userId: string }) =>
+          Promise.resolve(
+            q.userId === person.id
+              ? events.filter(
+                  (row) => row.endAt > q.from && row.startAt < q.until
+                )
+              : []
+          ),
+      },
+    });
+  };
+
+  const meetingService = async (
+    overrides: { readonly repo?: Repo.RecordingsRepo } = {}
+  ): Promise<MeetingService> => {
+    calendar = await makeCalendar();
+    return Svc.makeRecordingsService({
+      audio,
+      calendar,
+      clock,
+      generationQueue: makeMemoryGenerationQueue(),
+      ids,
+      log: () => undefined,
+      repo: overrides.repo ?? repo(),
+      transcription: fake,
+      uow: makeUnitOfWork(d1),
+    } as unknown as Svc.RecordingsDeps) as unknown as MeetingService;
+  };
+
+  const getEvents = () =>
+    calendar.calls.filter((call) => call.method === "getEvent");
+
+  const noteDetail = (noteId: string) =>
+    notes().get(person, noteId) as Promise<MeetingNote>;
+
+  const linkOf = async (noteId: string) =>
+    (
+      await rowsOf("SELECT calendar_event_id FROM notes WHERE id = ?", noteId)
+    )[0]?.calendar_event_id;
+
+  const writtenRows = async () => ({
+    attendees: await count("SELECT count(*) AS n FROM note_attendees"),
+    notes: await count("SELECT count(*) AS n FROM notes"),
+    recordings: await count("SELECT count(*) AS n FROM recordings"),
+  });
+
+  const namesOf = (note: MeetingNote) =>
+    note.attendees.map(({ isMe, name }) => ({ isMe, name }));
+
+  // §7 case 10
+  it("titles the note after the meeting, lists its guests after the owner, and links it", async () => {
+    const svc = await meetingService();
+
+    const { note, recording } = await svc.create(person, {
+      calendarEventId: EVENT_ID,
+      startedAt: STARTED,
+    });
+
+    const expected = [
+      { isMe: true, name: "E2E Person" },
+      { isMe: false, name: "Priya Raman" },
+      { isMe: false, name: "Sam Okafor" },
+    ];
+    expect(note.title).toBe("Catch up with the team");
+    expect(namesOf(note)).toEqual(expected);
+    expect(note.startedAt).toBe(STARTED);
+    expect(recording.startedAt).toBe(STARTED);
+    const stored = await noteDetail(note.id);
+    expect(stored.title).toBe("Catch up with the team");
+    expect(namesOf(stored)).toEqual(expected);
+    expect(await linkOf(note.id)).toBe(EVENT_ID);
+    expect(getEvents()).toHaveLength(1);
+  });
+
+  // §7 case 11
+  it("is CalendarEventNotFound (404) for an event the calendar does not hold, and writes nothing", async () => {
+    const svc = await meetingService();
+    const before = await writtenRows();
+
+    await expect(
+      svc.create(person, { calendarEventId: "cev_gone" })
+    ).rejects.toMatchObject({
+      _tag: "CalendarEventNotFound",
+      details: { calendarEventId: "cev_gone" },
+      status: 404,
+    });
+    expect(await writtenRows()).toEqual(before);
+  });
+
+  it("does not start a note from another user's event", async () => {
+    const svc = await meetingService();
+
+    await expect(
+      svc.create(otherActor(), { calendarEventId: EVENT_ID })
+    ).rejects.toMatchObject({ _tag: "CalendarEventNotFound", status: 404 });
+  });
+
+  // §7 case 12
+  it("is CalendarEventHasNote (409) naming the first note, until that note is trashed", async () => {
+    const svc = await meetingService();
+    const first = await svc.create(person, { calendarEventId: EVENT_ID });
+
+    await expect(
+      svc.create(person, { calendarEventId: EVENT_ID })
+    ).rejects.toMatchObject({
+      _tag: "CalendarEventHasNote",
+      details: { calendarEventId: EVENT_ID, noteId: first.note.id },
+      status: 409,
+    });
+    expect(await count("SELECT count(*) AS n FROM notes")).toBe(1);
+
+    await notes().trash(person, first.note.id);
+    const second = await svc.create(person, { calendarEventId: EVENT_ID });
+
+    expect(second.note.id).not.toBe(first.note.id);
+    expect(await linkOf(second.note.id)).toBe(EVENT_ID);
+  });
+
+  // §7 case 13
+  const winnerRow = (id: string) => ({
+    rows: [
+      {
+        body_markdown: "",
+        calendar_event_id: EVENT_ID,
+        created_at: AT,
+        id,
+        owner_id: person.id,
+        source: "phone",
+        started_at: AT,
+        title: "Catch up with the team",
+        trashed_at: null,
+        updated_at: AT,
+      },
+    ],
+    table: "notes",
+  });
+
+  // The pre-check sees nothing, and `beforeBatch` runs before the batch does: the other device's
+  // create landing in between. `beforeWinnerRead` runs before the read of the race's winner.
+  const racingRepo = (
+    beforeBatch: () => Promise<unknown>,
+    beforeWinnerRead: () => Promise<unknown> = async () => undefined
+  ) => {
+    const real = repo();
+    let reads = 0;
+    return {
+      ...real,
+      liveNoteForEvent: async (ownerId: never, eventId: string) => {
+        reads += 1;
+        if (reads === 1) {
+          await beforeBatch();
+          return null;
+        }
+        if (reads === 2) {
+          await beforeWinnerRead();
+        }
+        return await real.liveNoteForEvent(ownerId, eventId);
+      },
+    } as Repo.RecordingsRepo;
+  };
+
+  it("answers a create that loses the race to a concurrent one with 409 and the winner's id, not 500", async () => {
+    const WINNER = "not_winner_000001";
+    const svc = await meetingService({
+      repo: racingRepo(() => seedD1(d1, [winnerRow(WINNER)])),
+    });
+
+    await expect(
+      svc.create(person, { calendarEventId: EVENT_ID })
+    ).rejects.toMatchObject({
+      _tag: "CalendarEventHasNote",
+      details: { noteId: WINNER },
+      status: 409,
+    });
+    expect(await count("SELECT count(*) AS n FROM recordings")).toBe(0);
+  });
+
+  it("retries once, and answers 201, when the race's winner is trashed before it can be read", async () => {
+    const WINNER = "not_winner_000002";
+    const svc = await meetingService({
+      // The winner is trashed between the refused batch and the read of it.
+      repo: racingRepo(
+        () => seedD1(d1, [winnerRow(WINNER)]),
+        () =>
+          d1
+            .prepare("UPDATE notes SET trashed_at = ? WHERE id = ?")
+            .bind(AT, WINNER)
+            .run()
+      ),
+    });
+
+    const created = await svc.create(person, { calendarEventId: EVENT_ID });
+
+    expect(created.note.id).not.toBe(WINNER);
+    expect(await linkOf(created.note.id)).toBe(EVENT_ID);
+    expect(await count("SELECT count(*) AS n FROM recordings")).toBe(1);
+  });
+
+  it("reads the unique index's refusal however deep the driver nests it", () => {
+    const sqlite = new Error(
+      "UNIQUE constraint failed: notes.owner_id, notes.calendar_event_id: SQLITE_CONSTRAINT"
+    );
+    const d1Error = new Error("D1_ERROR: batch failed", { cause: sqlite });
+    const drizzleError = new Error("Failed query: insert into notes", {
+      cause: d1Error,
+    });
+    const other = new Error("Failed query", {
+      cause: new Error("UNIQUE constraint failed: recordings.id"),
+    });
+
+    expect(repo().isEventConflict(sqlite)).toBe(true);
+    expect(repo().isEventConflict(d1Error)).toBe(true);
+    expect(repo().isEventConflict(drizzleError)).toBe(true);
+    expect(repo().isEventConflict(other)).toBe(false);
+    expect(repo().isEventConflict("not an error")).toBe(false);
+  });
+
+  // §7 case 14
+  it("gives a blank meeting title the default, and cuts a long one at a word to 200", async () => {
+    const words = Array.from({ length: 50 }, (_, n) => `word${n}`).join(" ");
+    const long = words.slice(0, 250);
+    events = [
+      { ...CATCH_UP, id: "cev_blank", title: "   " },
+      { ...CATCH_UP, id: "cev_null", title: null },
+      { ...CATCH_UP, id: "cev_long", title: long },
+    ];
+    const svc = await meetingService();
+
+    const blank = await svc.create(person, { calendarEventId: "cev_blank" });
+    const none = await svc.create(person, { calendarEventId: "cev_null" });
+    const cut = await svc.create(person, { calendarEventId: "cev_long" });
+
+    expect(blank.note.title).toBe("Untitled note");
+    expect(none.note.title).toBe("Untitled note");
+    expect(cut.note.title.length).toBeLessThanOrEqual(200);
+    expect(cut.note.title.length).toBeGreaterThan(150);
+    expect(long.startsWith(cut.note.title)).toBe(true);
+    // At a word: the next character of the original is the space that ended it.
+    expect(long[cut.note.title.length]).toBe(" ");
+  });
+
+  // §7 case 15
+  it("keeps name-only and email-only guests, one per person key, capped at 50 after the owner", async () => {
+    const many: EventAttendee[] = Array.from({ length: 60 }, (_, n) => ({
+      email: `guest${n}@example.com`,
+      name: `Guest ${n}`,
+    }));
+    events = [
+      {
+        ...CATCH_UP,
+        attendees: [
+          { email: null, name: "Dana Lee" },
+          { email: "email-only@example.com", name: null },
+          { email: "PRIYA@example.com", name: "Priya Raman" },
+          { email: "priya@example.com", name: "Priya again" },
+          { email: null, name: "dana  lee" },
+          { email: null, name: null },
+          { email: "e2e-person@gcnotes.test", name: null },
+        ],
+        id: "cev_mixed",
+      },
+      { ...CATCH_UP, attendees: many, id: "cev_crowd" },
+    ];
+    const svc = await meetingService();
+
+    const mixed = await svc.create(person, { calendarEventId: "cev_mixed" });
+    const crowd = await svc.create(person, { calendarEventId: "cev_crowd" });
+
+    expect(
+      mixed.note.attendees.map(({ email, isMe, name }) => ({
+        email,
+        isMe,
+        name,
+      }))
+    ).toEqual([
+      { email: person.email, isMe: true, name: "E2E Person" },
+      { email: null, isMe: false, name: "Dana Lee" },
+      { email: "email-only@example.com", isMe: false, name: null },
+      { email: "PRIYA@example.com", isMe: false, name: "Priya Raman" },
+    ]);
+    expect(crowd.note.attendees).toHaveLength(51);
+    expect(crowd.note.attendees[50]).toMatchObject({ name: "Guest 49" });
+    expect(
+      await count(
+        "SELECT count(*) AS n FROM note_attendees WHERE note_id = ?",
+        crowd.note.id
+      )
+    ).toBe(51);
+  });
+
+  // §7 case 16
+  it("never asks the calendar when no event is named, and leaves the note unlinked", async () => {
+    const svc = await meetingService();
+
+    const { note } = await svc.create(person, {});
+
+    expect(calendar.calls).toEqual([]);
+    expect(note.title).toBe("Untitled note");
+    expect(await linkOf(note.id)).toBeNull();
+  });
+
+  it("is CalendarUnavailable (503) when the calendar is down during a create from a meeting, and writes nothing", async () => {
+    const svc = await meetingService();
+    calendar.failWith("unavailable");
+    const before = await writtenRows();
+
+    await expect(
+      svc.create(person, { calendarEventId: EVENT_ID })
+    ).rejects.toMatchObject({ _tag: "CalendarUnavailable", status: 503 });
+    expect(await writtenRows()).toEqual(before);
   });
 });

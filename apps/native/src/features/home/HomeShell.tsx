@@ -1,11 +1,9 @@
 import {
   ActionMenu,
-  Card,
   colors,
   Fab,
   type Frame,
   IconButton,
-  IconTile,
   PillButton,
   sizes,
   spacing,
@@ -13,6 +11,7 @@ import {
   ToolbarCapsule,
   useToast,
 } from "@native/design";
+import { UpcomingEventsCard } from "@native/features/calendar/UpcomingEventsCard";
 import { FOLDERS_COPY } from "@native/features/folders/copy";
 import { wasDeletedHere } from "@native/features/folders/created";
 import {
@@ -37,12 +36,12 @@ import {
   invalidate,
   keys,
   type NoteListItem,
+  type UpcomingEvent,
   useTrashNote,
 } from "@native/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
-  CalendarDays,
   Folder,
   FolderMinus,
   FolderPlus,
@@ -64,7 +63,6 @@ import { initialFor } from "./initial";
 import { NoteList } from "./NoteList";
 import { NoteRowContent } from "./NoteRow";
 
-const EVENTS_LABEL = "No upcoming events, Sign up with your work email.";
 // Off the spacing scale on purpose: these are #01's measured gaps (source.xml), not a rhythm.
 const BAR_GAP = 12;
 const TOOLBAR_GAP = 6;
@@ -132,13 +130,25 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
     }, [queryClient])
   );
 
-  const openNote = (note: NoteListItem) => {
+  const openNote = (note: { readonly id: string }) => {
     const live = liveSessionId();
     if (live && note.id === liveNoteId) {
       recording.openLive(live);
       return;
     }
     router.push({ params: { id: note.id }, pathname: "/notes/[id]" });
+  };
+
+  // A live recording wins over any row, as it does over the FAB: no second recording starts.
+  const openEvent = (event: UpcomingEvent) => {
+    const live = liveSessionId();
+    if (live) {
+      recording.openLive(live);
+    } else if (event.noteId) {
+      openNote({ id: event.noteId });
+    } else {
+      recording.onPress({ event }).catch(() => undefined);
+    }
   };
 
   return (
@@ -205,23 +215,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
 
             {/* The calendar is not about a folder, so a folder view has no card (§3.2). */}
             {folder ? null : (
-              <Card
-                accessibilityLabel={EVENTS_LABEL}
-                onPress={() => router.push("/work-email")}
-                style={styles.card}
-                testID="home-events-card"
-              >
-                <IconTile background={colors.bg.app} icon={CalendarDays} />
-                <View style={styles.cardLines}>
-                  <Text variant="rowTitle">No upcoming events</Text>
-                  <Text variant="secondary">
-                    <Text style={styles.underline} variant="secondary">
-                      Sign up
-                    </Text>{" "}
-                    with your work email.
-                  </Text>
-                </View>
-              </Card>
+              <UpcomingEventsCard onEvent={openEvent} style={styles.card} />
             )}
           </SafeAreaView>
 
@@ -373,7 +367,6 @@ const styles = StyleSheet.create({
     right: spacing.xl,
   },
   card: { marginHorizontal: spacing.lg, marginTop: spacing.lg },
-  cardLines: { flex: 1, gap: sizes.cardLineGap },
   content: { flex: 1 },
   header: {
     backgroundColor: colors.bg.app,
@@ -388,5 +381,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   toolbarSide: { alignItems: "center", flexDirection: "row", gap: TOOLBAR_GAP },
-  underline: { textDecorationLine: "underline" },
 });

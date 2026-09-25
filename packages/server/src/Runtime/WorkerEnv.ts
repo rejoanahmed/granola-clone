@@ -28,6 +28,8 @@ export type WorkerSettings = {
   readonly AUTH_RATE_LIMIT?: string;
   readonly BETTER_AUTH_SECRET: string;
   readonly BETTER_AUTH_URL: string;
+  /** `fake` (the default) is refused in production, and `live` until a calendar client exists. */
+  readonly CALENDAR_MODE?: "fake" | "live";
   /** `"true"` arms the dev-only E2E harness. `AppConfig` refuses to start production with it. */
   readonly E2E_HARNESS?: string;
   /** The `x-e2e-secret` the harness matches. Required whenever `E2E_HARNESS` is armed. */

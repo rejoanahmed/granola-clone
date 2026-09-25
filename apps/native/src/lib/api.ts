@@ -504,3 +504,21 @@ export function useFeedback() {
 export function useDesktopReminder() {
   return useMutation({ mutationFn: () => client.createDesktopReminder() });
 }
+
+// ---- Calendar (docs/spec/phase-11.md §3.3, §6.4) ----
+
+export {
+  calendarEventNoteId,
+  isCalendarEventNotFound,
+} from "@gc/apiclient";
+
+export type UpcomingEventsPage = Awaited<
+  ReturnType<typeof client.listUpcomingEvents>
+>;
+export type UpcomingEvent = UpcomingEventsPage["items"][number];
+
+/** Keyed on `until`, which the device computes and which changes once a day. */
+export const upcomingEventsQuery = (until: number) =>
+  api.query(keys.calendar.upcoming(until), ({ signal }) =>
+    client.listUpcomingEvents({ query: { until } }, { signal })
+  );

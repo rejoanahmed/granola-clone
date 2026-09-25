@@ -19,6 +19,11 @@ env:
 - assertVisible:
     id: home-empty-title
     text: No notes yet
+# Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
+- extendedWaitUntil:
+    visible:
+      id: home-events-card
+    timeout: 10000
 - assertVisible:
     id: home-events-card
 - assertVisible:

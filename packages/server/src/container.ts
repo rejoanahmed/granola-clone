@@ -3,11 +3,18 @@ import {
   type AuthEmailsService,
   makeAuthEmailsService,
 } from "./AuthEmails/AuthEmailsService";
+import { makeCalendarRepo } from "./Calendar/CalendarRepo";
+import {
+  type CalendarService,
+  makeCalendarService,
+} from "./Calendar/CalendarService";
 import { makeChatsRepo } from "./Chats/ChatsRepo";
 import { type ChatsService, makeChatsService } from "./Chats/ChatsService";
 import { makeE2eRepo } from "./E2E/E2eRepo";
 import {
+  CALENDAR_SWITCH,
   CHAT_SWITCH,
+  calendarModeOf,
   chatModeOf,
   type E2eService,
   LLM_SWITCH,
@@ -27,6 +34,9 @@ import {
   type GenerationsService,
   makeGenerationsService,
 } from "./Generations/GenerationsService";
+import { makeCalendarFake } from "./Integrations/Calendar/CalendarFake";
+import { makeFakeCalendarRepo } from "./Integrations/Calendar/FakeCalendarRepo";
+import type { CalendarMode, CalendarPort } from "./Integrations/Calendar/Port";
 import { makeEmailFake } from "./Integrations/Email/EmailFake";
 import type { EmailPort } from "./Integrations/Email/Port";
 import { makeFeatureFlagsClient } from "./Integrations/FeatureFlags/FeatureFlagsClient";
@@ -270,10 +280,47 @@ export const buildContainer = (
     })
   );
 
+  // CALENDAR_MODE is parsed in `AppConfig` and acted on here. `fake` is the only mode that parses,
+  // so the switch has one case; the OAuth phase widens `config.calendar` and this stops compiling
+  // until the live client is handled. The fake's store is the harness's table, so what a flow
+  // stages is what the next request reads; armed, the `calendar` switch can make every read fail.
+  const fakeCalendarRepo = traced("FakeCalendarRepo", makeFakeCalendarRepo(db));
+  const readCalendarMode: () => Promise<CalendarMode> =
+    e2eRepo === null
+      ? () => Promise.resolve("auto")
+      : async () => calendarModeOf(await e2eRepo.switchValue(CALENDAR_SWITCH));
+  const calendarFor = (mode: typeof config.calendar.mode): CalendarPort => {
+    switch (mode) {
+      case "fake":
+        return makeCalendarFake({
+          readMode: readCalendarMode,
+          store: fakeCalendarRepo,
+        });
+      default:
+        return mode satisfies never;
+    }
+  };
+  const calendarPort: CalendarPort = traced(
+    "CalendarProvider",
+    calendarFor(config.calendar.mode)
+  );
+
+  // The port is `CalendarProvider`, not `Calendar`: a vendor call and a domain call must be told
+  // apart by module in a trace, whatever the methods come to be named.
+  const calendar = traced(
+    "Calendar",
+    makeCalendarService({
+      calendar: calendarPort,
+      clock,
+      repo: traced("CalendarRepo", makeCalendarRepo(db)),
+    })
+  );
+
   const recordings = traced(
     "Recordings",
     makeRecordingsService({
       audio,
+      calendar: calendarPort,
       clock,
       generationQueue,
       ids,
@@ -294,6 +341,7 @@ export const buildContainer = (
           "E2E",
           makeE2eService({
             authSecret: env.BETTER_AUTH_SECRET,
+            calendarStore: fakeCalendarRepo,
             clock,
             generations,
             ids,
@@ -307,6 +355,7 @@ export const buildContainer = (
 
   return {
     authEmails,
+    calendar,
     chats,
     e2e,
     flags,
@@ -327,6 +376,7 @@ export const buildContainer = (
 // `Partial<Container>`, so a self-referential inference is a compile error.
 export type Container = {
   authEmails: AuthEmailsService;
+  calendar: CalendarService;
   chats: ChatsService;
   e2e: E2eService | null;
   flags: FeatureFlagsPort;

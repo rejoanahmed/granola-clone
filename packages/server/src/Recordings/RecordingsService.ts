@@ -1,8 +1,17 @@
+import {
+  CalendarEventHasNote,
+  CalendarEventNotFound,
+} from "@gc/domain/Calendar/Errors";
+import {
+  type CalendarEventId,
+  meetingAttendeesOf,
+} from "@gc/domain/Domain/Calendar";
 import { GenerationId } from "@gc/domain/Domain/Generation";
 import type { UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
   DEFAULT_NOTE_TITLE,
+  meetingTitleOf,
   type Note,
   NoteId,
 } from "@gc/domain/Domain/Note";
@@ -40,6 +49,10 @@ import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import type { GenerationQueue } from "../Generations/GenerationQueue";
 import type {
+  CalendarEventRecord,
+  CalendarPort,
+} from "../Integrations/Calendar/Port";
+import type {
   TranscriptionAnswer,
   TranscriptionPort,
 } from "../Integrations/Transcription/Port";
@@ -50,6 +63,7 @@ import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { AudioStore } from "./AudioStore";
 import { canEditRecording, canReadRecording } from "./Policy";
 import type {
+  NewRecordingGuest,
   RecordingRecord,
   RecordingsRepo,
   SubmittedRecording,
@@ -57,6 +71,8 @@ import type {
 
 export type RecordingsDeps = {
   readonly audio: AudioStore;
+  // Asked only when a create names a meeting; a plain recording never reaches the provider.
+  readonly calendar: CalendarPort;
   readonly clock: Clock;
   // Told once the transcript lands; the job row itself is written in the same batch.
   readonly generationQueue: GenerationQueue;
@@ -186,6 +202,15 @@ const measured = (body: ReadableStream<Uint8Array>, length: number) => {
   );
   return { mismatched: () => mismatched, stream };
 };
+
+// The owner is position 0 already, so the invite's own entry for them is not a guest.
+const meetingGuestsOf = (
+  event: CalendarEventRecord,
+  ownerEmail: string
+): { readonly email: string | null; readonly name: string | null }[] =>
+  meetingAttendeesOf(event.attendees, ownerEmail)
+    .filter((attendee) => !attendee.isMe)
+    .map(({ email, name }) => ({ email, name }));
 
 export const makeRecordingsService = (deps: RecordingsDeps) => {
   // Absent and not-yours are one answer carrying only the id the caller sent (D018).
@@ -325,38 +350,108 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
     return "pending";
   };
 
+  const meetingFor = async (actor: Actor, eventId: CalendarEventId) => {
+    const event = await deps.calendar.getEvent({ eventId, userId: actor.id });
+    if (event === null) {
+      throw new CalendarEventNotFound({ calendarEventId: eventId });
+    }
+    const linked = await deps.repo.liveNoteForEvent(actor.id, eventId);
+    if (linked !== null) {
+      throw new CalendarEventHasNote({
+        calendarEventId: eventId,
+        noteId: linked,
+      });
+    }
+    return {
+      eventId,
+      guests: meetingGuestsOf(event, actor.email),
+      title: meetingTitleOf(event.title),
+    };
+  };
+
   return {
     // The note and the recording are written together, and the note is answered from what was
-    // written: its only attendee is the caller, whose name and address the notes read would take
-    // from the same account.
+    // written. Named a meeting, the provider is asked first and the pre-check runs before any id is
+    // minted, so a 404 or a 409 writes nothing; the unique index settles a race the pre-check lost.
     create: async (
       actor: Actor,
-      input: { readonly startedAt?: Timestamp }
+      input: {
+        readonly calendarEventId?: CalendarEventId;
+        readonly startedAt?: Timestamp;
+      }
     ): Promise<RecordingCreated> => {
+      const meeting =
+        input.calendarEventId === undefined
+          ? null
+          : await meetingFor(actor, input.calendarEventId);
       const now = deps.clock.now();
       const startedAt = input.startedAt ?? now;
       const noteId = NoteId.parse(deps.ids.generate("not_"));
       const attendeeId = AttendeeId.parse(deps.ids.generate("att_"));
       const id = RecordingId.parse(deps.ids.generate("rec_"));
-      await deps.uow.commit((stage) =>
-        deps.repo.stageCreate(
-          stage,
-          {
-            createdAt: now,
-            id: noteId,
-            ownerAttendeeId: attendeeId,
-            ownerId: actor.id,
-            source: "phone",
-            startedAt,
-            title: DEFAULT_NOTE_TITLE,
-          },
-          { createdAt: now, id, noteId, ownerId: actor.id, startedAt }
-        )
+      const guests: NewRecordingGuest[] = (meeting?.guests ?? []).map(
+        (guest) => ({
+          ...guest,
+          id: AttendeeId.parse(deps.ids.generate("att_")),
+        })
       );
+      const title = meeting?.title ?? DEFAULT_NOTE_TITLE;
+      const write = () =>
+        deps.uow.commit((stage) =>
+          deps.repo.stageCreate(
+            stage,
+            {
+              calendarEventId: meeting?.eventId ?? null,
+              createdAt: now,
+              guests,
+              id: noteId,
+              ownerAttendeeId: attendeeId,
+              ownerId: actor.id,
+              source: "phone",
+              startedAt,
+              title,
+            },
+            { createdAt: now, id, noteId, ownerId: actor.id, startedAt }
+          )
+        );
+      // The winner of a race the pre-check lost, or null when it was trashed before it could be
+      // read. Any failure other than the unique index is rethrown as it came.
+      const winnerOf = async (error: unknown): Promise<NoteId | null> => {
+        if (meeting === null || !deps.repo.isEventConflict(error)) {
+          throw error;
+        }
+        return await deps.repo.liveNoteForEvent(actor.id, meeting.eventId);
+      };
+      const hasNote = (winner: NoteId, error: unknown) =>
+        new CalendarEventHasNote(
+          { calendarEventId: input.calendarEventId, noteId: winner },
+          undefined,
+          { cause: error }
+        );
+      try {
+        await write();
+      } catch (error) {
+        const winner = await winnerOf(error);
+        if (winner !== null) {
+          throw hasNote(winner, error);
+        }
+        // The winner is gone, so the slot is free and the batch, which wrote nothing, is tried
+        // once more: a benign race must not surface as a 500.
+        try {
+          await write();
+        } catch (retryError) {
+          const again = await winnerOf(retryError);
+          if (again === null) {
+            throw retryError;
+          }
+          throw hasNote(again, retryError);
+        }
+      }
       const recording = await get(actor, id);
       const note: Note = {
         attendees: [
           { email: actor.email, id: attendeeId, isMe: true, name: actor.name },
+          ...guests.map((guest) => ({ ...guest, isMe: false })),
         ],
         bodyMarkdown: "",
         createdAt: now,
@@ -367,7 +462,7 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         recording: { durationMs: null, id, status: "recording" },
         source: "phone",
         startedAt,
-        title: DEFAULT_NOTE_TITLE,
+        title,
         trashedAt: null,
         updatedAt: now,
       };

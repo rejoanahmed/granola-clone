@@ -41,12 +41,24 @@ const audioBody = {
 
 export const createRecordingRoute = createRoute({
   description:
-    'Starts a recording: creates its note (title "Untitled note", source phone, the caller as the only attendee, startedAt the body\'s value or now) and a recording in status recording. The audio itself stays on the device until End.',
+    'Starts a recording: creates its note (title "Untitled note", source phone, the caller as the only attendee, startedAt the body\'s value or now) and a recording in status recording. The audio itself stays on the device until End. With calendarEventId, the note takes the meeting\'s title (cut at a word to 200 characters; a blank one stays "Untitled note") and its attendees after the caller (the caller\'s own address dropped, deduplicated, at most 50), and is linked to the meeting.',
   method: "post",
   path: "/recordings",
   request: { body: jsonBody(RecordingCreate) },
   responses: {
     201: json(RecordingCreated, "The new note and its recording"),
+    404: json(
+      ErrorBody,
+      "CalendarEventNotFound: calendarEventId is not on the caller's calendar; details.calendarEventId"
+    ),
+    409: json(
+      ErrorBody,
+      "CalendarEventHasNote: the caller already has a live note for this meeting; details.noteId names it"
+    ),
+    503: json(
+      ErrorBody,
+      "CalendarUnavailable: the calendar could not be read; nothing was written"
+    ),
     ...commonErrors,
   },
   security: [{ sessionCookie: [] }],

@@ -1,0 +1,153 @@
+# AC2, exit criterion (docs/spec/phase-11.md §8, §3.1, §3.2, #102, #105, #16): tapping tomorrow's
+# "Catch up with the team" starts a recording already titled after it, with its guests on the pill.
+# End leads to the note page with the same title and +3; the attendees sheet lists the owner, then
+# Priya and Sam. Generation keeps the meeting's title. Back home, the new note is listed and the row
+# carries its notes mark; tapping the row now opens that note rather than recording again.
+appId: ${APP_ID}
+name: A meeting becomes a note with its title and attendees
+tags:
+  - phase-11
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: hold
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/seed-calendar.yaml
+    env:
+      PRESET: standard
+- extendedWaitUntil:
+    visible:
+      id: home-event-cev_e2e_person_2
+    timeout: 15000
+- tapOn:
+    id: home-event-cev_e2e_person_2
+
+# The live card (#102) with the meeting on it (§3.2, designed).
+- extendedWaitUntil:
+    visible:
+      id: recording-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: recording-timer
+    timeout: 15000
+- assertVisible:
+    id: recording-title
+    text: Catch up with the team
+- assertVisible:
+    id: recording-meta-pill
+    text: 'Today \d{1,2}:\d{2} [AP]M, E2E Person, Priya Raman, Sam Okafor'
+- takeScreenshot: phase-11-live-card
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+
+# The note page (#105): the meeting's title and three attendees.
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- assertNotVisible:
+    id: recording-screen
+# The transcriber is held, so the note is still waiting on it: without this the notVisible wait
+# after the release would pass at once on a page that never showed a status.
+- assertVisible:
+    id: note-status
+- assertVisible:
+    id: note-title
+    text: Catch up with the team
+- assertVisible:
+    id: note-meta-pill
+    text: 'Today \d{1,2}:\d{2} [AP]M, \+3'
+
+# Attendees (#16): the owner first and marked "(me)", then the meeting's guests in its order.
+- tapOn:
+    id: note-meta-pill
+- extendedWaitUntil:
+    visible:
+      id: attendees-sheet
+    timeout: 10000
+- assertVisible:
+    id: "attendees-row-.*"
+    index: 0
+    text: "E2E Person \\(me\\)"
+# `index` counts after the text filter too, so the order is asserted with `below` instead.
+- assertVisible:
+    id: "attendees-row-.*"
+    text: "Priya Raman.*"
+    below:
+      id: "attendees-row-.*"
+      text: "E2E Person \\(me\\)"
+- assertVisible:
+    id: "attendees-row-.*"
+    text: "Sam Okafor.*"
+    below:
+      id: "attendees-row-.*"
+      text: "Priya Raman.*"
+- assertNotVisible:
+    id: "attendees-row-.*"
+    index: 3
+- tapOn:
+    id: attendees-close
+- extendedWaitUntil:
+    notVisible:
+      id: attendees-sheet
+    timeout: 10000
+
+# Generation writes the body and leaves the meeting's title alone (§6.3).
+- assertVisible:
+    id: note-status
+- runFlow: ../subflows/release-transcription.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-block-0
+    timeout: 15000
+- assertVisible:
+    id: note-title
+    text: Catch up with the team
+
+# Home: the new note is listed, and the meeting's row says it has notes.
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "home-note-(?!not_e2e_).*"
+      text: "Catch up with the team, .*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: home-event-cev_e2e_person_2
+      text: "Catch up with the team, Tomorrow, 1:00 PM ‒ 2:00 PM, has notes"
+    timeout: 15000
+- takeScreenshot: phase-11-has-notes
+
+# A meeting with notes opens them (§3.1): the note page, not a second recording.
+- tapOn:
+    id: home-event-cev_e2e_person_2
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- assertVisible:
+    id: note-title
+    text: Catch up with the team
+- assertNotVisible:
+    id: recording-screen

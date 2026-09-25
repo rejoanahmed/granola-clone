@@ -274,10 +274,24 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
     }));
   },
 
+  // One statement, so the unlink and the untrash cannot be split: when a newer live note has taken
+  // this note's meeting since it was trashed, the restored note gives the link up rather than
+  // tripping `notes_owner_event_live_idx`. Written out in SQL because the subquery is correlated
+  // with the row being updated, which is named `notes` here and `other` inside.
   restore: async (id: NoteId, now: Timestamp): Promise<boolean> => {
     const result = await db
       .update(notes)
-      .set({ trashedAt: null, updatedAt: now })
+      .set({
+        calendarEventId: sql`case when exists (
+          select 1 from notes as other
+          where other.owner_id = "notes"."owner_id"
+            and other.calendar_event_id = "notes"."calendar_event_id"
+            and other.trashed_at is null
+            and other.id <> "notes"."id"
+        ) then null else "notes"."calendar_event_id" end`,
+        trashedAt: null,
+        updatedAt: now,
+      })
       .where(and(eq(notes.id, id), isNotNull(notes.trashedAt)))
       .run();
     return result.meta.changes > 0;

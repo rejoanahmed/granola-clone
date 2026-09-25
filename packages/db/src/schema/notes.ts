@@ -1,5 +1,11 @@
 import { desc, sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 import { user } from "./auth";
 
 // Trash is a soft delete: `trashedAt` is stamped once and cleared by restore, and nothing purges a
@@ -9,6 +15,9 @@ export const notes = sqliteTable(
   "notes",
   {
     bodyMarkdown: text("body_markdown").notNull().default(""),
+    // The meeting this note was started from, or null. Written at creation and cleared only by a
+    // restore that would otherwise give one meeting two live notes.
+    calendarEventId: text("calendar_event_id"),
     createdAt: integer("created_at").notNull(),
     id: text("id").primaryKey(),
     ownerId: text("owner_id")
@@ -28,6 +37,13 @@ export const notes = sqliteTable(
     index("notes_owner_live_idx")
       .on(table.ownerId, desc(table.startedAt), desc(table.id))
       .where(sql`${table.trashedAt} is null`),
+    // One live note per meeting per owner. Trashed notes fall out of it, which is what unlinks a
+    // meeting when its note is trashed; the index, not a check-then-insert, settles a race.
+    uniqueIndex("notes_owner_event_live_idx")
+      .on(table.ownerId, table.calendarEventId)
+      .where(
+        sql`${table.calendarEventId} is not null and ${table.trashedAt} is null`
+      ),
   ]
 );
 

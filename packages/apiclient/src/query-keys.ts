@@ -16,6 +16,12 @@ const normalFilter = (filter: NotesListFilter): NotesListFilter => ({
 });
 
 export const queryKeys = {
+  // Keyed on the window's end, which the device computes once a day, so the key is stable within a
+  // day and a new day is a new entry. `all` is what a note write invalidates.
+  calendar: {
+    all: ["calendar"] as const,
+    upcoming: (until: number) => ["calendar", "upcoming", until] as const,
+  },
   // Singular: the model list is one per user, not a collection of chats.
   chat: {
     models: () => ["chat", "models"] as const,
@@ -121,7 +127,8 @@ export const invalidationKeys = {
   completeOnboarding: () => [queryKeys.me.profile()],
   createFolder: () => [queryKeys.folders.all],
   createNote: () => [queryKeys.notes.list()],
-  createRecording: () => [queryKeys.notes.list()],
+  // A meeting's row reads whether it has a live note, so starting, trashing or restoring one moves it.
+  createRecording: () => [queryKeys.notes.list(), queryKeys.calendar.all],
   deleteChat: (threadId: string) => [
     queryKeys.chats.detail(threadId),
     queryKeys.chats.list(),
@@ -138,7 +145,11 @@ export const invalidationKeys = {
   putChatFeedback: (threadId: string) => [queryKeys.chats.detail(threadId)],
   removeFolderNote: (noteId: string) => folderMembership(noteId),
   // A trashed note leaves every folder's count, and a restored one comes back to it.
-  restoreNote: (id: string) => [...noteWrite(id), queryKeys.folders.all],
+  restoreNote: (id: string) => [
+    ...noteWrite(id),
+    queryKeys.folders.all,
+    queryKeys.calendar.all,
+  ],
   // The generation rides on the note's detail, and the generated title will land on its row.
   retryNoteGeneration: (id: string) => [
     queryKeys.notes.detail(id),
@@ -147,7 +158,11 @@ export const invalidationKeys = {
   retryRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
   selectChatModel: () => [queryKeys.chat.models()],
-  trashNote: (id: string) => [...noteWrite(id), queryKeys.folders.all],
+  trashNote: (id: string) => [
+    ...noteWrite(id),
+    queryKeys.folders.all,
+    queryKeys.calendar.all,
+  ],
   // Pinning moves the row between sections and changes the detail's `pinned`.
   updateChat: (threadId: string) => [
     queryKeys.chats.detail(threadId),

@@ -138,3 +138,54 @@ describe("LLM_MODE", () => {
     expect(() => configWith({ LLM_MODE: "gpt" })).toThrow(NAMES_LLM_MODE);
   });
 });
+
+// `CALENDAR_MODE` is phase 11's (phase-11.md §6.3, §7 case 23). The `LLM_MODE` shape again: the fake
+// invents every meeting, so production refuses it, and `live` is refused until a calendar client
+// exists (§10, "No live calendar client").
+const NAMES_CALENDAR_MODE = /CALENDAR_MODE/;
+const NAMES_THE_BLOCKER = /No live calendar client/;
+
+describe("CALENDAR_MODE", () => {
+  it("defaults to the fake when absent", () => {
+    expect(configWith({})).toMatchObject({ calendar: { mode: "fake" } });
+  });
+
+  it("accepts the fake outside production", () => {
+    expect(configWith({ CALENDAR_MODE: "fake" })).toMatchObject({
+      calendar: { mode: "fake" },
+    });
+  });
+
+  it("refuses the fake in production, naming CALENDAR_MODE", () => {
+    expect(() =>
+      configWith({
+        CALENDAR_MODE: "fake",
+        EMAIL_MODE: "fake",
+        LLM_MODE: "fake",
+        NODE_ENV: "production",
+        TRANSCRIPTION_MODE: "fake",
+      })
+    ).toThrow(NAMES_CALENDAR_MODE);
+  });
+
+  it("refuses production with the variable unset, since unset means fake", () => {
+    expect(() => configWith({ NODE_ENV: "production" })).toThrow(
+      NAMES_CALENDAR_MODE
+    );
+  });
+
+  it("refuses live, naming the variable and the blocker", () => {
+    expect(() => configWith({ CALENDAR_MODE: "live" })).toThrow(
+      NAMES_CALENDAR_MODE
+    );
+    expect(() => configWith({ CALENDAR_MODE: "live" })).toThrow(
+      NAMES_THE_BLOCKER
+    );
+  });
+
+  it("refuses a value that is neither", () => {
+    expect(() => configWith({ CALENDAR_MODE: "google" })).toThrow(
+      NAMES_CALENDAR_MODE
+    );
+  });
+});

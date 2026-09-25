@@ -27,6 +27,23 @@ export type NoteBody = z.infer<typeof NoteBody>;
 
 export const DEFAULT_NOTE_TITLE = "Untitled note";
 
+// A meeting's title as the note started from it holds it, shared so the live card draws the
+// headline the server saves. Cut at the last space that fits, so a long title never ends mid-word;
+// a single word longer than the cap is cut hard, since there is no word boundary to prefer.
+export const meetingTitleOf = (raw: string | null): string => {
+  const trimmed = raw?.trim() ?? "";
+  if (trimmed === "") {
+    return DEFAULT_NOTE_TITLE;
+  }
+  if (trimmed.length <= NOTE_TITLE_MAX) {
+    return trimmed;
+  }
+  const space = trimmed.slice(0, NOTE_TITLE_MAX + 1).lastIndexOf(" ");
+  return space > 0
+    ? trimmed.slice(0, space).trimEnd()
+    : trimmed.slice(0, NOTE_TITLE_MAX);
+};
+
 // `isMe` is computed against the caller, never stored, so the same row reads differently to each
 // person who can see it once sharing exists.
 export const Attendee = z.object({

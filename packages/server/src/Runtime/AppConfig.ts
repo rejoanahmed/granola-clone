@@ -20,6 +20,9 @@ const TranscriptionMode = z.enum(["fake", "live"]);
 // And for the note writer: the fake invents every note, and no vendor has been chosen.
 const LlmMode = z.enum(["fake", "live"]);
 
+// And for the calendar: the fake invents every meeting, and there is no OAuth client yet.
+const CalendarMode = z.enum(["fake", "live"]);
+
 const EnvSettings = z
   .object({
     API_URL: z.url(),
@@ -28,6 +31,7 @@ const EnvSettings = z
       .int()
       .positive()
       .default(DEFAULT_AUTH_RATE_LIMIT),
+    CALENDAR_MODE: CalendarMode.default("fake"),
     // The literal string, not a boolean coercion: a wrangler var is text, and only `"true"` arms
     // the harness — `"false"`, `"0"` and a typo all leave it off.
     E2E_HARNESS: z.literal("true").optional(),
@@ -96,6 +100,25 @@ const EnvSettings = z
         path: ["LLM_MODE"],
       });
     }
+    if (
+      settings.CALENDAR_MODE === "fake" &&
+      settings.NODE_ENV === "production"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "CALENDAR_MODE=fake (the default) is refused when NODE_ENV=production: the fake invents every meeting",
+        path: ["CALENDAR_MODE"],
+      });
+    }
+    if (settings.CALENDAR_MODE === "live") {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'CALENDAR_MODE=live has no calendar client to select yet (docs/plan/BLOCKERS.md, "No live calendar client")',
+        path: ["CALENDAR_MODE"],
+      });
+    }
     if (settings.E2E_HARNESS !== "true") {
       return;
     }
@@ -118,6 +141,8 @@ const EnvSettings = z
 export type AppConfig = {
   readonly apiUrl: string;
   readonly authRateLimit: number;
+  // Only `fake` survives parsing, exactly as `email`; a live client widens it.
+  readonly calendar: { readonly mode: "fake" };
   // `null` is the disarmed shape: `container.ts` then builds no harness at all, and its routes
   // answer the app's own 404 without ever reading a header.
   readonly e2e: { readonly secret: string } | null;
@@ -146,6 +171,7 @@ export const parseConfig = (env: Env): AppConfig => {
   return {
     apiUrl: settings.API_URL,
     authRateLimit: settings.AUTH_RATE_LIMIT,
+    calendar: { mode: "fake" },
     e2e:
       settings.E2E_HARNESS === "true" && settings.E2E_SECRET !== undefined
         ? { secret: settings.E2E_SECRET }

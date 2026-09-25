@@ -1,4 +1,9 @@
 export {
+  calendarEventNoteId,
+  isCalendarEventNotFound,
+  makeCalendarApi,
+} from "./calendar";
+export {
   type AskChatOptions,
   askChat,
   type ChatFetch,
