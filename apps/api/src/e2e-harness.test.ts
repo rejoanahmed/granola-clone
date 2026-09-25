@@ -974,3 +974,76 @@ describe("DELETE /me, phase 10", () => {
     ).toBe(1);
   });
 });
+
+// ── Phase 11 ─────────────────────────────────────────────────────────────────────────────────────
+// The routes the Maestro scripts `e2e-calendar.js` and `e2e-calendar-mode.js` call. What they write
+// is `packages/server/src/E2E/E2E.test.ts`'s; this is the wire, and what person then reads.
+
+describe("POST /e2e/calendar, phase 11", () => {
+  const HOUR = 60 * 60 * 1000;
+
+  it("does not exist when the harness is off", async () => {
+    const response = await app.request(
+      "/e2e/calendar",
+      { headers: { "x-e2e-secret": SECRET }, method: "POST" },
+      off
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("stages person's meetings, which person then lists, and a non-JSON body is a 422", async () => {
+    await freshWorld();
+    const now = Date.now();
+
+    const staged = await harnessJson("/e2e/calendar", {
+      events: [
+        { endAt: now + 2 * HOUR, startAt: now + HOUR, title: "Design review" },
+      ],
+      role: "person",
+    });
+    const listed = await asRole(
+      "person",
+      "GET",
+      `/calendar/events?until=${now + 24 * HOUR}`
+    );
+    const refused = await app.request(
+      "/e2e/calendar",
+      { body: "nope", headers: { "x-e2e-secret": SECRET }, method: "POST" },
+      live
+    );
+
+    expect(staged.status).toBe(200);
+    await expect(staged.json()).resolves.toEqual({
+      items: [{ id: "cev_e2e_person_1", title: "Design review" }],
+    });
+    expect(listed.status).toBe(200);
+    await expect(listed.json()).resolves.toMatchObject({
+      items: [{ id: "cev_e2e_person_1", noteId: null, title: "Design review" }],
+    });
+    expect(refused.status).toBe(422);
+  });
+
+  it("sets the mode, which fails person's read with 503 until it is auto again", async () => {
+    await freshWorld();
+    const until = Date.now() + 24 * HOUR;
+
+    const failing = await harnessJson("/e2e/calendar/mode", { mode: "fail" });
+    const down = await asRole(
+      "person",
+      "GET",
+      `/calendar/events?until=${until}`
+    );
+    const unknown = await harnessJson("/e2e/calendar/mode", { mode: "maybe" });
+    await harnessJson("/e2e/calendar/mode", { mode: "auto" });
+    const up = await asRole("person", "GET", `/calendar/events?until=${until}`);
+
+    await expect(failing.json()).resolves.toEqual({ mode: "fail" });
+    expect(down.status).toBe(503);
+    await expect(down.json()).resolves.toMatchObject({
+      _tag: "CalendarUnavailable",
+    });
+    expect(unknown.status).toBe(422);
+    expect(up.status).toBe(200);
+  });
+});
