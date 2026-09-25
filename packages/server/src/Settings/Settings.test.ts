@@ -6,9 +6,7 @@ import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, type TestD1 } from "../Testing";
-// @ts-expect-error phase 10: the settings repository is specified (phase-10.md §6.3, §11 API 3), not built
 import * as Repo from "./SettingsRepo";
-// @ts-expect-error phase 10: the settings service is specified (phase-10.md §6.3, §11 API 3), not built
 import * as Svc from "./SettingsService";
 
 // docs/spec/phase-10.md §7 cases 1–6: the settings service over the real repository and the shipped

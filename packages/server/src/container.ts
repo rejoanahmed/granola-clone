@@ -67,6 +67,11 @@ import { makeUnitOfWork } from "./Runtime/UnitOfWork";
 import type { Env } from "./Runtime/WorkerEnv";
 import { makeSearchRepo } from "./Search/SearchRepo";
 import { makeSearchService, type SearchService } from "./Search/SearchService";
+import { makeSettingsRepo } from "./Settings/SettingsRepo";
+import {
+  makeSettingsService,
+  type SettingsService,
+} from "./Settings/SettingsService";
 
 // Between the fake's words: slow enough that an answer visibly grows on the phone, fast enough that
 // a flow's thirty-second wait is never close.
@@ -88,12 +93,21 @@ export const buildContainer = (
   const profilesRepo = traced("ProfilesRepo", makeProfilesRepo(db));
   const outboxRepo = traced("OutboxRepo", makeOutboxRepo(db));
 
+  const notesRepo = traced("NotesRepo", makeNotesRepo(db));
+
+  // The notes repo is shared for the deletion preview's count; the profile never writes a note.
   const profiles = traced(
     "Profiles",
-    makeProfilesService({ clock, repo: profilesRepo })
+    makeProfilesService({ clock, notes: notesRepo, repo: profilesRepo })
   );
 
-  const notesRepo = traced("NotesRepo", makeNotesRepo(db));
+  const settings = traced(
+    "Settings",
+    makeSettingsService({
+      clock,
+      repo: traced("SettingsRepo", makeSettingsRepo(db)),
+    })
+  );
   const foldersRepo = traced("FoldersRepo", makeFoldersRepo(db));
 
   const notes = traced(
@@ -294,6 +308,7 @@ export const buildContainer = (
     profiles,
     recordings,
     search,
+    settings,
     ...overrides,
   };
 };
@@ -312,4 +327,5 @@ export type Container = {
   profiles: ProfilesService;
   recordings: RecordingsService;
   search: SearchService;
+  settings: SettingsService;
 };

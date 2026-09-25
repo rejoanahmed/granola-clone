@@ -6,7 +6,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 10: the settings router is specified (phase-10.md §6.1, §11 API 3), not built
 import { settingsRouter } from "./Http";
 
 // docs/spec/phase-10.md §7 "Settings/Settings.http.test.ts". Wire shape only: the paths,
