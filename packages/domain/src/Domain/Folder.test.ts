@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 9: the folder shapes are specified (phase-9.md §6.2, §11 API 1), not built
 import * as Folder from "./Folder";
 import * as Ids from "./Ids";
 

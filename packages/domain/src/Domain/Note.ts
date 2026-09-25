@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NoteGeneration } from "./Generation";
-import { branded, NoteId } from "./Ids";
+import { branded, FolderId, NoteId } from "./Ids";
 import { NoteRecording, RecordingStatus } from "./Recording";
 import { Timestamp } from "./Time";
 
@@ -44,6 +44,9 @@ export const Note = z.object({
   attendees: z.array(Attendee),
   bodyMarkdown: NoteBody,
   createdAt: Timestamp,
+  // The caller's folders holding this note, sorted by id. On the detail only: home's rows never
+  // show membership, and the Add to folder sheet opens from a note it has already fetched.
+  folderIds: z.array(FolderId),
   // Null for a note typed by hand, or one whose transcript has not landed. On the detail, not the
   // summary: home reads the generated title, never the job.
   generation: NoteGeneration.nullable(),

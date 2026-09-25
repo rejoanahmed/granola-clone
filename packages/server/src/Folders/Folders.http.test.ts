@@ -1,7 +1,5 @@
-// @ts-expect-error phase 9: the folder shapes are specified (phase-9.md §6.2, §11 API 1), not built
 import * as Shapes from "@gc/domain/Domain/Folder";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-// @ts-expect-error phase 9: the folder errors are specified (phase-9.md §6.2, §11 API 1), not built
 import * as FolderErrors from "@gc/domain/Folders/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -44,7 +42,7 @@ const errorOf = (tag: string): ErrorClass => {
 };
 
 const schemaOf = (name: string): Schema => {
-  const found = (Shapes as Record<string, Schema | undefined>)[name];
+  const found = (Shapes as unknown as Record<string, Schema | undefined>)[name];
   if (found === undefined) {
     throw new Error(`no ${name} in @gc/domain/Domain/Folder`);
   }

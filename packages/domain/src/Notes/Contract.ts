@@ -1,4 +1,5 @@
 import { createRoute, type z } from "@hono/zod-openapi";
+import { FolderId } from "../Domain/Folder";
 import { NoteGeneration } from "../Domain/Generation";
 import {
   Note,
@@ -25,8 +26,13 @@ import {
 const NoteParams = params({ id: NoteId });
 
 // An unknown person is an empty page, not a 404: the list does not answer who exists, GET /people
-// does. The cursor is the unfiltered list's, so a filter never changes how a page is addressed.
-export const NoteListQuery = PageQuery.extend({ person: PersonKey.optional() });
+// does. An unknown folder is a 404, because a folder is an entity the caller can lose and the client
+// draws a "gone" state for it. The cursor is the unfiltered list's, so a filter never changes how a
+// page is addressed. The two filters combine as AND.
+export const NoteListQuery = PageQuery.extend({
+  folder: FolderId.optional(),
+  person: PersonKey.optional(),
+});
 export type NoteListQuery = z.infer<typeof NoteListQuery>;
 
 const notFound = json(
@@ -36,12 +42,16 @@ const notFound = json(
 
 export const listNotesRoute = createRoute({
   description:
-    "The caller's live notes, newest first (startedAt desc, then id desc). Keyset-paginated: pass the previous page's nextCursor back as cursor; nextCursor is null exactly on the last page. Trashed notes are never listed. A cursor this API did not mint is a 422 on the cursor field, never a silent page one. With person (a URL-encoded person key), only the notes that person attends, in the same order and with the same cursor; an unknown person is an empty page, and a malformed key is a 422.",
+    "The caller's live notes, newest first (startedAt desc, then id desc). Keyset-paginated: pass the previous page's nextCursor back as cursor; nextCursor is null exactly on the last page. Trashed notes are never listed. A cursor this API did not mint is a 422 on the cursor field, never a silent page one. With person (a URL-encoded person key), only the notes that person attends, in the same order and with the same cursor; an unknown person is an empty page, and a malformed key is a 422. With folder (a folder id), only the folder's live notes, again in the same order and with the same cursor; an unknown folder, or another owner's, is a 404 FolderNotFound. The two filters combine as AND.",
   method: "get",
   path: "/notes",
   request: { query: NoteListQuery },
   responses: {
     200: json(PageOf(NoteSummary), "One page of the caller's notes"),
+    404: json(
+      ErrorBody,
+      "FolderNotFound: no such folder, or not the caller's — the two are indistinguishable"
+    ),
     ...commonErrors,
   },
   security: [{ sessionCookie: [] }],

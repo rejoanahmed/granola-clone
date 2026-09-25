@@ -8,6 +8,7 @@ import {
   resolveFetch,
 } from "./config";
 import { networkError, unwrap } from "./errors";
+import { makeFoldersApi } from "./folders";
 import { makeNotesApi } from "./notes";
 import { makePeopleApi } from "./people";
 import { makeProfilesApi } from "./profiles";
@@ -289,6 +290,7 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   const endpoint = makeEndpoint(config);
   return {
     ...makeChatsApi(endpoint),
+    ...makeFoldersApi(endpoint),
     ...makeNotesApi(endpoint),
     ...makePeopleApi(endpoint),
     ...makeProfilesApi(endpoint),
@@ -299,6 +301,7 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
 export type ApiClient = ReturnType<typeof makeChatsApi> &
+  ReturnType<typeof makeFoldersApi> &
   ReturnType<typeof makeNotesApi> &
   ReturnType<typeof makePeopleApi> &
   ReturnType<typeof makeProfilesApi> &

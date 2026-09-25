@@ -33,6 +33,7 @@ export {
   UNEXPECTED_ERROR_TAG,
   unwrap,
 } from "./errors";
+export { makeFoldersApi } from "./folders";
 export { makeNotesApi } from "./notes";
 export { makePeopleApi } from "./people";
 export { makeProfilesApi } from "./profiles";

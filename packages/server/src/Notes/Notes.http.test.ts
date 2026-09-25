@@ -30,6 +30,8 @@ const NOTE = {
   ],
   bodyMarkdown: "### Updates\n\n- Pagination merged",
   createdAt: AT,
+  // Phase 9 (phase-9.md §6.2).
+  folderIds: [],
   // Phase 6 (phase-6.md §6.2).
   generation: null,
   id: NOTE_ID,
@@ -483,7 +485,6 @@ describe("GET /notes?folder= and folderIds, phase 9", () => {
   });
 
   it("is 404 FolderNotFound for a folder the caller does not have", async () => {
-    // @ts-expect-error phase 9: the folder errors are specified (phase-9.md §6.2), not built
     const errors = (await import("@gc/domain/Folders/Errors")) as Record<
       string,
       (new (details?: Record<string, unknown>) => Error) | undefined

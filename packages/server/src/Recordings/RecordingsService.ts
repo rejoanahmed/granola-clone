@@ -360,6 +360,8 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         ],
         bodyMarkdown: "",
         createdAt: now,
+        // A new recording joins no folder, even when started from a folder view (phase-9.md §10).
+        folderIds: [],
         generation: null,
         id: noteId,
         recording: { durationMs: null, id, status: "recording" },

@@ -36,6 +36,11 @@ const TAGS = [
       "A person the signed-in person has met: someone who attends at least one of their live notes, identified by a person key (email:… or name:…). Their meetings are GET /notes?person=.",
     name: "People",
   },
+  {
+    description:
+      "Folders: named sets of the signed-in person's own notes. A note can sit in any number of folders and never leaves My notes; a trashed member keeps its place but is not listed or counted. A folder's notes are GET /notes?folder=.",
+    name: "Folders",
+  },
 ];
 
 export const OPENAPI_DOCUMENT = {

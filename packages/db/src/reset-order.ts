@@ -4,6 +4,7 @@ import { chatPreferences } from "./schema/chat-preferences";
 import { chatThreads } from "./schema/chat-threads";
 import { e2eSwitches } from "./schema/e2e-switches";
 import { emailOutbox } from "./schema/email-outbox";
+import { folderNotes, folders } from "./schema/folders";
 import { noteAttendees } from "./schema/note-attendees";
 import { noteGenerations } from "./schema/note-generations";
 import { notes } from "./schema/notes";
@@ -18,7 +19,10 @@ import { transcriptSegments } from "./schema/transcript-segments";
 // same reason. `noteGenerations` precedes all of them, since it references both recordings and
 // notes; the rest have no children among the domain tables. `chatMessages` then `chatThreads`
 // lead, since a thread can reference a note; `chatPreferences` precedes `profiles` by convention.
+// `folderNotes` then `folders` head the list: a membership references both a folder and a note.
 export const RESET_ORDER: readonly SQLiteTable[] = [
+  folderNotes,
+  folders,
   chatMessages,
   chatThreads,
   noteGenerations,

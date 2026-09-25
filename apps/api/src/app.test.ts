@@ -887,7 +887,6 @@ describe("the folders routes, phase 9", () => {
   ] as const)(
     "renders %s through on-error as %i with its details",
     async (tag, status) => {
-      // @ts-expect-error phase 9: the folder errors are specified (phase-9.md §6.2), not built
       const errors = (await import("@gc/domain/Folders/Errors")) as Record<
         string,
         ErrorClass | undefined

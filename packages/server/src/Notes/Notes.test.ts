@@ -184,6 +184,8 @@ describe("NotesService.create", () => {
       ],
       bodyMarkdown: "",
       createdAt: AT,
+      // Phase 9 (phase-9.md §6.2): nor a folder.
+      folderIds: [],
       // Phase 6 (phase-6.md §6.2): nor a generation.
       generation: null,
       id: expect.stringMatching(NOTE_ID),
