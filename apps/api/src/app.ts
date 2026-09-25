@@ -2,6 +2,7 @@ import { ValidationFailed } from "@gc/domain/Errors";
 import type { AppEnv } from "@gc/server";
 import { chatsRouter } from "@gc/server/Chats/Http";
 import { e2eRouter } from "@gc/server/E2E/Http";
+import { foldersRouter } from "@gc/server/Folders/Http";
 import { generationsRouter } from "@gc/server/Generations/Http";
 import { notesRouter } from "@gc/server/Notes/Http";
 import { peopleRouter } from "@gc/server/People/Http";
@@ -52,6 +53,7 @@ app.route("/", generationsRouter);
 app.route("/", chatsRouter);
 app.route("/", peopleRouter);
 app.route("/", searchRouter);
+app.route("/", foldersRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.

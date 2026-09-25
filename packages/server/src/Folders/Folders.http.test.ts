@@ -8,7 +8,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 9: the folders router is specified (phase-9.md §6.1, §11 API 3), not built
 import { foldersRouter } from "./Http";
 
 // docs/spec/phase-9.md §7 "Folders/Folders.http.test.ts". Wire shape only: the paths, `c.var.svc`,
