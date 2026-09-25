@@ -129,6 +129,21 @@ describe("the support forms", () => {
       expect(calls).toEqual([]);
     }
   );
+
+  it.each(FORMS)(
+    "POST %s is 422 on an appVersion carrying a line break (it reaches the Subject header)",
+    async (path, _name, body) => {
+      const { app, calls } = appAs(actor());
+
+      const res = await post(app, path, {
+        ...body,
+        appVersion: "1.0.0\r\nBcc: everyone@example.com",
+      });
+
+      expect(res.status).toBe(422);
+      expect(calls).toEqual([]);
+    }
+  );
 });
 
 describe("POST /me/desktop-reminder", () => {

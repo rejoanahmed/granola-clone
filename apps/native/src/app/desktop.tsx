@@ -89,48 +89,51 @@ export default function DesktopSheet() {
   return (
     <View style={styles.sheet} testID="desktop-sheet">
       <DesktopHero />
-      <Text style={styles.title} testID="desktop-title" variant="display">
-        {COPY.title}
-      </Text>
-      <Text
-        color={colors.text.secondary}
-        style={styles.body}
-        testID="desktop-body"
-        variant="body"
-      >
-        {COPY.body}
-      </Text>
-      <View style={styles.tiles}>
-        <Tile
-          disabled={busy}
-          fill={colors.tile.share}
-          icon={ShareIcon}
-          label={COPY.share}
-          onPress={() => {
-            Share.share({
-              message: COPY.shareMessage,
-              url: LINKS.desktop,
-            }).catch(() => undefined);
-          }}
-          testID="desktop-share"
-        />
-        <Tile
-          busy={busy}
-          disabled={busy}
-          fill={colors.tile.remind}
-          icon={CalendarDays}
-          label={COPY.remind}
-          onPress={() =>
-            remind.mutate(undefined, {
-              onError: () => toast.show({ message: COPY.remindError }),
-              onSuccess: () => {
-                router.back();
-                toast.show({ message: COPY.reminded });
-              },
-            })
-          }
-          testID="desktop-remind"
-        />
+      {/* #51 centres this block in the space between the hero and Done. */}
+      <View style={styles.middle}>
+        <Text style={styles.title} testID="desktop-title" variant="display">
+          {COPY.title}
+        </Text>
+        <Text
+          color={colors.text.secondary}
+          style={styles.body}
+          testID="desktop-body"
+          variant="body"
+        >
+          {COPY.body}
+        </Text>
+        <View style={styles.tiles}>
+          <Tile
+            disabled={busy}
+            fill={colors.tile.share}
+            icon={ShareIcon}
+            label={COPY.share}
+            onPress={() => {
+              Share.share({
+                message: COPY.shareMessage,
+                url: LINKS.desktop,
+              }).catch(() => undefined);
+            }}
+            testID="desktop-share"
+          />
+          <Tile
+            busy={busy}
+            disabled={busy}
+            fill={colors.tile.remind}
+            icon={CalendarDays}
+            label={COPY.remind}
+            onPress={() =>
+              remind.mutate(undefined, {
+                onError: () => toast.show({ message: COPY.remindError }),
+                onSuccess: () => {
+                  router.back();
+                  toast.show({ message: COPY.reminded });
+                },
+              })
+            }
+            testID="desktop-remind"
+          />
+        </View>
       </View>
       <View
         style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}
@@ -162,7 +165,8 @@ const styles = StyleSheet.create({
     width: CIRCLE,
   },
   done: { backgroundColor: colors.bg.list, borderWidth: 0 },
-  footer: { marginTop: "auto", paddingHorizontal: spacing.xl },
+  footer: { paddingHorizontal: spacing.xl },
+  middle: { flex: 1, justifyContent: "center" },
   pressed: { opacity: PRESSED_OPACITY },
   sheet: {
     backgroundColor: colors.bg.sheetTall,
@@ -186,5 +190,5 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     marginTop: 28,
   },
-  title: { marginHorizontal: 40, marginTop: 44, textAlign: "center" },
+  title: { marginHorizontal: 40, textAlign: "center" },
 });

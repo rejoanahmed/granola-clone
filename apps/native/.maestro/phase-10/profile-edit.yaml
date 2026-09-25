@@ -71,6 +71,10 @@ env:
     visible:
       id: profile-user-type-menu
     timeout: 5000
+# The last option, which ran off the bottom of the screen before the menu was clamped (#84 shows
+# all five).
+- assertVisible:
+    id: profile-user-type-option-other
 - takeScreenshot: phase-10-user-type-menu
 - tapOn:
     id: profile-user-type-option-investing

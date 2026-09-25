@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import { UserSettings, UserSettingsPatch } from "../Domain/Settings";
-import { commonErrors, json, jsonBody } from "../Http";
+import { commonErrors, ErrorBody, json, jsonBody } from "../Http";
 
 export const getSettingsRoute = createRoute({
   description:
@@ -9,6 +9,7 @@ export const getSettingsRoute = createRoute({
   path: "/me/settings",
   responses: {
     200: json(UserSettings, "The caller's settings"),
+    404: json(ErrorBody, "The session outlived its user"),
     ...commonErrors,
   },
   security: [{ sessionCookie: [] }],
@@ -24,6 +25,7 @@ export const patchSettingsRoute = createRoute({
   request: { body: jsonBody(UserSettingsPatch) },
   responses: {
     200: json(UserSettings, "The caller's settings, after the patch"),
+    404: json(ErrorBody, "The session outlived its user"),
     ...commonErrors,
   },
   security: [{ sessionCookie: [] }],

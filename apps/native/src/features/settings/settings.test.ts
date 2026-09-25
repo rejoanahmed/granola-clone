@@ -145,4 +145,40 @@ describe("toggleMutation", () => {
     );
     expect(queryClient.getQueryData(key)).toEqual(answer);
   });
+
+  // A in flight, B flips and lands first, then A fails: only A goes back.
+  it("reverts only its own key when another toggle landed meanwhile", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(key, saved);
+    const options = toggleMutation({ onFailed: vi.fn(), queryClient });
+    const a = { notifyUpcomingMeetings: false };
+    const b = { useDataForTraining: false };
+
+    const snapshotA = await options.onMutate?.(a, {} as never);
+    const snapshotB = await options.onMutate?.(b, {} as never);
+    options.onSuccess?.(
+      { ...saved, ...a, ...b },
+      b,
+      snapshotB as never,
+      {} as never
+    );
+    options.onError?.(new Error("offline"), a, snapshotA, {} as never);
+
+    expect(queryClient.getQueryData(key)).toEqual({ ...saved, ...b });
+  });
+
+  // A's answer was read before B's write: it must not flip B back while B is in flight.
+  it("takes only its own key from a server answer that predates another toggle", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(key, saved);
+    const options = toggleMutation({ onFailed: vi.fn(), queryClient });
+    const a = { notifyUpcomingMeetings: false };
+    const b = { useDataForTraining: false };
+
+    const snapshotA = await options.onMutate?.(a, {} as never);
+    await options.onMutate?.(b, {} as never);
+    options.onSuccess?.({ ...saved, ...a }, a, snapshotA as never, {} as never);
+
+    expect(queryClient.getQueryData(key)).toEqual({ ...saved, ...a, ...b });
+  });
 });

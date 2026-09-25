@@ -9,14 +9,12 @@ import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { EmailMessage, EmailPort } from "../Integrations/Email/Port";
 import type { ProfilesRepo } from "../Profiles/ProfilesRepo";
-import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
 import { canSendSupport } from "./Policy";
 
 export const DESKTOP_LINK = "https://notes.example/desktop";
 
 export type SupportDeps = {
-  readonly clock: Clock;
   readonly email: EmailPort;
   readonly ids: Ids;
   // Only the sender's name and address, for the subject and the signature.

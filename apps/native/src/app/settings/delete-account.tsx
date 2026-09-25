@@ -11,7 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const COPY = SETTINGS_COPY.delete;
 
@@ -20,7 +19,6 @@ const COPY = SETTINGS_COPY.delete;
 export default function DeleteAccountSheet() {
   const router = useRouter();
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const preview = useQuery(deletionPreviewQuery());
   const remove = useDeleteAccount();
   const signOutLocally = useSignOutLocally();
@@ -113,17 +111,19 @@ export default function DeleteAccountSheet() {
       testID="delete-account-sheet"
       title={COPY.title}
     >
-      <View
-        style={[styles.body, { paddingBottom: insets.bottom + spacing.lg }]}
-      >
-        {body}
-      </View>
+      <View style={styles.body}>{body}</View>
     </SheetChrome>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl },
+  // No safe-area term: a fit form sheet floats clear of the home indicator on its own, and adding
+  // `insets.bottom` as well left a band under the button twice the size of the one above it.
+  body: {
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+  },
   confirm: { marginTop: spacing.lg },
   error: { marginTop: spacing.xs },
   loading: { height: 24 },

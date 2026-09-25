@@ -163,10 +163,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   deleteNote: { marginHorizontal: 28, marginTop: spacing.sm },
+  // The same 16pt inset as a FormRow's label, so the card's label lines up with the cards around it.
   description: {
     marginTop: spacing.md,
     minHeight: DESCRIPTION_HEIGHT,
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
   descriptionInput: {
     ...typography.body,

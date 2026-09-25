@@ -17,9 +17,21 @@ import { SETTINGS_COPY } from "./copy";
 export type SettingKey = keyof UserSettings;
 type Snapshot = { readonly previous: UserSettings | undefined };
 
+// Only the keys a patch carries. Toggles on different keys can be in flight at once (two settings
+// pages, or a fast second tap elsewhere), so neither a rollback nor a server answer may touch a key
+// another request owns: a whole-document snapshot would put back B's old value when A fails, and
+// A's answer, read before B landed, would flip B back mid-flight.
+const onlyPatched = (
+  patch: SettingsPatch,
+  from: UserSettings
+): Partial<UserSettings> =>
+  Object.fromEntries(
+    (Object.keys(patch) as SettingKey[]).map((name) => [name, from[name]])
+  );
+
 // docs/spec/phase-10.md §3 "Saving a toggle": flip at once, send the one key, and on failure put
-// the cached document back and say so. The server's answer is written straight into the cache
-// rather than invalidated, so a slow refetch can never flip a switch back mid-animation.
+// that key back and say so. The server's answer is written straight into the cache rather than
+// invalidated, so a slow refetch can never flip a switch back mid-animation.
 export function toggleMutation({
   onFailed,
   queryClient,
@@ -28,10 +40,14 @@ export function toggleMutation({
   readonly queryClient: QueryClient;
 }): SettingsMutationOptions<Snapshot> {
   const key = keys.settings.me();
+  const merge = (patch: SettingsPatch, from: UserSettings) =>
+    queryClient.setQueryData<UserSettings>(key, (current) =>
+      current ? { ...current, ...onlyPatched(patch, from) } : current
+    );
   return {
-    onError: (_error, _patch, snapshot) => {
+    onError: (_error, patch, snapshot) => {
       if (snapshot?.previous) {
-        queryClient.setQueryData(key, snapshot.previous);
+        merge(patch, snapshot.previous);
       }
       onFailed();
     },
@@ -43,8 +59,12 @@ export function toggleMutation({
       }
       return { previous };
     },
-    onSuccess: (settings) => {
-      queryClient.setQueryData(key, settings);
+    onSuccess: (settings, patch) => {
+      if (queryClient.getQueryData<UserSettings>(key)) {
+        merge(patch, settings);
+      } else {
+        queryClient.setQueryData(key, settings);
+      }
     },
   };
 }

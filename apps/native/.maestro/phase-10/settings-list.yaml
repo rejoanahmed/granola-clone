@@ -97,6 +97,12 @@ env:
       id: toast-message
       text: No corrupted notes found\.
     timeout: 10000
+# The toast sits over the Sign out card; wait it out, so the asserts below and the #81 screenshot
+# see the card rather than pass over it.
+- extendedWaitUntil:
+    notVisible:
+      id: toast-message
+    timeout: 10000
 
 - scrollUntilVisible:
     element:

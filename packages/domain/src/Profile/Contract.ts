@@ -65,7 +65,7 @@ export const getDeletionPreviewRoute = createRoute({
 
 export const deleteMeRoute = createRoute({
   description:
-    "Deletes the caller's account for good: the user row, and by cascade their sessions, profile, settings, notes, recordings, chats and folders. The session cookie stops working at once. This is the only way to delete an account; better-auth's delete-user stays disabled.",
+    "Deletes the caller's account: the user row, and by cascade their sessions, profile, settings, notes, recording rows, chats and folders. The session cookie stops working at once. Not yet removed: the recorded audio objects (recordings/<ownerId>/ in the audio store) and the email outbox rows sent to or about the caller, which hold their address and message bodies. This is the only way to delete an account; better-auth's delete-user stays disabled.",
   method: "delete",
   path: "/me",
   responses: {

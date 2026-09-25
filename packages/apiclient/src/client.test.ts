@@ -808,12 +808,14 @@ describe("the phase-10 endpoints and keys", () => {
     expect(preview?.()).toEqual(["me", "deletion-preview"]);
   });
 
-  it("invalidates the settings on a patch", () => {
+  // The toggles write the server's answer into the cache instead: an invalidation would refetch,
+  // and a slow refetch is what flips a switch back mid-animation.
+  it("has no invalidation for a settings patch", () => {
     const keys = invalidationKeys as unknown as Record<
       string,
       KeyFn | undefined
     >;
 
-    expect(keys.patchSettings?.()).toEqual([["settings"]]);
+    expect(keys.patchSettings).toBeUndefined();
   });
 });

@@ -7,6 +7,7 @@ import {
 } from "@gc/domain/Domain/Profile";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
+import { unlessUserGone } from "../Runtime/ForeignKey";
 
 // A column with no CHECK can hold a value the enum no longer has (a rename, a hand edit). Reading
 // it as "not chosen" is the honest answer; a 500 on `GET /me` would lock the person out of the app.
@@ -26,36 +27,6 @@ const detailsOf = (patch: ProfilePatch) =>
       userType: patch.userType,
     }).filter(([, value]) => value !== undefined)
   );
-
-// SQLite's message, which D1 passes through; drizzle wraps it, so the chain of causes is walked.
-const FOREIGN_KEY_FAILED = /FOREIGN KEY constraint failed/;
-
-const isForeignKeyFailure = (error: unknown): boolean => {
-  let current: unknown = error;
-  while (current instanceof Error) {
-    if (FOREIGN_KEY_FAILED.test(current.message)) {
-      return true;
-    }
-    current = current.cause;
-  }
-  return false;
-};
-
-// The service reads the user row before it writes, but the account can be deleted between the two
-// (the cascade takes `profiles` with it). The insert then fails the foreign key; answering `false`
-// lets the service report the `ProfileNotFound` it would have reported a moment earlier, instead of
-// the constraint surfacing as a 500.
-const unlessUserGone = async (write: Promise<unknown>): Promise<boolean> => {
-  try {
-    await write;
-    return true;
-  } catch (error) {
-    if (isForeignKeyFailure(error)) {
-      return false;
-    }
-    throw error;
-  }
-};
 
 // Reads better-auth's `user` table and writes it exactly once, in `deleteUser`: better-auth owns
 // that row's lifecycle, and a second writer is how a profile edit and a sign-in race each other

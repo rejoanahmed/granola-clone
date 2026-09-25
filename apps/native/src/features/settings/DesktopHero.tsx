@@ -9,19 +9,25 @@ import {
 import { StyleSheet, useWindowDimensions, View } from "react-native";
 import Svg, { Line } from "react-native-svg";
 
-export const HERO_HEIGHT = 310;
-// #51's geometry is measured on a 428pt device; the lines are scaled to the actual width.
+// Re-measured off #51 (428pt device, 1pt = 3px): the pink field ends 266pt below the sheet's top,
+// and the window's top-left corner sits 66pt down and 73pt in. The window's contents are in points
+// and are not scaled; only the lines' x follow the width, so they still meet the edges they meet.
+export const HERO_HEIGHT = 266;
 const DESIGN_WIDTH = 428;
+// Each line runs edge to edge, as #51 draws them: two crossing from the left edge to the top, and
+// one short stroke falling from the top to the window's top edge.
 const LINES = [
-  [0, 120, 190, 0],
-  [0, 390, 130, 180],
-  [320, 0, 335, 240],
+  [0, 58, 180, 0],
+  [0, 133, 88, 0],
+  [100, 0, 106, 66],
 ] as const;
-const DOT = 14;
-const META_GLYPH = 13;
-// Measured off #51: the window's top-left corner sits 66pt down and 74pt in, on a 428pt device.
+const DOT = 12;
+const META_GLYPH = 10;
 const WINDOW_TOP = 66;
-const WINDOW_LEFT = 74;
+const WINDOW_LEFT = 73;
+// The page's text starts 53pt into the window; the "#" of the first line hangs 17pt left of it.
+const PAGE_INSET = 53;
+const HASH_HANG = 17;
 
 function Meta({
   icon: Icon,
@@ -86,17 +92,28 @@ export function DesktopHero() {
           <View style={styles.metaRow}>
             <Meta icon={CalendarCheck} label="Yesterday" />
             <Meta icon={Users} label="5 attendees" />
-            <Meta icon={Folder} label="Select folder" />
-            <ChevronDown color={colors.hero.meta} size={META_GLYPH} />
+            <View style={styles.metaItem}>
+              <Meta icon={Folder} label="Select folder" />
+              <ChevronDown color={colors.hero.meta} size={META_GLYPH} />
+            </View>
           </View>
-          <Text
-            color={colors.text.onLight}
-            numberOfLines={1}
-            style={styles.line1}
-            variant="rowTitle"
-          >
-            # Overview of the Notes notepad and transcri…
-          </Text>
+          <View style={styles.line1}>
+            <Text
+              color={colors.hero.meta}
+              style={styles.hash}
+              variant="rowTitle"
+            >
+              #
+            </Text>
+            <Text
+              color={colors.text.onLight}
+              numberOfLines={1}
+              style={styles.lineText}
+              variant="rowTitle"
+            >
+              Overview of the Notes notepad and transcri…
+            </Text>
+          </View>
           <Text
             color={colors.text.onLight}
             numberOfLines={1}
@@ -104,6 +121,15 @@ export function DesktopHero() {
             variant="body"
           >
             Introduction to Notes features by Sam Stephen…
+          </Text>
+          {/* Cut by the hero's foot, as #51's third line is. */}
+          <Text
+            color={colors.text.onLight}
+            numberOfLines={1}
+            style={styles.line2}
+            variant="body"
+          >
+            {"  •  Notepad functions like a regular text editor"}
           </Text>
         </View>
       </View>
@@ -113,24 +139,38 @@ export function DesktopHero() {
 
 const styles = StyleSheet.create({
   dot: { borderRadius: DOT / 2, height: DOT, width: DOT },
-  dots: { flexDirection: "row", gap: spacing.xs, padding: spacing.lg },
-  heading: { fontFamily: fonts.serif, fontSize: 28, lineHeight: 34 },
+  dots: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    paddingHorizontal: 13,
+    paddingTop: 13,
+  },
+  hash: { left: -HASH_HANG, position: "absolute" },
+  heading: {
+    fontFamily: fonts.serif,
+    fontSize: 28,
+    lineHeight: 34,
+    marginTop: 17,
+  },
   hero: {
     backgroundColor: colors.hero.pink,
     height: HERO_HEIGHT,
     overflow: "hidden",
   },
-  line1: { fontSize: 15, lineHeight: 20, marginTop: spacing.lg },
-  line2: { fontSize: 15, lineHeight: 20, marginTop: spacing.xxs },
-  meta: { fontSize: 13, lineHeight: 16 },
+  line1: { marginTop: spacing.xxl },
+  line2: { fontSize: 15, lineHeight: 20, marginTop: 2 },
+  lineText: { fontSize: 15, lineHeight: 20 },
+  meta: { fontSize: 11, lineHeight: 14 },
   metaItem: { alignItems: "center", flexDirection: "row", gap: spacing.xxs },
+  // Measured: the three items span 276pt at 11pt, which fits the window at 402pt, so the chevron
+  // after "Select folder" shows.
   metaRow: {
     alignItems: "center",
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.md,
     marginTop: spacing.sm,
   },
-  page: { paddingLeft: 52 },
+  page: { paddingLeft: PAGE_INSET },
   window: {
     backgroundColor: colors.text.primary,
     borderTopLeftRadius: 20,

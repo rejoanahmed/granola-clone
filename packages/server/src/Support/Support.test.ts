@@ -8,7 +8,7 @@ import { makeEmailFake } from "../Integrations/Email/EmailFake";
 import { makeProfilesRepo } from "../Profiles/ProfilesRepo";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Env } from "../Runtime/WorkerEnv";
-import { fixedClock, makeTestD1, sequentialIds, type TestD1 } from "../Testing";
+import { makeTestD1, sequentialIds, type TestD1 } from "../Testing";
 import * as Svc from "./SupportService";
 
 // docs/spec/phase-10.md §7 cases 11–15: the support service over the email fake, with an array
@@ -16,13 +16,12 @@ import * as Svc from "./SupportService";
 // the E2E harness seeds, so the sender is the `E2E Person` the flows sign in as (§4, "Emails sent
 // through the fake Email port").
 //
-// Names these tests fix where the spec leaves them open: `makeSupportService({ clock, email, ids,
+// Names these tests fix where the spec leaves them open: `makeSupportService({ email, ids,
 // profiles })` with `profiles` the profiles repository, and the methods
 // `createBugReport(actor, { message, includeDiagnostics, appVersion })`,
 // `createFeedback(actor, { message, appVersion })` and `createDesktopReminder(actor)`, each
 // answering the `SupportReceipt` `{ id }`.
 
-const AT = Date.UTC(2026, 8, 25, 12);
 const VERSION = "1.0.0 (1)";
 const RECEIPT_ID = /^sup_/;
 
@@ -87,7 +86,6 @@ afterEach(() => {
 
 const service = (): SupportService =>
   Svc.makeSupportService({
-    clock: fixedClock(AT),
     email,
     ids: sequentialIds(),
     profiles: makeProfilesRepo(makeDrizzle(d1)),

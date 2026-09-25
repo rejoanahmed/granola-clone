@@ -21,7 +21,11 @@ export default function WatchScreen() {
         <View style={styles.face}>
           <View style={styles.screen}>
             <Text
+              adjustsFontSizeToFit
+              allowFontScaling={false}
               color={colors.text.onLight}
+              minimumFontScale={0.8}
+              numberOfLines={1}
               style={styles.time}
               variant="caption"
             >
@@ -90,6 +94,14 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
   },
   status: { marginTop: spacing.md, textAlign: "center" },
-  time: { fontSize: 11, fontWeight: "600", lineHeight: 13 },
+  // A drawing, not copy: it never scales with Dynamic Type, and it stays on one line (#88) — at 11pt
+  // semibold the digits are a hair wider than the 36pt screen, so they tighten rather than wrap.
+  time: {
+    fontSize: 11,
+    fontVariant: ["tabular-nums"],
+    fontWeight: "600",
+    letterSpacing: -0.3,
+    lineHeight: 13,
+  },
   title: { marginTop: spacing.xl, textAlign: "center" },
 });

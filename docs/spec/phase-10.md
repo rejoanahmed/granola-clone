@@ -361,8 +361,8 @@ The header title is **"Chat"**, with `chat-settings-back`.
 
 ### 3.6 Phone calls (`phone-calls-screen`) — `app/settings/phone-calls.tsx` (#87)
 
-The header title is **"Phone Call Settings"**, with `phone-calls-back`. The content is centred
-vertically in the space above the button, as #87 draws it:
+The header title is **"Phone Call Settings"**, with `phone-calls-back`. The content, Get Started
+included, is one column centred vertically under the header, as #87 draws it:
 
 - a 64pt ring: a 4pt `olive.ring` `#515B1F` stroke (a new token), a transparent fill, and a 30pt
   filled `Phone` glyph in `olive` `#677B00`;
@@ -460,22 +460,26 @@ toast **"Thanks for your feedback."** and the error **"Couldn’t send your feed
 radius 40 and fill `bg.app` `#252525`–`#2A2A2A` (`bg.sheet`). It is presented from home's
 `home-get-desktop-button` (which until now did nothing) and from `settings-desktop-banner`.
 
-- **The hero** `desktop-hero`. It covers the top 310pt, with the fill `hero.pink` `#E78BCE`:
-  - It carries three thin (1pt) `#1A1A1A`-at-60% diagonal lines, drawn with `react-native-svg`
-    (already a dependency). They run from (0, 120) to (190, 0), from (0, 390) to (130, 180), and
-    from (320, 0) to (335, 240), in 428pt coordinates scaled to the width. They are clipped to the
-    hero.
-  - A cropped light window mock (`#FCFDF8`, top-left radius 20) starts 76pt left of centre and
-    runs off the right edge. It holds:
-    - the three traffic-light dots, 14pt, `#FE5F57` `#FEBC2E` `#28C840`, at (20, 20);
+- **The hero** `desktop-hero`. It covers the top 266pt (re-measured off #51 in review), with the
+  fill `hero.pink` `#E78BCE`:
+  - It carries three thin (1pt) `#1A1A1A`-at-60% lines, drawn with `react-native-svg` (already a
+    dependency). They run from (0, 58) to (180, 0), from (0, 133) to (88, 0), and from (100, 0) to
+    (106, 66), x in 428pt coordinates scaled to the width. They are clipped to the hero.
+  - A cropped light window mock (`#FCFDF8`, top-left radius 20) starts 66pt down and 73pt in, and
+    runs off the right edge. Its page text is inset 53pt. It holds:
+    - the three traffic-light dots, 12pt, `#FE5F57` `#FEBC2E` `#28C840`, at (13, 13);
     - serif **"Sprint Planning"** at 28pt in `#1A1A1A`;
-    - a meta line at 13pt `#6B6B6B`: **"Yesterday · 5 attendees · Select folder ⌄"**, each part with
-      a 13pt lucide glyph (`CalendarCheck`, `Users`, `Folder`);
-    - **"# Overview of the Notes notepad and transcri…"** at 15pt semibold `#1A1A1A`;
-    - **"Introduction to Notes features by Sam Stephen…"** at 15pt `#1A1A1A`.
+    - a meta line at 11pt `#6B6B6B`: **"Yesterday · 5 attendees · Select folder ⌄"**, each part with
+      a 10pt lucide glyph (`CalendarCheck`, `Users`, `Folder`), fitting inside the window so the
+      chevron shows;
+    - **"Overview of the Notes notepad and transcri…"** at 15pt semibold `#1A1A1A`, its grey "#"
+      hanging 17pt to the left;
+    - **"Introduction to Notes features by Sam Stephen…"** at 15pt `#1A1A1A`, and a bullet line
+      under it that the hero's foot cuts, as #51's does.
   - The whole hero is decorative and `accessible={false}`.
-- 44pt below the hero, **"Meeting notes on your computer"** (`desktop-title`), serif `display`
-  40/46, centred, inset 40, on two lines.
+- **"Meeting notes on your computer"** (`desktop-title`), serif `display` 40/46, centred, inset
+  40, on two lines. It, the body and the tiles are one block, centred vertically between the hero
+  and Done, as #51 places them.
 - 12pt below, `desktop-body` in `body` `text.secondary`, centred: **"Take notes on video calls
   with Notes for Mac or Windows."**
 - 28pt below, **two tiles** in a row, inset 16 with a 12pt gap. Each tile is 108pt tall, with fill

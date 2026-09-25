@@ -54,18 +54,6 @@ export default function PhoneCallsScreen() {
   return (
     <SettingsPage
       contentStyle={styles.content}
-      footer={
-        <View style={styles.footer}>
-          <PillButton
-            icon={ArrowRight}
-            label={COPY.getStarted}
-            onPress={() => toast.show({ message: COPY.soon })}
-            size="lg"
-            testID="phone-calls-get-started"
-            tone="light"
-          />
-        </View>
-      }
       prefix="phone-calls"
       testID="phone-calls-screen"
       title={COPY.header}
@@ -90,11 +78,28 @@ export default function PhoneCallsScreen() {
         <View style={styles.divider} />
         <Benefit icon={AudioLines} label={COPY.track} />
       </View>
+      <View style={styles.action}>
+        <PillButton
+          icon={ArrowRight}
+          iconPosition="trailing"
+          label={COPY.getStarted}
+          onPress={() => toast.show({ message: COPY.soon })}
+          size="lg"
+          testID="phone-calls-get-started"
+          tone="light"
+        />
+      </View>
     </SettingsPage>
   );
 }
 
 const styles = StyleSheet.create({
+  // In the centred column, 24pt under the card, as #87 draws it — not pinned to the screen's foot.
+  action: {
+    alignSelf: "stretch",
+    marginHorizontal: spacing.xl,
+    marginTop: spacing.xl,
+  },
   benefit: {
     alignItems: "center",
     flexDirection: "row",
@@ -114,7 +119,6 @@ const styles = StyleSheet.create({
   content: { alignItems: "center", flexGrow: 1, justifyContent: "center" },
   divider: { backgroundColor: colors.border.hairline, height: sizes.hairline },
   flex: { flex: 1 },
-  footer: { paddingHorizontal: spacing.xl },
   ring: {
     alignItems: "center",
     borderColor: colors.olive.ring,

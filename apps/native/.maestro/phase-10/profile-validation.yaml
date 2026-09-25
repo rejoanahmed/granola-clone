@@ -84,8 +84,14 @@ env:
     visible:
       id: settings-screen
     timeout: 15000
-- tapOn:
-    id: settings-profile
+# A relaunch, so the reopened profile is read back from the server rather than from the cached
+# `me`: a clear applied only locally would otherwise pass.
+- runFlow: ../subflows/relaunch-app.yaml
+- runFlow: ../subflows/wait-for-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
 - extendedWaitUntil:
     visible:
       id: profile-screen

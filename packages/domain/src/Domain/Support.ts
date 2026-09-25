@@ -5,8 +5,11 @@ export const SUPPORT_ADDRESS = "support@notes.example";
 
 // Trimmed before the length check, so a message of spaces is empty rather than sent to a person.
 const SupportMessage = z.string().trim().min(1).max(SUPPORT_MESSAGE_MAX);
-// "1.0.0 (1)" — the client's own label, echoed into the subject line.
-const AppVersion = z.string().trim().min(1).max(40);
+// "1.0.0 (1)" — the client's own label, echoed into the subject line. A pattern, not just a length:
+// the value lands in an email header, and a CR/LF in it is header injection once the fake port is
+// replaced by a real provider.
+const APP_VERSION_PATTERN = /^[\w .()+-]+$/;
+const AppVersion = z.string().trim().min(1).max(40).regex(APP_VERSION_PATTERN);
 
 // Strict: a client that believes it is attaching logs must hear a 422, not have them dropped.
 export const BugReportCreate = z.strictObject({

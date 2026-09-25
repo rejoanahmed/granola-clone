@@ -1,4 +1,4 @@
-import { eq, userSettings } from "@gc/db";
+import { eq, user, userSettings } from "@gc/db";
 import type { UserId } from "@gc/domain/Domain/Ids";
 import type {
   UserSettings,
@@ -6,6 +6,7 @@ import type {
 } from "@gc/domain/Domain/Settings";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
+import { unlessUserGone } from "../Runtime/ForeignKey";
 
 // Only the keys the patch carries. Written out rather than spread, so a key the patch gains is a
 // decision here and not a column written by accident.
@@ -18,38 +19,68 @@ const patchedColumnsOf = (patch: UserSettingsPatch) =>
     }).filter(([, value]) => value !== undefined)
   );
 
+// `null` when the user row itself is gone; `saved: null` when the user has never saved a setting.
+// The two differ to the caller (a 404 against the defaults), so they are not collapsed here.
+export type SettingsRead = { readonly saved: UserSettings | null };
+
 export const makeSettingsRepo = (db: DrizzleClient) => ({
-  byUser: async (userId: UserId): Promise<UserSettings | null> => {
+  // From `user`, left-joined, so one read tells "never saved" from "account gone".
+  byUser: async (userId: UserId): Promise<SettingsRead | null> => {
     const row = await db
       .select({
         chatDictationAutoSend: userSettings.chatDictationAutoSend,
         notifyUpcomingMeetings: userSettings.notifyUpcomingMeetings,
         useDataForTraining: userSettings.useDataForTraining,
       })
-      .from(userSettings)
-      .where(eq(userSettings.userId, userId))
+      .from(user)
+      .leftJoin(userSettings, eq(userSettings.userId, user.id))
+      .where(eq(user.id, userId))
       .get();
-    return row ?? null;
+    if (row === undefined) {
+      return null;
+    }
+    const {
+      chatDictationAutoSend,
+      notifyUpcomingMeetings,
+      useDataForTraining,
+    } = row;
+    if (
+      chatDictationAutoSend === null ||
+      notifyUpcomingMeetings === null ||
+      useDataForTraining === null
+    ) {
+      return { saved: null };
+    }
+    return {
+      saved: {
+        chatDictationAutoSend,
+        notifyUpcomingMeetings,
+        useDataForTraining,
+      },
+    };
   },
 
   // One statement. The insert carries the full row (the caller's base merged with the patch), and
   // the conflict branch sets only the patched columns — so two concurrent patches of different
-  // keys both land, where a read-merge-write would let the later one undo the earlier.
-  upsert: async (
+  // keys both land, where a read-merge-write would let the later one undo the earlier. `false` when
+  // the user row is gone (see `unlessUserGone`).
+  upsert: (
     userId: UserId,
     base: UserSettings,
     patch: UserSettingsPatch,
     now: Timestamp
-  ): Promise<void> => {
+  ): Promise<boolean> => {
     const patched = patchedColumnsOf(patch);
-    await db
-      .insert(userSettings)
-      .values({ ...base, ...patched, updatedAt: now, userId })
-      .onConflictDoUpdate({
-        set: { ...patched, updatedAt: now },
-        target: userSettings.userId,
-      })
-      .run();
+    return unlessUserGone(
+      db
+        .insert(userSettings)
+        .values({ ...base, ...patched, updatedAt: now, userId })
+        .onConflictDoUpdate({
+          set: { ...patched, updatedAt: now },
+          target: userSettings.userId,
+        })
+        .run()
+    );
   },
 });
 

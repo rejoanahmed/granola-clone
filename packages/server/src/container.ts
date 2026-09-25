@@ -168,7 +168,7 @@ export const buildContainer = (
 
   const support = traced(
     "Support",
-    makeSupportService({ clock, email, ids, profiles: profilesRepo })
+    makeSupportService({ email, ids, profiles: profilesRepo })
   );
 
   const authEmails = traced(

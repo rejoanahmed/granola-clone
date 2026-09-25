@@ -385,13 +385,17 @@
 - **"Sign up with work email" signs out.** Discovery never tapped it. Signing out is the only route
   in the clone to an account under another address, and it asks no confirmation (phase 3's rule).
 - **Account deletion leaves the fake outbox rows and the R2 audio behind.** The audio half is the
-  phase-5 blocker "Audio objects outlive a deleted user"; the outbox exists only in the fake.
+  phase-5 blocker "Audio objects outlive a deleted user"; the outbox exists only in the fake, but
+  its rows hold the user's address and message bodies. `DELETE /me`'s OpenAPI description says so
+  rather than promising full deletion, and `Profiles.test.ts` pins that the outbox rows stay.
 - **#04's grain texture is not reproduced.** It is bitmap noise over `#252525`, recorded for the
   parity pass.
-- **The E2E seed does not restore a seeded user's name (API, open).** `E2eRepo.stageUsers` inserts
-  `user` with `onConflictDoNothing`, and `user` is not in `RESET_ORDER`, so once
-  `phase-10/profile-edit.yaml` renames e2e-person to "Riley Park" through `update-user`, every later
-  reset keeps that name and `profile-validation`, `profile-edit` and any flow asserting "E2E Person"
-  fail on the next run. The fix is an upsert that sets `name` (and `image`) on the fixed id, which
-  keeps minted sessions valid. Until it lands, the native agent restored the name by hand in the
-  local D1 between runs (`update user set name='E2E Person' where id='usr_e2e_person'`).
+
+### Deferred review items (phase 10)
+
+- **Report a bug: Diagnostics cannot be reached with the keyboard up.** The message field's keyboard
+  covers the diagnostics card and the form does not lift it clear, so AC6's "type, then toggle
+  diagnostics" order cannot be driven: a tap aimed at the card lands on a key. `report-bug.yaml`
+  toggles first (nothing sent differs) and says why. The fix is keyboard-aware insets on the support
+  form's ScrollView (`SupportForm.tsx`), as Profile's `keyboardClearance` does; it is left for the
+  parity pass because the order is cosmetic to what the report carries.

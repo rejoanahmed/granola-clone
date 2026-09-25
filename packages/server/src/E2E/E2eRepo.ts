@@ -446,7 +446,18 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
             name: person.name,
             updatedAt: new Date(now),
           })
-          .onConflictDoNothing(),
+          // An upsert, not do-nothing: `user` is not in RESET_ORDER (a minted session must stay
+          // valid across resets), so a flow that renames a seeded person would otherwise leave
+          // every later run starting from its edit.
+          .onConflictDoUpdate({
+            set: {
+              email: person.email,
+              emailVerified: true,
+              image: null,
+              name: person.name,
+            },
+            target: user.id,
+          }),
       });
     }
   },

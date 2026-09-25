@@ -74,8 +74,8 @@ export const queryKeys = {
     all: ["search"] as const,
     results: (q: string) => ["search", q] as const,
   },
-  // One settings document per user. The toggles also write the patch's answer straight into
-  // `me()`, so a slow refetch cannot flip a switch back.
+  // One settings document per user. A toggle writes the patch's answer straight into
+  // `settings.me()` and invalidates nothing, so a slow refetch cannot flip a switch back.
   settings: {
     all: ["settings"] as const,
     me: () => ["settings", "me"] as const,
@@ -134,7 +134,6 @@ export const invalidationKeys = {
     recordingTransition(recordingId, noteId),
   endRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
-  patchSettings: () => [queryKeys.settings.all],
   // The list too, not only the detail: a title shows on its row, and trash and restore move it.
   putChatFeedback: (threadId: string) => [queryKeys.chats.detail(threadId)],
   removeFolderNote: (noteId: string) => folderMembership(noteId),

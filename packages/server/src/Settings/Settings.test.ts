@@ -1,3 +1,4 @@
+import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -158,6 +159,31 @@ describe("SettingsService.update", () => {
 
     await expect(service().get(other)).resolves.toEqual(DEFAULTS);
     expect(await rowOf(other)).toBeNull();
+  });
+});
+
+// A session can outlive its user (DELETE /me from another device). Settings answer the same 404 as
+// `/me`, never the defaults for nobody and never the foreign key's 500.
+describe("SettingsService when the actor's user row is gone", () => {
+  const deleteUser = () =>
+    d1.prepare("DELETE FROM user WHERE id = ?").bind(person.id).run();
+
+  it("reads as ProfileNotFound, not the defaults", async () => {
+    await deleteUser();
+
+    await expect(service().get(person)).rejects.toBeInstanceOf(ProfileNotFound);
+  });
+
+  it("patches as ProfileNotFound, not a foreign-key 500, and writes no row", async () => {
+    await deleteUser();
+
+    await expect(
+      service().update(person, { useDataForTraining: false })
+    ).rejects.toBeInstanceOf(ProfileNotFound);
+    await expect(service().update(person, {})).rejects.toBeInstanceOf(
+      ProfileNotFound
+    );
+    expect(await rowCount()).toBe(0);
   });
 });
 

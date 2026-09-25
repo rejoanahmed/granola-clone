@@ -1,3 +1,4 @@
+import { hasChanges } from "@gc/domain/Domain/Patch";
 import type {
   DeletionPreview,
   Profile,
@@ -18,9 +19,6 @@ export type ProfilesDeps = {
   readonly notes: Pick<NotesRepo, "countLive">;
   readonly repo: ProfilesRepo;
 };
-
-const hasChanges = (patch: ProfilePatch): boolean =>
-  Object.values(patch).some((value) => value !== undefined);
 
 export const makeProfilesService = (deps: ProfilesDeps) => {
   // A live session whose user row is gone is a 404, not a 401: the credential is valid, the thing

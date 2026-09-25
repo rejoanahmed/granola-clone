@@ -60,6 +60,34 @@ describe("BugReportCreate", () => {
       Support.BugReportCreate.safeParse({ ...valid, appVersion: " " }).success
     ).toBe(false);
   });
+
+  // It is written into the Subject header; only the ends are trimmed, so an embedded line break
+  // would otherwise reach it.
+  it.each([
+    "1.0.0\r\nBcc: everyone@example.com",
+    "1.0.0\n(1)",
+    "1.0.0\t(1)",
+    "1.0.0 (1) <script>",
+  ])(
+    "rejects an appVersion with a control or markup character: %j",
+    (appVersion) => {
+      expect(
+        Support.BugReportCreate.safeParse({ ...valid, appVersion }).success
+      ).toBe(false);
+      expect(
+        Support.FeedbackCreate.safeParse({ appVersion, message: "Hi" }).success
+      ).toBe(false);
+    }
+  );
+
+  it.each(["1.0.0 (1)", "2.3.1-beta+42 (107)"])(
+    "accepts a printable appVersion: %j",
+    (appVersion) => {
+      expect(
+        Support.BugReportCreate.safeParse({ ...valid, appVersion }).success
+      ).toBe(true);
+    }
+  );
 });
 
 describe("FeedbackCreate", () => {

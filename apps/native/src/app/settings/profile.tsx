@@ -34,6 +34,8 @@ import {
 
 const COPY = SETTINGS_COPY.profile;
 const AVATAR = 124;
+// Narrower than "Company Name" at 17pt, so it wraps to two lines as #82 draws it.
+const COMPANY_LABEL_WIDTH = 96;
 // The description keeps its caret on its first line, so the clearance has to reach past the rest
 // of that card to the LinkedIn row below it.
 const PROFILE_KEYBOARD_CLEARANCE = 240;
@@ -148,6 +150,7 @@ export default function ProfileScreen() {
         <FormDivider />
         <FormRow
           label="Company Name"
+          labelMaxWidth={COMPANY_LABEL_WIDTH}
           maxLength={100}
           placeholder="Your company"
           testID="profile-company-name"

@@ -225,6 +225,28 @@ describe("the E2E harness, phase 4", () => {
     expect(restored).toMatchObject({ title: "Launch planning review" });
     expect(restored.attendees).toHaveLength(3);
   });
+
+  // A flow renames e2e-person through better-auth's update-user; `user` survives a reset, so the
+  // seed is what must put the name (and a photo) back, on the same id a minted session names.
+  it("restores a seeded person's name and image on re-seed, keeping their id", async () => {
+    await fresh();
+    await d1
+      .prepare("UPDATE user SET name = ?, image = ? WHERE id = ?")
+      .bind("Riley Park", "https://img.example/riley.png", E2E_USERS.person.id)
+      .run();
+
+    await fresh();
+
+    const row = await d1
+      .prepare("SELECT id, name, image FROM user WHERE email = ?")
+      .bind(E2E_USERS.person.email)
+      .first<{ id: string; image: string | null; name: string }>();
+    expect(row).toEqual({
+      id: E2E_USERS.person.id,
+      image: null,
+      name: E2E_USERS.person.name,
+    });
+  });
 });
 
 // ── Phase 5: seeded transcripts and the transcription switch (docs/spec/phase-5.md §6.4, §7) ──

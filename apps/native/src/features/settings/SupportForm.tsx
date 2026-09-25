@@ -1,3 +1,4 @@
+import { SUPPORT_MESSAGE_MAX } from "@gc/domain/Domain/Support";
 import {
   colors,
   MAX_FONT_SCALE,
@@ -24,7 +25,6 @@ import {
 } from "./supportConfig";
 import { VERSION } from "./version";
 
-const MESSAGE_MAX = 5000;
 const MESSAGE_MIN_HEIGHT = 300;
 const MESSAGE_LINE = 26;
 
@@ -103,7 +103,7 @@ export function SupportForm({ variant }: { readonly variant: SupportVariant }) {
             editable={!sending}
             keyboardAppearance="dark"
             maxFontSizeMultiplier={MAX_FONT_SCALE}
-            maxLength={MESSAGE_MAX}
+            maxLength={SUPPORT_MESSAGE_MAX}
             multiline
             onChangeText={(text) => {
               setMessage(text);

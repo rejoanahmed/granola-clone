@@ -19,6 +19,11 @@ import {
 
 type Common = {
   readonly label: string;
+  /**
+   * Caps the label column where #82 wraps it. "Company Name" wraps to two lines there while the
+   * equally long "LinkedIn Username" (#83) does not, so it is per row rather than a rule.
+   */
+  readonly labelMaxWidth?: number;
   readonly testID: string;
 };
 
@@ -57,11 +62,19 @@ type Props = Editable | Choice;
 const ROW_MIN_HEIGHT = 56;
 // #82: the label column takes what it needs and wraps ("Company / Name") before the value shrinks.
 const LABEL_MAX_WIDTH = "45%";
+// iOS draws a TextInput's text at the foot of a line box taller than its font, so the body style's
+// lineHeight would sit the value a couple of points below its label's baseline. The input keeps
+// the font and drops the lineHeight; the row's minHeight, not the line box, sets its height.
+const { lineHeight: _inputLineHeight, ...inputFont } = typography.body;
 
 // One row of #82's grouped form card: the label on the left, the value right-aligned, no field
 // chrome of its own — the card is the surface.
 export function FormRow(props: Props) {
-  const { label, testID } = props;
+  const { label, labelMaxWidth, testID } = props;
+  const labelStyle = [
+    styles.label,
+    labelMaxWidth === undefined ? null : { maxWidth: labelMaxWidth },
+  ];
   if ("onPress" in props && props.onPress) {
     const { accessibilityLabel, onPress, placeholder, valueLabel } = props;
     return (
@@ -74,7 +87,7 @@ export function FormRow(props: Props) {
         style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
         testID={testID}
       >
-        <Text style={styles.label} variant="body">
+        <Text style={labelStyle} variant="body">
           {label}
         </Text>
         <View style={styles.choice}>
@@ -96,13 +109,14 @@ export function FormRow(props: Props) {
   }
   const {
     accessibilityLabel: _accessibilityLabel,
+    labelMaxWidth: _labelMaxWidth,
     onPress: _onPress,
     valueLabel: _valueLabel,
     ...input
   } = props as Editable;
   return (
     <View style={styles.row}>
-      <Text style={styles.label} variant="body">
+      <Text style={labelStyle} variant="body">
         {label}
       </Text>
       <TextInput
@@ -139,7 +153,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
   input: {
-    ...typography.body,
+    ...inputFont,
     flex: 1,
     paddingVertical: spacing.sm,
     textAlign: "right",

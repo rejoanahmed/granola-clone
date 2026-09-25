@@ -1,4 +1,4 @@
-import { ToastProvider } from "@native/design";
+import { colors, ToastProvider } from "@native/design";
 import { BootError } from "@native/features/auth/BootError";
 import { connectLiveRecording } from "@native/features/recording/liveRecording";
 import {
@@ -130,7 +130,14 @@ function ThemedLayout() {
         {/* Settings, profile and upsells (docs/spec/phase-10.md §2). Settings pages are pushes. */}
         <Stack.Screen
           name="settings/delete-account"
-          options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
+          // The sheet's own fill, not transparent: the floating fit sheet ends a few points below
+          // the content it measured, and a transparent container shows the system material there
+          // as a lighter strip under the button.
+          options={{
+            ...SHEET,
+            contentStyle: { backgroundColor: colors.bg.sheet },
+            sheetAllowedDetents: "fitToContents",
+          }}
         />
         <Stack.Screen
           name="settings/report-bug"

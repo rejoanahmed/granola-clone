@@ -2,9 +2,10 @@
 # blank message keeps Send disabled; a sent report closes the sheet with a toast and reaches the
 # fake Email port's outbox; the next open starts empty; Close returns to Settings.
 #
-# Diagnostics is switched off before the message is typed rather than after (§8 has it after): the
-# order changes nothing that is sent, and it keeps the tap clear of the keyboard the message field
-# raises over the diagnostics card.
+# Diagnostics is switched off before the message is typed rather than after (§8 has it after): with
+# the keyboard up, the diagnostics card sits under it and the form does not lift it clear, so a tap
+# lands on a key. The order changes nothing that is sent; the keyboard gap is a deferred review item
+# in docs/plan/BLOCKERS.md.
 appId: ${APP_ID}
 name: Report a bug through the fake email port
 tags:
@@ -80,9 +81,14 @@ env:
     visible:
       id: report-bug-sheet
     timeout: 10000
-- assertNotVisible:
+# An empty iOS field reports its placeholder (after its label) as its text, so this is "empty",
+# not "not yet drawn".
+- assertVisible:
     id: report-bug-message
-    text: "Steps: tapped Share twice"
+    text: "Describe the bug Steps:\\s+Expected:\\s+Actual:\\s+Attempts to fix:"
+- assertVisible:
+    id: report-bug-diagnostics
+    selected: true
 - assertVisible:
     id: report-bug-send
     enabled: false

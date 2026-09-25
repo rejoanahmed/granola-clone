@@ -465,6 +465,27 @@ describe("ProfilesService deletion, phase 10", () => {
     ).toEqual(othersProfile);
   });
 
+  // A known gap, pinned so it cannot change silently (BLOCKERS.md, phase 10): the outbox has no
+  // foreign key to the user, so the mail sent to and about them outlives the account. The R2 audio
+  // under recordings/<ownerId>/ stays too, by construction — `ProfilesDeps` has no audio store.
+  it("leaves the caller's email outbox rows behind", async () => {
+    await world
+      .prepare(
+        "INSERT INTO email_outbox (id, kind, recipient, subject, body, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      )
+      .bind("out_kept", "otp", person.email, "Your code", "123456", "{}", AT)
+      .run();
+
+    await deleting().deleteAccount(person);
+
+    expect(
+      await countWhere(
+        "SELECT count(*) AS n FROM email_outbox WHERE recipient = ?",
+        person.email
+      )
+    ).toBe(1);
+  });
+
   // §7 case 9
   it("is ProfileNotFound the second time", async () => {
     await deleting().deleteAccount(person);
