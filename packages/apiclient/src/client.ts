@@ -9,8 +9,10 @@ import {
 } from "./config";
 import { networkError, unwrap } from "./errors";
 import { makeNotesApi } from "./notes";
+import { makePeopleApi } from "./people";
 import { makeProfilesApi } from "./profiles";
 import { makeRecordingsApi } from "./recordings";
+import { makeSearchApi } from "./search";
 
 // Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
 // router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
@@ -288,13 +290,17 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   return {
     ...makeChatsApi(endpoint),
     ...makeNotesApi(endpoint),
+    ...makePeopleApi(endpoint),
     ...makeProfilesApi(endpoint),
     ...makeRecordingsApi(endpoint),
+    ...makeSearchApi(endpoint),
   };
 };
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
 export type ApiClient = ReturnType<typeof makeChatsApi> &
   ReturnType<typeof makeNotesApi> &
+  ReturnType<typeof makePeopleApi> &
   ReturnType<typeof makeProfilesApi> &
-  ReturnType<typeof makeRecordingsApi>;
+  ReturnType<typeof makeRecordingsApi> &
+  ReturnType<typeof makeSearchApi>;

@@ -48,24 +48,46 @@ export function NoteRowContent({
   flush = false,
   live = false,
   note,
+  testID,
+  tone = "default",
 }: {
   readonly flush?: boolean;
   /** Recording right now, on this device (docs/spec/phase-5.md §3.7). */
   readonly live?: boolean;
-  readonly note: NoteListItem;
+  readonly note: Pick<NoteListItem, "startedAt" | "title">;
+  /** Prefixes the title and time ids (`<testID>-title`, `<testID>-time`). */
+  readonly testID?: string;
+  /** The person page draws its rows olive (#65); home keeps the grey tile. */
+  readonly tone?: "default" | "olive";
 }) {
+  let tile = <IconTile icon={Smartphone} />;
+  if (live) {
+    tile = <IconTile icon={AudioLines} tint={colors.accent.lime} />;
+  } else if (tone === "olive") {
+    tile = (
+      <IconTile
+        background={colors.accent.oliveDark}
+        icon={Smartphone}
+        tint={colors.accent.olive}
+      />
+    );
+  }
   return (
     <View style={[styles.content, flush ? styles.flush : null]}>
-      {live ? (
-        <IconTile icon={AudioLines} tint={colors.accent.lime} />
-      ) : (
-        <IconTile icon={Smartphone} />
-      )}
+      {tile}
       <View style={styles.lines}>
-        <Text numberOfLines={1} variant="rowTitle">
+        <Text
+          numberOfLines={1}
+          testID={testID ? `${testID}-title` : undefined}
+          variant="rowTitle"
+        >
           {note.title}
         </Text>
-        <Text numberOfLines={1} variant="caption">
+        <Text
+          numberOfLines={1}
+          testID={testID ? `${testID}-time` : undefined}
+          variant="caption"
+        >
           {formatRowTime(note.startedAt)}
         </Text>
       </View>

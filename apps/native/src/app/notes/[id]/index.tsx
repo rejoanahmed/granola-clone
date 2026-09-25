@@ -14,6 +14,7 @@ import {
   Text,
   useToast,
 } from "@native/design";
+import { AskPill } from "@native/features/notes/AskPill";
 import { formatPillDate } from "@native/features/notes/format";
 import { hasBlocks, NoteMarkdown } from "@native/features/notes/NoteMarkdown";
 import { noteShareText, SHARE_COPY } from "@native/features/notes/share";
@@ -44,7 +45,6 @@ import {
   Ellipsis,
   FileText,
   FolderPlus,
-  MessageCircle,
   NotebookPen,
   Trash2,
   Users,
@@ -64,17 +64,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 // #10's measurements (source.xml): the bar 8 under the safe area, the title 20 under the bar, the
-// pill 12 under the title's last line, the body 16 under the pill; the Ask pill 12 above the bottom
-// safe area.
+// pill 12 under the title's last line, the body 16 under the pill. The Ask pill is `AskPill`'s.
 const BAR_TOP = 8;
 const TITLE_GAP = 20;
 const META_GAP = 12;
 const BODY_GAP = 16;
-const ASK_GAP = 12;
-const FADE_HEIGHT = 32;
 const META_HEIGHT = 36;
 const META_GLYPH = 20;
 const META_INNER_GAP = 6;
@@ -113,27 +109,6 @@ export const NOTE_COPY = {
 // trash all read the same here: there is nothing of it the caller can use.
 const isGone = (error: unknown): boolean =>
   hasTag(error, "NoteNotFound") || hasTag(error, "ValidationFailed");
-
-function BottomFade() {
-  return (
-    <Svg height="100%" width="100%">
-      <Defs>
-        <LinearGradient id="bottomGradient" x1="0" x2="0" y1="0" y2="1">
-          <Stop offset="0" stopColor={colors.bg.app} stopOpacity={0} />
-          <Stop offset="0.3" stopColor={colors.bg.app} stopOpacity={1} />
-          <Stop offset="1" stopColor={colors.bg.app} stopOpacity={1} />
-        </LinearGradient>
-      </Defs>
-      <Rect
-        fill="url(#bottomGradient)"
-        height="100%"
-        width="100%"
-        x="0"
-        y="0"
-      />
-    </Svg>
-  );
-}
 
 function MetaPill({
   count,
@@ -439,30 +414,16 @@ export default function NoteScreen() {
       </View>
 
       {notFound ? null : (
-        <View
-          pointerEvents="box-none"
-          style={[styles.askLayer, { paddingBottom: insets.bottom + ASK_GAP }]}
-        >
-          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-            <BottomFade />
-          </View>
-          <View style={styles.askFill}>
-            <PillButton
-              accessibilityLabel="Ask about this note"
-              filledIcon
-              icon={MessageCircle}
-              label="Ask anything"
-              onPress={() =>
-                router.push({
-                  params: { noteId: id },
-                  pathname: "/ask/note/[noteId]",
-                })
-              }
-              testID="note-ask-button"
-              tone="ask"
-            />
-          </View>
-        </View>
+        <AskPill
+          accessibilityLabel="Ask about this note"
+          onPress={() =>
+            router.push({
+              params: { noteId: id },
+              pathname: "/ask/note/[noteId]",
+            })
+          }
+          testID="note-ask-button"
+        />
       )}
 
       <ActionMenu
@@ -539,14 +500,6 @@ export default function NoteScreen() {
 }
 
 const styles = StyleSheet.create({
-  askFill: { paddingHorizontal: spacing.lg },
-  askLayer: {
-    bottom: 0,
-    left: 0,
-    paddingTop: FADE_HEIGHT,
-    position: "absolute",
-    right: 0,
-  },
   bar: {
     alignItems: "center",
     flexDirection: "row",

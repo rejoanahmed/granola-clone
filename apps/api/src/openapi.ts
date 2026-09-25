@@ -26,6 +26,16 @@ const TAGS = [
       "Ask: a chat over the signed-in person's own live notes, in a global, note or person scope. An answer streams back as server-sent events (see the ChatEvent components); history lists, searches, pins and deletes threads; the model preference is per person.",
     name: "Chats",
   },
+  {
+    description:
+      "Search over the signed-in person's own live notes: meetings matched on title or body, and the people who attend them matched on name or email. A literal, case-insensitive substring; transcripts are not searched.",
+    name: "Search",
+  },
+  {
+    description:
+      "A person the signed-in person has met: someone who attends at least one of their live notes, identified by a person key (email:… or name:…). Their meetings are GET /notes?person=.",
+    name: "People",
+  },
 ];
 
 export const OPENAPI_DOCUMENT = {

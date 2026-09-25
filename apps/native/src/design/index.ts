@@ -6,6 +6,7 @@ export {
   MENU_SEPARATOR,
   type MenuAnchor,
 } from "./ActionMenu";
+export { Avatar } from "./Avatar";
 export { Card } from "./Card";
 export { Fab } from "./Fab";
 export { FormDivider, FormRow } from "./FormRow";

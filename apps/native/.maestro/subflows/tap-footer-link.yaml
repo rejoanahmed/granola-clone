@@ -9,6 +9,7 @@
 # start, so the flow waits for the screen to be still and then, if the tap still missed (the
 # screen did not move on), taps again from a fresh hierarchy. Only for controls whose miss is
 # harmless: a stray keystroke into the field does not change what EXPECT proves.
+# Also used for a Back whose touch the simulator swallowed (phase-8/search-person.yaml).
 #
 #   - runFlow:
 #       file: ../subflows/tap-footer-link.yaml

@@ -1,5 +1,6 @@
 import { personKeyOf } from "@gc/domain/Domain/Person";
 import {
+  Avatar,
   colors,
   PillButton,
   SheetChrome,
@@ -22,9 +23,9 @@ const displayName = (attendee: Attendee): string => {
   return attendee.isMe ? `${name} (me)` : name;
 };
 
-// #16: the note's attendees in the phase-2 sheet chrome. A row opens person-scoped Ask (#66): a
-// designed interim entry until phase 8's person page takes the row over (docs/spec/phase-7.md §3.7).
-// Add renders and does nothing until people exist (phase 8).
+// #16: the note's attendees in the phase-2 sheet chrome. A row opens that person's page (#65), which
+// took the row over from phase 7's interim person chat (docs/spec/phase-8.md §3.4). Add renders and
+// does nothing: editing a note's attendees is not in any phase yet.
 export default function AttendeesSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -49,7 +50,7 @@ export default function AttendeesSheet() {
         <View>
           {/* In the API's order, which the contract fixes: the caller first, then by position. */}
           {query.data.attendees.map((attendee) => {
-            // An attendee with neither a name nor an address has no key, so nothing to ask over.
+            // An attendee with neither a name nor an address has no key, so no page to open.
             const personKey = personKeyOf(attendee);
             return (
               <View key={attendee.id}>
@@ -68,7 +69,7 @@ export default function AttendeesSheet() {
                         name: attendee.name ?? attendee.email ?? "",
                         personKey,
                       },
-                      pathname: "/ask/person/[personKey]",
+                      pathname: "/people/[personKey]",
                     });
                   }}
                   style={({ pressed }) => [
@@ -77,11 +78,10 @@ export default function AttendeesSheet() {
                   ]}
                   testID={`attendees-row-${attendee.id}`}
                 >
-                  <View style={styles.avatar}>
-                    <Text variant="rowTitle">
-                      {initialFor(attendee.name ?? attendee.email)}
-                    </Text>
-                  </View>
+                  <Avatar
+                    initial={initialFor(attendee.name ?? attendee.email)}
+                    size={sizes.attendeeAvatar}
+                  />
                   <Text numberOfLines={1} style={styles.name} variant="body">
                     {displayName(attendee)}
                   </Text>
@@ -102,14 +102,6 @@ export default function AttendeesSheet() {
 }
 
 const styles = StyleSheet.create({
-  avatar: {
-    alignItems: "center",
-    backgroundColor: colors.bg.tileRaised,
-    borderRadius: sizes.attendeeAvatar / 2,
-    height: sizes.attendeeAvatar,
-    justifyContent: "center",
-    width: sizes.attendeeAvatar,
-  },
   divider: {
     backgroundColor: colors.border.hairline,
     height: sizes.hairline,

@@ -194,6 +194,42 @@ describe("POST /notes and GET /notes", () => {
     expect(calls).toEqual([]);
   });
 
+  // docs/spec/phase-8.md §7: the person filter is decoded by the contract, not the service.
+  it("hands the service a URL-decoded person key", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(
+      app,
+      "GET",
+      "/notes?person=email%3Apriya%40example.com"
+    );
+
+    expect(res.status).toBe(200);
+    expect(calls[0]?.args[1]).toEqual({
+      cursor: null,
+      limit: 20,
+      person: "email:priya@example.com",
+    });
+  });
+
+  it.each([
+    ["a bad prefix", "/notes?person=person%3Apriya"],
+    ["a prefix with no value", "/notes?person=email%3A"],
+    [
+      "an address that is not lower-cased",
+      "/notes?person=email%3APriya%40Example.com",
+    ],
+    ["a name with a doubled space", "/notes?person=name%3Adana%20%20lee"],
+  ])("is 422 for a person key with %s", async (_what, path) => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(app, "GET", path);
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ _tag: "ValidationFailed" });
+    expect(calls).toEqual([]);
+  });
+
   // §7 case 21
   it.each([
     ["a blank title", { title: "   " }],

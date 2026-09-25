@@ -1,0 +1,30 @@
+# AC3 (docs/spec/phase-8.md §8, #64): a word only in launch's body finds launch alone, and a section
+# with no rows is not drawn at all.
+appId: ${APP_ID}
+name: Searching finds a meeting by its body
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+# A row is one accessibility element labelled "{title}, {day}" or "{name}, {email}" (§3.1), so the
+# flow reads the row's label: iOS hides an accessible row's children from XCUITest.
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: forty
+- extendedWaitUntil:
+    visible:
+      id: search-note-not_e2e_launch
+      text: "Launch planning review, .*"
+    timeout: 15000
+- assertNotVisible:
+    id: search-section-people
+- assertNotVisible:
+    id: search-note-not_e2e_standup
+- assertNotVisible:
+    id: search-note-not_e2e_solo
+- takeScreenshot: phase-8-search-body

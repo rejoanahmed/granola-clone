@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PersonNotFound } from "@gc/domain/People/Errors";
 import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { AppEnv, Env } from "@gc/server";
 import { buildContainer } from "@gc/server";
@@ -85,6 +86,9 @@ describe("the worker's HTTP assembly", () => {
         "/chats/{id}/messages",
         "/chats/{id}/messages/{messageId}/retry",
         "/chats/{id}/messages/{messageId}/feedback",
+        // Phase 8 (docs/spec/phase-8.md §6.1).
+        "/search",
+        "/people/{personKey}",
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
@@ -92,6 +96,8 @@ describe("the worker's HTTP assembly", () => {
       "Notes",
       "Recordings",
       "Chats",
+      "Search",
+      "People",
     ]);
   });
 
@@ -741,7 +747,6 @@ describe("the chats routes, phase 7", () => {
   it.each([
     ["ChatNotFound", 404],
     ["ChatMessageNotFound", 404],
-    ["PersonNotFound", 404],
     ["ChatBusy", 409],
     ["ChatMessageNotRetryable", 409],
     ["ChatModelUnavailable", 422],
@@ -772,4 +777,50 @@ describe("the chats routes, phase 7", () => {
       });
     }
   );
+
+  it.each([
+    ["GET", "/search?q=launch"],
+    ["GET", "/people/email%3Apriya%40example.com"],
+    ["GET", "/notes?person=email%3Apriya%40example.com"],
+  ])(
+    "mounts %s %s, answering 401 Unauthorized without a session",
+    async (method, route) => {
+      const response = await app.request(route, { method }, env);
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: "Unauthorized",
+      });
+    }
+  );
+
+  it("documents search and the person page under their own tags", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as {
+      paths: Record<string, Record<string, { tags?: string[] }>>;
+    };
+
+    expect(doc.paths["/search"]?.get?.tags).toEqual(["Search"]);
+    expect(doc.paths["/people/{personKey}"]?.get?.tags).toEqual(["People"]);
+  });
+
+  it("renders PersonNotFound from People/Errors as a 404, with no second name in Chats", async () => {
+    const chats: Record<string, unknown> = await import(
+      "@gc/domain/Chats/Errors"
+    );
+    const failing = new Hono<AppEnv>()
+      .get("/", () => {
+        throw new PersonNotFound({ personKey: "email:nobody@example.com" });
+      })
+      .onError(onError);
+
+    const response = await failing.request("/");
+
+    expect(chats.PersonNotFound).toBeUndefined();
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toMatchObject({
+      _tag: "PersonNotFound",
+      details: { personKey: "email:nobody@example.com" },
+    });
+  });
 });

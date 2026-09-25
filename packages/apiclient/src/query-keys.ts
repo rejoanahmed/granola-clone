@@ -25,25 +25,49 @@ export const queryKeys = {
     all: ["me"] as const,
     profile: () => ["me", "profile"] as const,
   },
-  // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. The list
-  // takes no filter, so one key covers every page of the infinite query.
+  // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. Home's
+  // list is `list()`; a person page's is `list({ person })`, a distinct entry under the same prefix,
+  // so invalidating `list()` after a trash or rename refreshes every person page with it.
   notes: {
     all: ["notes"] as const,
     detail: (id: string) => ["notes", "detail", id] as const,
-    list: () => ["notes", "list"] as const,
+    list: (filter?: { readonly person: string }) =>
+      filter === undefined
+        ? (["notes", "list"] as const)
+        : (["notes", "list", { person: filter.person }] as const),
     // Under the detail, so invalidating a note's detail refreshes its transcript with it.
     transcript: (id: string) => ["notes", "detail", id, "transcript"] as const,
+  },
+  // A person key starts `email:` or `name:`, so it cannot collide with `"detail"`.
+  people: {
+    all: ["people"] as const,
+    detail: (key: string) => ["people", "detail", key] as const,
   },
   // Every recording id starts `rec_`, so it cannot collide with `"detail"` either.
   recordings: {
     all: ["recordings"] as const,
     detail: (id: string) => ["recordings", "detail", id] as const,
   },
+  // Keyed on the trimmed query, so a response for a draft that has moved on lands under its own key
+  // and is never drawn for the current one. `all` is the prefix of every query's results.
+  search: {
+    all: ["search"] as const,
+    results: (q: string) => ["search", q] as const,
+  },
 } as const;
 
 export const queryDefaults = {
   staleTimeMs: 30_000,
 } as const;
+
+// A note's title, attendees and liveness are what search and a person page are built from, so any
+// write to one note leaves both stale: a trashed note opened from a cached result is NoteNotFound.
+const noteWrite = (id: string) => [
+  queryKeys.notes.detail(id),
+  queryKeys.notes.list(),
+  queryKeys.search.all,
+  queryKeys.people.all,
+];
 
 const recordingTransition = (recordingId: string, noteId: string) => [
   queryKeys.recordings.detail(recordingId),
@@ -75,10 +99,7 @@ export const invalidationKeys = {
     recordingTransition(recordingId, noteId),
   // The list too, not only the detail: a title shows on its row, and trash and restore move it.
   putChatFeedback: (threadId: string) => [queryKeys.chats.detail(threadId)],
-  restoreNote: (id: string) => [
-    queryKeys.notes.detail(id),
-    queryKeys.notes.list(),
-  ],
+  restoreNote: (id: string) => noteWrite(id),
   // The generation rides on the note's detail, and the generated title will land on its row.
   retryNoteGeneration: (id: string) => [
     queryKeys.notes.detail(id),
@@ -87,20 +108,19 @@ export const invalidationKeys = {
   retryRecording: (recordingId: string, noteId: string) =>
     recordingTransition(recordingId, noteId),
   selectChatModel: () => [queryKeys.chat.models()],
-  trashNote: (id: string) => [
-    queryKeys.notes.detail(id),
-    queryKeys.notes.list(),
-  ],
+  trashNote: (id: string) => noteWrite(id),
   // Pinning moves the row between sections and changes the detail's `pinned`.
   updateChat: (threadId: string) => [
     queryKeys.chats.detail(threadId),
     queryKeys.chats.list(),
   ],
-  updateMe: () => [queryKeys.me.profile()],
-  updateNote: (id: string) => [
-    queryKeys.notes.detail(id),
-    queryKeys.notes.list(),
+  // The caller's own person page and search rows are named from their account.
+  updateMe: () => [
+    queryKeys.me.profile(),
+    queryKeys.people.all,
+    queryKeys.search.all,
   ],
+  updateNote: (id: string) => noteWrite(id),
   // The typed notes only: the status does not move, so neither the note nor the list is stale.
   updateRecording: (recordingId: string) => [
     queryKeys.recordings.detail(recordingId),

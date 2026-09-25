@@ -63,7 +63,7 @@ type NotesService = {
   get: (who: Actor, id: string) => Promise<Note>;
   list: (
     who: Actor,
-    query: { cursor: string | null; limit: number }
+    query: { cursor: string | null; limit: number; person?: string }
   ) => Promise<Page>;
   restore: (who: Actor, id: string) => Promise<Note>;
   trash: (who: Actor, id: string) => Promise<Note>;
@@ -721,5 +721,98 @@ describe("the notes tables", () => {
         },
       ])
     ).rejects.toThrow(CHECK_FAILED);
+  });
+});
+
+// docs/spec/phase-8.md §7 cases 18–20. Seeded through `create`, so each attendee row is exactly what
+// the shipped write stores: the owner's row links the account, and a guest keeps what was typed.
+describe("NotesService.list with a person", () => {
+  const PRIYA = "email:priya@example.com";
+  const SELF = `email:${actor().email}`;
+
+  const withGuests = (
+    who: Actor,
+    startedAt: number,
+    title: string,
+    attendees: readonly { email?: string; name?: string }[]
+  ) => service().create(who, { attendees, startedAt, title });
+
+  let launch: Note;
+  let standup: Note;
+  let solo: Note;
+
+  beforeEach(async () => {
+    solo = await withGuests(actor(), AT, "Solo", []);
+    standup = await withGuests(actor(), AT + SECOND, "Standup", [
+      { name: "Dana \t Lee" },
+      { email: "sam@example.com", name: "Dana Lee" },
+    ]);
+    launch = await withGuests(actor(), AT + 2 * SECOND, "Launch", [
+      { email: "Priya@Example.com", name: "Priya Raman" },
+    ]);
+    const trashed = await withGuests(actor(), AT + 3 * SECOND, "Trashed", [
+      { email: "priya@example.com", name: "Priya Raman" },
+    ]);
+    await service().trash(actor(), trashed.id);
+    await withGuests(otherActor(), AT + 4 * SECOND, "Theirs", [
+      { email: "riley@example.com", name: "Riley" },
+    ]);
+  });
+
+  const listFor = (
+    who: Actor,
+    person: string,
+    limit = 20,
+    cursor: string | null = null
+  ) => service().list(who, { cursor, limit, person });
+
+  // §7 case 18
+  it("lists only the notes the person attends, and the owner's own key lists every live note", async () => {
+    expect(idsOf(await listFor(actor(), PRIYA))).toEqual([launch.id]);
+    expect(idsOf(await listFor(actor(), SELF))).toEqual([
+      launch.id,
+      standup.id,
+      solo.id,
+    ]);
+  });
+
+  // A `name:` key is the collapsed, lower-cased name, and matches only a guest with no address:
+  // the guest who also gave an email is keyed by it.
+  it("matches a name key over a guest stored with other case and spacing", async () => {
+    expect(idsOf(await listFor(actor(), "name:dana lee"))).toEqual([
+      standup.id,
+    ]);
+    expect(idsOf(await listFor(actor(), "email:sam@example.com"))).toEqual([
+      standup.id,
+    ]);
+    expect(await listFor(actor(), "name:sam")).toEqual({
+      items: [],
+      nextCursor: null,
+    });
+  });
+
+  // §7 case 19
+  it("pages the filtered list with the same cursor, ending on a null cursor", async () => {
+    const first = await listFor(actor(), SELF, 1);
+    const second = await listFor(actor(), SELF, 1, first.nextCursor);
+    const third = await listFor(actor(), SELF, 1, second.nextCursor);
+
+    expect([first, second, third].map(idsOf)).toEqual([
+      [launch.id],
+      [standup.id],
+      [solo.id],
+    ]);
+    expect(first.nextCursor).not.toBeNull();
+    expect(second.nextCursor).not.toBeNull();
+    expect(third.nextCursor).toBeNull();
+  });
+
+  // §7 case 20
+  it("is an empty page for an unknown person and for another user's guest", async () => {
+    const none = { items: [], nextCursor: null };
+
+    expect(await listFor(actor(), "email:nobody@example.com")).toEqual(none);
+    expect(await listFor(actor(), "email:riley@example.com")).toEqual(none);
+    expect(await listFor(otherActor(), PRIYA)).toEqual(none);
   });
 });

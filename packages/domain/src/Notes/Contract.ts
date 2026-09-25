@@ -1,4 +1,4 @@
-import { createRoute } from "@hono/zod-openapi";
+import { createRoute, type z } from "@hono/zod-openapi";
 import { NoteGeneration } from "../Domain/Generation";
 import {
   Note,
@@ -8,6 +8,7 @@ import {
   NoteSummary,
 } from "../Domain/Note";
 import { PageQuery } from "../Domain/Page";
+import { PersonKey } from "../Domain/Person";
 import { Transcript } from "../Domain/Recording";
 import {
   commonErrors,
@@ -23,6 +24,11 @@ import {
 
 const NoteParams = params({ id: NoteId });
 
+// An unknown person is an empty page, not a 404: the list does not answer who exists, GET /people
+// does. The cursor is the unfiltered list's, so a filter never changes how a page is addressed.
+export const NoteListQuery = PageQuery.extend({ person: PersonKey.optional() });
+export type NoteListQuery = z.infer<typeof NoteListQuery>;
+
 const notFound = json(
   ErrorBody,
   "NoteNotFound: no such note, or not the caller's — the two are indistinguishable"
@@ -30,10 +36,10 @@ const notFound = json(
 
 export const listNotesRoute = createRoute({
   description:
-    "The caller's live notes, newest first (startedAt desc, then id desc). Keyset-paginated: pass the previous page's nextCursor back as cursor; nextCursor is null exactly on the last page. Trashed notes are never listed. A cursor this API did not mint is a 422 on the cursor field, never a silent page one.",
+    "The caller's live notes, newest first (startedAt desc, then id desc). Keyset-paginated: pass the previous page's nextCursor back as cursor; nextCursor is null exactly on the last page. Trashed notes are never listed. A cursor this API did not mint is a 422 on the cursor field, never a silent page one. With person (a URL-encoded person key), only the notes that person attends, in the same order and with the same cursor; an unknown person is an empty page, and a malformed key is a 422.",
   method: "get",
   path: "/notes",
-  request: { query: PageQuery },
+  request: { query: NoteListQuery },
   responses: {
     200: json(PageOf(NoteSummary), "One page of the caller's notes"),
     ...commonErrors,

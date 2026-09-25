@@ -4,8 +4,10 @@ import { chatsRouter } from "@gc/server/Chats/Http";
 import { e2eRouter } from "@gc/server/E2E/Http";
 import { generationsRouter } from "@gc/server/Generations/Http";
 import { notesRouter } from "@gc/server/Notes/Http";
+import { peopleRouter } from "@gc/server/People/Http";
 import { profilesRouter } from "@gc/server/Profiles/Http";
 import { recordingsRouter } from "@gc/server/Recordings/Http";
+import { searchRouter } from "@gc/server/Search/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   authRateLimit,
@@ -48,6 +50,8 @@ app.route("/", notesRouter);
 app.route("/", recordingsRouter);
 app.route("/", generationsRouter);
 app.route("/", chatsRouter);
+app.route("/", peopleRouter);
+app.route("/", searchRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.

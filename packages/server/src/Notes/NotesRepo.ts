@@ -10,6 +10,7 @@ import {
   noteGenerations,
   notes,
   or,
+  personMatches,
   recordings,
   sql,
   user,
@@ -29,6 +30,7 @@ import {
   type NoteSummary,
   type NoteTitle,
 } from "@gc/domain/Domain/Note";
+import type { PersonKey } from "@gc/domain/Domain/Person";
 import {
   type NoteRecording,
   RecordingId,
@@ -95,6 +97,17 @@ const attendeeColumns = {
 // qualified by hand: drizzle renders a column inside a single-table select unqualified, and an
 // unqualified `id` inside this subquery would bind to `note_attendees.id` and count nothing.
 const attendeeCount = sql<number>`(select count(*) from "note_attendees" where "note_attendees"."note_id" = "notes"."id")`;
+
+// Qualified by hand for the same reason as `attendeeCount`. A linked account's address and name win,
+// so the owner's own key finds every note they own, as on the attendees sheet.
+const attendedBy = (key: PersonKey) =>
+  sql`exists (select 1 from "note_attendees" "a" left join "user" "u" on "u"."id" = "a"."user_id" where "a"."note_id" = "notes"."id" and ${personMatches(
+    key,
+    {
+      email: sql`coalesce("u"."email", "a"."email")`,
+      name: sql`coalesce("u"."name", "a"."name")`,
+    }
+  )})`;
 
 // Strictly after the cursor in `startedAt desc, id desc` order. The tie on `startedAt` is broken by
 // id, which is unique, so no two rows can share a position and none is skipped or repeated.
@@ -186,13 +199,19 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
 
   // `limit` rows are asked for as given; the service asks for one more than a page so the extra
   // row's presence, not a count, says whether there is a next page. The filter on `ownerId` is the
-  // whole of the list's scoping — there is no parameter that names anybody else.
+  // whole of the list's scoping — there is no parameter that names anybody else. `person` narrows
+  // within it and leaves the keyset alone, so the same cursor pages the filtered list.
   listLive: async (
     ownerId: UserId,
     position: NotesPosition | null,
-    limit: number
+    limit: number,
+    person: PersonKey | null = null
   ): Promise<NoteSummary[]> => {
-    const live = and(eq(notes.ownerId, ownerId), isNull(notes.trashedAt));
+    const live = and(
+      eq(notes.ownerId, ownerId),
+      isNull(notes.trashedAt),
+      person === null ? undefined : attendedBy(person)
+    );
     const rows = await db
       .select({
         attendeeCount,

@@ -363,6 +363,38 @@ These must exist. The names are the specification; the phrasing in the test file
 - `personKeyOf` lowercases the email and prefers it, else normalises the name; the chips, the
   placeholders and the limits are the §4 constants; content trims before it measures
 
+### `Search/Search.test.ts` (phase 8)
+
+- a title match (`standup`, and `STANDUP` alike) and a body match (`forty`) find their note only, with
+  no people; `ra` gives Priya Raman and launch then solo, `an` gives launch, standup, solo
+- people by email (`example.com` → Priya, Sam, tied on their last meeting so by name); the caller
+  (`e2e`) is one person keyed `email:`, named from `user`, `isMe`, and renamed through
+  `ProfilesService.update`
+- trash (`archived`, and a guest only on a trashed note) and ownership (`other`, `zebracorn`, a guest
+  only on `other`'s note, and `other` searching `launch`) find nothing; `empty` finds nothing
+- `%` is literal and finds nothing, `_` finds solo; two casings of one address are one person named
+  from the newer note, a name-only guest on two notes is one `name:` person with a null email
+- the caps: 60 matching notes answer 50 newest first, 12 matching people answer 8
+
+### `Search/Search.http.test.ts`, `People/People.test.ts`, `People/People.http.test.ts`, `Domain/Search.test.ts` (phase 8)
+
+- `GET /search` parses as `SearchResults`, is 401 without a session, and 422 on a missing, blank
+  or 101-character `q`
+- a person reads their name, email, domain and `isMe`; the self key has `isMe` and `gcnotes.test`; a
+  `name:` key has a null email and domain; an unknown key, a key only `other`'s notes hold and a key
+  only on a trashed note are each `PersonNotFound`
+- `GET /people/{personKey}` through a URL-encoded key parses as `Person`, is 401, 404 with the
+  `PersonNotFound` body, and 422 on `person:priya`
+- `domainOf` answers null without an email or an `@`, and lower-cases; `SearchQuery` trims before
+  its 1..100 bounds
+
+### `Notes/Notes.test.ts` and `Notes/Notes.http.test.ts` — the person filter (phase 8)
+
+- `list` with Priya's key is launch alone, with the self key launch, standup, solo and never
+  archived; `limit 1` walks the filtered list with a null cursor on the last page
+- an unknown person and another user's guest are empty pages; `?person=` with a malformed key is 422
+- the chat person-scope cases stay green after the match moves to `personMatches` in `@gc/db`
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -651,11 +683,13 @@ apps/native/.maestro/
     send-chat.yaml       TEXT param: type into the composer, wait for Send, tap it
     wait-for-answer.yaml N param: wait for answer N's action row, which appears only after `done`
     swipe-history-row.yaml  THREAD_ID param: swipe a history row left until Delete and Pin show
+    open-search.yaml     from home, the magnifier, then wait for Search's empty state and its input
+    search-for.yaml      QUERY param: tap the search field, erase it, type QUERY; the caller waits
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-7/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-8/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -738,7 +772,8 @@ phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-
 (gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
 (#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
 `phase-6-short` (#40, #107) from short-recording.yaml; phase 7 adds the eleven `phase-7-*` shots
-listed in docs/spec/phase-7.md §8. Run with
+listed in docs/spec/phase-7.md §8, and phase 8 the seven `phase-8-*` shots listed in
+docs/spec/phase-8.md §8 (#60–#66). Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

@@ -10,6 +10,7 @@ import {
   noteAttendees,
   notes,
   or,
+  personMatches,
   recordings,
   type SQL,
   sql,
@@ -204,20 +205,6 @@ const toMessage = (row: MessageRow, now: Timestamp): StoredMessage => {
 const liveNotesOf = (ownerId: UserId) =>
   and(eq(notes.ownerId, ownerId), isNull(notes.trashedAt));
 
-// The attendee match for a person key, over `note_attendees` "a" and `user` "u" as the caller
-// aliases them. A linked account's address and name win over the stored copy, as on the attendees
-// sheet. A `name:` key matches only an attendee with no address, because `personKeyOf` prefers the
-// address whenever there is one.
-const attendeeMatches = (
-  key: PersonKey,
-  columns: { email: SQL; name: SQL }
-): SQL => {
-  const value = key.slice(key.indexOf(":") + 1);
-  return key.startsWith("email:")
-    ? sql`lower(trim(${columns.email})) = ${value}`
-    : sql`coalesce(${columns.email}, '') = '' and lower(trim(${columns.name})) = ${value}`;
-};
-
 const QUALIFIED = {
   email: sql`coalesce("u"."email", "a"."email")`,
   name: sql`coalesce("u"."name", "a"."name")`,
@@ -228,7 +215,7 @@ const scopeFilter = (scope: RetrievalScope): SQL | undefined => {
     case "note":
       return eq(notes.id, scope.noteId);
     case "person":
-      return sql`exists (select 1 from "note_attendees" "a" left join "user" "u" on "u"."id" = "a"."user_id" where "a"."note_id" = "notes"."id" and ${attendeeMatches(scope.personKey, QUALIFIED)})`;
+      return sql`exists (select 1 from "note_attendees" "a" left join "user" "u" on "u"."id" = "a"."user_id" where "a"."note_id" = "notes"."id" and ${personMatches(scope.personKey, QUALIFIED)})`;
     default:
       return;
   }
@@ -497,7 +484,7 @@ export const makeChatsRepo = (db: DrizzleClient) => {
         .from(noteAttendees)
         .innerJoin(notes, eq(notes.id, noteAttendees.noteId))
         .leftJoin(user, eq(user.id, noteAttendees.userId))
-        .where(and(liveNotesOf(ownerId), attendeeMatches(key, { email, name })))
+        .where(and(liveNotesOf(ownerId), personMatches(key, { email, name })))
         .orderBy(desc(notes.startedAt), desc(notes.id))
         .get();
       if (row === undefined) {

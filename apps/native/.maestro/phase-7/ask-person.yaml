@@ -1,6 +1,7 @@
-# AC4 (docs/spec/phase-7.md §8, §3.7, #16, #66): an attendee row in the attendees sheet opens a chat
-# scoped to that person (the designed interim entry until phase 8's person page). Priya attended the
-# launch review alone, so the answer cites that note and nothing else, and its chip opens the preview.
+# AC4 (docs/spec/phase-7.md §8, #16, #66): a chat scoped to one person. Since phase 8 the attendee
+# row opens the person page and its Ask pill opens the chat (docs/spec/phase-8.md §3.4, §8). Priya
+# attended the launch review alone, so the answer cites that note and nothing else, and its chip
+# opens the preview.
 appId: ${APP_ID}
 name: Asking about one person
 tags:
@@ -24,10 +25,16 @@ env:
     id: attendees-row-att_e2e_launch_1
 - extendedWaitUntil:
     visible:
-      id: chat-screen
+      id: person-screen
     timeout: 15000
 - assertNotVisible:
     id: attendees-sheet
+- tapOn:
+    id: person-ask-button
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
 - waitForAnimationToEnd:
     timeout: 5000
 - assertVisible:
