@@ -246,3 +246,19 @@
 - **`traced()` spans `Llm.streamAnswer` for the call only, not the stream.** The wrapper ends a span
   when a function returns a non-promise, so the span measures creating the iterator; the answer's
   duration is visible only through the `chat.answer.*` log events.
+- **`expo/fetch` streams through the dev build.** The answer grows token by token on the iPhone 17
+  Pro simulator, so the whole-body fallback above was not needed.
+- **A quick swipe on a row read as a tap (native, found in phase 7).** With React Native's
+  `Pressable` as the swipeable's child, Maestro's 400 ms swipe opened the note or the thread instead
+  of revealing the trailing actions: `phase-4/trash-by-swipe.yaml` failed the same way on the
+  pre-phase-7 tree, and Chat History's rows inside their sheet failed every time. Both rows now use
+  react-native-gesture-handler's `Pressable`, which yields to the swipe, and the history sheet has
+  its own `GestureHandlerRootView` because a formSheet is outside the app root's.
+- **Citation chips cannot be inline views (native).** iOS makes a paragraph one accessibility
+  element and drops every view nested in it from the tree, attachments included, so an inline chip
+  was invisible to VoiceOver and to Maestro. `BlockText` lifts a block's `[k]` markers out of its
+  text, reserves their room at the end of its last line (`onTextLayout`) and draws the chips over it
+  as siblings. The cost: a marker in the middle of a block is drawn at the block's end.
+- **Toasts from the chat modal and Chat History.** The root `ToastProvider` draws under any native
+  presentation, so the global chat route and the history sheet each wrap their own provider. A
+  `FullWindowOverlay` was tried first and lost phase 4's "Moved to trash" toast after a pop.
