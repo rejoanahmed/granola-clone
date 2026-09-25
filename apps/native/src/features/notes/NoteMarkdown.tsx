@@ -1,4 +1,5 @@
 import { colors, spacing, Text } from "@native/design";
+import type { ReactNode } from "react";
 import { Text as NativeText, StyleSheet, View } from "react-native";
 import {
   type Block,
@@ -17,7 +18,21 @@ const INDENT = {
   1: { dot: 34, text: 48 },
 } as const;
 
-function Spans({ spans }: { readonly spans: readonly Span[] }) {
+/** Turns a span's text into inline content: the chat answer's citation chips (phase 7). */
+export type RenderText = (text: string) => ReactNode;
+
+type Options = {
+  readonly lineHeight: number;
+  readonly renderText?: RenderText;
+};
+
+function Spans({
+  options,
+  spans,
+}: {
+  readonly options: Options;
+  readonly spans: readonly Span[];
+}) {
   return spans.map((span, index) => (
     // A bare native Text, so a span inherits its block's type and changes only weight or slant.
     <NativeText
@@ -28,7 +43,7 @@ function Spans({ spans }: { readonly spans: readonly Span[] }) {
         span.italic ? styles.italic : null,
       ]}
     >
-      {span.text}
+      {options.renderText ? options.renderText(span.text) : span.text}
     </NativeText>
   ));
 }
@@ -36,32 +51,31 @@ function Spans({ spans }: { readonly spans: readonly Span[] }) {
 function BlockView({
   block,
   gap,
+  options,
   testID,
 }: {
   readonly block: Block;
   readonly gap: number;
+  readonly options: Options;
   readonly testID: string;
 }) {
+  const line = [styles.line, { lineHeight: options.lineHeight }];
   if (block.kind === "heading") {
     return (
       <Text
         accessibilityRole="header"
-        style={[styles.line, { marginTop: gap }]}
+        style={[line, { marginTop: gap }]}
         testID={testID}
         variant="rowTitle"
       >
-        <Spans spans={block.spans} />
+        <Spans options={options} spans={block.spans} />
       </Text>
     );
   }
   if (block.kind === "paragraph") {
     return (
-      <Text
-        style={[styles.line, { marginTop: gap }]}
-        testID={testID}
-        variant="body"
-      >
-        <Spans spans={block.spans} />
+      <Text style={[line, { marginTop: gap }]} testID={testID} variant="body">
+        <Spans options={options} spans={block.spans} />
       </Text>
     );
   }
@@ -72,25 +86,42 @@ function BlockView({
         <View
           style={[
             styles.dot,
-            { left: indent.dot - DOT / 2 },
+            {
+              left: indent.dot - DOT / 2,
+              top: (options.lineHeight - DOT) / 2,
+            },
             block.level === 1 ? styles.hollow : styles.filled,
           ]}
         />
       ) : null}
       <Text
-        style={[styles.line, { marginLeft: indent.text }]}
+        style={[line, { marginLeft: indent.text }]}
         testID={testID}
         variant="body"
       >
-        <Spans spans={block.spans} />
+        <Spans options={options} spans={block.spans} />
       </Text>
     </View>
   );
 }
 
-/** The #10 rendering of a note's markdown. Each top-level block is `note-block-<n>`. */
-export function NoteMarkdown({ source }: { readonly source: string }) {
+/**
+ * The #10 rendering of a note's markdown. Each top-level block is `<blockPrefix>-<n>`, by default
+ * `note-block-<n>`; the chat answer (#25) passes its own prefix, a looser line and its chips.
+ */
+export function NoteMarkdown({
+  blockPrefix = "note-block",
+  lineHeight = LINE_HEIGHT,
+  renderText,
+  source,
+}: {
+  readonly blockPrefix?: string;
+  readonly lineHeight?: number;
+  readonly renderText?: RenderText;
+  readonly source: string;
+}) {
   const blocks = parseNoteMarkdown(source);
+  const options = { lineHeight, renderText };
   return (
     <View>
       {blocks.map((block, index) => (
@@ -99,7 +130,8 @@ export function NoteMarkdown({ source }: { readonly source: string }) {
           gap={gapBefore(blocks[index - 1], block)}
           // biome-ignore lint/suspicious/noArrayIndexKey: a block's position is its identity here.
           key={index}
-          testID={`note-block-${index}`}
+          options={options}
+          testID={`${blockPrefix}-${index}`}
         />
       ))}
     </View>
@@ -115,7 +147,6 @@ const styles = StyleSheet.create({
     borderRadius: DOT / 2,
     height: DOT,
     position: "absolute",
-    top: (LINE_HEIGHT - DOT) / 2,
     width: DOT,
   },
   filled: { backgroundColor: colors.text.secondary },

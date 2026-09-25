@@ -452,7 +452,12 @@ export default function NoteScreen() {
               filledIcon
               icon={MessageCircle}
               label="Ask anything"
-              onPress={() => undefined}
+              onPress={() =>
+                router.push({
+                  params: { noteId: id },
+                  pathname: "/ask/note/[noteId]",
+                })
+              }
               testID="note-ask-button"
               tone="ask"
             />

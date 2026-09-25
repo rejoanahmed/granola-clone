@@ -1,3 +1,4 @@
+import { personKeyOf } from "@gc/domain/Domain/Person";
 import {
   colors,
   PillButton,
@@ -10,7 +11,7 @@ import { initialFor } from "@native/features/home/initial";
 import { type NoteDetail, noteQuery } from "@native/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 const ROW_HEIGHT = 64;
 
@@ -21,7 +22,8 @@ const displayName = (attendee: Attendee): string => {
   return attendee.isMe ? `${name} (me)` : name;
 };
 
-// #16: the note's attendees in the phase-2 sheet chrome. Rows are not pressable, as #16 showed;
+// #16: the note's attendees in the phase-2 sheet chrome. A row opens person-scoped Ask (#66): a
+// designed interim entry until phase 8's person page takes the row over (docs/spec/phase-7.md §3.7).
 // Add renders and does nothing until people exist (phase 8).
 export default function AttendeesSheet() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,10 +50,24 @@ export default function AttendeesSheet() {
           {/* In the API's order, which the contract fixes: the caller first, then by position. */}
           {query.data.attendees.map((attendee) => (
             <View key={attendee.id}>
-              <View
+              <Pressable
                 accessibilityLabel={displayName(attendee)}
+                accessibilityRole="button"
                 accessible
-                style={styles.row}
+                onPress={() => {
+                  router.back();
+                  router.push({
+                    params: {
+                      name: attendee.name ?? attendee.email ?? "",
+                      personKey: personKeyOf(attendee),
+                    },
+                    pathname: "/ask/person/[personKey]",
+                  });
+                }}
+                style={({ pressed }) => [
+                  styles.row,
+                  pressed ? styles.rowPressed : null,
+                ]}
                 testID={`attendees-row-${attendee.id}`}
               >
                 <View style={styles.avatar}>
@@ -62,7 +78,7 @@ export default function AttendeesSheet() {
                 <Text numberOfLines={1} style={styles.name} variant="body">
                   {displayName(attendee)}
                 </Text>
-              </View>
+              </Pressable>
               <View style={styles.divider} />
             </View>
           ))}
@@ -100,4 +116,5 @@ const styles = StyleSheet.create({
     height: ROW_HEIGHT,
     paddingHorizontal: spacing.xl,
   },
+  rowPressed: { backgroundColor: colors.bg.tileRaised },
 });

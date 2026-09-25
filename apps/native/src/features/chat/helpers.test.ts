@@ -1,5 +1,7 @@
 import { GLOBAL_PLACEHOLDERS } from "@gc/domain/Domain/Chat";
 import { describe, expect, it } from "vitest";
+import { activityA11y, activityPhase } from "./activity";
+import { previewState } from "./citationState";
 import { segmentCitations, stripMarkers } from "./citations";
 import { firstNameOf, greetingFor } from "./greeting";
 import {
@@ -132,5 +134,50 @@ describe("formatHistoryDate and previewLine", () => {
 
   it("collapses newlines and keeps the raw markdown", () => {
     expect(previewLine("Here:\n\n- **A** [1]")).toBe("Here: - **A** [1]");
+  });
+});
+
+describe("activity row", () => {
+  const launch = { noteId: "not_a", title: "Launch" } as never;
+
+  it("reads searching, loaded or searched", () => {
+    expect(activityPhase([])).toBe("searching");
+    expect(
+      activityPhase([{ kind: "search", notes: [launch] }, { kind: "done" }])
+    ).toBe("loaded");
+    expect(
+      activityPhase([{ kind: "search", notes: [] }, { kind: "done" }])
+    ).toBe("searched");
+  });
+
+  it("names the tools in its accessibility label", () => {
+    expect(
+      activityA11y([
+        { kind: "search", notes: [launch] },
+        { kind: "open", notes: [launch] },
+        { kind: "done" },
+      ])
+    ).toBe("Loaded notes, 2 tools: List meetings, Read meetings");
+  });
+});
+
+describe("previewState", () => {
+  const gone = (e: unknown) => e === "gone";
+  const base = { data: undefined, error: null, isError: false };
+
+  it("covers loading, ready, trashed, gone and error", () => {
+    expect(previewState(base, gone).kind).toBe("loading");
+    expect(
+      previewState({ ...base, data: { trashedAt: null } }, gone).kind
+    ).toBe("ready");
+    expect(previewState({ ...base, data: { trashedAt: 1 } }, gone).kind).toBe(
+      "unavailable"
+    );
+    expect(
+      previewState({ ...base, error: "gone", isError: true }, gone).kind
+    ).toBe("unavailable");
+    expect(
+      previewState({ ...base, error: "boom", isError: true }, gone).kind
+    ).toBe("error");
   });
 });

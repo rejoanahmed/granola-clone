@@ -190,6 +190,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
           filledIcon
           icon={MessageCircle}
           label="Ask anything"
+          onPress={() => router.push("/ask")}
           style={styles.ask}
           testID="home-ask-button"
           tone="glass"

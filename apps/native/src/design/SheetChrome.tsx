@@ -9,8 +9,14 @@ import { colors, radii, sizes, spacing } from "./tokens";
 const SIDE_WIDTH = 88;
 
 type Props = {
+  /** The sheet's fill, when it is not #2A2A2A: Chat History (#24) and the note preview (#28). */
+  readonly backgroundColor?: string;
   readonly children: ReactNode;
+  /** The x on the left, as the chat sheets draw it (#24, #26, #28); the right side stays empty. */
+  readonly closeOnLeft?: boolean;
   readonly closeTestID: string;
+  /** The hairline under the header; the chat sheets draw none (#24, #26). */
+  readonly divider?: boolean;
   /** Sized to its content (a `fitToContents` sheet) rather than filling its detent. */
   readonly fit?: boolean;
   readonly left?: ReactNode;
@@ -24,19 +30,40 @@ type Props = {
 // than by `sheetGrabberVisible` so it takes the token colour and the #16 geometry, and so a flow
 // has an element (`<testID>-grabber`) to anchor the swipe on.
 export function SheetChrome({
+  backgroundColor,
   children,
+  closeOnLeft = false,
   closeTestID,
+  divider = true,
   fit = false,
   left,
   onClose,
   testID,
   title,
 }: Props) {
+  const close = (
+    <IconButton
+      accessibilityLabel="Close"
+      icon={X}
+      onPress={onClose}
+      onSheet
+      testID={closeTestID}
+    />
+  );
+  const leftSlot = closeOnLeft ? close : (left ?? null);
+  const rightSlot = closeOnLeft ? null : close;
   return (
-    <View style={[styles.sheet, fit ? null : styles.fill]} testID={testID}>
+    <View
+      style={[
+        styles.sheet,
+        fit ? null : styles.fill,
+        backgroundColor ? { backgroundColor } : null,
+      ]}
+      testID={testID}
+    >
       <View style={styles.grabber} testID={`${testID}-grabber`} />
       <View style={styles.header}>
-        <View style={styles.side}>{left}</View>
+        <View style={styles.side}>{leftSlot}</View>
         <Text
           accessibilityRole="header"
           numberOfLines={1}
@@ -45,17 +72,9 @@ export function SheetChrome({
         >
           {title}
         </Text>
-        <View style={[styles.side, styles.right]}>
-          <IconButton
-            accessibilityLabel="Close"
-            icon={X}
-            onPress={onClose}
-            onSheet
-            testID={closeTestID}
-          />
-        </View>
+        <View style={[styles.side, styles.right]}>{rightSlot}</View>
       </View>
-      <View style={styles.divider} />
+      {divider ? <View style={styles.divider} /> : null}
       {children}
     </View>
   );

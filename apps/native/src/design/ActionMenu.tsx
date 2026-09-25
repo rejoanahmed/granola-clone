@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react-native";
+import { Check, type LucideIcon } from "lucide-react-native";
 import type { ReactNode } from "react";
 import {
   Modal,
@@ -13,7 +13,11 @@ import { Text } from "./Text";
 import { colors, ICON_STROKE, PRESSED_OPACITY, sizes, spacing } from "./tokens";
 
 export type ActionMenuItem = {
+  /** A check at the left edge: the model menu's selected item (#22). */
+  readonly checked?: boolean;
   readonly destructive?: boolean;
+  /** Drawn at 40% and inert, as #22's greyed model is. */
+  readonly disabled?: boolean;
   readonly icon: LucideIcon;
   readonly label: string;
   readonly onPress: () => void;
@@ -43,6 +47,11 @@ export type MenuAnchor = {
 
 type Props = {
   readonly anchor: MenuAnchor | null;
+  /**
+   * The model menu's layout (#22): a check column at the left, so every glyph moves right, labels
+   * may wrap to two lines, and the card is the darker #1E1E1E.
+   */
+  readonly checkable?: boolean;
   readonly entries: readonly ActionMenuEntry[];
   readonly onClose: () => void;
   /** Redrawn above the scrim at its own frame: the lifted row of #02. */
@@ -81,6 +90,7 @@ const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
 // (docs/spec/phase-4.md §2.2). Tapping the scrim dismisses with no change, as #02 and #12 do.
 export function ActionMenu({
   anchor,
+  checkable = false,
   entries,
   inline = false,
   onClose,
@@ -136,7 +146,7 @@ export function ActionMenu({
       {position ? (
         <View
           accessibilityRole="menu"
-          style={[styles.menu, position]}
+          style={[styles.menu, checkable ? styles.menuDark : null, position]}
           testID={testID}
         >
           {entries.map((entry, index) =>
@@ -144,7 +154,7 @@ export function ActionMenu({
               // biome-ignore lint/suspicious/noArrayIndexKey: separators have no identity of their own.
               <View key={`separator-${index}`} style={styles.separator} />
             ) : (
-              <MenuItem item={entry} key={entry.testID} />
+              <MenuItem checkable={checkable} item={entry} key={entry.testID} />
             )
           )}
         </View>
@@ -176,31 +186,70 @@ export function ActionMenu({
   );
 }
 
-function MenuItem({ item }: { readonly item: ActionMenuItem }) {
+function MenuItem({
+  checkable,
+  item,
+}: {
+  readonly checkable: boolean;
+  readonly item: ActionMenuItem;
+}) {
   const tint = item.destructive ? colors.destructive : colors.text.primary;
   const Icon = item.icon;
+  const disabled = item.disabled ?? false;
   return (
     <Pressable
       accessibilityLabel={item.label}
       accessibilityRole="menuitem"
+      accessibilityState={{ checked: item.checked, disabled }}
+      disabled={disabled}
       onPress={item.onPress}
-      style={({ pressed }) => [styles.item, pressed ? styles.pressed : null]}
+      style={({ pressed }) => [
+        styles.item,
+        checkable ? styles.itemCheckable : null,
+        pressed ? styles.pressed : null,
+        disabled ? styles.disabled : null,
+      ]}
       testID={item.testID}
     >
+      {item.checked ? (
+        <Check
+          color={tint}
+          size={CHECK_SIZE}
+          strokeWidth={ICON_STROKE}
+          style={styles.check}
+        />
+      ) : null}
       <Icon color={tint} size={sizes.glyph} strokeWidth={ICON_STROKE} />
-      <Text color={tint} numberOfLines={1} style={styles.label} variant="body">
+      <Text
+        color={tint}
+        numberOfLines={checkable ? 2 : 1}
+        style={styles.label}
+        variant="body"
+      >
         {item.label}
       </Text>
     </Pressable>
   );
 }
 
+const CHECK_SIZE = 14;
+const CHECK_COLUMN = 40;
+const DARK_RADIUS = 28;
+
 const styles = StyleSheet.create({
+  check: { left: spacing.sm, position: "absolute" },
+  disabled: { opacity: 0.4 },
   item: {
     alignItems: "center",
     flexDirection: "row",
     height: ITEM_HEIGHT,
     paddingHorizontal: spacing.xl,
+  },
+  itemCheckable: {
+    height: "auto",
+    minHeight: ITEM_HEIGHT,
+    paddingLeft: CHECK_COLUMN,
+    paddingVertical: spacing.xxs,
   },
   label: { flexShrink: 1, marginLeft: LABEL_GAP },
   menu: {
@@ -215,6 +264,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 24,
     width: MENU_WIDTH,
+  },
+  menuDark: {
+    backgroundColor: colors.bg.iconButton,
+    borderRadius: DARK_RADIUS,
   },
   pressed: { opacity: PRESSED_OPACITY },
   preview: {

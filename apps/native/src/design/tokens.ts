@@ -40,6 +40,8 @@ export const colors = {
     statusStrip: "#1B1B1B",
   },
   speaker: { avatar: "#E4CD75", text: "#E8E8E3" },
+  // Chat History's swipe Pin capsule (#73).
+  swipe: { pin: "#525252" },
   switch: { on: "#30D159" },
   text: {
     onLight: "#1A1A1A",
