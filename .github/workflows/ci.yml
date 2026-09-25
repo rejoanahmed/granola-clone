@@ -1,15 +1,19 @@
 name: CI
 
-# The only gate a pull request has to pass.
+# Runs on every push to any branch, and on every pull request into main. It is the check a branch
+# shows; a push to main also runs deploy.yml's verify, which is the promotion gate, and the
+# duplicate run is accepted.
 #
-# Everything here runs AGAIN in deploy.yml at the merge SHA. That is not redundancy: a green PR
-# proves the branch, not the merge result, and only deploy.yml's own verify job stands between a
-# merge commit and dev.
+# Maestro is deliberately absent: the flows need an iOS simulator and a running Metro, so they run
+# locally (`bash scripts/maestro.sh`), never here. scripts/check-ci.mjs fails the gate if a macOS
+# runner or a maestro step is added, or if setup-bun stops reading the pin from package.json.
 #
 # Secrets: none. `deploy:check` dry-runs both environments — wrangler resolves the bindings against
 # the config and uploads nothing — so a fork PR runs the full gate with no credentials at all.
 
 on:
+  push:
+    branches: ["**"]
   pull_request:
     branches: [main]
 
@@ -17,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  # A superseded PR run protects nothing, so cancel it. deploy.yml is the opposite case.
+  # A superseded run protects nothing, so cancel it. deploy.yml is the opposite case.
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -46,7 +50,8 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
-      # ultracite -> syncpack -> check-architecture -> check-types. check-architecture is in this
+      # ultracite -> syncpack -> check-architecture -> check-ci -> check-branding ->
+      # check-parity-report -> check-types. check-architecture is in this
       # script and not in `bun run test`, which is why a query moved into a service passes every
       # test and fails here.
       - name: Check

@@ -27,6 +27,9 @@ out/
 .deploy.env
 .wrangler.deploy.jsonc
 
+# parity capture output (scripts/parity.sh); regenerated, never committed
+artifacts/
+
 # logs
 logs/
 *.log

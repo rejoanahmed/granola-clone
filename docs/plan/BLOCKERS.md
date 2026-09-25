@@ -434,3 +434,18 @@
   `taken` transition and the error mapping it reads are unit-tested.
 - **Two phase-11 flows have timing exposures** (local midnight; the card's 60 s refetch in
   `event-gone.yaml`). Documented in docs/TESTING.md §8 rather than engineered away.
+
+## Phase 12 (parity pass and CI)
+
+- **Local Bun is 1.3.14, the pin is bun@1.4.2.** `packageManager` pins `bun@1.4.2` and CI's
+  `setup-bun` reads it (`bun-version-file: package.json`); this machine runs 1.3.14. The pin is
+  not changed (AGENTS.md). `bun-v1.4.2` is a published release (2026-09-05, checked with
+  `gh api repos/oven-sh/bun/releases/tags/bun-v1.4.2`), so the install should succeed, but no
+  agent pushes, so a green CI run on 1.4.2 is unconfirmed until the user pushes. Stubbed: nothing;
+  local gates run on 1.3.14. Unblocked by the first green `CI / verify` run after a push.
+- **The parity report is a skeleton until the pass fills it.** The pre-commit hook runs
+  `bun run check`, and §7.3 makes `check-parity-report.mjs` fail while `docs/parity/REPORT.md` is
+  absent, which would block every commit on phase-12 before a capture exists. Stubbed: the contract
+  step committed a REPORT.md with the 63 `## #NN` headings (the spec's list; "55" elsewhere counts
+  captured screens, not numbers) and empty tables, which passes vacuously. Unblocked by the parity
+  pass writing the rows (K1, K2, K3, W1–W11 among them), after which the gate means what §7.3 says.
