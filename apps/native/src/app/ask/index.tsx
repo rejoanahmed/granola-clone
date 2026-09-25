@@ -1,3 +1,4 @@
+import { ToastProvider } from "@native/design";
 import { ChatScreen } from "@native/features/chat/ChatScreen";
 import { useLocalSearchParams } from "expo-router";
 
@@ -9,13 +10,17 @@ export default function GlobalChat() {
     thread?: string;
     title?: string;
   }>();
+  // Its own toasts: a modal is a separate presentation, and the root provider's toast would draw
+  // on the home screen underneath it.
   return (
-    <ChatScreen
-      presentation="modal"
-      scope={GLOBAL}
-      scopeTitle=""
-      thread={thread}
-      threadTitle={title}
-    />
+    <ToastProvider>
+      <ChatScreen
+        presentation="modal"
+        scope={GLOBAL}
+        scopeTitle=""
+        thread={thread}
+        threadTitle={title}
+      />
+    </ToastProvider>
   );
 }

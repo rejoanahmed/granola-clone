@@ -11,7 +11,6 @@ import {
 import { AccessibilityInfo, Pressable, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FullWindowOverlay } from "react-native-screens";
 import { Text } from "./Text";
 import {
   colors,
@@ -81,13 +80,7 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {toast ? (
-        // Its own window above everything: a toast raised from a modal or a sheet (the chat, Chat
-        // History) would otherwise draw under that presentation, on the root screen nobody sees.
-        <FullWindowOverlay>
-          <ToastView key={toast.id} onHide={hide} toast={toast} />
-        </FullWindowOverlay>
-      ) : null}
+      {toast ? <ToastView key={toast.id} onHide={hide} toast={toast} /> : null}
     </ToastContext.Provider>
   );
 }
