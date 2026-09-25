@@ -13,7 +13,7 @@ import type { NoteStatusRow } from "./status";
 const ROW_HEIGHT = 48;
 const GLYPH = 18;
 
-/** The post-End status row (screen 105), and its designed failure states (docs/spec/phase-5.md §3.8). */
+/** The post-End status row (screens 105, 106), and its designed failure states (docs/spec/phase-5.md §3.8, phase-6.md §3.1). */
 export function NoteStatus({
   busy,
   onRetry,
@@ -25,7 +25,8 @@ export function NoteStatus({
   readonly row: NoteStatusRow;
   readonly style?: ViewStyle;
 }) {
-  const spinning = row.kind === "uploading" || busy;
+  const spinning =
+    row.kind === "uploading" || row.kind === "generating" || busy;
   return (
     <View style={[styles.row, style]} testID="note-status">
       {spinning ? (
@@ -38,7 +39,7 @@ export function NoteStatus({
         numberOfLines={2}
         style={styles.text}
         testID="note-status-text"
-        variant="secondary"
+        variant="caption"
       >
         {row.text}
       </Text>
@@ -70,5 +71,7 @@ const styles = StyleSheet.create({
     minHeight: ROW_HEIGHT,
     paddingHorizontal: spacing.lg,
   },
-  text: { flex: 1 },
+  // Screens 105 and 106 agree: the status copy is semibold and a size under body, not the 17 pt regular
+  // of `secondary`.
+  text: { flex: 1, fontWeight: "600" },
 });

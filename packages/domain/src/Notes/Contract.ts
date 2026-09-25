@@ -1,4 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
+import { NoteGeneration } from "../Domain/Generation";
 import {
   Note,
   NoteCreate,
@@ -140,5 +141,28 @@ export const getNoteTranscriptRoute = createRoute({
   },
   security: [{ sessionCookie: [] }],
   summary: "Read a note's transcript",
+  tags: ["Notes"],
+});
+
+// Here rather than in a Generations contract because a client holds a note id, not a generation
+// id. Served by the generations service. There is no route that starts a generation: the transcript
+// settling is the only trigger.
+export const retryNoteGenerationRoute = createRoute({
+  description:
+    "Queues a failed generation again: status queued, the attempt count reset and failure cleared. The job is enqueued; poll GET /notes/{id} for the outcome. Only a failed generation can be retried.",
+  method: "post",
+  path: "/notes/{id}/generation/retry",
+  request: { params: NoteParams },
+  responses: {
+    200: json(NoteGeneration, "The generation, queued"),
+    404: notFound,
+    409: json(
+      ErrorBody,
+      "GenerationNotRetryable: the note has no generation, or it has not failed"
+    ),
+    ...commonErrors,
+  },
+  security: [{ sessionCookie: [] }],
+  summary: "Retry a note's generation",
   tags: ["Notes"],
 });

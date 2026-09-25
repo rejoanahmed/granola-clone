@@ -21,6 +21,7 @@
           "EMAIL",
           "MODE",
           "ROLE",
+          "TIMES",
           "http",
           "json",
           "output"

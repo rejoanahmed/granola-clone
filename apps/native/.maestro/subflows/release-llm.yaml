@@ -1,0 +1,8 @@
+# Let a held generation finish now: the LLM switch back to `auto`, and every queued job run inline
+# (docs/spec/phase-6.md §6.6).
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-llm-release.js

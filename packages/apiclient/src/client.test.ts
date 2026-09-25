@@ -500,6 +500,7 @@ describe("the phase-4 notes query keys", () => {
     expect(keys.updateNote?.(ID)).toEqual(both);
     expect(keys.trashNote?.(ID)).toEqual(both);
     expect(keys.restoreNote?.(ID)).toEqual(both);
+    expect(keys.retryNoteGeneration?.(ID)).toEqual(both);
     expect(keys.createNote?.()).toEqual([["notes", "list"]]);
   });
 });

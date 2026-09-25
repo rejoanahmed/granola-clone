@@ -39,6 +39,9 @@
     // Comma-separated flag keys the fake starts ON. This is how you work on a dark feature
     // locally: add its key here, restart `wrangler dev`. Empty is what production looks like.
     "FLAGS_ON": "",
+    // The deterministic fake note writer (packages/server/src/Integrations/Llm). No vendor has been
+    // chosen, so `live` refuses to start (docs/plan/BLOCKERS.md).
+    "LLM_MODE": "fake",
     "NATIVE_SCHEME": "gcnotes",
     "NODE_ENV": "development",
     // The deterministic fake transcriber (packages/server/src/Integrations/Transcription). No vendor
@@ -79,7 +82,25 @@
     }
   ],
 
-  // The transcription sweep (RecordingsService.sweep): polls every held job and settles it.
+  // Note generation (GenerationsService.run). `wrangler dev` simulates `-local`, which is never
+  // created. One message per batch gives each note its own attempt and wall clock; `max_retries`
+  // is above GENERATION_MAX_ATTEMPTS because the row, not the queue, counts attempts. Queues are
+  // not inherited, so each `env` block repeats this, and its queue is created by the user first
+  // (docs/plan/BLOCKERS.md).
+  "queues": {
+    "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-local" }],
+    "consumers": [
+      {
+        "queue": "gcnotes-generation-local",
+        "max_batch_size": 1,
+        "max_batch_timeout": 1,
+        "max_retries": 5
+      }
+    ]
+  },
+
+  // The transcription sweep (RecordingsService.sweep), then the generation sweep: polls every held
+  // job and settles it, then re-sends every generation the queue lost.
   "triggers": {
     "crons": ["*/2 * * * *"]
   },
@@ -110,8 +131,8 @@
   },
 
   // Wrangler does NOT inherit top-level bindings into an `env` block: anything omitted here is
-  // simply absent at runtime, with no warning. That is why d1, flagship, vars and observability
-  // are all repeated rather than referenced — and why a cron, when one is added, must be too.
+  // simply absent at runtime, with no warning. That is why d1, flagship, queues, vars and
+  // observability are all repeated rather than referenced, and the crons too.
   //
   // ── The ids below are NAMED PLACEHOLDERS, not values. ────────────────────────────────────────
   // D1 and Flagship ids are account-specific, so committing real ones points every clone at one
@@ -143,6 +164,8 @@
         // Live, not the fake: the E2E suite runs against this Worker and must exercise the real
         // Flagship path, because flipping a flag here is the rehearsal for flipping it in prod.
         "FLAGS_MODE": "live",
+        // The fake, for the same reason as TRANSCRIPTION_MODE below.
+        "LLM_MODE": "fake",
         "NATIVE_SCHEME": "gcnotes",
         // `development` on a deployed Worker is deliberate: `AppConfig` refuses EMAIL_MODE=fake
         // under `production`, because the fake writes plaintext codes to D1, and the fake is the
@@ -177,6 +200,17 @@
           "bucket_name": "gcnotes-audio-dev"
         }
       ],
+      "queues": {
+        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-dev" }],
+        "consumers": [
+          {
+            "queue": "gcnotes-generation-dev",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 5
+          }
+        ]
+      },
       "triggers": {
         "crons": ["*/2 * * * *"]
       },
@@ -212,6 +246,8 @@
         // until one exists (docs/plan/BLOCKERS.md, "No live email client") — which is also the
         // truth today: nothing can send a sign-in code in production.
         "FLAGS_MODE": "live",
+        // Live, said out loud, and refused at startup until a client exists, as TRANSCRIPTION_MODE.
+        "LLM_MODE": "live",
         "NATIVE_SCHEME": "gcnotes",
         "NODE_ENV": "production",
         // Live, said out loud as PROVIDER-FAKES.md asks. It has no client yet, so `AppConfig`
@@ -240,6 +276,17 @@
           "bucket_name": "gcnotes-audio-prod"
         }
       ],
+      "queues": {
+        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-prod" }],
+        "consumers": [
+          {
+            "queue": "gcnotes-generation-prod",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 5
+          }
+        ]
+      },
       "triggers": {
         "crons": ["*/2 * * * *"]
       },

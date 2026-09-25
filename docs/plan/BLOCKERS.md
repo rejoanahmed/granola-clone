@@ -180,3 +180,35 @@
   sweep resubmits a stranded `transcribing` row after 5 minutes when its object is stored, and
   releases it only after 30 when it is not, so a slow 100 MB put is never cut off mid-stream. If the
   client has already given up by then, the row joins the abandoned-upload entry above.
+
+## Phase 6 API
+
+- **No live LLM client.** No vendor has been chosen, so there is no `LlmClient.ts` (a prompt
+  builder, the JSON contract of phase-6.md §6.5, `LLM_TIMEOUT_MS`, and a finish-reason mapping onto
+  `truncated`). `LLM_MODE=live` is refused at startup until it exists, and production sets `live`,
+  so production fails at startup alongside `EMAIL_MODE` and `TRANSCRIPTION_MODE`. The stub:
+  `LlmFake` runs everywhere else. The fake's notes prove the pipeline, the parser and the renderer,
+  not note quality, which needs the live client and a hand check.
+- **The generation queues must exist before a deploy.** `gcnotes-generation-dev` and
+  `gcnotes-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
+  agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy. The
+  top-level `gcnotes-generation-local` is simulated by `wrangler dev` and never created.
+
+## Deferred review items (phase 6)
+
+- **Full phase-2..6 regression run.** The review fix pass ran only the flows its changes touch: the
+  five phase-6 flows and the two edited phase-5 flows (`record-transcript`, `recording-typing-notes`),
+  all passing on 2026-09-25, which closes the "never ran" half of the finding for AC6 and AC7. The
+  whole-suite run AC5 asks for is the final gate's job, run once.
+- **Retry's in-flight spinner is not asserted.** `generation-failed.yaml` now waits for "Generating
+  notes..." between Retry and `release-llm`, but not for the spinner replacing Retry while the POST
+  is in flight: against a local API that window is a few milliseconds, and a Maestro wait on it
+  would be a race rather than a check. It belongs in a component test of `NoteStatus` with `busy`.
+- **The real queue consumer is not paused in the harness-driven flows.** `generation-failed.yaml`
+  now asserts `output.llmRun.failed === 1` instead of assuming each pass spent one attempt, which
+  holds whether or not `wrangler dev`'s consumer spent attempt 1 itself. A harness switch that
+  pauses the consumer would make the accounting exact, at the cost of a test-only branch in the
+  queue handler; not worth it while the assertion covers both orders.
+- **An edit to the fallback body while generating is covered by a unit test, not a flow.** The
+  page hides the body while generating, so no flow can reach it; `Generations.test.ts` "keeps a body
+  edited while generating" pins the user-wins rule through the service.

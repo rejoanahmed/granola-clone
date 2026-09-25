@@ -447,3 +447,256 @@ describe("the E2E harness, phase 5", () => {
     );
   });
 });
+
+// ── Phase 6: seeded generations and the LLM switch (docs/spec/phase-6.md §6.3, §6.6, §7) ──────
+//
+// Read through loose views again: the container has no `generations` and the harness no LLM
+// switch yet. `GENERATION_QUEUE` is a recording stand-in for the producer binding, so an upload
+// that settles can enqueue; nothing consumes it, which is exactly the local-queue timing these
+// harness routes exist to take out of a flow.
+
+type GenerationView = {
+  readonly failure: string | null;
+  readonly status: string;
+};
+type NoteView = {
+  readonly bodyMarkdown: string;
+  readonly generation: GenerationView | null;
+  readonly title: string;
+};
+type InlineCounts = { done: number; failed: number; pending: number };
+type HarnessP6 = HarnessView & {
+  releaseLlm: () => Promise<InlineCounts>;
+  runLlm: (times: unknown) => Promise<unknown>;
+  setLlmMode: (mode: unknown) => Promise<{ mode: string }>;
+};
+type GenerationsView = { run: (generationId: string) => Promise<string> };
+
+const memoryQueue = () => {
+  const sent: unknown[] = [];
+  return {
+    send: (body: unknown) => {
+      sent.push(body);
+      return Promise.resolve();
+    },
+    sendBatch: (messages: readonly { body: unknown }[]) => {
+      for (const message of messages) {
+        sent.push(message.body);
+      }
+      return Promise.resolve();
+    },
+    sent,
+  };
+};
+
+describe("the E2E harness, phase 6", () => {
+  let d1: TestD1;
+  let container: ReturnType<typeof buildContainer>;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    container = buildContainer({
+      ...envOver(d1),
+      AUDIO: memoryBucket(),
+      GENERATION_QUEUE: memoryQueue(),
+    } as unknown as Env);
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const recordings = () =>
+    (container as unknown as { recordings: RecordingsView }).recordings;
+  const generations = () =>
+    (container as unknown as { generations: GenerationsView }).generations;
+  const switches = () => harness as unknown as HarnessP6;
+  const noteOf = async (noteId: string): Promise<NoteView> =>
+    (await container.notes.get(
+      E2E_USERS.person,
+      noteId
+    )) as unknown as NoteView;
+
+  const fresh = async () => {
+    await harness.reset();
+    return await harness.seed();
+  };
+
+  // A new recording of 12 s, taken as far as the transcriber's current mode lets it go.
+  const recorded = async () => {
+    const person = E2E_USERS.person;
+    const { recording } = await recordings().create(person, {});
+    await recordings().end(person, recording.id, { durationMs: 12_000 });
+    const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
+    const uploaded = await recordings().uploadAudio(person, recording.id, {
+      body: new Blob([bytes]).stream(),
+      contentLength: String(bytes.byteLength),
+      contentType: "audio/mp4",
+    });
+    const note = await d1
+      .prepare("SELECT note_id AS id FROM recordings WHERE id = ?")
+      .bind(recording.id)
+      .first("id");
+    return { noteId: String(note), status: uploaded.status };
+  };
+
+  const generationIdOf = async (noteId: string): Promise<string> =>
+    String(
+      await d1
+        .prepare("SELECT id FROM note_generations WHERE note_id = ?")
+        .bind(noteId)
+        .first("id")
+    );
+
+  it("gives the three seeded recordings a generated row, and the typed standup none", async () => {
+    await fresh();
+
+    const rows = await d1
+      .prepare(
+        "SELECT note_id, recording_id, status, failure FROM note_generations ORDER BY recording_id"
+      )
+      .all();
+
+    expect(rows.results).toEqual([
+      {
+        failure: null,
+        note_id: "not_e2e_launch",
+        recording_id: "rec_e2e_launch",
+        status: "generated",
+      },
+      {
+        failure: null,
+        note_id: "not_e2e_other",
+        recording_id: "rec_e2e_other",
+        status: "generated",
+      },
+      {
+        failure: null,
+        note_id: "not_e2e_solo",
+        recording_id: "rec_e2e_solo",
+        status: "generated",
+      },
+    ]);
+    await expect(noteOf("not_e2e_launch")).resolves.toMatchObject({
+      generation: { failure: null, status: "generated" },
+      title: "Launch planning review",
+    });
+    await expect(noteOf("not_e2e_standup")).resolves.toMatchObject({
+      generation: null,
+    });
+  });
+
+  it("answers the LLM mode it set, stores it as the llm switch, and a reset clears it", async () => {
+    await fresh();
+
+    await expect(switches().setLlmMode("hold")).resolves.toEqual({
+      mode: "hold",
+    });
+    expect(
+      (
+        await d1
+          .prepare("SELECT name, value FROM e2e_switches WHERE name = 'llm'")
+          .all()
+      ).results
+    ).toEqual([{ name: "llm", value: "hold" }]);
+
+    await harness.reset();
+    expect(
+      Number(
+        await d1.prepare("SELECT count(*) AS n FROM e2e_switches").first("n")
+      )
+    ).toBe(0);
+  });
+
+  it.each(["auto", "hold", "fail", "malformed", "truncated"])(
+    "accepts the LLM mode %s",
+    async (mode) => {
+      await expect(switches().setLlmMode(mode)).resolves.toEqual({ mode });
+    }
+  );
+
+  it("refuses an LLM mode it does not know", async () => {
+    await expect(switches().setLlmMode("sometimes")).rejects.toMatchObject({
+      _tag: "ValidationFailed",
+    });
+  });
+
+  it("releases a held generation: the switch goes to auto and the job runs inline", async () => {
+    await fresh();
+    await switches().setLlmMode("hold");
+    const { noteId, status } = await recorded();
+    expect(status).toBe("transcribed");
+    await generations().run(await generationIdOf(noteId));
+    await expect(noteOf(noteId)).resolves.toMatchObject({
+      generation: { status: "queued" },
+      title: "Untitled note",
+    });
+
+    const released = await switches().releaseLlm();
+
+    expect(released).toEqual({ done: 1, failed: 0, pending: 0 });
+    await expect(noteOf(noteId)).resolves.toMatchObject({
+      generation: { failure: null, status: "generated" },
+      title: "Brief check-in",
+    });
+    expect(
+      await d1
+        .prepare("SELECT value FROM e2e_switches WHERE name = 'llm'")
+        .first("value")
+    ).toBe("auto");
+  });
+
+  it("spends one attempt per llm/run pass: three in fail end failed / llm_unavailable", async () => {
+    await fresh();
+    await switches().setLlmMode("fail");
+    const { noteId } = await recorded();
+
+    await switches().runLlm(3);
+
+    await expect(noteOf(noteId)).resolves.toMatchObject({
+      generation: { failure: "llm_unavailable", status: "failed" },
+      title: "Untitled note",
+    });
+    expect(
+      await d1
+        .prepare("SELECT value FROM e2e_switches WHERE name = 'llm'")
+        .first("value")
+    ).toBe("fail");
+  });
+
+  it("leaves one pass in fail short of failing", async () => {
+    await fresh();
+    await switches().setLlmMode("fail");
+    const { noteId } = await recorded();
+
+    await switches().runLlm(1);
+
+    await expect(noteOf(noteId)).resolves.toMatchObject({
+      generation: { failure: null, status: "queued" },
+    });
+  });
+
+  it.each([0, 6, "three", undefined])(
+    "refuses llm/run with times %s",
+    async (times) => {
+      await expect(switches().runLlm(times)).rejects.toMatchObject({
+        _tag: "ValidationFailed",
+      });
+    }
+  );
+
+  it("finishes a held transcription through to a generated note when the LLM is in auto", async () => {
+    await fresh();
+    await switches().setTranscriptionMode("hold");
+    const { noteId, status } = await recorded();
+    expect(status).toBe("transcribing");
+
+    await switches().releaseTranscription();
+
+    await expect(noteOf(noteId)).resolves.toMatchObject({
+      generation: { status: "generated" },
+      title: "Brief check-in",
+    });
+  });
+});

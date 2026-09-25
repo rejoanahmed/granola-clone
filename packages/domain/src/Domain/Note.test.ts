@@ -115,3 +115,32 @@ describe("the recording on a note", () => {
     ).toBe(true);
   });
 });
+
+// Phase 6 (docs/spec/phase-6.md §6.2): the note detail carries its generation, so the page can
+// choose between "Generating notes...", the failed row with Retry, and the finished note from the
+// one fetch it already makes. Null for a note typed by hand, or one not yet transcribed.
+describe("the generation on a note", () => {
+  const fields = (schema: { shape: object }) =>
+    schema.shape as Record<string, { safeParse: (value: unknown) => Parsed }>;
+
+  it("is part of the note detail, nullable", () => {
+    expect(fields(Note).generation?.safeParse(null).success).toBe(true);
+  });
+
+  it("carries only the status, the failure and updatedAt", () => {
+    expect(
+      fields(Note).generation?.safeParse({
+        failure: null,
+        status: "generating",
+        updatedAt: 1_700_000_000_000,
+      }).success
+    ).toBe(true);
+    expect(
+      fields(Note).generation?.safeParse({ status: "sometimes" }).success
+    ).toBe(false);
+  });
+
+  it("is not on the summary: home reads the generated title, not the job", () => {
+    expect(fields(NoteSummary).generation).toBeUndefined();
+  });
+});

@@ -96,3 +96,45 @@ describe("TRANSCRIPTION_MODE", () => {
     );
   });
 });
+
+// `LLM_MODE` is phase 6's (phase-6.md §6.6, §7). The `TRANSCRIPTION_MODE` shape again: the fake is
+// refused in production, and `live` is refused until a vendor client exists (§10).
+const NAMES_LLM_MODE = /LLM_MODE/;
+
+describe("LLM_MODE", () => {
+  it("defaults to the fake when absent", () => {
+    expect(configWith({})).toMatchObject({ llm: { mode: "fake" } });
+  });
+
+  it("accepts the fake outside production", () => {
+    expect(configWith({ LLM_MODE: "fake" })).toMatchObject({
+      llm: { mode: "fake" },
+    });
+  });
+
+  it("refuses the fake in production, naming LLM_MODE", () => {
+    expect(() =>
+      configWith({
+        EMAIL_MODE: "fake",
+        LLM_MODE: "fake",
+        NODE_ENV: "production",
+        TRANSCRIPTION_MODE: "fake",
+      })
+    ).toThrow(NAMES_LLM_MODE);
+  });
+
+  it("refuses production with the variable unset, since unset means fake", () => {
+    expect(() => configWith({ NODE_ENV: "production" })).toThrow(
+      NAMES_LLM_MODE
+    );
+  });
+
+  it("refuses live, naming the client that does not exist yet", () => {
+    expect(() => configWith({ LLM_MODE: "live" })).toThrow(NAMES_LLM_MODE);
+    expect(() => configWith({ LLM_MODE: "live" })).toThrow(NAMES_A_CLIENT);
+  });
+
+  it("refuses a value that is neither", () => {
+    expect(() => configWith({ LLM_MODE: "gpt" })).toThrow(NAMES_LLM_MODE);
+  });
+});

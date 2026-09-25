@@ -1,0 +1,146 @@
+# AC1 (docs/spec/phase-6.md §8): a recording past 60 s with "Budget follow-up" typed into it goes
+# "Uploading transcript..." (#105) → "Generating notes..." (#106), with the typed notes hidden and
+# no Share or More, → the finished note (#10, #11): the typed line as its title, Discussion, Your
+# notes and Next Steps with a bold next step. Edit notes opens the generated markdown source (#31),
+# and home lists the new row under its generated title.
+appId: ${APP_ID}
+name: A long recording becomes a titled note with sections
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: hold
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: hold
+- runFlow: ../subflows/start-recording.yaml
+
+- tapOn:
+    id: recording-notes-input
+- inputText: Budget follow-up
+- extendedWaitUntil:
+    visible:
+      id: recording-keyboard-dismiss
+    timeout: 10000
+- tapOn:
+    id: recording-keyboard-dismiss
+- extendedWaitUntil:
+    visible:
+      id: recording-bar
+    timeout: 10000
+- runFlow: ../subflows/wait-for-long.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- assertVisible:
+    id: note-status-text
+    text: Uploading transcript\.\.\.
+
+# The transcript lands; generation starts and is held (#106).
+- runFlow: ../subflows/release-transcription.yaml
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
+- assertVisible:
+    id: note-status
+- assertVisible:
+    id: note-title
+    text: Untitled note
+- assertNotVisible:
+    id: note-share
+- assertNotVisible:
+    id: note-more
+# The typed private notes are not shown while the notes are written (#106).
+- assertNotVisible:
+    id: "note-block-\\d+"
+- assertNotVisible:
+    id: note-body-empty
+# Compared by eye against #106 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-6-generating
+
+# The LLM answers; the page polls every 2 s and draws the finished note (#10).
+- runFlow: ../subflows/release-llm.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Budget follow-up
+    timeout: 10000
+- assertVisible:
+    id: note-block-0
+    text: Discussion
+- assertVisible:
+    id: "note-block-\\d+"
+    text: Your notes
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more
+# Compared by eye against #10 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-6-generated
+
+- scrollUntilVisible:
+    element:
+      id: "note-block-\\d+"
+      text: Next Steps
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: "note-block-\\d+"
+      text: Confirm owners for the open items
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: note-body-end
+    direction: DOWN
+    timeout: 20000
+# note-body-end reads visible under the Ask pill; one more scroll brings the last block above it.
+- scroll
+# Compared by eye against #11 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-6-generated-end
+- scrollUntilVisible:
+    element:
+      id: note-meta-pill
+    direction: UP
+    timeout: 20000
+
+# More → Edit notes shows the generated markdown source (#31).
+- runFlow: ../subflows/open-editor.yaml
+- assertVisible:
+    id: note-editor-input
+    text: "### Discussion.*"
+- tapOn:
+    id: note-editor-close
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "home-note-(?!not_e2e_).*"
+      text: "Budget follow-up, .*"
+    timeout: 15000

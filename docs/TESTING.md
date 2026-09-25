@@ -276,6 +276,47 @@ These must exist. The names are the specification; the phrasing in the test file
 - `groupUtterances` on an empty list, one segment, one speaker, and a returning speaker; the strict
   bodies refuse unknown keys; `RecordingEnd` bounds the duration
 
+### `Generations/Generations.test.ts` (phase 6)
+
+- a recording that settles `transcribed` gets exactly one `queued` row and one queue message; a
+  second settle (a sweep after the upload answered) adds neither; nothing is written while
+  `transcribing` or for a failed transcription
+- a failed enqueue is survivable: the upload still answers `transcribed`, and `sweep()` after
+  `QUEUED_STALE_AFTER_MS` sends it (`enqueued: 1`)
+- a full note (≥ 60 s, typed "Budget follow-up"): that title, `### Discussion`, `### Your notes`,
+  `### Next Steps` with `- **Confirm owners for the open items**`, no fence; without typed notes a
+  neutral title, the same for the same transcript
+- a brief note (< 60 s, `kind: "brief"`): "Brief check-in", the #40 paragraph, `LOW_CONTENT_TIP`;
+  with typed notes the quoted sentence; silence gives "didn’t capture any speech"; only the first
+  paragraph of a brief answer is kept
+- `run` twice → one LLM call, then `skipped`; a live claim is skipped, a stale one reclaimed at
+  attempt 2, and the first claimant's late write changes nothing
+- `hold` → `queued`, attempt 0, acked; inline sweeps stay pending until `auto`
+- `fail` → `retry`, `retry`, then `failed` / `llm_unavailable` with the fallback title and body;
+  `LlmTimeout` likewise; `truncated` and `LlmRejected` fail at once; `malformed` after three calls
+- a rename while `generating` wins, and the body is still written; a body edited while `failed`
+  wins over a retried generation, which still fills the title
+- `retry` on `failed` → `queued`, attempt 0, no failure, enqueued, then generates; on `generated`,
+  `queued` or a typed note → `GenerationNotRetryable`; B's retry of A's note → the absent id's
+  `NoteNotFound`, A's row untouched
+- the note detail carries `generation` (null for a typed note and before `transcribed`); the list
+  summary carries the generated title
+- a deleted owner cascades the rows; a discard never meets one; a trashed note keeps its row; one
+  row per note; `sweep()` counts sends, so a queue outage reads `enqueued: 0`
+
+### `Generations/Output.test.ts`, `Llm.test.ts`, `Domain/Generation.test.ts` (phase 6)
+
+- the parser: a plain object, a ```` ```json ```` fence, a bare fence; control characters stripped
+  with `\n`/`\t` kept; non-JSON, an array, a missing or non-string `notes_markdown` and an empty
+  body are malformed; `truncated` is truncated even with valid JSON; the title trimmed, collapsed,
+  unquoted, without its trailing period, cut at a word boundary to ≤ 80, and `null` when unusable;
+  headings to `###`, `*`/`+` to `-`, four-space and tab nesting to two spaces, three levels to
+  two, a title-repeating first heading dropped, blank runs collapsed; 100 001 characters is
+  malformed; the #31 excerpt round-trips
+- the fake is deterministic, records every call (failed ones too), writes the brief and full shapes
+  of §6.6, and `hold`/`fail`/`malformed`/`truncated` do as the harness promises
+- `isLowContent` at 0, 4, 11, 12 and 16 words and across utterances; the tip and the title bound
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -550,12 +591,18 @@ apps/native/.maestro/
     start-recording.yaml tap + and wait for the live card (the mic must be allowed)
     wait-for-end.yaml    skip the fake recorder 10 s ahead, so Cancel becomes End at once
     set-transcription.yaml  MODE param: script the fake transcriber (scripts/e2e-transcription.js)
-    release-transcription.yaml  switch back to auto and sweep once (scripts/e2e-release.js)
+    release-transcription.yaml  switch back to auto and sweep once (scripts/e2e-release.js); since
+                         phase 6 the release also runs queued generations inline
+    set-llm.yaml         MODE param: script the fake LLM (scripts/e2e-llm.js)
+    release-llm.yaml     LLM back to auto, queued generations run inline (scripts/e2e-llm-release.js)
+    run-llm.yaml         TIMES param: that many inline passes, one attempt each, mode left alone
+                         (scripts/e2e-llm-run.js); three in `fail` end a job failed
+    wait-for-long.yaml   skip the fake recorder 60 s ahead, so the note is generated in full
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-5/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-6/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -635,7 +682,9 @@ itself cover the app on every clean launch. All of them are inert in a Release b
 
 No assertion notices that Newsreader fell back to the system font or that a colour drifted, so the
 phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-gallery`
-(gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml). Run with
+(gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
+(#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
+`phase-6-short` (#40, #107) from short-recording.yaml. Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

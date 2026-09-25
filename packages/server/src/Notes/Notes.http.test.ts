@@ -30,6 +30,8 @@ const NOTE = {
   ],
   bodyMarkdown: "### Updates\n\n- Pagination merged",
   createdAt: AT,
+  // Phase 6 (phase-6.md §6.2).
+  generation: null,
   id: NOTE_ID,
   recording: null,
   source: "phone",
@@ -300,6 +302,116 @@ describe("GET, PATCH, trash and restore of one note", () => {
       path,
       method === "PATCH" ? { title: "New" } : undefined
     );
+
+    expect(res.status).toBe(422);
+    expect(calls).toEqual([]);
+  });
+});
+
+// ── Phase 6: POST /notes/{id}/generation/retry (docs/spec/phase-6.md §6.1, §7) ──────────────────
+//
+// In the Notes contract, served by the generations service, as the transcript route is served by
+// recordings. The router, the errors and the shape are imported inside each test rather than at
+// the top, so the phase-4 wire tests above keep running while those modules do not exist yet.
+
+const GENERATION = { failure: null, status: "queued", updatedAt: AT };
+const RETRY_PATH = `/notes/${NOTE_ID}/generation/retry`;
+
+type Router = typeof notesRouter;
+
+const retryAppAs = async (who: Actor | null, answer?: () => unknown) => {
+  const http = await import("../Generations/Http");
+  const { generationsRouter } = http as { generationsRouter: Router };
+  const calls: Call[] = [];
+  const svc = {
+    generations: {
+      retry: (...args: unknown[]) => {
+        calls.push({ args, method: "retry" });
+        return Promise.resolve(answer === undefined ? GENERATION : answer());
+      },
+    },
+  } as unknown as Container;
+  const app = new OpenAPIHono<AppEnv>({
+    defaultHook: (result) => {
+      if (!result.success) {
+        throw new ValidationFailed({ issues: result.error.issues });
+      }
+    },
+  });
+  app.use("*", async (c, next) => {
+    c.set("actor", who);
+    c.set("svc", svc);
+    await next();
+  });
+  app.route("/", generationsRouter);
+  app.onError((err, c) =>
+    isAppError(err)
+      ? c.json({ _tag: err._tag, details: err.details }, err.status)
+      : c.json({ _tag: "Internal" }, 500)
+  );
+  return { app, calls };
+};
+
+describe("POST /notes/{id}/generation/retry", () => {
+  it("is 401 without a session, and never reaches the service", async () => {
+    const { app, calls } = await retryAppAs(null);
+
+    const res = await send(app, "POST", RETRY_PATH);
+
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ _tag: "Unauthorized" });
+    expect(calls).toEqual([]);
+  });
+
+  it("answers 200 with the NoteGeneration shape, taking no body", async () => {
+    const shapes = await import("@gc/domain/Domain/Generation");
+    const { NoteGeneration } = shapes as unknown as {
+      NoteGeneration: typeof Note;
+    };
+    const { app, calls } = await retryAppAs(actor());
+
+    const res = await send(app, "POST", RETRY_PATH);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual(GENERATION);
+    expect(NoteGeneration.strict().safeParse(body).success).toBe(true);
+    expect(calls).toEqual([{ args: [actor(), NOTE_ID], method: "retry" }]);
+  });
+
+  it("is 404 NoteNotFound for somebody else's note, naming only the id sent", async () => {
+    const { app } = await retryAppAs(actor(), () => {
+      throw new NoteNotFound({ id: NOTE_ID });
+    });
+
+    const res = await send(app, "POST", RETRY_PATH);
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({
+      _tag: "NoteNotFound",
+      details: { id: NOTE_ID },
+    });
+  });
+
+  it("is 409 GenerationNotRetryable for a generation that has not failed", async () => {
+    const errors = await import("@gc/domain/Generations/Errors");
+    const { GenerationNotRetryable } = errors as unknown as {
+      GenerationNotRetryable: typeof NoteTrashed;
+    };
+    const { app } = await retryAppAs(actor(), () => {
+      throw new GenerationNotRetryable({ id: NOTE_ID });
+    });
+
+    const res = await send(app, "POST", RETRY_PATH);
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ _tag: "GenerationNotRetryable" });
+  });
+
+  it("is 422, not 404, for an id that is not a note id", async () => {
+    const { app, calls } = await retryAppAs(actor());
+
+    const res = await send(app, "POST", "/notes/not-an-id/generation/retry");
 
     expect(res.status).toBe(422);
     expect(calls).toEqual([]);

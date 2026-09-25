@@ -1,0 +1,15 @@
+# TIMES inline passes over every queued generation, spending one attempt each, with the LLM's mode
+# left alone (docs/spec/phase-6.md §6.6, §8 note 1). Three passes in `fail` end the job failed.
+#
+#   - runFlow:
+#       file: ../subflows/run-llm.yaml
+#       env:
+#         TIMES: "3"
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-llm-run.js
+    env:
+      TIMES: ${TIMES}

@@ -8,6 +8,7 @@ flows:
   - phase-3/*
   - phase-4/*
   - phase-5/*
+  - phase-6/*
 
 # Everything under this workspace runs against the simulator build; no flow may depend on the
 # order it runs in, because `clearState` is how each one starts from a known place.

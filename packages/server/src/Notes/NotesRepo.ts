@@ -7,12 +7,18 @@ import {
   isNull,
   lt,
   noteAttendees,
+  noteGenerations,
   notes,
   or,
   recordings,
   sql,
   user,
 } from "@gc/db";
+import {
+  GenerationFailure,
+  GenerationStatus,
+  type NoteGeneration,
+} from "@gc/domain/Domain/Generation";
 import { UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
@@ -47,6 +53,7 @@ export type NoteRecord = {
   readonly attendees: readonly StoredAttendee[];
   readonly bodyMarkdown: NoteBody;
   readonly createdAt: Timestamp;
+  readonly generation: NoteGeneration | null;
   readonly id: NoteId;
   readonly ownerId: UserId;
   readonly recording: NoteRecording | null;
@@ -57,7 +64,10 @@ export type NoteRecord = {
   readonly updatedAt: Timestamp;
 };
 
-export type NewNote = Omit<NoteRecord, "attendees" | "recording" | "trashedAt">;
+export type NewNote = Omit<
+  NoteRecord,
+  "attendees" | "generation" | "recording" | "trashedAt"
+>;
 
 export type NewAttendee = {
   readonly email: string | null;
@@ -107,11 +117,14 @@ const columnsOf = (patch: NotePatch) =>
 // method takes the id it acts on and the time it stamps, and answers `null` or `false` for a row
 // it did not find.
 export const makeNotesRepo = (db: DrizzleClient) => ({
-  // The recording is joined rather than read by a second query: at most one row matches, because
-  // `recordings.note_id` is unique.
+  // The recording and its generation are joined rather than read by further queries: at most one
+  // row of each matches, because both tables are unique on `note_id`.
   byId: async (id: NoteId): Promise<NoteRecord | null> => {
     const joined = await db
       .select({
+        generationFailure: noteGenerations.failure,
+        generationStatus: noteGenerations.status,
+        generationUpdatedAt: noteGenerations.updatedAt,
         note: notes,
         recordingDurationMs: recordings.durationMs,
         recordingId: recordings.id,
@@ -119,6 +132,7 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
       })
       .from(notes)
       .leftJoin(recordings, eq(recordings.noteId, notes.id))
+      .leftJoin(noteGenerations, eq(noteGenerations.noteId, notes.id))
       .where(eq(notes.id, id))
       .get();
     if (joined === undefined) {
@@ -141,6 +155,17 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
       })),
       bodyMarkdown: row.bodyMarkdown,
       createdAt: row.createdAt,
+      generation:
+        joined.generationStatus === null || joined.generationUpdatedAt === null
+          ? null
+          : {
+              failure:
+                joined.generationFailure === null
+                  ? null
+                  : GenerationFailure.parse(joined.generationFailure),
+              status: GenerationStatus.parse(joined.generationStatus),
+              updatedAt: joined.generationUpdatedAt,
+            },
       id: NoteId.parse(row.id),
       ownerId: UserId.parse(row.ownerId),
       recording:

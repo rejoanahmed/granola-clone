@@ -36,6 +36,13 @@
       "when": 1790272808947,
       "tag": "0004_recording_attempt",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790281854295,
+      "tag": "0005_note_generations",
+      "breakpoints": true
     }
   ]
 }

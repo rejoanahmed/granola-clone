@@ -6,11 +6,13 @@ import {
   isNull,
   lt,
   noteAttendees,
+  noteGenerations,
   notes,
   recordings,
   sql,
   transcriptSegments,
 } from "@gc/db";
+import type { GenerationId } from "@gc/domain/Domain/Generation";
 import { NoteId, UserId } from "@gc/domain/Domain/Ids";
 import type { AttendeeId } from "@gc/domain/Domain/Note";
 import {
@@ -286,16 +288,19 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
     ): Promise<boolean> =>
       claim(id, "transcribing", { providerJobId: jobId, updatedAt: now }, null),
 
-    // The completion in one unit of work: the claim, the segments, and the note's body. The
-    // segments are `on conflict do nothing` against the unique (recording, position), so an
-    // overlapping second completion — whose claim matches nothing — writes no second copy either.
-    // The body is filled only while it is still empty, so it never overwrites a note somebody has
-    // since edited. The claim's ref is the answer: read it after the commit.
+    // The completion in one unit of work: the claim, the segments, the note's body and the queued
+    // generation. The segments are `on conflict do nothing` against the unique (recording,
+    // position), so an overlapping second completion — whose claim matches nothing — writes no
+    // second copy either; the generation likewise against its unique note and recording, so only
+    // one row ever exists however many settles race. The body is filled only while it is still
+    // empty, so it never overwrites a note somebody has since edited. The claim's ref is the
+    // answer: read it after the commit, and send the job only if it won.
     stageComplete: (
       stage: Stage,
       id: RecordingId,
       jobId: string | null,
       segments: readonly StoredSegment[],
+      generationId: GenerationId,
       now: Timestamp
     ): StatementRef => {
       const claimed = stage.add({
@@ -345,6 +350,28 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
               sql`${privateNotes} != ''`
             )
           ),
+      });
+      stage.add({
+        query: db
+          .insert(noteGenerations)
+          .select(
+            db
+              .select({
+                attempt: sql<number>`0`.as("attempt"),
+                claimedAt: sql<null>`null`.as("claimed_at"),
+                createdAt: sql<number>`${now}`.as("created_at"),
+                failure: sql<null>`null`.as("failure"),
+                id: sql<string>`${generationId}`.as("id"),
+                noteId: recordings.noteId,
+                ownerId: recordings.ownerId,
+                recordingId: recordings.id,
+                status: sql<string>`'queued'`.as("status"),
+                updatedAt: sql<number>`${now}`.as("updated_at"),
+              })
+              .from(recordings)
+              .where(and(eq(recordings.id, id), isStatus("transcribed")))
+          )
+          .onConflictDoNothing(),
       });
       return claimed;
     },

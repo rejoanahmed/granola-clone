@@ -1,0 +1,87 @@
+# AC4 (docs/spec/phase-6.md §8, §6.4 step 5): a note renamed from home while its notes are being
+# written keeps the name the user gave it once the LLM answers — and the generated body is still
+# written.
+appId: ${APP_ID}
+name: Renaming a note while its notes are generated
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: hold
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
+
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "home-note-(?!not_e2e_).*"
+      text: "Untitled note, .*"
+    timeout: 15000
+- longPressOn:
+    id: "home-note-(?!not_e2e_).*"
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- tapOn:
+    id: home-note-menu-edit-title
+- extendedWaitUntil:
+    visible:
+      id: rename-sheet
+    timeout: 10000
+# The field autofocuses with its text selected (phase-4 §2.10), so erasing needs no tap.
+- eraseText: 60
+- inputText: My own title
+- tapOn:
+    id: rename-save
+- extendedWaitUntil:
+    notVisible:
+      id: rename-sheet
+    timeout: 10000
+- assertVisible:
+    id: "home-note-(?!not_e2e_).*"
+    text: "My own title, .*"
+
+- runFlow: ../subflows/release-llm.yaml
+- tapOn:
+    id: "home-note-(?!not_e2e_).*"
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 15000
+- assertVisible:
+    id: note-title
+    text: My own title
+- assertVisible:
+    id: note-block-0
+    text: Not much to transcribe here\. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups\.

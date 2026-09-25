@@ -1,10 +1,13 @@
 # AC7 (docs/spec/phase-5.md §8, §3.5, §3.8): typing into the private notes collapses the bar into
 # the keyboard mini pill (#103); Hide keyboard brings it back; after End with the transcriber in
-# auto, the finished note's body is what was typed.
+# auto, the finished note's body is what was typed. Since phase 6 (phase-6.md AC7) the notes are
+# generated from it: a four-word recording is low content, so the note is titled with the typed
+# line and its first paragraph quotes it.
 appId: ${APP_ID}
 name: Typing private notes while recording, into the finished note's body
 tags:
   - phase-5
+  - phase-6
   - regression
 env:
   APP_ID: com.rejoan.gcnotes
@@ -12,6 +15,10 @@ env:
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
     file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
     env:
       MODE: auto
 - runFlow: ../subflows/start-recording.yaml
@@ -49,13 +56,15 @@ env:
     visible:
       id: note-screen
     timeout: 15000
+# Through the real queue, as phase-6/short-recording.yaml is: the generated title is the proof,
+# with AC2's 30 s, and the status row is checked gone after it.
 - extendedWaitUntil:
-    notVisible:
-      id: note-status
+    visible:
+      id: note-title
+      text: Budget follow-up
     timeout: 30000
+- assertNotVisible:
+    id: note-status
 - assertVisible:
     id: note-block-0
-    text: Budget follow-up
-- assertVisible:
-    id: note-title
-    text: Untitled note
+    text: "Not much to transcribe here\\..* Your typed notes: “Budget follow-up”\\."

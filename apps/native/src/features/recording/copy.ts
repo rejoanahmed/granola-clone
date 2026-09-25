@@ -1,4 +1,4 @@
-// Every string the recording journey shows (docs/spec/phase-5.md §4). Flows assert by id; the unit
+// Every string the recording journey shows (docs/spec/phase-5.md §4, phase-6.md §4). Flows assert by id; the unit
 // tests assert by these strings, so a copy change is one edit here.
 export const MIC_COPY = {
   close: "Close",
@@ -36,8 +36,11 @@ export const RECORDING_COPY = {
 } as const;
 
 export const NOTE_STATUS_COPY = {
+  generating: "Generating notes...",
+  generationFailed: "Couldn’t generate notes.",
   interrupted: "This recording didn’t finish.",
   retry: "Retry",
+  retryFailed: "Couldn’t retry. Try again.",
   transcriptionFailed: "Couldn’t transcribe this recording.",
   uploadFailed: "Couldn’t upload the recording.",
   uploading: "Uploading transcript...",

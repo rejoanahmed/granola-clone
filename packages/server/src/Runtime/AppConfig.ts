@@ -17,6 +17,9 @@ const EmailMode = z.enum(["fake", "live"]);
 // no vendor has been chosen, so `live` has no client to select either.
 const TranscriptionMode = z.enum(["fake", "live"]);
 
+// And for the note writer: the fake invents every note, and no vendor has been chosen.
+const LlmMode = z.enum(["fake", "live"]);
+
 const EnvSettings = z
   .object({
     API_URL: z.url(),
@@ -32,6 +35,7 @@ const EnvSettings = z
     // Defaults to the fake, so a forgotten var fails safe (nothing sent, nothing charged) — and in
     // production the refinement below turns that same default into a startup failure.
     EMAIL_MODE: EmailMode.default("fake"),
+    LLM_MODE: LlmMode.default("fake"),
     NATIVE_SCHEME: z.string().min(1),
     NODE_ENV: z.enum(["development", "production", "test"]),
     // Defaults to the fake for the same reason as EMAIL_MODE, and is refused in production the
@@ -76,6 +80,22 @@ const EnvSettings = z
         path: ["TRANSCRIPTION_MODE"],
       });
     }
+    if (settings.LLM_MODE === "fake" && settings.NODE_ENV === "production") {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "LLM_MODE=fake (the default) is refused when NODE_ENV=production: the fake invents every note",
+        path: ["LLM_MODE"],
+      });
+    }
+    if (settings.LLM_MODE === "live") {
+      ctx.addIssue({
+        code: "custom",
+        message:
+          'LLM_MODE=live has no LLM client to select yet (docs/plan/BLOCKERS.md, "No live LLM client")',
+        path: ["LLM_MODE"],
+      });
+    }
     if (settings.E2E_HARNESS !== "true") {
       return;
     }
@@ -105,6 +125,8 @@ export type AppConfig = {
   // choice between the two then fails to compile until it has a branch for each.
   readonly email: { readonly mode: "fake" };
   readonly isDevelopment: boolean;
+  // Only `fake` survives parsing, exactly as `email`; a live client widens it.
+  readonly llm: { readonly mode: "fake" };
   readonly nativeScheme: string;
   // Only `fake` survives parsing, exactly as `email`; a live client widens it.
   readonly transcription: { readonly mode: "fake" };
@@ -130,6 +152,7 @@ export const parseConfig = (env: Env): AppConfig => {
         : null,
     email: { mode: "fake" },
     isDevelopment: settings.NODE_ENV === "development",
+    llm: { mode: "fake" },
     nativeScheme: settings.NATIVE_SCHEME,
     transcription: { mode: "fake" },
   };

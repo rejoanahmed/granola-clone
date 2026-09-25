@@ -564,3 +564,102 @@ describe("POST /e2e/seed, phase 5", () => {
     });
   });
 });
+
+// ── Phase 6: the LLM switch over the real app (docs/spec/phase-6.md §6.6) ─────────────────────
+// The three routes the Maestro scripts `e2e-llm.js`, `e2e-llm-release.js` and `e2e-llm-run.js`
+// call. Their effect on a generation is `packages/server/src/E2E/E2E.test.ts`'s; this is the wire.
+
+describe("POST /e2e/llm, phase 6", () => {
+  it.each(["/e2e/llm", "/e2e/llm/release", "/e2e/llm/run"])(
+    "does not exist at %s when the harness is off",
+    async (path) => {
+      const response = await app.request(
+        path,
+        {
+          body: JSON.stringify({ mode: "hold", times: 1 }),
+          headers: {
+            "content-type": "application/json",
+            "x-e2e-secret": SECRET,
+          },
+          method: "POST",
+        },
+        off
+      );
+
+      expect(response.status).toBe(404);
+    }
+  );
+
+  it("answers the mode it set, and 422 for one it does not know", async () => {
+    await freshWorld();
+
+    const set = await harnessJson("/e2e/llm", { mode: "hold" });
+    const refused = await harnessJson("/e2e/llm", { mode: "maybe" });
+
+    expect(set.status).toBe(200);
+    await expect(set.json()).resolves.toEqual({ mode: "hold" });
+    expect(refused.status).toBe(422);
+    expect(
+      await rows("SELECT name, value FROM e2e_switches WHERE name = ?", "llm")
+    ).toEqual([{ name: "llm", value: "hold" }]);
+  });
+
+  it("is cleared by a reset", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/llm", { mode: "fail" });
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+
+    expect(
+      await countOf("SELECT count(*) AS n FROM e2e_switches WHERE name = 'llm'")
+    ).toBe(0);
+  });
+
+  it("releases: the switch back to auto and the inline run's counts in the answer", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/llm", { mode: "hold" });
+
+    const released = await harness("POST", "/e2e/llm/release");
+
+    expect(released.status).toBe(200);
+    await expect(released.json()).resolves.toEqual({
+      done: 0,
+      failed: 0,
+      pending: 0,
+    });
+    expect(
+      await rows("SELECT name, value FROM e2e_switches WHERE name = ?", "llm")
+    ).toEqual([{ name: "llm", value: "auto" }]);
+  });
+
+  it("runs llm/run for 1 to 5 passes, leaving the mode alone, and 422 outside that", async () => {
+    await freshWorld();
+    await harnessJson("/e2e/llm", { mode: "fail" });
+
+    const ran = await harnessJson("/e2e/llm/run", { times: 3 });
+    const none = await harnessJson("/e2e/llm/run", { times: 0 });
+    const many = await harnessJson("/e2e/llm/run", { times: 6 });
+
+    expect(ran.status).toBe(200);
+    expect(none.status).toBe(422);
+    expect(many.status).toBe(422);
+    expect(
+      await rows("SELECT name, value FROM e2e_switches WHERE name = ?", "llm")
+    ).toEqual([{ name: "llm", value: "fail" }]);
+  });
+});
+
+describe("POST /e2e/seed, phase 6", () => {
+  it("serves person's seeded notes as generated, and the typed standup with no generation", async () => {
+    await freshWorld();
+
+    const launch = await asRole("person", "GET", "/notes/not_e2e_launch");
+    const standup = await asRole("person", "GET", "/notes/not_e2e_standup");
+
+    expect(launch.status).toBe(200);
+    expect(await launch.json()).toMatchObject({
+      generation: { failure: null, status: "generated" },
+    });
+    expect(await standup.json()).toMatchObject({ generation: null });
+  });
+});

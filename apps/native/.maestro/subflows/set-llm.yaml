@@ -1,0 +1,10 @@
+# Script the fake LLM for this run: MODE is `auto`, `hold`, `fail`, `malformed` or `truncated`
+# (docs/spec/phase-6.md §6.6). Every reset puts it back to `auto`.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-llm.js
+    env:
+      MODE: ${MODE}

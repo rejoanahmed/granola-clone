@@ -1,0 +1,97 @@
+# AC3 (docs/spec/phase-6.md §8, §3.1, designed): with the LLM failing, the harness spends the three
+# attempts, and the page says "Couldn’t generate notes." with a Retry; the title stays "Untitled
+# note", and Share and More appear because the transcript exists. Retry, with the LLM released,
+# brings "Generating notes..." back and then the finished brief note.
+appId: ${APP_ID}
+name: A failed generation, retried
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: fail
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
+
+# Three inline passes in `fail` (§8 note 1). The upload also enqueued the job, so `wrangler dev`'s
+# consumer may spend attempt 1 itself, in `fail` too; a pass that meets its claim skips the row.
+# Either way the attempts add up to three, and exactly one pass writes `failed`, which is what the
+# count below pins rather than the number of passes.
+- runFlow:
+    file: ../subflows/run-llm.yaml
+    env:
+      TIMES: "3"
+- assertTrue: ${output.llmRun.failed === 1}
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Couldn’t generate notes\.
+    timeout: 15000
+- assertVisible:
+    id: note-status-retry
+    text: Retry
+- assertVisible:
+    id: note-title
+    text: Untitled note
+# Nothing was typed, so the body falls back to phase 4's empty state (§3.1 failed row).
+- assertVisible:
+    id: note-body-empty
+- assertVisible:
+    id: note-share
+- assertVisible:
+    id: note-more
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-transcript
+- tapOn:
+    id: action-menu-scrim
+- extendedWaitUntil:
+    notVisible:
+      id: note-menu
+    timeout: 5000
+
+- tapOn:
+    id: note-status-retry
+# The row is back to "Generating notes..." as soon as the retry answers (useStatusRetry's
+# setQueryData). Waiting for it also means the retry POST has reached the server before
+# release-llm's inline sweep looks for the queued row.
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
+- runFlow: ../subflows/release-llm.yaml
+- extendedWaitUntil:
+    notVisible:
+      id: note-status
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Brief check-in
+    timeout: 10000

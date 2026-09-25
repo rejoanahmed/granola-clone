@@ -6,15 +6,25 @@ import {
 import { makeE2eRepo } from "./E2E/E2eRepo";
 import {
   type E2eService,
+  LLM_SWITCH,
+  llmModeOf,
   makeE2eService,
   TRANSCRIPTION_SWITCH,
   transcriptionModeOf,
 } from "./E2E/E2eService";
+import type { GenerationQueue } from "./Generations/GenerationQueue";
+import { makeGenerationsRepo } from "./Generations/GenerationsRepo";
+import {
+  type GenerationsService,
+  makeGenerationsService,
+} from "./Generations/GenerationsService";
 import { makeEmailFake } from "./Integrations/Email/EmailFake";
 import type { EmailPort } from "./Integrations/Email/Port";
 import { makeFeatureFlagsClient } from "./Integrations/FeatureFlags/FeatureFlagsClient";
 import { makeFeatureFlagsFake } from "./Integrations/FeatureFlags/FeatureFlagsFake";
 import type { FeatureFlagsPort } from "./Integrations/FeatureFlags/Port";
+import { makeLlmFake } from "./Integrations/Llm/LlmFake";
+import type { LlmMode, LlmPort } from "./Integrations/Llm/Port";
 import type {
   TranscriptionMode,
   TranscriptionPort,
@@ -36,8 +46,10 @@ import {
 } from "./Recordings/RecordingsService";
 import { parseConfig } from "./Runtime/AppConfig";
 import { makeClock } from "./Runtime/Clock";
+import { makeCloudflareGenerationQueue } from "./Runtime/CloudflareGenerationQueue";
 import { makeDrizzle } from "./Runtime/Drizzle";
 import { makeIds } from "./Runtime/Ids";
+import { logEvent } from "./Runtime/Logger";
 import { makeR2AudioStore } from "./Runtime/R2AudioStore";
 import { traced } from "./Runtime/traced";
 import { makeUnitOfWork } from "./Runtime/UnitOfWork";
@@ -130,12 +142,49 @@ export const buildContainer = (
 
   const audio: AudioStore = traced("AudioStore", makeR2AudioStore(env.AUDIO));
 
+  const generationQueue: GenerationQueue = traced(
+    "GenerationQueue",
+    makeCloudflareGenerationQueue(env.GENERATION_QUEUE)
+  );
+
+  // LLM_MODE is parsed in `AppConfig` and acted on here. `fake` is the only mode that parses, so
+  // the switch has one case; a `live` mode widens `config.llm` and this stops compiling until it is
+  // handled. The harness's `llm` switch is how a flow holds "Generating notes..." or drives a job
+  // to `failed`.
+  const readLlmMode: () => Promise<LlmMode> =
+    e2eRepo === null
+      ? () => Promise.resolve("auto")
+      : async () => llmModeOf(await e2eRepo.switchValue(LLM_SWITCH));
+  const llmFor = (mode: typeof config.llm.mode): LlmPort => {
+    switch (mode) {
+      case "fake":
+        return makeLlmFake({ readMode: readLlmMode });
+      default:
+        return mode satisfies never;
+    }
+  };
+  const llm: LlmPort = traced("Llm", llmFor(config.llm.mode));
+
+  const generations = traced(
+    "Generations",
+    makeGenerationsService({
+      clock,
+      llm,
+      log: logEvent,
+      queue: generationQueue,
+      repo: traced("GenerationsRepo", makeGenerationsRepo(db)),
+      uow,
+    })
+  );
+
   const recordings = traced(
     "Recordings",
     makeRecordingsService({
       audio,
       clock,
+      generationQueue,
       ids,
+      log: logEvent,
       repo: traced("RecordingsRepo", makeRecordingsRepo(db)),
       transcription,
       uow,
@@ -153,6 +202,7 @@ export const buildContainer = (
           makeE2eService({
             authSecret: env.BETTER_AUTH_SECRET,
             clock,
+            generations,
             ids,
             outbox: outboxRepo,
             recordings,
@@ -166,6 +216,7 @@ export const buildContainer = (
     authEmails,
     e2e,
     flags,
+    generations,
     notes,
     profiles,
     recordings,
@@ -179,6 +230,7 @@ export type Container = {
   authEmails: AuthEmailsService;
   e2e: E2eService | null;
   flags: FeatureFlagsPort;
+  generations: GenerationsService;
   notes: NotesService;
   profiles: ProfilesService;
   recordings: RecordingsService;

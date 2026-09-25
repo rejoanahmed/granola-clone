@@ -85,6 +85,7 @@ describe("makeTestD1", () => {
       "e2e_switches",
       "email_outbox",
       "note_attendees",
+      "note_generations",
       "notes",
       "profiles",
       "recordings",

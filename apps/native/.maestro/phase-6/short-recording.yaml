@@ -1,0 +1,64 @@
+# AC2 (docs/spec/phase-6.md §8): with the transcriber and the LLM in auto, a recording just past
+# 10 s, with nothing typed, is finished within 30 s of End as the canned low-content note (#40,
+# #107): "Brief check-in", the fake's first paragraph and the fixed tip, and nothing after them.
+# This is the one flow that goes through the real queue: the upload settles the transcript at once,
+# the job is enqueued, and `wrangler dev`'s simulated consumer runs it — so it is the flow that
+# proves the producer, the consumer and the handler are wired.
+appId: ${APP_ID}
+name: A short recording gets the canned low-content body
+tags:
+  - phase-6
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-transcription.yaml
+    env:
+      MODE: auto
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: auto
+- runFlow: ../subflows/start-recording.yaml
+- runFlow: ../subflows/wait-for-end.yaml
+- tapOn:
+    id: recording-end
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000
+
+# The title is what proves the job ran; the `notVisible` wait alone would pass before the status row
+# had rendered. 30 s is AC2's allowance for the simulated consumer, the one wait here on real queue
+# timing.
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Brief check-in
+    timeout: 30000
+- assertNotVisible:
+    id: note-status
+- assertVisible:
+    id: note-block-0
+    text: Not much to transcribe here\. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups\.
+- assertVisible:
+    id: note-block-1
+    text: Notes works best with real conversations, meetings, or notes to self\. Try recording a call, a catch-up, or even a personal brain dump\.
+- assertNotVisible:
+    id: note-block-2
+- assertVisible:
+    id: note-share
+# Compared by eye against #40 and #107 (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-6-short
+
+# The transcript exists, so More still offers it.
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-transcript

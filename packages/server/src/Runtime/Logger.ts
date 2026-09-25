@@ -6,3 +6,6 @@ export const logEvent = (
 ): void => {
   console.log(JSON.stringify({ event: slug, ...fields }));
 };
+
+// What a service takes as a dep instead of importing `logEvent`, so a test can read what it logged.
+export type LogEvent = typeof logEvent;

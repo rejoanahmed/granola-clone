@@ -1,11 +1,14 @@
 # AC1 (docs/spec/phase-5.md §8): + starts a recording on the live card (#102); End at 10 s shows
 # the post-End page with "Uploading transcript..." and no Share or More (#105); once the held
 # transcriber is released the row goes, More offers View transcript, and the sheet shows the fake's
-# one-utterance answer (#42). Back home, the new "Untitled note" is in today's group.
+# one-utterance answer (#42). Back home, the new note is in today's group. Since phase 6
+# (phase-6.md AC6) the release also runs generation inline with the LLM in auto, so the row goes
+# only once the notes are written, and the note is titled "Brief check-in" (#107).
 appId: ${APP_ID}
 name: Recording, ending, and reading the transcript
 tags:
   - phase-5
+  - phase-6
   - regression
 env:
   APP_ID: com.rejoan.gcnotes
@@ -15,6 +18,10 @@ env:
     file: ../subflows/set-transcription.yaml
     env:
       MODE: hold
+- runFlow:
+    file: ../subflows/set-llm.yaml
+    env:
+      MODE: auto
 - runFlow: ../subflows/start-recording.yaml
 
 # The live card (§3.4). Under 10 s the pill reads Cancel.
@@ -83,12 +90,18 @@ env:
     id: note-more
 - takeScreenshot: phase-5-uploading
 
-# The transcriber finishes; the page polls every 2 s and drops the row.
+# The transcriber finishes and the release generates the notes inline; the page polls every 2 s
+# and drops the row once both are done.
 - runFlow: ../subflows/release-transcription.yaml
 - extendedWaitUntil:
     notVisible:
       id: note-status
-    timeout: 30000
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Brief check-in
+    timeout: 10000
 - assertVisible:
     id: note-share
 - assertVisible:
@@ -143,7 +156,7 @@ env:
 - extendedWaitUntil:
     visible:
       id: "home-note-(?!not_e2e_).*"
-      text: "Untitled note, .*"
+      text: "Brief check-in, .*"
     timeout: 15000
 - runScript: ../scripts/today.js
 - assertVisible:
