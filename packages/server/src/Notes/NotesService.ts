@@ -9,6 +9,7 @@ import {
   type NoteSummary,
 } from "@gc/domain/Domain/Note";
 import type { Page, PageQuery } from "@gc/domain/Domain/Page";
+import type { PersonKey } from "@gc/domain/Domain/Person";
 import { ValidationFailed } from "@gc/domain/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
@@ -141,12 +142,13 @@ export const makeNotesService = (deps: NotesDeps) => {
     // count, and no second query that could disagree with the page it describes.
     list: async (
       actor: Actor,
-      query: PageQuery
+      query: PageQuery & { readonly person?: PersonKey }
     ): Promise<Page<NoteSummary>> => {
       const rows = await deps.repo.listLive(
         actor.id,
         cursorOf(query.cursor),
-        query.limit + 1
+        query.limit + 1,
+        query.person ?? null
       );
       const items = rows.slice(0, query.limit);
       const last = items.at(-1);

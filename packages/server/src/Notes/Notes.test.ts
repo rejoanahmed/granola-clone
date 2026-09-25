@@ -2,10 +2,13 @@ import { ValidationFailed } from "@gc/domain/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import { buildContainer } from "../container";
+import { E2E_USERS } from "../E2E/Fixtures";
 import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Ids } from "../Runtime/Ids";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
+import type { Env } from "../Runtime/WorkerEnv";
 import {
   actor,
   makeTestD1,
@@ -721,5 +724,82 @@ describe("the notes tables", () => {
         },
       ])
     ).rejects.toThrow(CHECK_FAILED);
+  });
+});
+
+// docs/spec/phase-8.md §7 cases 18–20, over the E2E seed so the attendees are the ones the person
+// page shows. Seeded into the same database as the two users above: the E2E users have their own ids.
+describe("NotesService.list with a person", () => {
+  const person = E2E_USERS.person;
+  const other = E2E_USERS.other;
+  const SELF = "email:e2e-person@gcnotes.test";
+  const PRIYA = "email:priya@example.com";
+
+  beforeEach(async () => {
+    const env = {
+      API_URL: "http://localhost:3001",
+      BETTER_AUTH_SECRET: "auth-secret-32-characters-long-000000",
+      BETTER_AUTH_URL: "http://localhost:3001",
+      DB: d1,
+      E2E_HARNESS: "true",
+      E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
+      FLAGS_MODE: "fake",
+      NATIVE_SCHEME: "gcnotes",
+      NODE_ENV: "test",
+    } satisfies Env;
+    const harness = buildContainer(env).e2e;
+    if (harness === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    await harness.seed();
+  });
+
+  type PersonList = (
+    who: Actor,
+    query: { cursor: string | null; limit: number; person: string }
+  ) => Promise<Page>;
+  const listFor = (
+    who: Actor,
+    personKey: string,
+    limit = 20,
+    cursor: string | null = null
+  ) =>
+    (service().list as PersonList)(who, { cursor, limit, person: personKey });
+
+  // §7 case 18
+  it("lists only the notes the person attends, and the owner's own key lists every live note", async () => {
+    expect(idsOf(await listFor(person, PRIYA))).toEqual(["not_e2e_launch"]);
+    expect(idsOf(await listFor(person, SELF))).toEqual([
+      "not_e2e_launch",
+      "not_e2e_standup",
+      "not_e2e_solo",
+    ]);
+  });
+
+  // §7 case 19
+  it("pages the filtered list with the same cursor, ending on a null cursor", async () => {
+    const first = await listFor(person, SELF, 1);
+    const second = await listFor(person, SELF, 1, first.nextCursor);
+    const third = await listFor(person, SELF, 1, second.nextCursor);
+
+    expect([first, second, third].map(idsOf)).toEqual([
+      ["not_e2e_launch"],
+      ["not_e2e_standup"],
+      ["not_e2e_solo"],
+    ]);
+    expect(first.nextCursor).not.toBeNull();
+    expect(second.nextCursor).not.toBeNull();
+    expect(third.nextCursor).toBeNull();
+  });
+
+  // §7 case 20
+  it("is an empty page for an unknown person and for another user's guest", async () => {
+    const unknown = await listFor(person, "email:nobody@example.com");
+    const othersOwn = await listFor(person, `email:${other.email}`);
+    const priyaToOther = await listFor(other, PRIYA);
+
+    expect(unknown).toEqual({ items: [], nextCursor: null });
+    expect(othersOwn).toEqual({ items: [], nextCursor: null });
+    expect(priyaToOther).toEqual({ items: [], nextCursor: null });
   });
 });
