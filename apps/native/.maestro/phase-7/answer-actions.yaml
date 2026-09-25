@@ -1,6 +1,6 @@
 # AC14 (docs/spec/phase-7.md §8, #25): the thumbs are exclusive and the choice is stored, so it is
-# still selected when the thread is reopened from history; Copy, the paperclip and the idle mic each
-# answer with their toast.
+# still selected when the thread is reopened from history; Copy and the idle mic each answer with
+# their toast, and the paperclip with its menu.
 appId: ${APP_ID}
 name: Answer actions and composer toasts
 tags:
@@ -65,13 +65,17 @@ env:
       id: toast-message
       text: Copied to clipboard
     timeout: 5000
+# Since phase 12 the paperclip opens #23's menu, both items disabled (docs/spec/phase-12.md W8).
 - tapOn:
     id: chat-attach
 - extendedWaitUntil:
     visible:
-      id: toast-message
-      text: Attachments aren’t available yet\.
+      id: chat-attach-menu
     timeout: 5000
+- runFlow:
+    file: ../subflows/dismiss-menu.yaml
+    env:
+      MENU: chat-attach-menu
 - tapOn:
     id: chat-send
 - extendedWaitUntil:

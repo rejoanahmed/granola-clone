@@ -30,7 +30,7 @@ type Props = {
   readonly autoFocus: boolean;
   readonly draft: string;
   readonly modelLabel: string;
-  readonly onAttach: () => void;
+  readonly onAttach: (frame: Frame) => void;
   readonly onChangeDraft: (text: string) => void;
   readonly onDictate: () => void;
   readonly onModelPress: (frame: Frame) => void;
@@ -72,6 +72,7 @@ export function Composer({
   streaming,
 }: Props) {
   const pill = useRef<View>(null);
+  const clip = useRef<View>(null);
   const hasDraft = draft.trim() !== "";
   const placeholder = useRotatingPlaceholder(scope, hasDraft);
 
@@ -117,7 +118,12 @@ export function Composer({
         <Pressable
           accessibilityLabel={CHAT_COPY.composer.attach}
           accessibilityRole="button"
-          onPress={onAttach}
+          onPress={() =>
+            clip.current?.measureInWindow((x, y, width, height) =>
+              onAttach({ height, width, x, y })
+            )
+          }
+          ref={clip}
           style={({ pressed }) => [
             styles.clip,
             pressed ? styles.pressed : null,

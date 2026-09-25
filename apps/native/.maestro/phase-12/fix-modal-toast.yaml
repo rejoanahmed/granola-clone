@@ -1,0 +1,35 @@
+# P19-3 (docs/parity/REPORT.md, #19/#23): a toast raised from the chat composer is drawn above the
+# keyboard, in a window of its own over any native modal. It used to sit at a fixed height in the root
+# view, under the keyboard (and behind the global chat's modal), so the idle mic's "Dictation isn’t
+# available yet." reached the hierarchy and never the screen. The screenshot is the visual half of
+# the proof; the assertions pin the toast's text and that the composer kept its keyboard.
+appId: ${APP_ID}
+name: A toast from the chat composer is visible over the modal and the keyboard
+tags:
+  - phase-12
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note-ask.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- tapOn:
+    id: chat-input
+- tapOn:
+    id: chat-send
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Dictation isn’t available yet\.
+    timeout: 5000
+- takeScreenshot: phase-12-fix-modal-toast
+# The keyboard is still up: typing still reaches the field.
+- inputText: Still typing
+- extendedWaitUntil:
+    visible:
+      id: chat-input
+      text: Still typing
+    timeout: 5000

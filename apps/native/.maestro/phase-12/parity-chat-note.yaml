@@ -83,19 +83,30 @@ env:
     env:
       MENU: chat-model-menu
 
-# #23: phase 7 shipped the paperclip as a toast; §4.4 W8 grades it.
+# #23: the paperclip opens #23's menu with both items disabled and "Coming soon" (§4.4 W8, designed;
+# the phase-7 toast drew behind the chat's modal, so the control was inert in practice).
 - tapOn:
     id: chat-attach
 - extendedWaitUntil:
     visible:
-      id: toast-message
-      text: Attachments aren’t available yet\.
+      id: chat-attach-menu
     timeout: 5000
+- assertVisible:
+    id: chat-attach-menu-library
+    text: Choose from Photo Library
+    enabled: false
+- assertVisible:
+    id: chat-attach-menu-camera
+    text: Take Photo
+    enabled: false
+- assertVisible:
+    id: chat-attach-menu-caption
+    text: Coming soon
 - takeScreenshot: parity-23-attach
-- extendedWaitUntil:
-    notVisible:
-      id: toast-message
-    timeout: 10000
+- runFlow:
+    file: ../subflows/dismiss-menu.yaml
+    env:
+      MENU: chat-attach-menu
 
 # #43
 - tapOn:

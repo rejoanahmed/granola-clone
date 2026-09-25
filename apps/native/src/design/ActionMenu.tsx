@@ -1,5 +1,5 @@
 import { Check, type LucideIcon } from "lucide-react-native";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -47,6 +47,8 @@ export type MenuAnchor = {
 
 type Props = {
   readonly anchor: MenuAnchor | null;
+  /** A secondary line under the items, as the attachment menu's "Coming soon" (#23, designed). */
+  readonly caption?: string;
   /**
    * The model menu's layout (#22): a check column at the left, so every glyph moves right, labels
    * may wrap to two lines, and the card is the darker `bg.iconButton`.
@@ -65,6 +67,8 @@ type Props = {
   /** Space a floating bar keeps at the bottom; a menu that would reach it opens above the frame. */
   readonly reserveBottom?: number;
   readonly testID: string;
+  /** Labels may wrap to two lines, as #23's "Choose from Photo Library" does. */
+  readonly wrapLabels?: boolean;
 };
 
 // Measured off #02 and #12 (428pt wide): a 250pt card, 50pt items, the glyph at 24 and the label
@@ -77,9 +81,14 @@ const SEPARATOR_SPACE = 9;
 const PREVIEW_RADIUS = 12;
 const LABEL_GAP = 58 - spacing.xl - sizes.glyph;
 const INLINE_FADE_MS = 150;
+const CAPTION_HEIGHT = 32;
 
-const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
+const menuHeight = (
+  entries: readonly ActionMenuEntry[],
+  caption: string | undefined
+): number =>
   MENU_PADDING * 2 +
+  (caption ? CAPTION_HEIGHT : 0) +
   entries.reduce(
     (sum, entry) =>
       sum + (entry === MENU_SEPARATOR ? SEPARATOR_SPACE : ITEM_HEIGHT),
@@ -90,6 +99,7 @@ const menuHeight = (entries: readonly ActionMenuEntry[]): number =>
 // (docs/spec/phase-4.md §2.2). Tapping the scrim dismisses with no change, as #02 and #12 do.
 export function ActionMenu({
   anchor,
+  caption,
   checkable = false,
   entries,
   inline = false,
@@ -97,10 +107,14 @@ export function ActionMenu({
   preview,
   reserveBottom,
   testID,
+  wrapLabels = false,
 }: Props) {
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const height = menuHeight(entries);
+  // A wrapped label makes the card taller than the estimate, so the laid-out height replaces it:
+  // a menu opening above its anchor must end exactly `gap` above it.
+  const [laidOut, setLaidOut] = useState<number | null>(null);
+  const height = laidOut ?? menuHeight(entries, caption);
   const floor = window.height - (reserveBottom ?? insets.bottom + spacing.md);
 
   let position: { left: number; top: number } | null = null;
@@ -146,6 +160,7 @@ export function ActionMenu({
       {position ? (
         <View
           accessibilityRole="menu"
+          onLayout={(event) => setLaidOut(event.nativeEvent.layout.height)}
           style={[styles.menu, checkable ? styles.menuDark : null, position]}
           testID={testID}
         >
@@ -154,9 +169,24 @@ export function ActionMenu({
               // biome-ignore lint/suspicious/noArrayIndexKey: separators have no identity of their own.
               <View key={`separator-${index}`} style={styles.separator} />
             ) : (
-              <MenuItem checkable={checkable} item={entry} key={entry.testID} />
+              <MenuItem
+                checkable={checkable}
+                item={entry}
+                key={entry.testID}
+                wrap={wrapLabels}
+              />
             )
           )}
+          {caption ? (
+            <Text
+              color={colors.text.secondary}
+              style={styles.caption}
+              testID={`${testID}-caption`}
+              variant="caption"
+            >
+              {caption}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </>
@@ -189,9 +219,11 @@ export function ActionMenu({
 function MenuItem({
   checkable,
   item,
+  wrap,
 }: {
   readonly checkable: boolean;
   readonly item: ActionMenuItem;
+  readonly wrap: boolean;
 }) {
   const tint = item.destructive ? colors.destructive : colors.text.primary;
   const Icon = item.icon;
@@ -206,6 +238,7 @@ function MenuItem({
       style={({ pressed }) => [
         styles.item,
         checkable ? styles.itemCheckable : null,
+        wrap ? styles.itemWrapping : null,
         pressed ? styles.pressed : null,
         disabled ? styles.disabled : null,
       ]}
@@ -222,7 +255,7 @@ function MenuItem({
       <Icon color={tint} size={sizes.glyph} strokeWidth={ICON_STROKE} />
       <Text
         color={tint}
-        numberOfLines={checkable ? 2 : 1}
+        numberOfLines={checkable || wrap ? 2 : 1}
         style={styles.label}
         variant="body"
       >
@@ -237,6 +270,10 @@ const CHECK_COLUMN = 40;
 const DARK_RADIUS = 28;
 
 const styles = StyleSheet.create({
+  caption: {
+    lineHeight: CAPTION_HEIGHT,
+    paddingHorizontal: spacing.xl,
+  },
   check: { left: spacing.sm, position: "absolute" },
   disabled: { opacity: 0.4 },
   item: {
@@ -250,6 +287,11 @@ const styles = StyleSheet.create({
     minHeight: ITEM_HEIGHT,
     paddingLeft: CHECK_COLUMN,
     paddingVertical: spacing.xxs,
+  },
+  itemWrapping: {
+    height: "auto",
+    minHeight: ITEM_HEIGHT,
+    paddingVertical: spacing.xs,
   },
   label: { flexShrink: 1, marginLeft: LABEL_GAP },
   menu: {

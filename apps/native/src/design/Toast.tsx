@@ -9,8 +9,10 @@ import {
   useState,
 } from "react";
 import { AccessibilityInfo, Pressable, StyleSheet, View } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FullWindowOverlay } from "react-native-screens";
 import { Text } from "./Text";
 import {
   colors,
@@ -93,24 +95,38 @@ function ToastView({
   readonly toast: ToastInput;
 }) {
   const insets = useSafeAreaInsets();
-  const bottom = insets.bottom + BAR_GAP + sizes.askPill + BAR_GAP;
+  const keyboard = useKeyboardState((state) =>
+    state.isVisible ? state.height : 0
+  );
+  // Over the keyboard when it is up: a toast from a composer (the chat's mic) sat under it.
+  const bottom =
+    keyboard > 0
+      ? keyboard + BAR_GAP
+      : insets.bottom + BAR_GAP + sizes.askPill + BAR_GAP;
+  // A window of its own, above every native modal: rendered in the root view, a toast raised from
+  // a sheet or a modal (the chat, Add to folder) drew behind it and nobody saw it
+  // (docs/parity/REPORT.md, #23).
   return (
-    <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
-      <Toast
-        action={
-          toast.action
-            ? {
-                label: toast.action.label,
-                onPress: () => {
-                  onHide();
-                  toast.action?.onPress();
-                },
-              }
-            : undefined
-        }
-        message={toast.message}
-      />
-    </View>
+    <FullWindowOverlay>
+      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+        <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
+          <Toast
+            action={
+              toast.action
+                ? {
+                    label: toast.action.label,
+                    onPress: () => {
+                      onHide();
+                      toast.action?.onPress();
+                    },
+                  }
+                : undefined
+            }
+            message={toast.message}
+          />
+        </View>
+      </View>
+    </FullWindowOverlay>
   );
 }
 

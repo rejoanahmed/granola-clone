@@ -9,10 +9,9 @@ import { ChevronLeft, History, SquarePen, X } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { CHAT_COPY } from "./copy";
+import { navSideWidth } from "./navLayout";
 
 const TITLE_FADE_MS = 150;
-// The capsule's width, held on both sides so the title stays centred whichever right control shows.
-const SIDE = 96;
 
 type Props = {
   readonly hasMessages: boolean;
@@ -32,9 +31,10 @@ export function ChatNav({
   onNewChat,
   title,
 }: Props) {
+  const side = { width: navSideWidth(hasMessages) };
   return (
     <View style={styles.row}>
-      <View style={styles.side}>
+      <View style={side}>
         <IconButton
           accessibilityLabel={
             left === "close" ? CHAT_COPY.nav.close : CHAT_COPY.nav.back
@@ -59,7 +59,7 @@ export function ChatNav({
           {title}
         </Text>
       </Animated.View>
-      <View style={[styles.side, styles.right]}>
+      <View style={[side, styles.right]}>
         {hasMessages ? (
           <ToolbarCapsule>
             <IconButton
@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     height: sizes.iconButton,
     paddingHorizontal: spacing.lg,
   },
-  side: { width: SIDE },
   title: { textAlign: "center" },
   titleBox: { flex: 1, paddingHorizontal: spacing.xxs },
 });
