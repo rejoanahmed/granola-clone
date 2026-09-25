@@ -751,6 +751,7 @@ apps/native/.maestro/phase-12/parity-settings.yaml
 apps/native/.maestro/phase-12/parity-desktop.yaml
 apps/native/.maestro/phase-12/recording-add-to-folder.yaml
 apps/native/.maestro/phase-12/report-bug-keyboard.yaml
+apps/native/.maestro/phase-12/fix-modal-toast.yaml
 ```
 
 A `must` found during the pass adds `fix-<slug>.yaml` to this list (AC17).

@@ -49,7 +49,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 9 | Folders | done |
 | 10 | Settings, profile and upsells | done |
 | 11 | Upcoming events (fake calendar) | done |
-| 12 | Parity pass and CI | todo |
+| 12 | Parity pass and CI | done |
 
 ### 2 — Design system and app shell
 Tokens from `discovery/README.md` (dark only: `#262626` header, `#1A1A1A` list, `#B0BF40` lime

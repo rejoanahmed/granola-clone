@@ -357,6 +357,10 @@
 - **The live recording card's Add to folder (#102) stays inert.** The note exists by then, so the
   same sheet could open over the card, but presenting a modal over the `fullScreenModal` recording
   route while audio is capturing needs its own device check. Deferred to phase 12's parity pass.
+  **Closed in phase 12 (K1, `fb4445e`).** The card is a `formSheet`, not a `fullScreenModal`. The
+  button pushes `/notes/[id]/folder` over it, and the device check passed: the card keeps its
+  accessibility tree, the timer keeps counting, and submit lands back on the card.
+  `phase-12/recording-add-to-folder.yaml` proves it end to end, down to the home folder filter.
 - **Recording from a folder view does not file the note.** A new note lands in My notes only;
   `RecordingsService.start` answers `folderIds: []`. Auto-filing is a guess about intent that
   discovery cannot settle.
@@ -364,6 +368,8 @@
   be added to `FolderList` without breaking clients.
 - **The drawer's home "push" is a dim, not a translate.** #50's shot shows home at its normal x,
   although the discovery README says "pushed". Recorded for the parity pass.
+  **Closed in phase 12 (K3): not a gap.** #50's shot shows home at its normal x behind a `#121212`
+  dim, which is what the clone does. The README's word is wrong (docs/parity/REPORT.md, #50).
 
 ## Phase 10 (settings, profile and upsells)
 
@@ -399,6 +405,10 @@
   toggles first (nothing sent differs) and says why. The fix is keyboard-aware insets on the support
   form's ScrollView (`SupportForm.tsx`), as Profile's `keyboardClearance` does; it is left for the
   parity pass because the order is cosmetic to what the report carries.
+  **Closed in phase 12 (K2, `a5c2fc4`).** `SupportForm`'s scroll view is now a
+  `KeyboardAwareScrollView` with a 16pt clearance, for Report a bug and Send feedback alike.
+  `phase-12/report-bug-keyboard.yaml` scrolls to the toggle with the keyboard up and flips it.
+  `phase-10/report-bug.yaml` types and then toggles again.
 
 ## Phase 11 (upcoming events)
 
@@ -443,9 +453,21 @@
   `gh api repos/oven-sh/bun/releases/tags/bun-v1.4.2`), so the install should succeed, but no
   agent pushes, so a green CI run on 1.4.2 is unconfirmed until the user pushes. Stubbed: nothing;
   local gates run on 1.3.14. Unblocked by the first green `CI / verify` run after a push.
-- **The parity report is a skeleton until the pass fills it.** The pre-commit hook runs
-  `bun run check`, and §7.3 makes `check-parity-report.mjs` fail while `docs/parity/REPORT.md` is
-  absent, which would block every commit on phase-12 before a capture exists. Stubbed: the contract
-  step committed a REPORT.md with the 63 `## #NN` headings (the spec's list; "55" elsewhere counts
-  captured screens, not numbers) and empty tables, which passes vacuously. Unblocked by the parity
-  pass writing the rows (K1, K2, K3, W1–W11 among them), after which the gate means what §7.3 says.
+- **The parity report was a skeleton until the pass filled it.** **Closed:** the pass wrote every
+  row on 2026-09-25, so `check-parity-report.mjs` now means what §7.3 says. The heading list is the
+  spec's 63 numbers ("55" elsewhere counts captured screens).
+- **Parity should-grade gaps left for a polish pass.** `docs/parity/REPORT.md` grades 25 differences
+  `should` and leaves them `deferred` to this entry. Among them: type a step off the README scale
+  (#13, #26, #50, #83, #102), the lifted-row and history-menu anchoring (#02, #74), keyboard state
+  after a thread opens or a chip row scrolls (#25, #71), the primer closing before the system
+  alert (#101), #88's unlisted `#DCDED3` text grey and #04's `Continue anyway` colour and onboarding's about step scrolling its title away under the
+  keyboard. None is on a
+  core journey's control. Each row names what differs and by how much, so a later pass can take
+  them one at a time. Stubbed: nothing. Unblocked by a polish phase choosing which to take.
+- **Maestro cannot assert a position or a colour.** It checks ids, text and enabled/selected state.
+  So the pass's geometry fixes (the bottom-anchored controls, the chat title's room, the attendees
+  detent) are proven by unit tests that pin each constant to the discovery rect it came from
+  (`apps/native/src/design/foot.test.ts`, `src/features/chat/navLayout.test.ts`), plus the
+  re-captured parity shot. They are not proven by a Maestro assertion, which AC17 would otherwise
+  ask for. The detent has no test; it is a fraction UIKit resolves at runtime, and the report
+  records the `maestro hierarchy` frames measured before and after.

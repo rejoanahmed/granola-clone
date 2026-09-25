@@ -5,11 +5,11 @@
 export const FOOT = {
   /** #50: the drawer's 44pt "Create new folder" row, y 870–914. */
   drawerCreate: 12,
-  /** #10, #11, #40, #105–#107: the note page's Ask pill, y 834–898. */
+  /** Screens 10, 11, 40 and 105–107: the note page's Ask pill, y 834–898. */
   noteAsk: 28,
   /** #65: the person page's Ask pill, y 820–884. */
   personAsk: 42,
-  /** #102–#104: the live card's lime bar, y 830–894. */
+  /** Screens 102–104: the live card's lime bar, y 830–894. */
   recordingBar: 32,
   /** #51, #89: the Get desktop sheet's Done, y 846–894. */
   sheetDone: 32,
