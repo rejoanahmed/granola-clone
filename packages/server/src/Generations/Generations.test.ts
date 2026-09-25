@@ -4,6 +4,7 @@ import * as LlmErrors from "@gc/domain/Llm/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import { makeFoldersRepo } from "../Folders/FoldersRepo";
 import * as LlmFake from "../Integrations/Llm/LlmFake";
 import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import { makeTranscriptionFake } from "../Integrations/Transcription/TranscriptionFake";
@@ -242,6 +243,7 @@ const generations = (
 const notes = (): NotesView =>
   makeNotesService({
     clock,
+    folders: makeFoldersRepo(makeDrizzle(d1)),
     ids,
     repo: makeNotesRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),

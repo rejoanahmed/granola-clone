@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
 import { E2E_USERS } from "../E2E/Fixtures";
+import { makeFoldersRepo } from "../Folders/FoldersRepo";
 import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Ids } from "../Runtime/Ids";
@@ -107,6 +108,7 @@ afterEach(() => {
 const service = (): NotesService =>
   makeNotesService({
     clock,
+    folders: makeFoldersRepo(makeDrizzle(d1)),
     ids,
     repo: makeNotesRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),
@@ -552,6 +554,7 @@ describe("NotesService.update", () => {
     const repo = makeNotesRepo(makeDrizzle(d1));
     return makeNotesService({
       clock,
+      folders: makeFoldersRepo(makeDrizzle(d1)),
       ids,
       repo: {
         ...repo,
@@ -824,8 +827,7 @@ describe("NotesService.list with a person", () => {
 
 // ── Phase 9: the folder filter and the detail's folderIds (docs/spec/phase-9.md §7 cases 11–14) ──
 // Over the real E2E world (the base seed, then the harness's `seedFolders()`, §6.5), because the
-// folders are its fixtures. The folders repository does not exist yet, so it is imported inside the
-// block and the phase 4–8 cases above keep running. `NotesService` takes it as `folders` (§6.3).
+// folders are its fixtures. `NotesService` takes the folders repository as `folders` (§6.3).
 
 describe("NotesService with folders, phase 9", () => {
   const PRODUCT = "fld_e2e_product";
@@ -880,20 +882,14 @@ describe("NotesService with folders, phase 9", () => {
     world.close();
   });
 
-  const withFolders = async (): Promise<FolderNotes> => {
-    // @ts-expect-error phase 9: the folders repository is specified (phase-9.md §6.3), not built
-    const repo = (await import("../Folders/FoldersRepo")) as {
-      makeFoldersRepo: (db: unknown) => unknown;
-    };
-    const deps = {
+  const withFolders = async (): Promise<FolderNotes> =>
+    makeNotesService({
       clock,
-      folders: repo.makeFoldersRepo(makeDrizzle(world)),
+      folders: makeFoldersRepo(makeDrizzle(world)),
       ids,
       repo: makeNotesRepo(makeDrizzle(world)),
       uow: makeUnitOfWork(world),
-    };
-    return makeNotesService(deps) as unknown as FolderNotes;
-  };
+    }) as unknown as FolderNotes;
 
   const inFolder = async (
     folder: string,

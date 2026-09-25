@@ -11,9 +11,7 @@ import type { Ids } from "../Runtime/Ids";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
 import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, sequentialIds, type TestD1 } from "../Testing";
-// @ts-expect-error phase 9: the folders repository is specified (phase-9.md §6.3, §11 API 3), not built
 import * as Repo from "./FoldersRepo";
-// @ts-expect-error phase 9: the folders service is specified (phase-9.md §6.3, §11 API 3), not built
 import * as Svc from "./FoldersService";
 
 // docs/spec/phase-9.md §7 cases 1–9: the folders service over the real repository and the shipped

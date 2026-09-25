@@ -3,6 +3,7 @@ import * as RecErrors from "@gc/domain/Recordings/Errors";
 import * as TxErrors from "@gc/domain/Transcription/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import { makeFoldersRepo } from "../Folders/FoldersRepo";
 import type { TranscriptionPort } from "../Integrations/Transcription/Port";
 import * as TxFake from "../Integrations/Transcription/TranscriptionFake";
 import { makeNotesRepo } from "../Notes/NotesRepo";
@@ -189,6 +190,7 @@ type NotesView = {
 const notes = (): NotesView =>
   makeNotesService({
     clock,
+    folders: makeFoldersRepo(makeDrizzle(d1)),
     ids,
     repo: makeNotesRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),

@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
 import { E2E_USERS } from "../E2E/Fixtures";
+import { makeFoldersRepo } from "../Folders/FoldersRepo";
 import * as Fake from "../Integrations/Llm/LlmFake";
 import { makeNotesRepo } from "../Notes/NotesRepo";
 import { makeNotesService } from "../Notes/NotesService";
@@ -291,6 +292,7 @@ const service = (): ChatsService => serviceWith(llm);
 const notes = () =>
   makeNotesService({
     clock,
+    folders: makeFoldersRepo(makeDrizzle(d1)),
     ids,
     repo: makeNotesRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),
