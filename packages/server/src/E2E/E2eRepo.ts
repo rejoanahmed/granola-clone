@@ -5,6 +5,7 @@ import {
   inArray,
   ne,
   noteAttendees,
+  noteGenerations,
   notes,
   profiles,
   RESET_ORDER,
@@ -182,7 +183,8 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
   },
 
   // Upserts, and the segments deleted and rewritten, so a re-seed restores exactly the fixture
-  // transcript. Stamps come from the fixture, never the clock.
+  // transcript. Stamps come from the fixture, never the clock. Each recording gets a `generated`
+  // row, so a seeded note reads as finished through the same field a real one does.
   stageRecordings: (stage: Stage, rows: readonly E2eRecordingRow[]): void => {
     stage.add({
       query: db.delete(transcriptSegments).where(
@@ -213,6 +215,29 @@ export const makeE2eRepo = (db: DrizzleClient) => ({
           .insert(recordings)
           .values({ ...columns, id: row.id })
           .onConflictDoUpdate({ set: columns, target: recordings.id }),
+      });
+      const generation = {
+        attempt: 1,
+        claimedAt: null,
+        createdAt: endedAt,
+        failure: null,
+        noteId: row.noteId,
+        ownerId: row.ownerId,
+        recordingId: row.id,
+        status: "generated",
+        updatedAt: endedAt,
+      };
+      stage.add({
+        query: db
+          .insert(noteGenerations)
+          .values({
+            ...generation,
+            id: `gen_${row.id.slice("rec_".length)}`,
+          })
+          .onConflictDoUpdate({
+            set: generation,
+            target: noteGenerations.recordingId,
+          }),
       });
       stage.addChunked(
         row.segments.map((segment, position) => ({ ...segment, position })),

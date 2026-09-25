@@ -1,5 +1,10 @@
 import { ValidationFailed } from "@gc/domain/Errors";
 import { z } from "zod";
+import type {
+  GenerationsService,
+  InlineSweepResult,
+} from "../Generations/GenerationsService";
+import type { LlmMode } from "../Integrations/Llm/Port";
 import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import type { LatestOtp, OutboxRepo } from "../Outbox/OutboxRepo";
 import type { RecordingsService } from "../Recordings/RecordingsService";
@@ -37,10 +42,25 @@ export const transcriptionModeOf = (
   return parsed.success ? parsed.data : "auto";
 };
 
+// The row the fake LLM's `readMode` reads (container.ts).
+export const LLM_SWITCH = "llm";
+
+const LlmModeInput = z.enum(["auto", "fail", "hold", "malformed", "truncated"]);
+
+export const llmModeOf = (value: string | null): LlmMode => {
+  const parsed = LlmModeInput.safeParse(value);
+  return parsed.success ? parsed.data : "auto";
+};
+
+const MAX_LLM_RUNS = 5;
+const LlmRuns = z.number().int().min(1).max(MAX_LLM_RUNS);
+
 export type E2eDeps = {
   /** Signs the session cookie better-auth will verify — not the harness's own secret. */
   readonly authSecret: string;
   readonly clock: Clock;
+  /** Only the inline sweep: a flow finishes a job here rather than waiting on the local queue. */
+  readonly generations: Pick<GenerationsService, "sweepInline">;
   readonly ids: Ids;
   /** The fake email provider's mailbox, where `latestOtp` reads a sign-in code. */
   readonly outbox: OutboxRepo;
@@ -68,11 +88,21 @@ export const makeE2eService = (deps: E2eDeps) => ({
     return mail;
   },
 
+  // Back to auto, then the job run here. `ignoreStale`, because the row a flow is holding was
+  // queued seconds ago and the plain sweep would leave it for the queue.
+  releaseLlm: async (): Promise<InlineSweepResult> => {
+    await deps.repo.setSwitch(LLM_SWITCH, "auto");
+    return await deps.generations.sweepInline({ ignoreStale: true });
+  },
+
   // Switch back to auto, then run the sweep a cron would, so a flow waiting on "Uploading
-  // transcript..." sees it finish now rather than at the next two-minute tick.
+  // transcript..." sees it finish now rather than at the next two-minute tick. The generation the
+  // settle queued runs here too, so the flow does not depend on local queue timing.
   releaseTranscription: async () => {
     await deps.repo.setSwitch(TRANSCRIPTION_SWITCH, "auto");
-    return await deps.recordings.sweep();
+    const settled = await deps.recordings.sweep();
+    await deps.generations.sweepInline({ ignoreStale: true });
+    return settled;
   },
 
   // Every domain table, the outbox included, plus the newcomer's account — and nothing else of
@@ -83,6 +113,24 @@ export const makeE2eService = (deps: E2eDeps) => ({
       deps.repo.stageForget(stage, E2E_NEWCOMER.email);
     });
     return { ok: true };
+  },
+
+  // The mode is left alone: each pass claims every queued row and spends one attempt, which is how
+  // a flow drives a `fail` job to `failed` without waiting out the retry delay.
+  runLlm: async (times: unknown): Promise<InlineSweepResult> => {
+    const parsed = LlmRuns.safeParse(times);
+    if (!parsed.success) {
+      throw new ValidationFailed({ times }, "times must be 1 to 5");
+    }
+    const total = { done: 0, failed: 0, pending: 0 };
+    for (let pass = 0; pass < parsed.data; pass += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: each pass must see the one before it
+      const counts = await deps.generations.sweepInline({ ignoreStale: true });
+      total.done += counts.done;
+      total.failed += counts.failed;
+      total.pending = counts.pending;
+    }
+    return total;
   },
 
   seed: async () => {
@@ -154,6 +202,15 @@ export const makeE2eService = (deps: E2eDeps) => ({
       })),
       users: E2E_USERS,
     };
+  },
+
+  setLlmMode: async (mode: unknown) => {
+    const parsed = LlmModeInput.safeParse(mode);
+    if (!parsed.success) {
+      throw new ValidationFailed({ mode }, "Unknown LLM mode");
+    }
+    await deps.repo.setSwitch(LLM_SWITCH, parsed.data);
+    return { mode: parsed.data };
   },
 
   setTranscriptionMode: async (mode: unknown) => {

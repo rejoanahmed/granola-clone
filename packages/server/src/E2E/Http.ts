@@ -50,6 +50,33 @@ export const e2eRouter = new Hono<E2eEnv>()
   .post("/e2e/transcription/release", async (c) =>
     c.json(await c.var.e2e.releaseTranscription(), 200)
   )
+  .post("/e2e/llm", async (c) =>
+    c.json(
+      await c.var.e2e.setLlmMode(
+        (
+          await c.req
+            .json<{ mode?: unknown }>()
+            .catch((): { mode?: unknown } => ({}))
+        ).mode
+      ),
+      200
+    )
+  )
+  .post("/e2e/llm/release", async (c) =>
+    c.json(await c.var.e2e.releaseLlm(), 200)
+  )
+  .post("/e2e/llm/run", async (c) =>
+    c.json(
+      await c.var.e2e.runLlm(
+        (
+          await c.req
+            .json<{ times?: unknown }>()
+            .catch((): { times?: unknown } => ({}))
+        ).times
+      ),
+      200
+    )
+  )
   .post("/e2e/session/:role", async (c) =>
     c.json(
       await c.var.e2e.signIn(c.req.param("role"), new URL(c.req.url).origin),
