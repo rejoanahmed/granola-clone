@@ -1,0 +1,29 @@
+# From home, open note NOTE_ID and its Add to folder sheet (docs/spec/phase-9.md §3.6, §8) through the
+# folder+ button, then wait for the sheet and for its first load to finish.
+#
+#   - runFlow:
+#       file: ../subflows/open-add-to-folder.yaml
+#       env:
+#         NOTE_ID: not_e2e_launch
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: open-note.yaml
+    env:
+      NOTE_ID: ${NOTE_ID}
+- tapOn:
+    id: note-add-to-folder
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-loading
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+    timeout: 10000

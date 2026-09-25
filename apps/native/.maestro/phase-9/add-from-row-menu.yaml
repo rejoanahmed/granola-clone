@@ -1,0 +1,105 @@
+# AC5 (docs/spec/phase-9.md §8, #02, #17): [folders] home's row menu gains Add to folder, which opens
+# the sheet over home for that note. The sheet lists the caller's folders in order, marks the one the
+# note is already in as added (and disabled), and never lists other's. Tapping a row selects it and
+# tapping it again clears it; submitting files the note and the drawer counts it.
+appId: ${APP_ID}
+name: Adding a note to a folder from home's row menu
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_standup
+    timeout: 30000
+- longPressOn:
+    id: home-note-not_e2e_standup
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- tapOn:
+    id: home-note-menu-add-to-folder
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-list
+    timeout: 15000
+- assertVisible:
+    id: add-to-folder-create
+    text: Create folder
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_personal
+    text: "Personal, 1 note"
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_product
+    text: "Product, 2 notes, added"
+    below:
+      id: add-to-folder-row-fld_e2e_personal
+- assertNotVisible:
+    id: add-to-folder-row-fld_e2e_other
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: false
+- takeScreenshot: phase-9-add-to-folder-list
+
+# Product already holds standup: its row is disabled, so the tap selects nothing.
+- tapOn:
+    id: add-to-folder-row-fld_e2e_product
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: false
+
+- tapOn:
+    id: add-to-folder-row-fld_e2e_personal
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+      enabled: true
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_personal
+    selected: true
+
+- tapOn:
+    id: add-to-folder-row-fld_e2e_personal
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+      enabled: false
+    timeout: 5000
+
+- tapOn:
+    id: add-to-folder-row-fld_e2e_personal
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-submit
+      enabled: true
+    timeout: 5000
+- tapOn:
+    id: add-to-folder-submit
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: "Added to “Personal”"
+    timeout: 10000
+- assertVisible:
+    id: home-screen
+
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-row-fld_e2e_personal
+      text: "Personal, 2 notes"
+    timeout: 10000

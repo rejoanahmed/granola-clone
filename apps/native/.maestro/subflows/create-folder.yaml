@@ -1,0 +1,27 @@
+# On the New folder sheet (docs/spec/phase-9.md §3.3): wait for it, type NAME into its autofocused
+# field and tap Create. The caller waits for its own outcome — the sheet closing, or its error.
+#
+#   - runFlow:
+#       file: ../subflows/create-folder.yaml
+#       env:
+#         NAME: Research
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: folder-new-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: folder-new-input
+    timeout: 5000
+- inputText: ${NAME}
+- extendedWaitUntil:
+    visible:
+      id: folder-new-save
+      enabled: true
+    timeout: 5000
+- tapOn:
+    id: folder-new-save

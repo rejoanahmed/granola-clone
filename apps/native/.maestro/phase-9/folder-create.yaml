@@ -1,0 +1,88 @@
+# AC2 (docs/spec/phase-9.md §8): Create new folder opens the New folder sheet with its field focused
+# and Create disabled; a blank name keeps it disabled; "Research" is created and appears in the
+# drawer, which stayed open, now populated; a second "research" is refused by name and the sheet
+# stays up; closing it leaves exactly one folder row.
+appId: ${APP_ID}
+name: Creating a folder from the drawer
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-folders.yaml
+- tapOn:
+    id: folders-create
+- extendedWaitUntil:
+    visible:
+      id: folder-new-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: folder-new-input
+      focused: true
+    timeout: 5000
+- assertVisible:
+    id: folder-new-save
+    enabled: false
+- takeScreenshot: phase-9-new-folder
+
+- inputText: "   "
+- assertVisible:
+    id: folder-new-save
+    enabled: false
+- eraseText: 10
+
+- runFlow:
+    file: ../subflows/create-folder.yaml
+    env:
+      NAME: Research
+- extendedWaitUntil:
+    notVisible:
+      id: folder-new-sheet
+    timeout: 10000
+- assertVisible:
+    id: folders-drawer
+- extendedWaitUntil:
+    visible:
+      id: folders-all
+      text: My notes
+    timeout: 10000
+- assertVisible:
+    id: "folders-row-.*"
+    text: "Research, No notes"
+- assertNotVisible:
+    id: folders-empty
+
+- tapOn:
+    id: folders-create
+- runFlow:
+    file: ../subflows/create-folder.yaml
+    env:
+      NAME: research
+- extendedWaitUntil:
+    visible:
+      id: folder-new-error
+      text: "You already have a folder called “research”\\."
+    timeout: 10000
+- assertVisible:
+    id: folder-new-sheet
+- assertVisible:
+    id: folder-new-input
+    text: research
+
+- tapOn:
+    id: folder-new-close
+- extendedWaitUntil:
+    notVisible:
+      id: folder-new-sheet
+    timeout: 10000
+- assertVisible:
+    id: folders-drawer
+- assertVisible:
+    id: "folders-row-.*"
+    text: "Research, No notes"
+- assertNotVisible:
+    id: "folders-row-.*"
+    index: 1

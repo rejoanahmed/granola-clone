@@ -758,3 +758,72 @@ describe("POST /e2e/seed, phase 7", () => {
     await expect(response.json()).resolves.toMatchObject({ selected: "auto" });
   });
 });
+
+// ── Phase 9: the folder seed over the real app (docs/spec/phase-9.md §6.5) ────────────────────
+// The route the Maestro script `e2e-folders.js` calls. What it writes is
+// `packages/server/src/E2E/E2E.test.ts`'s; this is the wire and what person then reads.
+
+describe("POST /e2e/folders, phase 9", () => {
+  it("does not exist when the harness is off", async () => {
+    const response = await app.request(
+      "/e2e/folders",
+      { headers: { "x-e2e-secret": SECRET }, method: "POST" },
+      off
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("seeds person's two folders, which person then lists with their live counts", async () => {
+    await freshWorld();
+
+    const seeded = await harness("POST", "/e2e/folders");
+    const again = await harness("POST", "/e2e/folders");
+    const listed = await asRole("person", "GET", "/folders");
+
+    expect(seeded.status).toBe(200);
+    expect(again.status).toBe(200);
+    expect(listed.status).toBe(200);
+    const body = (await listed.json()) as {
+      items: { id: string; name: string; noteCount: number }[];
+    };
+    expect(
+      body.items.map(({ id, name, noteCount }) => ({ id, name, noteCount }))
+    ).toEqual([
+      { id: "fld_e2e_personal", name: "Personal", noteCount: 1 },
+      { id: "fld_e2e_product", name: "Product", noteCount: 2 },
+    ]);
+  });
+
+  it("serves the folder filter over the wire, and 404s other's folder to person", async () => {
+    await freshWorld();
+    await harness("POST", "/e2e/folders");
+
+    const product = await asRole(
+      "person",
+      "GET",
+      "/notes?folder=fld_e2e_product"
+    );
+    const theirs = await asRole("person", "GET", "/notes?folder=fld_e2e_other");
+
+    expect(product.status).toBe(200);
+    const page = (await product.json()) as { items: { id: string }[] };
+    expect(page.items.map((item) => item.id)).toEqual([
+      "not_e2e_launch",
+      "not_e2e_standup",
+    ]);
+    expect(theirs.status).toBe(404);
+    await expect(theirs.json()).resolves.toMatchObject({
+      _tag: "FolderNotFound",
+    });
+  });
+
+  it("is cleared by a reset", async () => {
+    await freshWorld();
+    await harness("POST", "/e2e/folders");
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+
+    expect(await countOf("SELECT count(*) AS n FROM folders")).toBe(0);
+  });
+});

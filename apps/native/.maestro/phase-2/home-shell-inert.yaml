@@ -4,7 +4,8 @@
 # Nor is the + FAB: it starts a recording since phase 5, and the phase-5 flows own it. Nor is the
 # Ask pill: it opens the global chat since phase 7 (docs/spec/phase-7.md §8), and the phase-7 flows
 # own it. Nor is the magnifier: it pushes Search since phase 8 (docs/spec/phase-8.md §8), and
-# phase-8/search-empty.yaml owns it.
+# phase-8/search-empty.yaml owns it. Nor is the folder button: it opens the folders drawer since
+# phase 9 (docs/spec/phase-9.md §8), and phase-9/folders-empty.yaml owns it.
 appId: ${APP_ID}
 name: Home shell controls are inert and do not crash
 tags:
@@ -14,9 +15,6 @@ env:
   APP_ID: com.rejoan.gcnotes
 ---
 - runFlow: ../subflows/open-home.yaml
-- tapOn:
-    id: home-folders-button
-- runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-get-desktop-button
 - runFlow: ../subflows/assert-home-unobstructed.yaml

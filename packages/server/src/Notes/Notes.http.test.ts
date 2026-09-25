@@ -453,3 +453,70 @@ describe("POST /notes/{id}/generation/retry", () => {
     expect(calls).toEqual([]);
   });
 });
+
+// ── Phase 9: the folder filter and the detail's folderIds (docs/spec/phase-9.md §6.1, §7) ──────
+// The folder errors do not exist yet, so they are imported inside the one test that throws one and
+// the phase 4–8 cases above keep running.
+
+describe("GET /notes?folder= and folderIds, phase 9", () => {
+  it("hands the service the folder id, alongside the default page", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(app, "GET", "/notes?folder=fld_e2e_product");
+
+    expect(res.status).toBe(200);
+    expect(calls[0]?.args[1]).toEqual({
+      cursor: null,
+      folder: "fld_e2e_product",
+      limit: 20,
+    });
+  });
+
+  it("is 422 for a folder id that is not one, and never reaches the service", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(app, "GET", "/notes?folder=bad");
+
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ _tag: "ValidationFailed" });
+    expect(calls).toEqual([]);
+  });
+
+  it("is 404 FolderNotFound for a folder the caller does not have", async () => {
+    // @ts-expect-error phase 9: the folder errors are specified (phase-9.md §6.2), not built
+    const errors = (await import("@gc/domain/Folders/Errors")) as Record<
+      string,
+      (new (details?: Record<string, unknown>) => Error) | undefined
+    >;
+    const Missing = errors.FolderNotFound;
+    if (Missing === undefined) {
+      throw new Error("no FolderNotFound in @gc/domain/Folders/Errors");
+    }
+    const { app } = appAs(actor(), {
+      list: () => {
+        throw new Missing({ id: "fld_0000000000009999" });
+      },
+    });
+
+    const res = await send(app, "GET", "/notes?folder=fld_0000000000009999");
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({
+      _tag: "FolderNotFound",
+      details: { id: "fld_0000000000009999" },
+    });
+  });
+
+  it("answers GET /notes/{id} as a Note carrying folderIds", async () => {
+    const { app } = appAs(actor(), {
+      get: () => ({ ...NOTE, folderIds: ["fld_e2e_product"] }),
+    });
+
+    const res = await send(app, "GET", `/notes/${NOTE_ID}`);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ folderIds: ["fld_e2e_product"] });
+    expect(Note.strict().safeParse(body).success).toBe(true);
+  });
+});

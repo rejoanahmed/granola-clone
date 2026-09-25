@@ -2,10 +2,13 @@ import { ValidationFailed } from "@gc/domain/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import { buildContainer } from "../container";
+import { E2E_USERS } from "../E2E/Fixtures";
 import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Ids } from "../Runtime/Ids";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
+import type { Env } from "../Runtime/WorkerEnv";
 import {
   actor,
   makeTestD1,
@@ -814,5 +817,139 @@ describe("NotesService.list with a person", () => {
     expect(await listFor(actor(), "email:nobody@example.com")).toEqual(none);
     expect(await listFor(actor(), "email:riley@example.com")).toEqual(none);
     expect(await listFor(otherActor(), PRIYA)).toEqual(none);
+  });
+});
+
+// ── Phase 9: the folder filter and the detail's folderIds (docs/spec/phase-9.md §7 cases 11–14) ──
+// Over the real E2E world (the base seed, then the harness's `seedFolders()`, §6.5), because the
+// folders are its fixtures. The folders repository does not exist yet, so it is imported inside the
+// block and the phase 4–8 cases above keep running. `NotesService` takes it as `folders` (§6.3).
+
+describe("NotesService with folders, phase 9", () => {
+  const PRODUCT = "fld_e2e_product";
+  const OTHERS = "fld_e2e_other";
+  const LAUNCH = "not_e2e_launch";
+  const STANDUP = "not_e2e_standup";
+  const person: Actor = E2E_USERS.person;
+
+  type FolderPage = Page;
+  type FolderNotes = {
+    get: (who: Actor, id: string) => Promise<{ folderIds?: unknown }>;
+    list: (
+      who: Actor,
+      query: {
+        cursor: string | null;
+        folder?: string;
+        limit: number;
+        person?: string;
+      }
+    ) => Promise<FolderPage>;
+  };
+
+  let world: TestD1;
+
+  beforeEach(async () => {
+    world = makeTestD1();
+    const harness = buildContainer({
+      API_URL: "http://localhost:3001",
+      BETTER_AUTH_SECRET: "auth-secret-32-characters-long-000000",
+      BETTER_AUTH_URL: "http://localhost:3001",
+      DB: world,
+      E2E_HARNESS: "true",
+      E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
+      FLAGS_MODE: "fake",
+      NATIVE_SCHEME: "gcnotes",
+      NODE_ENV: "test",
+    } satisfies Env).e2e;
+    if (harness === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    await harness.seed();
+    const seeder = (
+      harness as unknown as { seedFolders?: () => Promise<unknown> }
+    ).seedFolders;
+    if (seeder === undefined) {
+      throw new Error("phase 9: the harness has no seedFolders (§6.5)");
+    }
+    await seeder.call(harness);
+  });
+
+  afterEach(() => {
+    world.close();
+  });
+
+  const withFolders = async (): Promise<FolderNotes> => {
+    // @ts-expect-error phase 9: the folders repository is specified (phase-9.md §6.3), not built
+    const repo = (await import("../Folders/FoldersRepo")) as {
+      makeFoldersRepo: (db: unknown) => unknown;
+    };
+    const deps = {
+      clock,
+      folders: repo.makeFoldersRepo(makeDrizzle(world)),
+      ids,
+      repo: makeNotesRepo(makeDrizzle(world)),
+      uow: makeUnitOfWork(world),
+    };
+    return makeNotesService(deps) as unknown as FolderNotes;
+  };
+
+  const inFolder = async (
+    folder: string,
+    extra: { cursor?: string | null; limit?: number; person?: string } = {}
+  ) =>
+    (await withFolders()).list(person, {
+      cursor: extra.cursor ?? null,
+      folder,
+      limit: extra.limit ?? 20,
+      ...(extra.person === undefined ? {} : { person: extra.person }),
+    });
+
+  // §7 case 11
+  it("lists only the folder's live notes, in the list's order, paging with the same cursor", async () => {
+    expect(idsOf(await inFolder(PRODUCT))).toEqual([LAUNCH, STANDUP]);
+
+    const first = await inFolder(PRODUCT, { limit: 1 });
+    const second = await inFolder(PRODUCT, {
+      cursor: first.nextCursor,
+      limit: 1,
+    });
+
+    expect([idsOf(first), idsOf(second)]).toEqual([[LAUNCH], [STANDUP]]);
+    expect(first.nextCursor).not.toBeNull();
+    expect(second.nextCursor).toBeNull();
+  });
+
+  // §7 case 12
+  it("combines the folder with a person as AND", async () => {
+    expect(
+      idsOf(await inFolder(PRODUCT, { person: "email:priya@example.com" }))
+    ).toEqual([LAUNCH]);
+  });
+
+  // §7 case 13
+  it("raises FolderNotFound for an unknown folder and for another user's", async () => {
+    await expect(inFolder("fld_0000000000009999")).rejects.toMatchObject({
+      _tag: "FolderNotFound",
+    });
+    await expect(inFolder(OTHERS)).rejects.toMatchObject({
+      _tag: "FolderNotFound",
+    });
+  });
+
+  // §7 case 14 (and case 5's read): folderIds on the detail, sorted by id.
+  it("carries folderIds on the detail: [] for a note in no folder", async () => {
+    const notes = await withFolders();
+
+    expect(await notes.get(person, LAUNCH)).toMatchObject({
+      folderIds: [PRODUCT],
+    });
+    expect(await notes.get(E2E_USERS.other, "not_e2e_other")).toMatchObject({
+      folderIds: [OTHERS],
+    });
+    await world
+      .prepare("DELETE FROM folder_notes WHERE note_id = ?")
+      .bind(LAUNCH)
+      .run();
+    expect(await notes.get(person, LAUNCH)).toMatchObject({ folderIds: [] });
   });
 });

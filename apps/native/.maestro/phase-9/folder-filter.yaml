@@ -1,0 +1,90 @@
+# AC7 (docs/spec/phase-9.md §8, #50, #01): [folders] the populated drawer — My notes selected, the
+# "Folders" header, Personal above Product with their live counts, and never other's folder. Picking
+# Product filters home to its live notes under its name, with no events card, and marks it selected
+# in the drawer; My notes brings the whole list and the card back.
+appId: ${APP_ID}
+name: Filtering home by a folder from the drawer
+tags:
+  - phase-9
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/seed-folders.yaml
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-list
+    timeout: 10000
+- assertVisible:
+    id: folders-all
+    text: My notes
+    selected: true
+- assertVisible:
+    id: folders-section-title
+    text: Folders
+- assertVisible:
+    id: folders-row-fld_e2e_personal
+    text: "Personal, 1 note"
+- assertVisible:
+    id: folders-row-fld_e2e_product
+    text: "Product, 2 notes"
+    below:
+      id: folders-row-fld_e2e_personal
+- assertNotVisible:
+    id: folders-row-fld_e2e_other
+- takeScreenshot: phase-9-drawer-populated
+
+- tapOn:
+    id: folders-row-fld_e2e_product
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: Product
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 15000
+- assertVisible:
+    id: home-note-not_e2e_standup
+- assertNotVisible:
+    id: home-note-not_e2e_solo
+- assertNotVisible:
+    id: home-note-not_e2e_archived
+- assertNotVisible:
+    id: home-events-card
+- takeScreenshot: phase-9-home-folder
+
+- runFlow: ../subflows/open-folders.yaml
+- assertVisible:
+    id: folders-row-fld_e2e_product
+    selected: true
+- assertVisible:
+    id: folders-all
+    selected: false
+
+- tapOn:
+    id: folders-all
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: My notes
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-events-card
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_solo
+    timeout: 15000

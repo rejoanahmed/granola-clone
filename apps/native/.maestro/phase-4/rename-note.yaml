@@ -25,6 +25,9 @@ env:
     id: home-note-menu-edit-title
 - assertVisible:
     id: home-note-menu-share
+# Phase 9 (docs/spec/phase-9.md §3.5): the third entry #02 shows.
+- assertVisible:
+    id: home-note-menu-add-to-folder
 - takeScreenshot: phase-4-row-menu
 
 # The scrim covers the whole screen and the menu sits over part of it, so the tap is aimed near

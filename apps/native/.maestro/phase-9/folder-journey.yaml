@@ -1,0 +1,135 @@
+# AC4, the phase's exit journey (docs/spec/phase-9.md §8): create → add a note → filter → remove.
+# From a note with no folders yet, Create folder on the Add to folder sheet makes "Research" and comes
+# back with it selected; submitting files the note there. The drawer then counts it, picking it
+# filters home to it (title, one row, no events card), the row menu removes it again with its toast,
+# and My notes shows the note where it always was.
+appId: ${APP_ID}
+name: Create a folder, add a note, filter by it, remove the note
+tags:
+  - phase-9
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-add-to-folder.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- tapOn:
+    id: add-to-folder-empty-create
+- runFlow:
+    file: ../subflows/create-folder.yaml
+    env:
+      NAME: Research
+- extendedWaitUntil:
+    notVisible:
+      id: folder-new-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "add-to-folder-row-.*"
+      text: "Research, No notes"
+      selected: true
+    timeout: 10000
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: true
+
+- tapOn:
+    id: add-to-folder-submit
+- extendedWaitUntil:
+    notVisible:
+      id: add-to-folder-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: "Added to “Research”"
+    timeout: 10000
+- assertVisible:
+    id: note-screen
+
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: "folders-row-.*"
+      text: "Research, 1 note"
+    timeout: 10000
+- tapOn:
+    id: "folders-row-.*"
+    text: "Research, 1 note"
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: Research
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 15000
+- assertNotVisible:
+    id: home-note-not_e2e_standup
+- assertNotVisible:
+    id: home-note-not_e2e_solo
+- assertNotVisible:
+    id: home-events-card
+
+- longPressOn:
+    id: home-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: home-note-menu
+    timeout: 5000
+- assertVisible:
+    id: home-note-menu-edit-title
+- assertVisible:
+    id: home-note-menu-share
+- assertVisible:
+    id: home-note-menu-add-to-folder
+- assertVisible:
+    id: home-note-menu-remove-from-folder
+- takeScreenshot: phase-9-row-menu
+- tapOn:
+    id: home-note-menu-remove-from-folder
+- extendedWaitUntil:
+    notVisible:
+      id: home-note-not_e2e_launch
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-folder-empty-title
+      text: No notes in this folder
+    timeout: 10000
+- assertVisible:
+    id: toast-message
+    text: "Removed from “Research”"
+- takeScreenshot: phase-9-home-folder-empty
+
+- runFlow: ../subflows/open-folders.yaml
+- tapOn:
+    id: folders-all
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-title
+      text: My notes
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+    timeout: 15000
