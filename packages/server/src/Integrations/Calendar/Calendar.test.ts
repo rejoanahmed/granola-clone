@@ -8,9 +8,7 @@ import {
   seedD1,
   type TestD1,
 } from "../../Testing";
-// @ts-expect-error phase 11: the calendar fake is specified (phase-11.md §6.2, §11 API 3), not built
 import * as Fake from "./CalendarFake";
-// @ts-expect-error phase 11: the fake's store is specified (phase-11.md §6.2, §11 API 3), not built
 import * as Store from "./FakeCalendarRepo";
 
 // docs/spec/phase-11.md §7 cases 1–2: the calendar fake over an array store, and its real store
@@ -54,7 +52,7 @@ type CalendarFake = {
 };
 
 const makeFake = (store: CalendarStore, readMode: () => Promise<Mode>) =>
-  Fake.makeCalendarFake({ readMode, store }) as CalendarFake;
+  Fake.makeCalendarFake({ readMode, store }) as unknown as CalendarFake;
 
 const event = (
   id: string,

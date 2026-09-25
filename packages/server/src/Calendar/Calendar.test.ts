@@ -1,9 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { E2E_USERS } from "../E2E/Fixtures";
-// @ts-expect-error phase 11: the calendar fake is specified (phase-11.md §6.2, §11 API 3), not built
 import * as Fake from "../Integrations/Calendar/CalendarFake";
-// @ts-expect-error phase 11: the fake's store is specified (phase-11.md §6.2, §11 API 3), not built
 import * as Store from "../Integrations/Calendar/FakeCalendarRepo";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import {
@@ -13,9 +11,7 @@ import {
   seedD1,
   type TestD1,
 } from "../Testing";
-// @ts-expect-error phase 11: the calendar repository is specified (phase-11.md §6.3, §11 API 4), not built
 import * as Repo from "./CalendarRepo";
-// @ts-expect-error phase 11: the calendar service is specified (phase-11.md §6.3, §11 API 4), not built
 import * as Svc from "./CalendarService";
 
 // docs/spec/phase-11.md §7 cases 3–9: `CalendarService.upcoming` over `makeTestD1()`, a fixed clock
@@ -123,7 +119,7 @@ const service = (at = T): CalendarService => {
     store: Store.makeFakeCalendarRepo(makeDrizzle(d1)),
   }) as CalendarFake;
   return Svc.makeCalendarService({
-    calendar: fake,
+    calendar: fake as never,
     clock: fixedClock(at),
     repo: Repo.makeCalendarRepo(makeDrizzle(d1)),
   }) as CalendarService;

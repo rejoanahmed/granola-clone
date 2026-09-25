@@ -7,7 +7,6 @@ import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
 import type { Container } from "../container";
 import { actor } from "../Testing";
-// @ts-expect-error phase 11: the calendar router is specified (phase-11.md §6.1, §11 API 4), not built
 import * as CalHttp from "./Http";
 
 // docs/spec/phase-11.md §7 case 20, "Calendar.http.test.ts". Wire shape only: the path, the query
