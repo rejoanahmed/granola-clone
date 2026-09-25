@@ -221,13 +221,23 @@ export const makeGenerationsRepo = (db: DrizzleClient) => {
       return rows.map(toRecord);
     },
 
-    noteOwner: async (noteId: NoteId): Promise<UserId | null> => {
+    noteOwner: async (
+      noteId: NoteId
+    ): Promise<{
+      readonly ownerId: UserId;
+      readonly trashed: boolean;
+    } | null> => {
       const row = await db
-        .select({ ownerId: notes.ownerId })
+        .select({ ownerId: notes.ownerId, trashedAt: notes.trashedAt })
         .from(notes)
         .where(eq(notes.id, noteId))
         .get();
-      return row === undefined ? null : UserId.parse(row.ownerId);
+      return row === undefined
+        ? null
+        : {
+            ownerId: UserId.parse(row.ownerId),
+            trashed: row.trashedAt !== null,
+          };
     },
 
     // Hands an attempt back to `queued`. `refund` un-spends it: a rate limit is the provider asking

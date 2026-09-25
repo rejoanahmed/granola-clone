@@ -45,7 +45,7 @@ import type {
 } from "../Integrations/Transcription/Port";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
-import { logEvent } from "../Runtime/Logger";
+import type { LogEvent } from "../Runtime/Logger";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { AudioStore } from "./AudioStore";
 import { canEditRecording, canReadRecording } from "./Policy";
@@ -61,6 +61,7 @@ export type RecordingsDeps = {
   // Told once the transcript lands; the job row itself is written in the same batch.
   readonly generationQueue: GenerationQueue;
   readonly ids: Ids;
+  readonly log: LogEvent;
   readonly repo: RecordingsRepo;
   readonly transcription: TranscriptionPort;
   readonly uow: UnitOfWork;
@@ -241,7 +242,7 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
     try {
       await deps.generationQueue.send({ generationId });
     } catch (error) {
-      logEvent("generation.enqueue.failed", {
+      deps.log("generation.enqueue.failed", {
         error: String(error),
         generationId,
         recordingId: id,
@@ -359,7 +360,6 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         ],
         bodyMarkdown: "",
         createdAt: now,
-        // Nothing to generate from until the transcript lands.
         generation: null,
         id: noteId,
         recording: { durationMs: null, id, status: "recording" },

@@ -15,6 +15,10 @@ export type NoteRequest = {
   readonly kind: NoteKind;
   readonly privateNotes: string;
   readonly startedAt: Timestamp;
+  // The caller's deadline for this one call. A live client aborts at it and throws `LlmTimeout`;
+  // the generations service's stale-claim cutoff is derived from the same number, so a claim is
+  // only taken back once the call holding it can no longer answer.
+  readonly timeoutMs: number;
   readonly utterances: readonly Utterance[];
 };
 

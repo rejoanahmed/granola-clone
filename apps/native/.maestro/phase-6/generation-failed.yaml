@@ -33,15 +33,19 @@ env:
       text: Generating notes\.\.\.
     timeout: 15000
 
-# Three inline passes in `fail`, one attempt each; the third writes `failed` (§8 note 1).
+# Three inline passes in `fail` (§8 note 1). The upload also enqueued the job, so `wrangler dev`'s
+# consumer may spend attempt 1 itself, in `fail` too; a pass that meets its claim skips the row.
+# Either way the attempts add up to three, and exactly one pass writes `failed`, which is what the
+# count below pins rather than the number of passes.
 - runFlow:
     file: ../subflows/run-llm.yaml
     env:
       TIMES: "3"
+- assertTrue: ${output.llmRun.failed === 1}
 - extendedWaitUntil:
     visible:
       id: note-status-text
-      text: Couldn.t generate notes\.
+      text: Couldn’t generate notes\.
     timeout: 15000
 - assertVisible:
     id: note-status-retry
@@ -49,6 +53,9 @@ env:
 - assertVisible:
     id: note-title
     text: Untitled note
+# Nothing was typed, so the body falls back to phase 4's empty state (§3.1 failed row).
+- assertVisible:
+    id: note-body-empty
 - assertVisible:
     id: note-share
 - assertVisible:
@@ -70,6 +77,14 @@ env:
 
 - tapOn:
     id: note-status-retry
+# The row is back to "Generating notes..." as soon as the retry answers (useStatusRetry's
+# setQueryData). Waiting for it also means the retry POST has reached the server before
+# release-llm's inline sweep looks for the queued row.
+- extendedWaitUntil:
+    visible:
+      id: note-status-text
+      text: Generating notes\.\.\.
+    timeout: 15000
 - runFlow: ../subflows/release-llm.yaml
 - extendedWaitUntil:
     notVisible:

@@ -1,7 +1,7 @@
 import * as Gen from "@gc/domain/Domain/Generation";
 import * as GenErrors from "@gc/domain/Generations/Errors";
 import * as LlmErrors from "@gc/domain/Llm/Errors";
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
+import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import * as LlmFake from "../Integrations/Llm/LlmFake";
@@ -68,6 +68,7 @@ type NoteRequest = {
   readonly kind: "brief" | "full";
   readonly privateNotes: string;
   readonly startedAt: number;
+  readonly timeoutMs: number;
   readonly utterances: readonly Utterance[];
 };
 type LlmAnswer = { readonly raw: string; readonly truncated: boolean };
@@ -179,6 +180,13 @@ let transcriptionMode: TranscriptionMode;
 let llmMode: LlmMode;
 let llm: LlmFakeView;
 let queue: ReturnType<typeof makeQueue>;
+let logged: {
+  readonly fields: Record<string, unknown>;
+  readonly slug: string;
+}[];
+const log = (slug: string, fields: Record<string, unknown> = {}) => {
+  logged.push({ fields, slug });
+};
 const clock: Clock = { now: () => now };
 
 beforeEach(async () => {
@@ -189,6 +197,7 @@ beforeEach(async () => {
   llmMode = "auto";
   llm = LlmFake.makeLlmFake({ readMode: () => Promise.resolve(llmMode) });
   queue = makeQueue();
+  logged = [];
   await seedD1(d1, [
     { rows: [userRow(actor()), userRow(otherActor())], table: "user" },
   ]);
@@ -206,6 +215,7 @@ const recordings = () =>
     clock,
     generationQueue: queue,
     ids,
+    log,
     repo: makeRecordingsRepo(makeDrizzle(d1)),
     transcription: makeTranscriptionFake({
       readMode: () => Promise.resolve(transcriptionMode),
@@ -214,14 +224,18 @@ const recordings = () =>
   } as RecordingsDeps);
 
 const generations = (
-  overrides: { readonly llm?: LlmPort; readonly queue?: GenerationQueue } = {}
+  overrides: {
+    readonly llm?: LlmPort;
+    readonly queue?: GenerationQueue;
+    readonly repo?: Repo.GenerationsRepo;
+  } = {}
 ): GenerationsService =>
   Svc.makeGenerationsService({
     clock,
-    ids,
     llm: overrides.llm ?? llm,
+    log,
     queue: overrides.queue ?? queue,
-    repo: Repo.makeGenerationsRepo(makeDrizzle(d1)),
+    repo: overrides.repo ?? Repo.makeGenerationsRepo(makeDrizzle(d1)),
     uow: makeUnitOfWork(d1),
   });
 
@@ -402,6 +416,12 @@ describe("enqueueing on settle", () => {
 
     expect(await rowOf(generationId)).toMatchObject({ status: "queued" });
     expect(queue.sent).toEqual([]);
+    expect(logged).toEqual([
+      {
+        fields: expect.objectContaining({ generationId }),
+        slug: "generation.enqueue.failed",
+      },
+    ]);
     queue.setFailing(false);
 
     now = AT + MINUTE;
@@ -636,6 +656,57 @@ describe("GenerationsService.run", () => {
     });
   });
 
+  // A Worker that dies mid-attempt leaves its claim for the sweep, and `classify` never counts it.
+  // Taken back past the last attempt, the row fails instead of buying another LLM call.
+  it("fails a stale claim reclaimed past the last attempt without calling the LLM", async () => {
+    const { generationId } = await settled();
+    await d1
+      .prepare(
+        "UPDATE note_generations SET status = 'generating', attempt = ?, claimed_at = ? WHERE id = ?"
+      )
+      .bind(Svc.GENERATION_MAX_ATTEMPTS, AT, generationId)
+      .run();
+
+    now = AT + Svc.GENERATION_STALE_AFTER_MS + 1;
+    await expect(generations().run(generationId)).resolves.toBe("done");
+
+    expect(llm.calls).toEqual([]);
+    expect(await rowOf(generationId)).toEqual({
+      attempt: Svc.GENERATION_MAX_ATTEMPTS + 1,
+      failure: "llm_unavailable",
+      status: "failed",
+    });
+    await expect(generations().sweep()).resolves.toEqual({
+      enqueued: 0,
+      reclaimed: 0,
+    });
+  });
+
+  it("fails a claim whose prompt cannot be built, rather than leaving it generating", async () => {
+    const { generationId } = await settled();
+    const repo = Repo.makeGenerationsRepo(makeDrizzle(d1));
+
+    await expect(
+      generations({
+        repo: { ...repo, contextOf: () => Promise.resolve(null) },
+      }).run(generationId)
+    ).resolves.toBe("done");
+
+    expect(llm.calls).toEqual([]);
+    expect(await rowOf(generationId)).toMatchObject({
+      failure: "llm_rejected",
+      status: "failed",
+    });
+  });
+
+  it("gives every LLM call the deadline the stale cutoff is derived from", async () => {
+    const { generationId } = await settled();
+
+    await generations().run(generationId);
+
+    expect(llm.calls[0]?.timeoutMs).toBe(Svc.LLM_TIMEOUT_MS);
+  });
+
   // §7 case 10. A rate limit is not an attempt: the row goes back to `queued` unspent and is acked,
   // and the sweep (or the harness's release) takes it up again. The clock moves past the queued
   // cutoff before each inline sweep, so the row is eligible whichever way that cutoff is read.
@@ -813,6 +884,23 @@ describe("the user's own words win", () => {
     });
   });
 
+  it("keeps a body edited while generating, and still latches generated", async () => {
+    const { generationId, noteId } = await settled();
+    const slow = deferredLlm();
+    const running = generations({ llm: slow.port }).run(generationId);
+    const request = await slow.called;
+
+    await notes().update(actor(), noteId, { bodyMarkdown: "Typed meanwhile" });
+    slow.release(await autoAnswerFor(request));
+
+    await expect(running).resolves.toBe("done");
+    expect(await rowOf(generationId)).toMatchObject({ status: "generated" });
+    await expect(notes().get(actor(), noteId)).resolves.toMatchObject({
+      bodyMarkdown: "Typed meanwhile",
+      title: "Brief check-in",
+    });
+  });
+
   // §7 case 15
   it("keeps a body edited in the failed state, and fills the title when a retry generates", async () => {
     llmMode = "fail";
@@ -880,6 +968,24 @@ describe("GenerationsService.retry", () => {
       status: "queued",
     });
     expect(await rowOf(generationId)).toMatchObject({ status: "queued" });
+    expect(logged).toEqual([
+      {
+        fields: expect.objectContaining({ generationId }),
+        slug: "generation.enqueue.failed",
+      },
+    ]);
+  });
+
+  it("is NoteTrashed on a trashed note, and queues nothing", async () => {
+    const { generationId, noteId } = await failedGeneration();
+    await notes().trash(actor(), noteId);
+    const sent = queue.sent.length;
+
+    await expect(
+      caught(() => generations().retry(actor(), noteId))
+    ).resolves.toBeInstanceOf(NoteTrashed);
+    expect(await rowOf(generationId)).toMatchObject({ status: "failed" });
+    expect(queue.sent).toHaveLength(sent);
   });
 
   it("is GenerationNotRetryable on a generated note, and on a note with no generation", async () => {

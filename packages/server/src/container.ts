@@ -49,6 +49,7 @@ import { makeClock } from "./Runtime/Clock";
 import { makeCloudflareGenerationQueue } from "./Runtime/CloudflareGenerationQueue";
 import { makeDrizzle } from "./Runtime/Drizzle";
 import { makeIds } from "./Runtime/Ids";
+import { logEvent } from "./Runtime/Logger";
 import { makeR2AudioStore } from "./Runtime/R2AudioStore";
 import { traced } from "./Runtime/traced";
 import { makeUnitOfWork } from "./Runtime/UnitOfWork";
@@ -146,21 +147,30 @@ export const buildContainer = (
     makeCloudflareGenerationQueue(env.GENERATION_QUEUE)
   );
 
-  // LLM_MODE is parsed in `AppConfig` and acted on here, as TRANSCRIPTION_MODE is: `fake` is the
-  // only mode that parses, and the harness's `llm` switch is how a flow holds "Generating
-  // notes..." or drives a job to `failed`.
+  // LLM_MODE is parsed in `AppConfig` and acted on here. `fake` is the only mode that parses, so
+  // the switch has one case; a `live` mode widens `config.llm` and this stops compiling until it is
+  // handled. The harness's `llm` switch is how a flow holds "Generating notes..." or drives a job
+  // to `failed`.
   const readLlmMode: () => Promise<LlmMode> =
     e2eRepo === null
       ? () => Promise.resolve("auto")
       : async () => llmModeOf(await e2eRepo.switchValue(LLM_SWITCH));
-  const llm: LlmPort = traced("Llm", makeLlmFake({ readMode: readLlmMode }));
+  const llmFor = (mode: typeof config.llm.mode): LlmPort => {
+    switch (mode) {
+      case "fake":
+        return makeLlmFake({ readMode: readLlmMode });
+      default:
+        return mode satisfies never;
+    }
+  };
+  const llm: LlmPort = traced("Llm", llmFor(config.llm.mode));
 
   const generations = traced(
     "Generations",
     makeGenerationsService({
       clock,
-      ids,
       llm,
+      log: logEvent,
       queue: generationQueue,
       repo: traced("GenerationsRepo", makeGenerationsRepo(db)),
       uow,
@@ -174,6 +184,7 @@ export const buildContainer = (
       clock,
       generationQueue,
       ids,
+      log: logEvent,
       repo: traced("RecordingsRepo", makeRecordingsRepo(db)),
       transcription,
       uow,

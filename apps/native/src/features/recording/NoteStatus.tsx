@@ -39,7 +39,7 @@ export function NoteStatus({
         numberOfLines={2}
         style={styles.text}
         testID="note-status-text"
-        variant="secondary"
+        variant="caption"
       >
         {row.text}
       </Text>
@@ -71,5 +71,7 @@ const styles = StyleSheet.create({
     minHeight: ROW_HEIGHT,
     paddingHorizontal: spacing.lg,
   },
-  text: { flex: 1 },
+  // Screens 105 and 106 agree: the status copy is semibold and a size under body, not the 17 pt regular
+  // of `secondary`.
+  text: { flex: 1, fontWeight: "600" },
 });

@@ -30,15 +30,16 @@ env:
       id: note-screen
     timeout: 15000
 
-- extendedWaitUntil:
-    notVisible:
-      id: note-status
-    timeout: 15000
+# The title is what proves the job ran; the `notVisible` wait alone would pass before the status row
+# had rendered. 30 s is AC2's allowance for the simulated consumer, the one wait here on real queue
+# timing.
 - extendedWaitUntil:
     visible:
       id: note-title
       text: Brief check-in
-    timeout: 10000
+    timeout: 30000
+- assertNotVisible:
+    id: note-status
 - assertVisible:
     id: note-block-0
     text: Not much to transcribe here\. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups\.

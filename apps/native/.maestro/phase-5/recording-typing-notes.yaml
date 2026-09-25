@@ -56,15 +56,15 @@ env:
     visible:
       id: note-screen
     timeout: 15000
-- extendedWaitUntil:
-    notVisible:
-      id: note-status
-    timeout: 15000
+# Through the real queue, as phase-6/short-recording.yaml is: the generated title is the proof,
+# with AC2's 30 s, and the status row is checked gone after it.
 - extendedWaitUntil:
     visible:
       id: note-title
       text: Budget follow-up
-    timeout: 10000
+    timeout: 30000
+- assertNotVisible:
+    id: note-status
 - assertVisible:
     id: note-block-0
     text: "Not much to transcribe here\\..* Your typed notes: “Budget follow-up”\\."

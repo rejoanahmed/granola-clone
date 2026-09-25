@@ -41,7 +41,6 @@ export type NoteGeneration = z.infer<typeof NoteGeneration>;
 export const LOW_CONTENT_TIP =
   "_Notes works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._";
 
-// Fewer than this many transcript words is a low-content recording.
 export const LOW_CONTENT_MAX_WORDS = 12;
 
 // Inside NOTE_TITLE_MAX: a generated title is a heading on a phone, not a paragraph.

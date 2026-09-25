@@ -1,4 +1,7 @@
-import { GENERATED_TITLE_MAX } from "@gc/domain/Domain/Generation";
+import {
+  GENERATED_TITLE_MAX,
+  LOW_CONTENT_TIP,
+} from "@gc/domain/Domain/Generation";
 import { NoteBody } from "@gc/domain/Domain/Note";
 import {
   GeneratedNoteMalformed,
@@ -18,7 +21,14 @@ export type GeneratedNote = {
 const CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f]/g;
 const FENCE = /^```[a-zA-Z]*\n([\s\S]*?)\n?```$/;
 const WHITESPACE = /\s+/g;
-const QUOTED = /^["'“‘](.*)["'”’]$/;
+// Opening quote to the closing one it pairs with. A title is unwrapped only when it is one quoted
+// phrase: `"Q3" plan vs "Q4"` opens and closes with a quote but is not one.
+const QUOTE_PAIRS: Readonly<Record<string, string>> = {
+  "'": "'",
+  '"': '"',
+  "‘": "’",
+  "“": "”",
+};
 const HEADING = /^#+\s+/;
 const BULLET = /^([*+])\s+/;
 const INDENT = /^[ \t]+/;
@@ -46,12 +56,22 @@ const cutAtWord = (title: string): string => {
   ).trim();
 };
 
+const unquote = (title: string): string => {
+  const open = title.charAt(0);
+  const close = QUOTE_PAIRS[open];
+  if (close === undefined || title.length < 2 || !title.endsWith(close)) {
+    return title;
+  }
+  const inner = title.slice(1, -1);
+  return inner.includes(open) || inner.includes(close) ? title : inner;
+};
+
 const titleOf = (value: unknown): string | null => {
   if (typeof value !== "string") {
     return null;
   }
   let title = value.replace(WHITESPACE, " ").trim();
-  title = (QUOTED.exec(title)?.[1] ?? title).trim();
+  title = unquote(title).trim();
   if (title.endsWith(".") && !title.endsWith("..")) {
     title = title.slice(0, -1).trim();
   }
@@ -127,5 +147,30 @@ export const parseGeneratedNote = (
 };
 
 // A brief note keeps one paragraph, so an over-eager model cannot put a full note under the tip.
-export const firstParagraphOf = (markdown: string): string =>
-  markdown.split("\n\n")[0]?.trim() ?? "";
+// Headings are skipped: a `### Summary` over the paragraph would leave a note that is a heading and
+// the tip. The limit is checked again on what is stored, which is not what `parseGeneratedNote`
+// measured.
+export const briefBodyOf = (markdown: string): string => {
+  const paragraph =
+    markdown
+      .split("\n\n")
+      .map((block) =>
+        block
+          .split("\n")
+          .filter((line) => !line.startsWith("### "))
+          .join("\n")
+          .trim()
+      )
+      .find((block) => block.length > 0) ?? "";
+  if (paragraph.length === 0) {
+    throw new GeneratedNoteMalformed({}, "brief answer has no paragraph");
+  }
+  const body = `${paragraph}\n\n${LOW_CONTENT_TIP}`;
+  if (!NoteBody.safeParse(body).success) {
+    throw new GeneratedNoteMalformed(
+      { length: body.length },
+      "brief body is over the note limit"
+    );
+  }
+  return body;
+};

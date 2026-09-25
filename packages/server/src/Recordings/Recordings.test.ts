@@ -159,6 +159,7 @@ const service = (
     clock,
     generationQueue: makeMemoryGenerationQueue(),
     ids,
+    log: () => undefined,
     repo: repo(),
     transcription: overrides.transcription ?? fake,
     uow: overrides.uow ?? makeUnitOfWork(d1),

@@ -21,6 +21,7 @@ type NoteRequest = {
   readonly kind: "brief" | "full";
   readonly privateNotes: string;
   readonly startedAt: number;
+  readonly timeoutMs: number;
   readonly utterances: readonly Utterance[];
 };
 type Answer = { readonly raw: string; readonly truncated: boolean };
@@ -77,6 +78,7 @@ const request = (overrides: Partial<NoteRequest> = {}): NoteRequest => ({
   kind: "full",
   privateNotes: "",
   startedAt: AT,
+  timeoutMs: 120_000,
   utterances: LONG_TALK,
   ...overrides,
 });
@@ -231,6 +233,26 @@ describe("LlmFake, auto, full", () => {
       "- Alpha is first.\n  - Beta is second.\n  - Gamma is third."
     );
     expect(bodyMarkdown).not.toContain("Delta is fourth.");
+  });
+
+  // The transcriber's corpus repeats lines, which once put "That makes sense to me." in the
+  // section twice: a bullet of its own and nested under another utterance.
+  it("writes a sentence once, however many utterances repeat it", async () => {
+    const { bodyMarkdown } = await generated(
+      request({
+        utterances: [
+          utterance("A", "Opening point. That makes sense to me.", 0),
+          utterance("B", "That makes sense to me. Next thing.", 1),
+          ...LONG_TALK.slice(2),
+        ],
+      })
+    );
+    const discussion = bodyMarkdown.split("### Next Steps")[0] ?? "";
+
+    expect(discussion.split("That makes sense to me.")).toHaveLength(2);
+    expect(discussion).toContain(
+      "- Opening point.\n  - That makes sense to me.\n- Next thing."
+    );
   });
 
   it("adds Your notes from the private notes, each non-blank line trimmed, at most ten", async () => {

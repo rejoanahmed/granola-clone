@@ -72,11 +72,22 @@ const sentencesOf = (text: string): string[] =>
     .map((sentence) => sentence.trim())
     .filter((sentence) => sentence.length > 0);
 
-const discussionOf = (utterances: readonly Utterance[]): string =>
-  [
+// Nesting is per utterance, as §6.6 says. The transcriber's corpus repeats lines, so a sentence
+// already written anywhere in the section is skipped: a repeat reads as a broken note, not a fake.
+const discussionOf = (utterances: readonly Utterance[]): string => {
+  const written = new Set<string>();
+  const fresh = (sentences: readonly string[]): string[] =>
+    sentences.filter((sentence) => {
+      if (written.has(sentence)) {
+        return false;
+      }
+      written.add(sentence);
+      return true;
+    });
+  return [
     "### Discussion",
     ...utterances.slice(0, DISCUSSION_BULLETS).flatMap((utterance) => {
-      const [first, ...rest] = sentencesOf(utterance.text);
+      const [first, ...rest] = fresh(sentencesOf(utterance.text));
       return first === undefined
         ? []
         : [
@@ -85,6 +96,7 @@ const discussionOf = (utterances: readonly Utterance[]): string =>
           ];
     }),
   ].join("\n");
+};
 
 const briefAnswer = (request: NoteRequest): string => {
   const typed = typedTitleOf(request.privateNotes);

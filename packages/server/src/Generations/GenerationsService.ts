@@ -2,7 +2,6 @@ import {
   type GenerationFailure,
   GenerationId,
   isLowContent,
-  LOW_CONTENT_TIP,
   type NoteGeneration,
 } from "@gc/domain/Domain/Generation";
 import { NoteId } from "@gc/domain/Domain/Note";
@@ -13,23 +12,22 @@ import {
   GenerationNotRetryable,
 } from "@gc/domain/Generations/Errors";
 import { LlmRateLimited, LlmRejected, LlmTimeout } from "@gc/domain/Llm/Errors";
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
+import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { ensure } from "../Auth/Policy";
 import type { LlmPort, NoteAnswer } from "../Integrations/Llm/Port";
 import type { Clock } from "../Runtime/Clock";
-import type { Ids } from "../Runtime/Ids";
-import { logEvent } from "../Runtime/Logger";
+import type { LogEvent } from "../Runtime/Logger";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { GenerationJob, GenerationQueue } from "./GenerationQueue";
 import type { GenerationRecord, GenerationsRepo } from "./GenerationsRepo";
-import { firstParagraphOf, parseGeneratedNote } from "./Output";
+import { briefBodyOf, parseGeneratedNote } from "./Output";
 import { canRetryGeneration } from "./Policy";
 
 export type GenerationsDeps = {
   readonly clock: Clock;
-  readonly ids: Ids;
   readonly llm: LlmPort;
+  readonly log: LogEvent;
   readonly queue: GenerationQueue;
   readonly repo: GenerationsRepo;
   readonly uow: UnitOfWork;
@@ -56,8 +54,9 @@ const MINUTE = 60 * SECOND;
 export const GENERATION_MAX_ATTEMPTS = 3;
 export const GENERATION_RETRY_DELAY_S = 30;
 export const LLM_TIMEOUT_MS = 120_000;
-// Derived, never written down: a claim is stale only once it has outlived any single attempt, so
-// the sweep cannot take a row from an LLM call that is still allowed to answer.
+// Derived, never written down: a claim is stale only once it has outlived any single attempt. Every
+// call is made with LLM_TIMEOUT_MS as its deadline (`NoteRequest.timeoutMs`), so once a live client
+// honours it the sweep cannot take a row from a call that is still allowed to answer.
 export const GENERATION_STALE_AFTER_MS = LLM_TIMEOUT_MS + MINUTE;
 // Longer than the retry delay, so the sweep does not race a redelivery the queue has scheduled.
 // Racing would be harmless (the claim), just wasteful.
@@ -107,7 +106,7 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
       await deps.queue.send(job);
       return true;
     } catch (error) {
-      logEvent("generation.enqueue.failed", {
+      deps.log("generation.enqueue.failed", {
         error: String(error),
         generationId: job.generationId,
       });
@@ -140,6 +139,7 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
         kind,
         privateNotes: context.privateNotes,
         startedAt: context.startedAt,
+        timeoutMs: LLM_TIMEOUT_MS,
         utterances,
       });
       const parsed = parseGeneratedNote(answer.raw, {
@@ -149,7 +149,7 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
       return {
         bodyMarkdown:
           kind === "brief"
-            ? `${firstParagraphOf(parsed.bodyMarkdown)}\n\n${LOW_CONTENT_TIP}`
+            ? briefBodyOf(parsed.bodyMarkdown)
             : parsed.bodyMarkdown,
         ok: true,
         title: parsed.title,
@@ -194,9 +194,18 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
     if (claim === null) {
       return "skipped";
     }
+    // Past the limit only by reclaiming a stale claim: its Worker died mid-attempt, which `classify`
+    // never saw. A death that repeats would otherwise buy an LLM call every sweep, forever.
+    if (claim.attempt > GENERATION_MAX_ATTEMPTS) {
+      await deps.repo.fail(claim, "llm_unavailable", now);
+      return "failed";
+    }
     const answer = await ask(claim);
+    // No recording to build the prompt from. The foreign keys make this unreachable, but a row left
+    // `generating` here would be reclaimed and skipped on every sweep.
     if (answer === null) {
-      return "skipped";
+      await deps.repo.fail(claim, "llm_rejected", deps.clock.now());
+      return "failed";
     }
     if (!answer.ok) {
       return await classify(claim, answer.error);
@@ -225,9 +234,10 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
     // Ownership through the note (D018): somebody else's note and an absent one are one answer.
     retry: async (actor: Actor, noteId: string): Promise<NoteGeneration> => {
       const parsed = NoteId.safeParse(noteId);
-      const ownerId = parsed.success
+      const owner = parsed.success
         ? await deps.repo.noteOwner(parsed.data)
         : null;
+      const ownerId = owner?.ownerId ?? null;
       if (
         !parsed.success ||
         ownerId === null ||
@@ -240,6 +250,11 @@ export const makeGenerationsService = (deps: GenerationsDeps) => {
         { noteId: parsed.data, ownerId },
         actor
       );
+      // As NotesService refuses a write to a trashed note: a retry would write the AI title and
+      // body into it.
+      if (owner?.trashed === true) {
+        throw new NoteTrashed({ id: noteId });
+      }
       const requeued = await deps.repo.requeueFailed(
         note.noteId,
         deps.clock.now()

@@ -291,13 +291,17 @@ export default function NoteScreen() {
     row: statusRow,
   });
   // Only a page that watched the note being worked on animates its arrival; one opened finished
-  // draws at once, as phase 4 did.
-  const [sawProcessing, setSawProcessing] = useState(false);
+  // draws at once, as phase 4 did. Held as the id it was seen for, because Expo Router can reuse
+  // this instance for another note, which must not inherit the fade.
+  const [processingSeenFor, setProcessingSeenFor] = useState<string | null>(
+    null
+  );
   useEffect(() => {
     if (processing) {
-      setSawProcessing(true);
+      setProcessingSeenFor(id);
     }
-  }, [processing]);
+  }, [processing, id]);
+  const sawProcessing = processingSeenFor === id;
   const notFound =
     (query.isError && isGone(query.error)) || note?.trashedAt != null;
   const title = note?.title ?? summary?.title;

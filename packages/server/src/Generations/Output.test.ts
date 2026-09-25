@@ -1,3 +1,4 @@
+import * as Gen from "@gc/domain/Domain/Generation";
 import * as GenErrors from "@gc/domain/Generations/Errors";
 import { describe, expect, it } from "vitest";
 import * as Output from "./Output";
@@ -117,6 +118,19 @@ describe("the title", () => {
     expect(titleOf('"Weekly sync"')).toBe("Weekly sync");
   });
 
+  it("has a mirrored curly pair stripped", () => {
+    expect(titleOf("“Weekly sync”")).toBe("Weekly sync");
+  });
+
+  it.each([
+    ['"Q3" plan vs "Q4"'],
+    ["'90s hits and '80s"],
+    ['“Weekly sync"'],
+    ['"Weekly sync'],
+  ])("keeps %s: not one quoted phrase", (title) => {
+    expect(titleOf(title)).toBe(title);
+  });
+
   it("has one trailing period stripped", () => {
     expect(titleOf("Weekly sync.")).toBe("Weekly sync");
   });
@@ -221,5 +235,39 @@ describe("the body, normalised into the phase-4 subset", () => {
 
   it("round-trips the #31 source unchanged", () => {
     expect(bodyOf(EXCERPT_31, "Code review")).toBe(EXCERPT_31);
+  });
+});
+
+describe("the brief body", () => {
+  const TIP = `\n\n${Gen.LOW_CONTENT_TIP}`;
+
+  it("is the first paragraph and the tip", () => {
+    expect(Output.briefBodyOf("First one.\n\nSecond one.")).toBe(
+      `First one.${TIP}`
+    );
+  });
+
+  it("skips a leading heading, alone or over its paragraph", () => {
+    expect(Output.briefBodyOf("### Summary\n\nThe paragraph.")).toBe(
+      `The paragraph.${TIP}`
+    );
+    expect(Output.briefBodyOf("### Summary\nThe paragraph.")).toBe(
+      `The paragraph.${TIP}`
+    );
+  });
+
+  it("is malformed when only headings are left", () => {
+    expect(() => Output.briefBodyOf("### Summary")).toThrow(
+      GenErrors.GeneratedNoteMalformed
+    );
+  });
+
+  it("is malformed when the paragraph and the tip together pass the note limit", () => {
+    const room = 100_000 - TIP.length;
+
+    expect(Output.briefBodyOf("a".repeat(room))).toHaveLength(100_000);
+    expect(() => Output.briefBodyOf("a".repeat(room + 1))).toThrow(
+      GenErrors.GeneratedNoteMalformed
+    );
   });
 });
