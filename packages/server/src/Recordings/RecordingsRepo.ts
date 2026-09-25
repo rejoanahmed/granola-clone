@@ -37,8 +37,18 @@ export type RecordingRecord = Recording & {
   readonly providerJobId: string | null;
 };
 
+// A meeting's guest, as the service built it: in order, deduped and capped. Stored unlinked, as a
+// guest added by hand is, so the account join never rewrites it.
+export type NewRecordingGuest = {
+  readonly email: string | null;
+  readonly id: AttendeeId;
+  readonly name: string | null;
+};
+
 export type NewRecordingNote = {
+  readonly calendarEventId: string | null;
   readonly createdAt: Timestamp;
+  readonly guests: readonly NewRecordingGuest[];
   readonly id: NoteId;
   readonly ownerAttendeeId: AttendeeId;
   readonly ownerId: UserId;
@@ -61,6 +71,16 @@ export type SubmittedRecording = RecordingRecord & {
 };
 
 export type StoredSegment = Segment & { readonly id: string };
+
+// Columns per attendee insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
+const ATTENDEE_COLUMNS = 7;
+
+// Only the one-live-note-per-meeting index: any other constraint failing is a bug, and stays a 500.
+const EVENT_CONFLICT =
+  /UNIQUE constraint failed: notes\.owner_id, notes\.calendar_event_id/;
+
+const causeOf = (error: unknown): string =>
+  error instanceof Error ? String(error.cause ?? error.message) : String(error);
 
 // Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
 const SEGMENT_COLUMNS = 7;
@@ -115,6 +135,26 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       )
       .run();
     return result.meta.changes > 0;
+  };
+
+  // Read through `notes_owner_event_live_idx`: trashed notes are not in it, which is what unlinks
+  // a meeting once its note is trashed.
+  const liveNoteForEvent = async (
+    ownerId: UserId,
+    eventId: string
+  ): Promise<NoteId | null> => {
+    const row = await db
+      .select({ id: notes.id })
+      .from(notes)
+      .where(
+        and(
+          eq(notes.ownerId, ownerId),
+          eq(notes.calendarEventId, eventId),
+          isNull(notes.trashedAt)
+        )
+      )
+      .get();
+    return row === undefined ? null : NoteId.parse(row.id);
   };
 
   return {
@@ -180,6 +220,16 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         status: "uploading",
         updatedAt: now,
       }),
+    // The winner of a lost race, when `error` is the one-live-note-per-meeting index refusing the
+    // insert; null for any other failure, which the caller rethrows.
+    eventConflict: async (
+      error: unknown,
+      ownerId: UserId,
+      eventId: string
+    ): Promise<NoteId | null> =>
+      EVENT_CONFLICT.test(causeOf(error))
+        ? await liveNoteForEvent(ownerId, eventId)
+        : null,
 
     fail: async (
       id: RecordingId,
@@ -235,6 +285,8 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         .all();
       return rows.map(toRecord);
     },
+
+    liveNoteForEvent,
 
     noteOwner: async (noteId: NoteId): Promise<UserId | null> => {
       const row = await db
@@ -386,6 +438,7 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
       stage.add({
         query: db.insert(notes).values({
           bodyMarkdown: "",
+          calendarEventId: note.calendarEventId,
           createdAt: note.createdAt,
           id: note.id,
           ownerId: note.ownerId,
@@ -407,6 +460,23 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
           userId: note.ownerId,
         }),
       });
+      stage.addChunked(
+        note.guests.map((guest, index) => ({ ...guest, position: index + 1 })),
+        ATTENDEE_COLUMNS,
+        (chunk) => ({
+          query: db.insert(noteAttendees).values(
+            chunk.map((guest) => ({
+              createdAt: note.createdAt,
+              email: guest.email,
+              id: guest.id,
+              name: guest.name,
+              noteId: note.id,
+              position: guest.position,
+              userId: null,
+            }))
+          ),
+        })
+      );
       stage.add({
         query: db.insert(recordings).values({
           attempt: 0,

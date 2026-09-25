@@ -24,6 +24,7 @@ import {
   seedD1,
   sequentialIds,
   type TestD1,
+  unreachableCalendar,
 } from "../Testing";
 import { makeMemoryAudioStore } from "../Testing/AudioStore";
 import * as Repo from "./GenerationsRepo";
@@ -213,6 +214,7 @@ const audio = makeMemoryAudioStore();
 const recordings = () =>
   makeRecordingsService({
     audio,
+    calendar: unreachableCalendar,
     clock,
     generationQueue: queue,
     ids,

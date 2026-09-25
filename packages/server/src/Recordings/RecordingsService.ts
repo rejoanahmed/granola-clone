@@ -1,11 +1,18 @@
+import {
+  CalendarEventHasNote,
+  CalendarEventNotFound,
+} from "@gc/domain/Calendar/Errors";
+import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
 import { GenerationId } from "@gc/domain/Domain/Generation";
 import type { UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
   DEFAULT_NOTE_TITLE,
+  NOTE_TITLE_MAX,
   type Note,
   NoteId,
 } from "@gc/domain/Domain/Note";
+import { personKeyOf } from "@gc/domain/Domain/Person";
 import {
   AUDIO_MAX_BYTES,
   groupUtterances,
@@ -40,6 +47,10 @@ import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import type { GenerationQueue } from "../Generations/GenerationQueue";
 import type {
+  CalendarEventRecord,
+  CalendarPort,
+} from "../Integrations/Calendar/Port";
+import type {
   TranscriptionAnswer,
   TranscriptionPort,
 } from "../Integrations/Transcription/Port";
@@ -50,6 +61,7 @@ import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { AudioStore } from "./AudioStore";
 import { canEditRecording, canReadRecording } from "./Policy";
 import type {
+  NewRecordingGuest,
   RecordingRecord,
   RecordingsRepo,
   SubmittedRecording,
@@ -57,6 +69,8 @@ import type {
 
 export type RecordingsDeps = {
   readonly audio: AudioStore;
+  // Asked only when a create names a meeting; a plain recording never reaches the provider.
+  readonly calendar: CalendarPort;
   readonly clock: Clock;
   // Told once the transcript lands; the job row itself is written in the same batch.
   readonly generationQueue: GenerationQueue;
@@ -185,6 +199,56 @@ const measured = (body: ReadableStream<Uint8Array>, length: number) => {
     })
   );
   return { mismatched: () => mismatched, stream };
+};
+
+// `NoteCreate`'s cap, so a note started from a meeting holds no more guests than one made by hand.
+const MEETING_GUESTS_MAX = 50;
+
+// Cut at the last space that fits, so a long meeting title never ends mid-word; a single word
+// longer than the cap is cut hard, since there is no word boundary to prefer.
+export const meetingTitleOf = (raw: string | null): string => {
+  const trimmed = raw?.trim() ?? "";
+  if (trimmed === "") {
+    return DEFAULT_NOTE_TITLE;
+  }
+  if (trimmed.length <= NOTE_TITLE_MAX) {
+    return trimmed;
+  }
+  const space = trimmed.slice(0, NOTE_TITLE_MAX + 1).lastIndexOf(" ");
+  return space > 0
+    ? trimmed.slice(0, space).trimEnd()
+    : trimmed.slice(0, NOTE_TITLE_MAX);
+};
+
+const blankToNull = (value: string | null): string | null => {
+  const trimmed = value?.trim() ?? "";
+  return trimmed === "" ? null : trimmed;
+};
+
+// The owner is position 0 already, so the invite's own entry for them is skipped by address; the
+// person key then drops any guest listed twice, as the attendees sheet would show them once.
+const meetingGuestsOf = (
+  event: CalendarEventRecord,
+  ownerEmail: string
+): { readonly email: string | null; readonly name: string | null }[] => {
+  const seen = new Set([personKeyOf({ email: ownerEmail, name: null })]);
+  const guests: { email: string | null; name: string | null }[] = [];
+  for (const attendee of event.attendees) {
+    const guest = {
+      email: blankToNull(attendee.email),
+      name: blankToNull(attendee.name),
+    };
+    const key = personKeyOf(guest);
+    if (key === null || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    guests.push(guest);
+    if (guests.length === MEETING_GUESTS_MAX) {
+      break;
+    }
+  }
+  return guests;
 };
 
 export const makeRecordingsService = (deps: RecordingsDeps) => {
@@ -325,38 +389,93 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
     return "pending";
   };
 
+  const meetingFor = async (actor: Actor, eventId: CalendarEventId) => {
+    const event = await deps.calendar.getEvent({ eventId, userId: actor.id });
+    if (event === null) {
+      throw new CalendarEventNotFound({ calendarEventId: eventId });
+    }
+    const linked = await deps.repo.liveNoteForEvent(actor.id, eventId);
+    if (linked !== null) {
+      throw new CalendarEventHasNote({
+        calendarEventId: eventId,
+        noteId: linked,
+      });
+    }
+    return {
+      eventId,
+      guests: meetingGuestsOf(event, actor.email),
+      title: meetingTitleOf(event.title),
+    };
+  };
+
   return {
     // The note and the recording are written together, and the note is answered from what was
-    // written: its only attendee is the caller, whose name and address the notes read would take
-    // from the same account.
+    // written. Named a meeting, the provider is asked first and the pre-check runs before any id is
+    // minted, so a 404 or a 409 writes nothing; the unique index settles a race the pre-check lost.
     create: async (
       actor: Actor,
-      input: { readonly startedAt?: Timestamp }
+      input: {
+        readonly calendarEventId?: CalendarEventId;
+        readonly startedAt?: Timestamp;
+      }
     ): Promise<RecordingCreated> => {
+      const meeting =
+        input.calendarEventId === undefined
+          ? null
+          : await meetingFor(actor, input.calendarEventId);
       const now = deps.clock.now();
       const startedAt = input.startedAt ?? now;
       const noteId = NoteId.parse(deps.ids.generate("not_"));
       const attendeeId = AttendeeId.parse(deps.ids.generate("att_"));
       const id = RecordingId.parse(deps.ids.generate("rec_"));
-      await deps.uow.commit((stage) =>
-        deps.repo.stageCreate(
-          stage,
-          {
-            createdAt: now,
-            id: noteId,
-            ownerAttendeeId: attendeeId,
-            ownerId: actor.id,
-            source: "phone",
-            startedAt,
-            title: DEFAULT_NOTE_TITLE,
-          },
-          { createdAt: now, id, noteId, ownerId: actor.id, startedAt }
-        )
+      const guests: NewRecordingGuest[] = (meeting?.guests ?? []).map(
+        (guest) => ({
+          ...guest,
+          id: AttendeeId.parse(deps.ids.generate("att_")),
+        })
       );
+      const title = meeting?.title ?? DEFAULT_NOTE_TITLE;
+      try {
+        await deps.uow.commit((stage) =>
+          deps.repo.stageCreate(
+            stage,
+            {
+              calendarEventId: meeting?.eventId ?? null,
+              createdAt: now,
+              guests,
+              id: noteId,
+              ownerAttendeeId: attendeeId,
+              ownerId: actor.id,
+              source: "phone",
+              startedAt,
+              title,
+            },
+            { createdAt: now, id, noteId, ownerId: actor.id, startedAt }
+          )
+        );
+      } catch (error) {
+        if (meeting === null) {
+          throw error;
+        }
+        const winner = await deps.repo.eventConflict(
+          error,
+          actor.id,
+          meeting.eventId
+        );
+        if (winner === null) {
+          throw error;
+        }
+        throw new CalendarEventHasNote(
+          { calendarEventId: meeting.eventId, noteId: winner },
+          undefined,
+          { cause: error }
+        );
+      }
       const recording = await get(actor, id);
       const note: Note = {
         attendees: [
           { email: actor.email, id: attendeeId, isMe: true, name: actor.name },
+          ...guests.map((guest) => ({ ...guest, isMe: false })),
         ],
         bodyMarkdown: "",
         createdAt: now,
@@ -367,7 +486,7 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         recording: { durationMs: null, id, status: "recording" },
         source: "phone",
         startedAt,
-        title: DEFAULT_NOTE_TITLE,
+        title,
         trashedAt: null,
         updatedAt: now,
       };

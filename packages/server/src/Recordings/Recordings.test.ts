@@ -20,6 +20,7 @@ import {
   seedD1,
   sequentialIds,
   type TestD1,
+  unreachableCalendar,
 } from "../Testing";
 import * as MemoryAudio from "../Testing/AudioStore";
 import { makeMemoryGenerationQueue } from "../Testing/GenerationQueue";
@@ -157,6 +158,7 @@ const service = (
 ): RecordingsService =>
   Svc.makeRecordingsService({
     audio,
+    calendar: unreachableCalendar,
     clock,
     generationQueue: makeMemoryGenerationQueue(),
     ids,
@@ -1256,7 +1258,6 @@ describe("RecordingsService.create from a meeting, phase 11", () => {
   });
 
   const makeCalendar = async (): Promise<CalendarFake> => {
-    // @ts-expect-error phase 11: the calendar fake is specified (phase-11.md §6.2, §11 API 3), not built
     const module = (await import("../Integrations/Calendar/CalendarFake")) as {
       makeCalendarFake: (deps: unknown) => CalendarFake;
     };
