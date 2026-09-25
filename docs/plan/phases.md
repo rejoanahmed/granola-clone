@@ -48,7 +48,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 8 | Search and people | done |
 | 9 | Folders | done |
 | 10 | Settings, profile and upsells | done |
-| 11 | Upcoming events (fake calendar) | todo |
+| 11 | Upcoming events (fake calendar) | done |
 | 12 | Parity pass and CI | todo |
 
 ### 2 — Design system and app shell
