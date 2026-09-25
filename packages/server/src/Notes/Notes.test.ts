@@ -934,6 +934,15 @@ describe("NotesService with folders, phase 9", () => {
     });
   });
 
+  // HTTP answers a malformed id with a 422 before the service runs; a caller that never parsed one
+  // (a cron, a test) gets the same 404, carrying the string it sent.
+  it("raises FolderNotFound for a malformed folder id, naming it", async () => {
+    await expect(inFolder("not-a-folder")).rejects.toMatchObject({
+      _tag: "FolderNotFound",
+      details: { id: "not-a-folder" },
+    });
+  });
+
   // §7 case 14 (and case 5's read): folderIds on the detail, sorted by id.
   it("carries folderIds on the detail: [] for a note in no folder", async () => {
     const notes = await withFolders();

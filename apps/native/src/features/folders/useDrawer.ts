@@ -15,11 +15,14 @@ const SLIDE_MS = 250;
 const SETTLE_AT = 0.4;
 const FLICK = 500;
 const ACTIVATE_X = 10;
+// §3.1: the edge pan begins only within 20pt of the left edge. A hit slop on the pan rather than a
+// strip drawn over the list, so a tap, long-press or scroll starting there still reaches the row.
+const EDGE_WIDTH = 20;
 const FAIL_Y = 12;
 
 export type Drawer = {
   readonly close: () => void;
-  /** Home's edge strip: a rightward pan opens the drawer, tracking the finger. */
+  /** On home's content: a rightward pan from the left edge opens the drawer, tracking the finger. */
   readonly edgePan: ReturnType<typeof Gesture.Pan>;
   /** The drawer and its scrim: a leftward pan closes it. */
   readonly closePan: ReturnType<typeof Gesture.Pan>;
@@ -31,7 +34,8 @@ export type Drawer = {
   readonly width: number;
 };
 
-export function useDrawer(): Drawer {
+// `edgeEnabled` is false while the row menu or the mic card is up (§3.1).
+export function useDrawer(edgeEnabled: boolean): Drawer {
   const { width: screen } = useWindowDimensions();
   const width = Math.round(screen * WIDTH_FRACTION);
   const progress = useSharedValue(0);
@@ -61,7 +65,11 @@ export function useDrawer(): Drawer {
   const edgePan = useMemo(
     () =>
       Gesture.Pan()
+        .enabled(edgeEnabled)
+        .hitSlop({ left: 0, width: EDGE_WIDTH })
         .activeOffsetX(ACTIVATE_X)
+        // Fails on a leftward drag, so a row the edge pan holds up can still swipe to trash.
+        .failOffsetX(-ACTIVATE_X)
         .failOffsetY([-FAIL_Y, FAIL_Y])
         .onStart(() => {
           dragging.value = true;
@@ -77,7 +85,7 @@ export function useDrawer(): Drawer {
           dragging.value = false;
           settle(progress.value > SETTLE_AT || event.velocityX > FLICK ? 1 : 0);
         }),
-    [dragging, progress, settle, width]
+    [dragging, edgeEnabled, progress, settle, width]
   );
 
   const closePan = useMemo(

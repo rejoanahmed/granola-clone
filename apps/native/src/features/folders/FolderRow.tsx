@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   selected: { backgroundColor: colors.bg.tileRaised },
   tile: {
     alignItems: "center",
-    backgroundColor: colors.bg.tile,
+    backgroundColor: colors.bg.tileRaised,
     borderColor: colors.border.hairline,
     borderRadius: TILE_RADIUS,
     borderWidth: 1,

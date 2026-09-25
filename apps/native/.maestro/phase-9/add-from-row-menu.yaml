@@ -50,9 +50,18 @@ env:
     enabled: false
 - takeScreenshot: phase-9-add-to-folder-list
 
-# Product already holds standup: its row is disabled, so the tap selects nothing.
+# Product already holds standup: its row is disabled, so the tap selects nothing. The row itself is
+# asserted, because submit was disabled before the tap and would match before any state change.
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_product
+    enabled: false
+    selected: false
 - tapOn:
     id: add-to-folder-row-fld_e2e_product
+- assertVisible:
+    id: add-to-folder-row-fld_e2e_product
+    enabled: false
+    selected: false
 - assertVisible:
     id: add-to-folder-submit
     enabled: false

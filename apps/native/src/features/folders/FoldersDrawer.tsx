@@ -13,7 +13,6 @@ import {
 import type { Folder } from "@native/lib/api";
 import { useRouter } from "expo-router";
 import {
-  CircleHelp,
   Folder as FolderGlyph,
   FolderPlus,
   NotebookPen,
@@ -38,8 +37,9 @@ import { useFolders } from "./useFolders";
 // #50's measured geometry (docs/spec/phase-9.md §3.1).
 const EMPTY_TOP = 32;
 const EMPTY_GLYPH = 44;
-const BADGE = 16;
-const BADGE_GLYPH = 12;
+// #50: a solid disc about half the folder's height, over its top-right corner, holding a bare `?`.
+const BADGE = 20;
+const BADGE_GLYPH = 14;
 const EMPTY_BODY_MAX = 240;
 const LOADING_TOP = 48;
 const LIST_TOP = 12;
@@ -250,11 +250,13 @@ function Empty() {
           strokeWidth={ICON_STROKE}
         />
         <View style={styles.badge}>
-          <CircleHelp
+          <Text
             color={colors.bg.app}
-            size={BADGE_GLYPH}
-            strokeWidth={2.25}
-          />
+            style={styles.badgeGlyph}
+            variant="caption"
+          >
+            ?
+          </Text>
         </View>
       </View>
       <Text
@@ -283,9 +285,15 @@ const styles = StyleSheet.create({
     height: BADGE,
     justifyContent: "center",
     position: "absolute",
-    right: -BADGE / 4,
-    top: 0,
+    right: -BADGE / 3,
+    top: -BADGE / 5,
     width: BADGE,
+  },
+  badgeGlyph: {
+    fontSize: BADGE_GLYPH,
+    fontWeight: "700",
+    lineHeight: BADGE,
+    textAlign: "center",
   },
   centred: { textAlign: "center" },
   create: {
@@ -296,7 +304,7 @@ const styles = StyleSheet.create({
   },
   createTile: {
     alignItems: "center",
-    backgroundColor: colors.bg.tile,
+    backgroundColor: colors.bg.tileRaised,
     borderColor: colors.border.hairline,
     borderRadius: CREATE_TILE_RADIUS,
     borderWidth: sizes.hairline,

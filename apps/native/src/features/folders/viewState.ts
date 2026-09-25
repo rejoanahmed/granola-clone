@@ -20,14 +20,11 @@ export type AddToFolderState =
   | "noResults";
 
 type AddToFolderInputs = {
-  /** Either query failed with nothing to draw. */
   readonly failed: boolean;
-  /** How many folders the caller has. */
   readonly folderCount: number;
-  /** How many the trimmed query leaves. */
   readonly matchCount: number;
   readonly query: string;
-  /** Both `GET /folders` and the note's detail have data. */
+  // Both `GET /folders` and the note's detail: the sheet cannot mark "Added" without the second.
   readonly ready: boolean;
 };
 

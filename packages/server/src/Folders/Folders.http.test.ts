@@ -180,6 +180,23 @@ describe("POST /folders", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({ _tag: "FolderNameTaken" });
   });
+
+  it("is 409 FolderLimitReached at the ceiling, carrying the max", async () => {
+    const Full = errorOf("FolderLimitReached");
+    const { app } = appAs(actor(), {
+      create: () => {
+        throw new Full({ max: 100 });
+      },
+    });
+
+    const res = await send(app, "POST", "/folders", { name: "Research" });
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      _tag: "FolderLimitReached",
+      details: { max: 100 },
+    });
+  });
 });
 
 describe("DELETE /folders/{id}", () => {
@@ -295,5 +312,56 @@ describe("DELETE /folders/{id}/notes/{noteId}", () => {
     expect(calls).toEqual([
       { args: [actor(), FOLDER_ID, NOTE_ID], method: "removeNote" },
     ]);
+  });
+
+  it("is 404 FolderNotFound for a folder that is not the caller's", async () => {
+    const Missing = errorOf("FolderNotFound");
+    const { app } = appAs(actor(), {
+      removeNote: (_who, id) => {
+        throw new Missing({ id });
+      },
+    });
+
+    const res = await send(
+      app,
+      "DELETE",
+      `/folders/${FOLDER_ID}/notes/${NOTE_ID}`
+    );
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({
+      _tag: "FolderNotFound",
+      details: { id: FOLDER_ID },
+    });
+  });
+
+  it("is 404 NoteNotFound for a note that is not the caller's", async () => {
+    const { app } = appAs(actor(), {
+      removeNote: (_who, _folder, id) => {
+        throw new NoteNotFound({ id });
+      },
+    });
+
+    const res = await send(
+      app,
+      "DELETE",
+      `/folders/${FOLDER_ID}/notes/${NOTE_ID}`
+    );
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toMatchObject({ _tag: "NoteNotFound" });
+  });
+
+  it("is 422, not 404, for a noteId that is not a note id", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(
+      app,
+      "DELETE",
+      `/folders/${FOLDER_ID}/notes/not-a-note`
+    );
+
+    expect(res.status).toBe(422);
+    expect(calls).toEqual([]);
   });
 });

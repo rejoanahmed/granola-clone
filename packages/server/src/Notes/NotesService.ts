@@ -26,8 +26,9 @@ import { canEditNote, canReadNote } from "./Policy";
 
 export type NotesDeps = {
   readonly clock: Clock;
-  // Only the owner-scoped read: the folder filter must know the folder is the caller's before it
-  // filters by it, or a foreign folder would answer as an empty page.
+  // Only the owner-scoped read, and owner scoping is the whole rule here: the filter asks whether
+  // the folder is the caller's, not the folders policy, so the day a folder is shared this read
+  // must be revisited with it. Without the check a foreign folder would answer as an empty page.
   readonly folders: Pick<FoldersRepo, "findForOwner">;
   readonly ids: Ids;
   readonly repo: NotesRepo;
@@ -110,8 +111,9 @@ export const makeNotesService = (deps: NotesDeps) => {
     return present(note, actor, await deps.repo.folderIdsOf(note.id, actor.id));
   };
 
-  // Unknown, malformed and another owner's folder are one 404: unlike a person, a folder is an
-  // entity the caller can lose, and the client draws a "gone" state for it.
+  // Unknown and another owner's folder are one 404: unlike a person, a folder is an entity the
+  // caller can lose, and the client draws a "gone" state for it. Over HTTP a malformed id is a 422
+  // before this runs; a cron or a test holding one gets the same 404.
   const folderOf = async (
     actor: Actor,
     folder: string | undefined

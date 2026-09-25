@@ -117,6 +117,7 @@ const service = (): FoldersService =>
     ids,
     notes: makeNotesRepo(makeDrizzle(d1)),
     repo: foldersRepo(),
+    uow: makeUnitOfWork(d1),
   });
 
 const notes = () => {
@@ -221,6 +222,21 @@ describe("FoldersService.create", () => {
     await expect(
       service().create(person, { name: "One too many" })
     ).resolves.toMatchObject({ name: "One too many" });
+  });
+
+  it("lets only one of two concurrent creates take the 100th slot", async () => {
+    for (let index = 0; index < 99; index += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: the count is what is under test
+      await service().create(person, { name: `Folder ${index}` });
+    }
+
+    const tags = await Promise.all([
+      tagOf(service().create(person, { name: "Racer A" })),
+      tagOf(service().create(person, { name: "Racer B" })),
+    ]);
+
+    expect([...tags].sort()).toEqual(["FolderLimitReached", "resolved"]);
+    expect((await service().list(person)).items).toHaveLength(100);
   });
 });
 
@@ -338,6 +354,21 @@ describe("FoldersService.removeNote", () => {
       "NoteNotFound"
     );
     expect(await countsOf(other)).toEqual([[OTHERS, 1]]);
+  });
+
+  // A caller that never parsed its ids (a cron, a test) gets the same 404s HTTP's 422 pre-empts.
+  it("answers a malformed folder or note id as not found", async () => {
+    await seedFolders();
+
+    expect(await tagOf(service().removeNote(person, "fld", LAUNCH))).toBe(
+      "FolderNotFound"
+    );
+    expect(await tagOf(service().addNote(person, PRODUCT, "note-1"))).toBe(
+      "NoteNotFound"
+    );
+    expect(await tagOf(service().delete(person, "not-a-folder"))).toBe(
+      "FolderNotFound"
+    );
   });
 });
 

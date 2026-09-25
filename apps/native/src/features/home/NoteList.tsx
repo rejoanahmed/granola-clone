@@ -26,6 +26,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import type { PanGesture } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { homeListState } from "./listState";
@@ -54,6 +55,7 @@ export const LIST_COPY = {
 } as const;
 
 type Props = {
+  readonly edgeGesture?: PanGesture;
   /** The folder home is showing (docs/spec/phase-9.md §3.2), or null for My notes. */
   readonly folder: string | null;
   /** The gone state's way out: home back to My notes. */
@@ -138,6 +140,7 @@ function ListError({ onRetry }: { readonly onRetry: () => void }) {
 // The home list (#01, docs/spec/phase-4.md §2.1, §3): notes by local day, newest first, the next
 // page on scroll, pull to refresh, and the designed loading, error and empty states in its place.
 export function NoteList({
+  edgeGesture,
   folder,
   liveNoteId,
   onBackToAll,
@@ -269,6 +272,7 @@ export function NoteList({
       }
       renderItem={({ item }) => (
         <NoteRow
+          edgeGesture={edgeGesture}
           live={item.id === liveNoteId}
           note={item}
           onLongPress={onLongPress}

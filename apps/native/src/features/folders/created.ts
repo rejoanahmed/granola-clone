@@ -15,14 +15,27 @@ export function takeCreated(): Folder | null {
   return folder;
 }
 
-// Folders this device deleted. Home clears a current folder that vanished from `GET /folders`, and
-// says so only when somebody else removed it (§3.2): a delete the caller made needs no toast.
-const deletedHere = new Set<string>();
+// The folder this device is deleting. Home clears a current folder that vanished from
+// `GET /folders`, and says so only when somebody else removed it (§3.2): a delete the caller made
+// needs no toast. Marked before the request, so the answer cannot depend on whether the mutation's
+// callbacks or home's refetch run first; one slot, because a delete is confirmed one at a time and
+// a set would keep every id this runtime ever deleted.
+let deleting: string | null = null;
 
-export function markDeleted(id: string): void {
-  deletedHere.add(id);
+export function markDeleting(id: string): void {
+  deleting = id;
+}
+
+export function unmarkDeleting(id: string): void {
+  if (deleting === id) {
+    deleting = null;
+  }
 }
 
 export function wasDeletedHere(id: string): boolean {
-  return deletedHere.delete(id);
+  if (deleting !== id) {
+    return false;
+  }
+  deleting = null;
+  return true;
 }

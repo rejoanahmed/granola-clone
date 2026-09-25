@@ -104,9 +104,9 @@ previous data shows immediately.
 
 - Top-aligned, not centred. It starts 32pt below the top safe area and is centred horizontally in
   the drawer:
-  - a 44pt outline folder glyph (`Folder`, stroke 1.75, `text.secondary`) with a 16pt filled
-    `text.secondary` circle badge holding a dark `?` (a `CircleHelp` glyph, 12pt, `bg.app`) over
-    its top-right corner;
+  - a 44pt outline folder glyph (`Folder`, stroke 1.75, `text.secondary`) with a 20pt filled
+    `text.secondary` disc holding a bare bold `?` (text, 14pt, `bg.app`, not a ringed glyph)
+    overlapping its top-right corner, as #50 draws it;
   - 12pt below, **"No folders yet"** (`folders-empty-title`, `rowTitle` 17/22 semibold,
     `text.primary`);
   - 8pt below, **"Folders will appear here after they are synced."** (`folders-empty-body`,
@@ -118,8 +118,9 @@ previous data shows immediately.
 
 - The **My notes** row `folders-all`:
   - inset 12 on both sides, with height 52 and a 12pt corner radius;
-  - leading 12, a 32pt rounded-square tile (radius 8, fill `bg.tile` `#282828`, a 1pt hairline
-    `#333`), holding an 18pt `NotebookPen` glyph in `text.primary`;
+  - leading 12, a 32pt rounded-square tile (radius 8, fill `bg.tileRaised` `#333333`, a 1pt
+    hairline — `bg.tile` is too close to the drawer's `#262626` to read as a fill, and #50's tile is
+    visibly lighter), holding an 18pt `NotebookPen` glyph in `text.primary`;
   - 12pt gap, then **"My notes"** at 17/22 semibold;
   - a11y "My notes", role button, `accessibilityState.selected` when home is unfiltered;
   - the selected fill is `bg.tileRaised` `#333333`, the same highlight a pressed list row takes.
@@ -138,7 +139,7 @@ previous data shows immediately.
 **Create new folder** `folders-create` (#50), in both states. It is pinned to the drawer's bottom,
 16pt above the bottom safe-area inset:
 
-- leading 16, a 32pt rounded-square tile (radius 8, fill `bg.tile`, a hairline border) holding an
+- leading 16, a 32pt rounded-square tile (radius 8, fill `bg.tileRaised`, a hairline border) holding an
   18pt `FolderPlus` glyph in `text.primary`;
 - 12pt gap, then **"Create new folder"** in `askLabel` 20/25 regular `text.primary`. #50's label is
   visibly larger than a row title;
@@ -304,7 +305,7 @@ A folder is **Added** when its id is in `folderIds`. The sheet's state is
 | **Loading** `add-to-folder-loading` *(designed)* | either query has no data yet | A centred `ActivityIndicator` in `text.secondary` |
 | **Empty** `add-to-folder-empty` (#17) | the caller has no folders and the query is empty | Centred vertically in the body: a 44pt circle (fill `bg.tileRaised`, a hairline border) holding a 22pt `Plus` in `text.primary`, then 12pt, then **"Create folder"** at `body` 17/22 `text.primary`. The circle and the label are one button, `add-to-folder-empty-create` (a11y "Create folder") |
 | **List** `add-to-folder-list` *(designed)* | at least one folder matches | The create row, then the matching folders (below) |
-| **No results** `add-to-folder-no-results` (#18) | the trimmed query is not empty and nothing matches | **Top-aligned**, 150pt below the top bar, centred: the `HomeNotesEmptyState`-style illustration, drawn as a 48pt two-sheet stack with a small `+` (`Layers` plus `Plus` in `text.tertiary`, stroke 1.25). 12pt below it, **"No results for “<q>”"** (`add-to-folder-no-results-text`, `secondary` 17/22, `text.secondary`, one line, middle-truncated), where `<q>` is the trimmed query in curly quotes |
+| **No results** `add-to-folder-no-results` (#18) | the trimmed query is not empty and nothing matches | **Top-aligned**, 150pt below the top bar, centred: the `HomeNotesEmptyState`-style illustration, drawn as a 48pt two-sheet stack in perspective with a small `+` at its top-right (a custom SVG in `text.tertiary`, stroke 1.25: no icon set draws #18's glyph). 12pt below it, **"No results for “<q>”"** (`add-to-folder-no-results-text`, `secondary` 17/22, `text.secondary`, one line, middle-truncated), where `<q>` is the trimmed query in curly quotes |
 | **Error** `add-to-folder-error` *(designed)* | a query failed with no data | Centred: **"Couldn’t load your folders."** (`secondary`), then 12pt, then a dark `PillButton` **"Try again"** (`add-to-folder-retry`), which refetches both |
 
 **The list** *(designed)*. It scrolls, with `keyboardShouldPersistTaps="handled"` and

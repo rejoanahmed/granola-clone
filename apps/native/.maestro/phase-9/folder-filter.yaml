@@ -88,3 +88,13 @@ env:
     visible:
       id: home-note-not_e2e_solo
     timeout: 15000
+
+# The edge pan is a hit slop on home's content, not a strip drawn over it: a tap in the leftmost
+# 20pt still reaches the row under it (§3.1 Gestures).
+- tapOn:
+    id: home-note-not_e2e_solo
+    point: "2%,50%"
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 15000

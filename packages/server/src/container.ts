@@ -111,7 +111,13 @@ export const buildContainer = (
   // caller may file it, and never writes one.
   const folders = traced(
     "Folders",
-    makeFoldersService({ clock, ids, notes: notesRepo, repo: foldersRepo })
+    makeFoldersService({
+      clock,
+      ids,
+      notes: notesRepo,
+      repo: foldersRepo,
+      uow,
+    })
   );
 
   // Both read only, and neither calls a provider: a person is derived from the caller's own notes.

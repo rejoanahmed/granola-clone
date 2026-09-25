@@ -9,13 +9,9 @@ import {
   Text,
 } from "@native/design";
 import type { Folder } from "@native/lib/api";
-import {
-  Check,
-  Folder as FolderGlyph,
-  Layers,
-  Plus,
-} from "lucide-react-native";
+import { Check, Folder as FolderGlyph, Plus } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import { FOLDERS_COPY, folderRowLabel, formatNoteCount } from "./copy";
 
 // docs/spec/phase-9.md §3.6: 60pt rows, a 44pt circle or tile, and a 24pt choice circle.
@@ -26,7 +22,6 @@ const CHOICE = 24;
 const CHOICE_RING = 1.5;
 const CHECK_GLYPH = 14;
 const NO_RESULTS_GLYPH = 48;
-const NO_RESULTS_PLUS = 16;
 
 function PlusCircle() {
   return (
@@ -138,22 +133,31 @@ function Choice({
 }
 
 /** #18: a two-sheet stack with a small plus, then the query named in curly quotes. */
+// #18's illustration: two sheets skewed in perspective, the lower one showing only its front and
+// right edges, with a small `+` off the top-right. No icon set draws it, so it is drawn here.
+function SheetStack() {
+  return (
+    <Svg
+      fill="none"
+      height={NO_RESULTS_GLYPH}
+      stroke={colors.text.tertiary}
+      strokeLinejoin="round"
+      strokeWidth={1.25}
+      viewBox="0 0 48 48"
+      width={NO_RESULTS_GLYPH}
+    >
+      <Path d="M18 18 H38 L28 32 H8 Z" />
+      <Path d="M8 32 V36 H28 L38 22 V18" />
+      <Path d="M28 36 L38 22" />
+      <Path d="M40 6 V16 M35 11 H45" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function NoResults({ query }: { readonly query: string }) {
   return (
     <View style={styles.noResults} testID="add-to-folder-no-results">
-      <View>
-        <Layers
-          color={colors.text.tertiary}
-          size={NO_RESULTS_GLYPH}
-          strokeWidth={1.25}
-        />
-        <Plus
-          color={colors.text.tertiary}
-          size={NO_RESULTS_PLUS}
-          strokeWidth={1.25}
-          style={styles.noResultsPlus}
-        />
-      </View>
+      <SheetStack />
       <Text
         ellipsizeMode="middle"
         numberOfLines={1}
@@ -192,7 +196,6 @@ const styles = StyleSheet.create({
   emptyCreate: { alignItems: "center", gap: spacing.sm },
   lines: { flex: 1 },
   noResults: { alignItems: "center", paddingHorizontal: spacing.xl },
-  noResultsPlus: { position: "absolute", right: -spacing.xs, top: -spacing.xs },
   noResultsText: { marginTop: spacing.sm, textAlign: "center" },
   pressed: { opacity: PRESSED_OPACITY },
   ring: { borderColor: colors.text.tertiary, borderWidth: CHOICE_RING },

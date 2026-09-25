@@ -7,7 +7,7 @@ import {
   useToast,
 } from "@native/design";
 import { FOLDERS_COPY } from "@native/features/folders/copy";
-import { markDeleted } from "@native/features/folders/created";
+import { markDeleting, unmarkDeleting } from "@native/features/folders/created";
 import { useDeleteFolder } from "@native/features/folders/useFolders";
 import { errorTag } from "@native/features/folders/viewState";
 import { cachedFolders } from "@native/lib/api";
@@ -38,7 +38,6 @@ export default function DeleteFolderSheet() {
   }, [folder, router]);
 
   const done = () => {
-    markDeleted(id);
     router.back();
     toast.show({ message: FOLDERS_COPY.deleted });
   };
@@ -48,10 +47,17 @@ export default function DeleteFolderSheet() {
       return;
     }
     setFailed(false);
+    markDeleting(id);
     remove.mutate(id, {
       // Already gone is what the caller asked for.
-      onError: (error) =>
-        errorTag(error) === "FolderNotFound" ? done() : setFailed(true),
+      onError: (error) => {
+        if (errorTag(error) === "FolderNotFound") {
+          done();
+          return;
+        }
+        unmarkDeleting(id);
+        setFailed(true);
+      },
       onSuccess: done,
     });
   };

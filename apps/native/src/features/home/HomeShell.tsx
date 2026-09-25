@@ -69,9 +69,6 @@ const EVENTS_LABEL = "No upcoming events, Sign up with your work email.";
 const BAR_GAP = 12;
 const TOOLBAR_GAP = 6;
 const HEADER_BAND_BOTTOM = 40;
-// §3.1: the edge pan starts within 20pt of the left edge, below the toolbar so its button still taps.
-const EDGE_WIDTH = 20;
-const EDGE_TOP = 64;
 
 // #01. The controls a later phase owns render, are labelled and give press feedback, and do nothing
 // yet. `name` is the session user's. The current folder (docs/spec/phase-9.md §3.2) is held here and
@@ -92,7 +89,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
   const isRecording = useIsRecording();
   const liveNoteId = useLiveNoteId();
   const toast = useToast();
-  const drawer = useDrawer();
+  const drawer = useDrawer(!(menu || recording.card));
   const [folder, setFolder] = useState<CurrentFolder | null>(null);
   const removeFromFolder = useRemoveFromFolder();
   const folders = useQuery({ ...foldersQuery(), enabled: folder !== null });
@@ -146,92 +143,99 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
 
   return (
     <View style={styles.screen} testID="home-screen">
-      <SafeAreaView edges={["top"]} style={styles.header}>
-        <View style={styles.toolbar}>
-          <View style={styles.toolbarSide}>
-            <IconButton
-              accessibilityLabel="Folders"
-              icon={Folder}
-              onPress={drawer.open}
-              testID="home-folders-button"
-            />
-            <PillButton
-              icon={Laptop}
-              label="Get desktop"
-              testID="home-get-desktop-button"
-              tone="dark"
-            />
-          </View>
-          <ToolbarCapsule>
-            <IconButton
-              accessibilityLabel="Phone"
-              bare
-              icon={Phone}
-              testID="home-phone-button"
-            />
-            <IconButton
-              accessibilityLabel="Search"
-              bare
-              icon={Search}
-              onPress={() => router.push("/search")}
-              testID="home-search-button"
-            />
-            <IconButton
-              accessibilityLabel="Settings"
-              bare
-              onPress={() => router.push("/settings")}
-              testID="home-settings-button"
-            >
-              <View style={styles.avatar}>
-                <Text testID="home-avatar-initial" variant="rowTitle">
-                  {initial}
-                </Text>
+      {/* The edge pan lives on the content, so it stays attached while the drawer opens over it:
+          detaching it mid-drag would cancel the pan. */}
+      <GestureDetector gesture={drawer.edgePan}>
+        <View collapsable={false} style={styles.content}>
+          <SafeAreaView edges={["top"]} style={styles.header}>
+            <View style={styles.toolbar}>
+              <View style={styles.toolbarSide}>
+                <IconButton
+                  accessibilityLabel="Folders"
+                  icon={Folder}
+                  onPress={drawer.open}
+                  testID="home-folders-button"
+                />
+                <PillButton
+                  icon={Laptop}
+                  label="Get desktop"
+                  testID="home-get-desktop-button"
+                  tone="dark"
+                />
               </View>
-            </IconButton>
-          </ToolbarCapsule>
-        </View>
-
-        <Text
-          accessibilityRole="header"
-          numberOfLines={1}
-          style={styles.title}
-          testID="home-title"
-          variant="display"
-        >
-          {folder?.name ?? FOLDERS_COPY.myNotes}
-        </Text>
-
-        {/* The calendar is not about a folder, so a folder view has no card (§3.2). */}
-        {folder ? null : (
-          <Card
-            accessibilityLabel={EVENTS_LABEL}
-            pressable
-            style={styles.card}
-            testID="home-events-card"
-          >
-            <IconTile background={colors.bg.app} icon={CalendarDays} />
-            <View style={styles.cardLines}>
-              <Text variant="rowTitle">No upcoming events</Text>
-              <Text variant="secondary">
-                <Text style={styles.underline} variant="secondary">
-                  Sign up
-                </Text>{" "}
-                with your work email.
-              </Text>
+              <ToolbarCapsule>
+                <IconButton
+                  accessibilityLabel="Phone"
+                  bare
+                  icon={Phone}
+                  testID="home-phone-button"
+                />
+                <IconButton
+                  accessibilityLabel="Search"
+                  bare
+                  icon={Search}
+                  onPress={() => router.push("/search")}
+                  testID="home-search-button"
+                />
+                <IconButton
+                  accessibilityLabel="Settings"
+                  bare
+                  onPress={() => router.push("/settings")}
+                  testID="home-settings-button"
+                >
+                  <View style={styles.avatar}>
+                    <Text testID="home-avatar-initial" variant="rowTitle">
+                      {initial}
+                    </Text>
+                  </View>
+                </IconButton>
+              </ToolbarCapsule>
             </View>
-          </Card>
-        )}
-      </SafeAreaView>
 
-      <NoteList
-        folder={folder?.id ?? null}
-        key={folder?.id ?? "all"}
-        liveNoteId={liveNoteId}
-        onBackToAll={() => setFolder(null)}
-        onLongPress={(note, frame) => setMenu({ frame, note })}
-        onOpen={openNote}
-        onTrash={(note) => trash.mutate(note.id)}
-      />
+            <Text
+              accessibilityRole="header"
+              numberOfLines={1}
+              style={styles.title}
+              testID="home-title"
+              variant="display"
+            >
+              {folder?.name ?? FOLDERS_COPY.myNotes}
+            </Text>
+
+            {/* The calendar is not about a folder, so a folder view has no card (§3.2). */}
+            {folder ? null : (
+              <Card
+                accessibilityLabel={EVENTS_LABEL}
+                pressable
+                style={styles.card}
+                testID="home-events-card"
+              >
+                <IconTile background={colors.bg.app} icon={CalendarDays} />
+                <View style={styles.cardLines}>
+                  <Text variant="rowTitle">No upcoming events</Text>
+                  <Text variant="secondary">
+                    <Text style={styles.underline} variant="secondary">
+                      Sign up
+                    </Text>{" "}
+                    with your work email.
+                  </Text>
+                </View>
+              </Card>
+            )}
+          </SafeAreaView>
+
+          <NoteList
+            edgeGesture={drawer.edgePan}
+            folder={folder?.id ?? null}
+            key={folder?.id ?? "all"}
+            liveNoteId={liveNoteId}
+            onBackToAll={() => setFolder(null)}
+            onLongPress={(note, frame) => setMenu({ frame, note })}
+            onOpen={openNote}
+            onTrash={(note) => trash.mutate(note.id)}
+          />
+        </View>
+      </GestureDetector>
 
       <View
         pointerEvents="box-none"
@@ -277,16 +281,6 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
           recording.onPrimary().catch(() => undefined);
         }}
       />
-
-      {/* Stays mounted while the drawer opens: unmounting it mid-drag would cancel the pan. */}
-      {menu || recording.card ? null : (
-        <GestureDetector gesture={drawer.edgePan}>
-          <View
-            style={[styles.edge, { top: insets.top + EDGE_TOP }]}
-            testID="home-folders-edge"
-          />
-        </GestureDetector>
-      )}
 
       {drawer.mounted ? (
         <FoldersDrawer current={folder} drawer={drawer} onPick={pick} />
@@ -379,7 +373,7 @@ const styles = StyleSheet.create({
   },
   card: { marginHorizontal: spacing.lg, marginTop: spacing.lg },
   cardLines: { flex: 1, gap: sizes.cardLineGap },
-  edge: { bottom: 0, left: 0, position: "absolute", width: EDGE_WIDTH },
+  content: { flex: 1 },
   header: {
     backgroundColor: colors.bg.app,
     paddingBottom: HEADER_BAND_BOTTOM,

@@ -13,6 +13,7 @@ import { FolderId, UserId } from "@gc/domain/Domain/Ids";
 import type { NoteId } from "@gc/domain/Domain/Note";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
+import type { Stage, StatementRef } from "../Runtime/UnitOfWork";
 
 // The folder plus its owner. `ownerId` is what the policy compares and is never on the wire.
 export type FolderRecord = {
@@ -61,6 +62,11 @@ type CountedRow = {
   readonly updatedAt: number;
 };
 
+const isMember = (folderId: FolderId, noteId: NoteId): SQL =>
+  sql`exists (select 1 from ${folderNotes} where ${folderNotes.folderId} = ${folderId} and ${folderNotes.noteId} = ${noteId})`;
+
+const not = (condition: SQL): SQL => sql`not ${condition}`;
+
 const toRecord = (row: CountedRow): FolderRecord => ({
   createdAt: row.createdAt,
   id: FolderId.parse(row.id),
@@ -73,37 +79,6 @@ const toRecord = (row: CountedRow): FolderRecord => ({
 // No policy and no clock: every method takes the owner it filters on and the time it stamps, and
 // answers `null` or `false` for a row it did not find or did not change.
 export const makeFoldersRepo = (db: DrizzleClient) => ({
-  addNote: async (
-    folderId: FolderId,
-    noteId: NoteId,
-    now: Timestamp
-  ): Promise<boolean> => {
-    const result = await db
-      .insert(folderNotes)
-      .values({ addedAt: now, folderId, noteId })
-      .onConflictDoNothing()
-      .run();
-    return result.meta.changes > 0;
-  },
-
-  countForOwner: async (ownerId: UserId): Promise<number> => {
-    const row = await db
-      .select({ n: sql<number>`count(*)` })
-      .from(folders)
-      .where(eq(folders.ownerId, ownerId))
-      .get();
-    return Number(row?.n ?? 0);
-  },
-
-  // The memberships go first and by hand, so the answer does not depend on `foreign_keys` being on
-  // (D1 enforces it; a bare SQLite does not). A failure between the two leaves an empty folder,
-  // which a retried delete finishes.
-  delete: async (id: FolderId): Promise<boolean> => {
-    await db.delete(folderNotes).where(eq(folderNotes.folderId, id)).run();
-    const result = await db.delete(folders).where(eq(folders.id, id)).run();
-    return result.meta.changes > 0;
-  },
-
   findForOwner: async (
     ownerId: UserId,
     id: FolderId
@@ -115,10 +90,19 @@ export const makeFoldersRepo = (db: DrizzleClient) => ({
     return row === undefined ? null : toRecord(row);
   },
 
-  // The unique index decides, not a prior read, so two concurrent creates cannot both land.
-  insert: async (folder: NewFolder): Promise<"created" | "name-taken"> => {
+  // One statement decides both refusals, so neither a prior read nor a race can win: the unique
+  // index refuses the name, and the `where` refuses the insert once the owner holds `max`.
+  insert: async (
+    folder: NewFolder,
+    max: number
+  ): Promise<"created" | "limit-reached" | "name-taken"> => {
     try {
-      await db.insert(folders).values(folder).run();
+      const result = await db.run(
+        sql`insert into folders (created_at, id, name, name_key, owner_id, updated_at)
+          select ${folder.createdAt}, ${folder.id}, ${folder.name}, ${folder.nameKey}, ${folder.ownerId}, ${folder.updatedAt}
+          where (select count(*) from folders where owner_id = ${folder.ownerId}) < ${max}`
+      );
+      return result.meta.changes > 0 ? "created" : "limit-reached";
     } catch (error) {
       if (
         error instanceof Error &&
@@ -128,29 +112,68 @@ export const makeFoldersRepo = (db: DrizzleClient) => ({
       }
       throw error;
     }
-    return "created";
   },
 
   // One query, with the counts grouped in it: never a count per folder.
   listForOwner: async (ownerId: UserId): Promise<FolderRecord[]> =>
     (await withCounts(db, eq(folders.ownerId, ownerId)).all()).map(toRecord),
 
-  removeNote: async (folderId: FolderId, noteId: NoteId): Promise<boolean> => {
-    const result = await db
-      .delete(folderNotes)
-      .where(
-        and(eq(folderNotes.folderId, folderId), eq(folderNotes.noteId, noteId))
-      )
-      .run();
-    return result.meta.changes > 0;
+  // The touch is staged first and guarded on the membership being absent, so it matches exactly
+  // when the insert after it writes a row. One batch: `updatedAt` cannot be left behind a
+  // membership that landed, which a retry would then find already written.
+  stageAddNote: (
+    stage: Stage,
+    folderId: FolderId,
+    noteId: NoteId,
+    now: Timestamp
+  ): StatementRef => {
+    const changed = stage.add({
+      query: db
+        .update(folders)
+        .set({ updatedAt: now })
+        .where(and(eq(folders.id, folderId), not(isMember(folderId, noteId)))),
+    });
+    stage.add({
+      query: db
+        .insert(folderNotes)
+        .values({ addedAt: now, folderId, noteId })
+        .onConflictDoNothing(),
+    });
+    return changed;
+  },
+  // The memberships go first and by hand, so the answer does not depend on `foreign_keys` being on
+  // (D1 enforces it; a bare SQLite does not). One batch, so a folder is never left half-deleted.
+  stageDelete: (stage: Stage, id: FolderId): StatementRef => {
+    stage.add({
+      query: db.delete(folderNotes).where(eq(folderNotes.folderId, id)),
+    });
+    return stage.add({ query: db.delete(folders).where(eq(folders.id, id)) });
   },
 
-  touch: async (id: FolderId, now: Timestamp): Promise<void> => {
-    await db
-      .update(folders)
-      .set({ updatedAt: now })
-      .where(eq(folders.id, id))
-      .run();
+  // The mirror of `stageAddNote`: guarded on the membership being present, before the delete.
+  stageRemoveNote: (
+    stage: Stage,
+    folderId: FolderId,
+    noteId: NoteId,
+    now: Timestamp
+  ): StatementRef => {
+    const changed = stage.add({
+      query: db
+        .update(folders)
+        .set({ updatedAt: now })
+        .where(and(eq(folders.id, folderId), isMember(folderId, noteId))),
+    });
+    stage.add({
+      query: db
+        .delete(folderNotes)
+        .where(
+          and(
+            eq(folderNotes.folderId, folderId),
+            eq(folderNotes.noteId, noteId)
+          )
+        ),
+    });
+    return changed;
   },
 });
 

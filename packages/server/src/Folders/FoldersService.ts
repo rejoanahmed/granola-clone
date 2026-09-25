@@ -17,11 +17,11 @@ import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure } from "../Auth/Policy";
 import type { NoteRecord, NotesRepo } from "../Notes/NotesRepo";
-import { canEditNote } from "../Notes/Policy";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
+import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { FolderRecord, FoldersRepo } from "./FoldersRepo";
-import { canManageFolder } from "./Policy";
+import { canFileNote, canManageFolder } from "./Policy";
 
 export type FoldersDeps = {
   readonly clock: Clock;
@@ -29,6 +29,7 @@ export type FoldersDeps = {
   // Only the read: a folder never writes a note, it asks whether the caller may file one.
   readonly notes: Pick<NotesRepo, "byId">;
   readonly repo: FoldersRepo;
+  readonly uow: UnitOfWork;
 };
 
 // Plain strings, as in the notes service: the route has validated them, and a test or a cron may
@@ -61,17 +62,16 @@ export const makeFoldersService = (deps: FoldersDeps) => {
     return ensure(canManageFolder, folder, actor);
   };
 
-  // The notes policy, not a second copy of its rule: filing a note is an edit of where it lives.
   const ownNote = async (
     actor: Actor,
     id: NoteRef
   ): Promise<Authorized<NoteRecord>> => {
     const parsed = NoteId.safeParse(id);
     const note = parsed.success ? await deps.notes.byId(parsed.data) : null;
-    if (note === null || !canEditNote.holds(note, actor)) {
+    if (note === null || !canFileNote.holds(note, actor)) {
       throw new NoteNotFound({ id });
     }
-    return ensure(canEditNote, note, actor);
+    return ensure(canFileNote, note, actor);
   };
 
   // Every membership change answers with the folder re-read, so the count is the stored one.
@@ -92,38 +92,43 @@ export const makeFoldersService = (deps: FoldersDeps) => {
         throw new NoteTrashed({ id: noteId });
       }
       const now = deps.clock.now();
-      if (await deps.repo.addNote(folder.id, note.id, now)) {
-        await deps.repo.touch(folder.id, now);
-      }
+      await deps.uow.commit((stage) =>
+        deps.repo.stageAddNote(stage, folder.id, note.id, now)
+      );
       return reread(actor, folder.id);
     },
 
-    // The limit is a count first, but the name is the unique index's call, never a prior read.
+    // Both refusals are the insert's own answer, never a prior read that a race could outrun.
     create: async (actor: Actor, input: FolderCreate): Promise<Folder> => {
-      if ((await deps.repo.countForOwner(actor.id)) >= FOLDERS_PER_OWNER_MAX) {
-        throw new FolderLimitReached({ max: FOLDERS_PER_OWNER_MAX });
-      }
       const now = deps.clock.now();
       const name = collapseFolderName(input.name);
       const id = FolderId.parse(deps.ids.generate("fld_"));
-      const outcome = await deps.repo.insert({
-        createdAt: now,
-        id,
-        name,
-        nameKey: folderNameKey(name),
-        ownerId: actor.id,
-        updatedAt: now,
-      });
+      const outcome = await deps.repo.insert(
+        {
+          createdAt: now,
+          id,
+          name,
+          nameKey: folderNameKey(name),
+          ownerId: actor.id,
+          updatedAt: now,
+        },
+        FOLDERS_PER_OWNER_MAX
+      );
+      if (outcome === "limit-reached") {
+        throw new FolderLimitReached({ max: FOLDERS_PER_OWNER_MAX });
+      }
       if (outcome === "name-taken") {
         throw new FolderNameTaken({ name });
       }
       return reread(actor, id);
     },
 
-    // The notes are untouched; only the folder and its memberships go.
     delete: async (actor: Actor, id: FolderRef): Promise<void> => {
       const folder = await visible(actor, id);
-      if (!(await deps.repo.delete(folder.id))) {
+      const deleted = await deps.uow.commit((stage) =>
+        deps.repo.stageDelete(stage, folder.id)
+      );
+      if (deleted.changes === 0) {
         throw new FolderNotFound({ id });
       }
     },
@@ -143,9 +148,10 @@ export const makeFoldersService = (deps: FoldersDeps) => {
     ): Promise<Folder> => {
       const folder = await visible(actor, folderId);
       const note = await ownNote(actor, noteId);
-      if (await deps.repo.removeNote(folder.id, note.id)) {
-        await deps.repo.touch(folder.id, deps.clock.now());
-      }
+      const now = deps.clock.now();
+      await deps.uow.commit((stage) =>
+        deps.repo.stageRemoveNote(stage, folder.id, note.id, now)
+      );
       return reread(actor, folder.id);
     },
   };

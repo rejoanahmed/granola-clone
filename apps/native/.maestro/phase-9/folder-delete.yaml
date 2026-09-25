@@ -1,6 +1,7 @@
 # AC9 (docs/spec/phase-9.md §8, §3.4): [folders] with home filtered to Product, a long-press on its
 # drawer row offers Delete folder; the confirm sheet names it and Close changes nothing. Confirming
-# deletes it with a toast, leaves Personal, and returns home to My notes with Product's notes intact.
+# deletes it with a toast, leaves Personal, and returns home to My notes with Product's notes intact,
+# and never with the "no longer exists" toast: that one is for a folder somebody else removed (§3.2).
 appId: ${APP_ID}
 name: Deleting the folder home is filtered by
 tags:
@@ -72,6 +73,9 @@ env:
       id: toast-message
       text: Folder deleted
     timeout: 10000
+- assertNotVisible:
+    id: toast-message
+    text: "That folder no longer exists\\."
 - extendedWaitUntil:
     notVisible:
       id: folders-row-fld_e2e_product
@@ -97,3 +101,6 @@ env:
     timeout: 15000
 - assertVisible:
     id: home-note-not_e2e_standup
+- assertNotVisible:
+    id: toast-message
+    text: "That folder no longer exists\\."
