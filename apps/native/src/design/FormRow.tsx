@@ -33,6 +33,7 @@ type Editable = Common &
     | "onChangeText"
     | "placeholder"
     | "returnKeyType"
+    | "selectTextOnFocus"
     | "onSubmitEditing"
     | "textContentType"
     | "value"
@@ -130,6 +131,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexShrink: 1,
     gap: spacing.xxs,
+    marginLeft: "auto",
   },
   divider: {
     backgroundColor: colors.border.hairline,

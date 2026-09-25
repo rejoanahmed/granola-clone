@@ -52,7 +52,12 @@ function Trailing({ accessory }: { readonly accessory: SettingsAccessory }) {
       );
     case "badge":
       return (
-        <View style={styles.badge} testID={accessory.testID}>
+        <View
+          accessibilityLabel={accessory.label}
+          accessible
+          style={styles.badge}
+          testID={accessory.testID}
+        >
           <Text color={colors.text.secondary} variant="caption">
             {accessory.label}
           </Text>

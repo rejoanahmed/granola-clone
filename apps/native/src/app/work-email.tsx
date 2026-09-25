@@ -63,12 +63,13 @@ export default function WorkEmailSheet() {
   return (
     <View style={styles.sheet} testID="work-email-sheet">
       <View style={styles.content}>
-        <NotebookPen
-          color={colors.text.primary}
-          size={MARK}
-          strokeWidth={ICON_STROKE}
-          testID="work-email-mark"
-        />
+        <View accessibilityLabel="Notes" accessible testID="work-email-mark">
+          <NotebookPen
+            color={colors.text.primary}
+            size={MARK}
+            strokeWidth={ICON_STROKE}
+          />
+        </View>
         <Text style={styles.title} testID="work-email-title" variant="display">
           {COPY.title}
         </Text>

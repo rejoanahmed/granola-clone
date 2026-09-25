@@ -34,6 +34,9 @@ import {
 
 const COPY = SETTINGS_COPY.profile;
 const AVATAR = 124;
+// The description keeps its caret on its first line, so the clearance has to reach past the rest
+// of that card to the LinkedIn row below it.
+const PROFILE_KEYBOARD_CLEARANCE = 240;
 
 // #82/#83. There is no Save button: each field saves as it ends editing, and Back (or the swipe,
 // through `beforeRemove`) flushes whatever is still being typed before it leaves.
@@ -79,13 +82,21 @@ export default function ProfileScreen() {
     onEndEditing: () => {
       form.commit(name).catch(() => undefined);
     },
+    // A right-aligned value puts the caret at its start on a tap; selecting it all is what makes
+    // an edit replace the value rather than prepend to it.
+    selectTextOnFocus: true,
     value: form.drafts[name],
   });
   const typeLabel = userTypeLabel(form.userType);
   const name = form.drafts.name || form.email;
 
   return (
-    <SettingsPage onBack={back} prefix="profile" testID="profile-screen">
+    <SettingsPage
+      keyboardClearance={PROFILE_KEYBOARD_CLEARANCE}
+      onBack={back}
+      prefix="profile"
+      testID="profile-screen"
+    >
       <View style={styles.inset}>
         <Text style={styles.title} testID="profile-title" variant="display">
           {COPY.title}

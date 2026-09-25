@@ -2,11 +2,14 @@ import { colors, IconButton, sizes, spacing, Text } from "@native/design";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import type { ReactNode } from "react";
-import { ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type ViewStyle } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+
+const KEYBOARD_CLEARANCE = 140;
 
 type Props = {
   readonly children: ReactNode;
@@ -16,6 +19,8 @@ type Props = {
   readonly onBack?: () => void;
   /** Pinned under the scroll view, above the bottom safe area. */
   readonly footer?: ReactNode;
+  /** Space kept under a focused field's caret; Profile's multiline card needs more (§3.2). */
+  readonly keyboardClearance?: number;
   /** The screen id prefix: `<prefix>-back`, `<prefix>-scroll`. */
   readonly prefix: string;
   readonly testID: string;
@@ -29,6 +34,7 @@ export function SettingsPage({
   children,
   contentStyle,
   footer,
+  keyboardClearance = KEYBOARD_CLEARANCE,
   onBack,
   prefix,
   testID,
@@ -57,16 +63,20 @@ export function SettingsPage({
         ) : null}
         <View style={styles.side} />
       </View>
-      <ScrollView
+      <KeyboardAwareScrollView
+        // Room under a focused field for the next row, so moving down the form never means tapping
+        // through the keyboard.
+        bottomOffset={keyboardClearance}
         contentContainerStyle={[
           { paddingBottom: (footer ? 0 : insets.bottom) + spacing.xxl },
           contentStyle,
         ]}
+        keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         testID={`${prefix}-scroll`}
       >
         {children}
-      </ScrollView>
+      </KeyboardAwareScrollView>
       {footer ? (
         <View style={{ paddingBottom: insets.bottom + spacing.md }}>
           {footer}

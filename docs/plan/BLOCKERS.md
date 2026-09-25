@@ -388,3 +388,10 @@
   phase-5 blocker "Audio objects outlive a deleted user"; the outbox exists only in the fake.
 - **#04's grain texture is not reproduced.** It is bitmap noise over `#252525`, recorded for the
   parity pass.
+- **The E2E seed does not restore a seeded user's name (API, open).** `E2eRepo.stageUsers` inserts
+  `user` with `onConflictDoNothing`, and `user` is not in `RESET_ORDER`, so once
+  `phase-10/profile-edit.yaml` renames e2e-person to "Riley Park" through `update-user`, every later
+  reset keeps that name and `profile-validation`, `profile-edit` and any flow asserting "E2E Person"
+  fail on the next run. The fix is an upsert that sets `name` (and `image`) on the fixed id, which
+  keeps minted sessions valid. Until it lands, the native agent restored the name by hand in the
+  local D1 between runs (`update user set name='E2E Person' where id='usr_e2e_person'`).

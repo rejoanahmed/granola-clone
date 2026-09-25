@@ -95,6 +95,7 @@ export function LinkedinCard({
           commit("linkedinUsername").catch(() => undefined);
         }}
         placeholder="username"
+        selectTextOnFocus
         testID="profile-linkedin"
         value={value}
       />
@@ -169,8 +170,14 @@ const styles = StyleSheet.create({
   },
   descriptionInput: {
     ...typography.body,
-    flexGrow: 1,
     marginTop: spacing.xs,
+    // Fills the card, so keeping the focused field above the keyboard keeps the card's foot there
+    // too, and the LinkedIn row under it.
+    minHeight:
+      DESCRIPTION_HEIGHT -
+      spacing.lg * 2 -
+      typography.body.lineHeight -
+      spacing.xs,
     padding: 0,
     textAlignVertical: "top",
   },
