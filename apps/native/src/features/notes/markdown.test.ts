@@ -144,6 +144,67 @@ describe("parseNoteMarkdown", () => {
   });
 });
 
+// The fake LLM's full note (docs/spec/phase-6.md §6.6), as the parser hands it to the page: every
+// construct #10/#11 draw, and nothing the phase-4 subset lacks.
+describe("the generated full note", () => {
+  const source = [
+    "### Discussion",
+    "- Let's go over the budget for next quarter.",
+    "  - Marketing wants a bigger share this time.",
+    "  - Travel stays flat.",
+    "- The hiring plan is on track.",
+    "",
+    "### Your notes",
+    "- Budget follow-up",
+    "",
+    "### Next Steps",
+    "- **Confirm owners for the open items**",
+    "",
+    "  Agree who takes each open question raised in this conversation.",
+    "",
+    "- **Share these notes with the attendees**",
+    "",
+    "  Send the summary to everyone who was in the meeting.",
+  ].join("\n");
+  const blocks = parseNoteMarkdown(source);
+
+  it("reads headings, both bullet levels and bold next steps with their descriptions", () => {
+    expect(
+      blocks.map((b) => [b.kind, "level" in b ? b.level : null, blockText(b)])
+    ).toEqual([
+      ["heading", null, "Discussion"],
+      ["bullet", 0, "Let's go over the budget for next quarter."],
+      ["bullet", 1, "Marketing wants a bigger share this time."],
+      ["bullet", 1, "Travel stays flat."],
+      ["bullet", 0, "The hiring plan is on track."],
+      ["heading", null, "Your notes"],
+      ["bullet", 0, "Budget follow-up"],
+      ["heading", null, "Next Steps"],
+      ["bullet", 0, "Confirm owners for the open items"],
+      [
+        "continuation",
+        0,
+        "Agree who takes each open question raised in this conversation.",
+      ],
+      ["bullet", 0, "Share these notes with the attendees"],
+      [
+        "continuation",
+        0,
+        "Send the summary to everyone who was in the meeting.",
+      ],
+    ]);
+    expect(blocks[8]?.spans).toEqual([
+      { bold: true, italic: false, text: "Confirm owners for the open items" },
+    ]);
+    expect(blocks[9]?.spans.every((span) => !span.bold)).toBe(true);
+  });
+
+  it("spaces it to #10's rhythm", () => {
+    const gaps = blocks.map((block, i) => gapBefore(blocks[i - 1], block));
+    expect(gaps).toEqual([0, 2, 4, 4, 4, 28, 2, 28, 2, 4, 4, 4]);
+  });
+});
+
 describe("gapBefore", () => {
   it("follows #10's rhythm", () => {
     const [heading, bullet, second, continuation, paragraph] =
