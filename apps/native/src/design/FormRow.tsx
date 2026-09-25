@@ -27,6 +27,8 @@ type Editable = Common &
     TextInputProps,
     | "autoCapitalize"
     | "autoComplete"
+    | "autoCorrect"
+    | "onEndEditing"
     | "maxLength"
     | "onChangeText"
     | "placeholder"
@@ -34,9 +36,15 @@ type Editable = Common &
     | "onSubmitEditing"
     | "textContentType"
     | "value"
-  > & { readonly onPress?: never; readonly valueLabel?: never };
+  > & {
+    readonly accessibilityLabel?: never;
+    readonly onPress?: never;
+    readonly valueLabel?: never;
+  };
 
 type Choice = Common & {
+  /** Defaults to "<label>, <value>"; Profile leads with the value, which is what its flows read. */
+  readonly accessibilityLabel?: string;
   /** Null shows `placeholder` in `text.tertiary`, as an unanswered field does. */
   readonly valueLabel: string | null;
   readonly placeholder: string;
@@ -54,10 +62,12 @@ const LABEL_MAX_WIDTH = "45%";
 export function FormRow(props: Props) {
   const { label, testID } = props;
   if ("onPress" in props && props.onPress) {
-    const { onPress, placeholder, valueLabel } = props;
+    const { accessibilityLabel, onPress, placeholder, valueLabel } = props;
     return (
       <Pressable
-        accessibilityLabel={`${label}, ${valueLabel ?? placeholder}`}
+        accessibilityLabel={
+          accessibilityLabel ?? `${label}, ${valueLabel ?? placeholder}`
+        }
         accessibilityRole="button"
         onPress={onPress}
         style={({ pressed }) => [styles.row, pressed ? styles.pressed : null]}
@@ -84,6 +94,7 @@ export function FormRow(props: Props) {
     );
   }
   const {
+    accessibilityLabel: _accessibilityLabel,
     onPress: _onPress,
     valueLabel: _valueLabel,
     ...input

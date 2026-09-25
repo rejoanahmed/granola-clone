@@ -33,7 +33,15 @@ export const colors = {
   calendar: { bar: "#DB35F2" },
   destructive: "#FE4346",
   grabber: "#5A5A5A",
-  hero: { pink: "#E78BCE" },
+  // The Get desktop hero (#51): the pink field and the desktop window mock drawn on it.
+  hero: {
+    dotGreen: "#28C840",
+    dotRed: "#FE5F57",
+    dotYellow: "#FEBC2E",
+    line: "#1A1A1A99",
+    meta: "#6B6B6B",
+    pink: "#E78BCE",
+  },
   // Phone calls (#87): the ring around the phone glyph, and the glyph colour on olive tiles.
   olive: { glyph: "#8A9A2A", ring: "#515B1F" },
   // The live card (discovery screens 100–105): the status-bar strip over the card, the olive pause circle, the

@@ -127,6 +127,34 @@ function ThemedLayout() {
         />
         <Stack.Screen name="ask/activity/[messageId]" options={CHAT_SHEET} />
         <Stack.Screen name="ask/citation/[noteId]" options={CHAT_SHEET} />
+        {/* Settings, profile and upsells (docs/spec/phase-10.md §2). Settings pages are pushes. */}
+        <Stack.Screen
+          name="settings/delete-account"
+          options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
+        />
+        <Stack.Screen
+          name="settings/report-bug"
+          options={{ presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="settings/feedback"
+          options={{ presentation: "modal" }}
+        />
+        <Stack.Screen
+          name="desktop"
+          options={{
+            ...SHEET,
+            sheetAllowedDetents: [1],
+            sheetGrabberVisible: true,
+          }}
+        />
+        <Stack.Screen
+          name="work-email"
+          options={{
+            contentStyle: { backgroundColor: "transparent" },
+            presentation: "modal",
+          }}
+        />
         <Stack.Screen
           name="notes/[id]/edit"
           options={{ gestureEnabled: false, presentation: "fullScreenModal" }}
