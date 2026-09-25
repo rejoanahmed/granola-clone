@@ -1,3 +1,4 @@
+import { folderNameKey } from "@gc/domain/Domain/Folder";
 import { ValidationFailed } from "@gc/domain/Errors";
 import { z } from "zod";
 import type {
@@ -15,11 +16,13 @@ import type { E2eRepo } from "./E2eRepo";
 import { NoOutboxMail } from "./Errors";
 import {
   E2E_CHATS,
+  E2E_FOLDERS,
   E2E_NEWCOMER,
   E2E_NOTES,
   E2E_PROFILES,
   E2E_RECORDINGS,
   E2E_USERS,
+  type E2eFolder,
   type E2eRole,
   type E2eUser,
   isE2eRole,
@@ -63,6 +66,16 @@ export const chatModeOf = (value: string | null): ChatLlmMode => {
   const parsed = ChatModeInput.safeParse(value);
   return parsed.success ? parsed.data : "auto";
 };
+
+const folderRowsOf = (fixtures: readonly E2eFolder[]) =>
+  fixtures.map((folder) => ({
+    createdAt: folder.createdAt,
+    id: folder.id,
+    name: folder.name,
+    nameKey: folderNameKey(folder.name),
+    noteIds: folder.noteIds,
+    ownerId: E2E_USERS[folder.ownerRole].id,
+  }));
 
 const MAX_LLM_RUNS = 5;
 const LlmRuns = z.number().int().min(1).max(MAX_LLM_RUNS);
@@ -228,6 +241,10 @@ export const makeE2eService = (deps: E2eDeps) => ({
           updatedAt: chat.updatedAt,
         }))
       );
+      deps.repo.stageFolders(
+        stage,
+        folderRowsOf(E2E_FOLDERS.filter((folder) => folder.inBaseSeed))
+      );
     });
     return {
       newcomer: E2E_NEWCOMER,
@@ -238,6 +255,16 @@ export const makeE2eService = (deps: E2eDeps) => ({
       })),
       users: E2E_USERS,
     };
+  },
+
+  // person's two folders, behind `POST /e2e/folders`. Idempotent, and it expects the base seed:
+  // the members are the seeded notes.
+  seedFolders: async () => {
+    const seeded = E2E_FOLDERS.filter((folder) => !folder.inBaseSeed);
+    await deps.uow.commit((stage) => {
+      deps.repo.stageFolders(stage, folderRowsOf(seeded));
+    });
+    return { folders: seeded.map(({ id, name }) => ({ id, name })) };
   },
 
   setChatMode: async (mode: unknown) => {
