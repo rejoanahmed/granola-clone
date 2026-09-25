@@ -19,8 +19,9 @@ const LINES = [
 ] as const;
 const DOT = 14;
 const META_GLYPH = 13;
-const WINDOW_TOP = 96;
-const WINDOW_LEFT_OF_CENTRE = 76;
+// Measured off #51: the window's top-left corner sits 66pt down and 74pt in, on a 428pt device.
+const WINDOW_TOP = 66;
+const WINDOW_LEFT = 74;
 
 function Meta({
   icon: Icon,
@@ -63,9 +64,7 @@ export function DesktopHero() {
           />
         ))}
       </Svg>
-      <View
-        style={[styles.window, { left: width / 2 - WINDOW_LEFT_OF_CENTRE }]}
-      >
+      <View style={[styles.window, { left: WINDOW_LEFT * scale }]}>
         <View style={styles.dots}>
           <View style={[styles.dot, { backgroundColor: colors.hero.dotRed }]} />
           <View
