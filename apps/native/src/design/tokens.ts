@@ -14,6 +14,8 @@ export const colors = {
   ask: { pill: "#525252D9", pillEdge: "#717171" },
   bg: {
     app: "#262626",
+    // The Chat History sheet (#24), a shade darker than every other sheet.
+    history: "#1C1C1C",
     iconButton: "#1E1E1E",
     list: "#1A1A1A",
     scrim: "#00000073",
