@@ -13,7 +13,7 @@ import type { NoteStatusRow } from "./status";
 const ROW_HEIGHT = 48;
 const GLYPH = 18;
 
-/** The post-End status row (screen 105), and its designed failure states (docs/spec/phase-5.md §3.8). */
+/** The post-End status row (screens 105, 106), and its designed failure states (docs/spec/phase-5.md §3.8, phase-6.md §3.1). */
 export function NoteStatus({
   busy,
   onRetry,
@@ -25,7 +25,8 @@ export function NoteStatus({
   readonly row: NoteStatusRow;
   readonly style?: ViewStyle;
 }) {
-  const spinning = row.kind === "uploading" || busy;
+  const spinning =
+    row.kind === "uploading" || row.kind === "generating" || busy;
   return (
     <View style={[styles.row, style]} testID="note-status">
       {spinning ? (

@@ -25,16 +25,11 @@ import {
   noteStatusRow,
   shouldPoll,
 } from "@native/features/recording/status";
+import { useUploadState } from "@native/features/recording/uploadQueue";
+import { useStatusRetry } from "@native/features/recording/useStatusRetry";
 import {
-  retryUpload,
-  useUploadState,
-} from "@native/features/recording/uploadQueue";
-import {
-  client,
   findNoteSummary,
   hasTag,
-  invalidate,
-  invalidationKeys,
   type NoteDetail,
   noteQuery,
   useTrashNote,
@@ -54,7 +49,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react-native";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -62,6 +57,12 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import Animated, {
+  type ExitAnimationsValues,
+  FadeIn,
+  type LayoutAnimation,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
@@ -81,6 +82,22 @@ const META_GROUP_GAP = 16;
 const SHARE_WIDTH = 85;
 const MENU_GAP = 8;
 const POLL_MS = 2000;
+// The finishing transition (docs/spec/phase-6.md §3.1): screens 106 → 107 were a cut in the
+// capture, so the timing is ours, short enough that the page never looks like it is still working.
+const FINISH_MS = 200;
+
+// The row's height goes to 0 rather than it sliding away, so the pill above never moves and the
+// body below rises into the space it leaves.
+const collapse = (values: ExitAnimationsValues): LayoutAnimation => {
+  "worklet";
+  return {
+    animations: {
+      height: withTiming(0, { duration: FINISH_MS }),
+      opacity: withTiming(0, { duration: FINISH_MS }),
+    },
+    initialValues: { height: values.currentHeight, opacity: 1 },
+  };
+};
 
 export const NOTE_COPY = {
   copied: "Copied to clipboard",
@@ -244,7 +261,11 @@ export default function NoteScreen() {
   const query = useQuery({
     ...noteQuery(id),
     refetchInterval: (current) =>
-      focused && shouldPoll(current.state.data?.recording?.status ?? null)
+      focused &&
+      shouldPoll(
+        current.state.data?.recording?.status ?? null,
+        current.state.data?.generation?.status ?? null
+      )
         ? POLL_MS
         : false,
   });
@@ -256,6 +277,7 @@ export default function NoteScreen() {
   const recordingId = note?.recording?.id ?? null;
   const upload = useUploadState(recordingId);
   const statusRow = noteStatusRow({
+    generation: note?.generation ?? null,
     isLiveHere: liveNoteId === id,
     recordingStatus:
       note?.recording?.status ?? summary?.recordingStatus ?? null,
@@ -263,29 +285,19 @@ export default function NoteScreen() {
   });
   const processing = isProcessing(statusRow);
   const transcribed = note?.recording?.status === "transcribed";
-  const [retrying, setRetrying] = useState(false);
-
-  const retry = () => {
-    if (!(recordingId && statusRow)) {
-      return;
+  const { busy: retrying, retry } = useStatusRetry({
+    noteId: id,
+    recordingId,
+    row: statusRow,
+  });
+  // Only a page that watched the note being worked on animates its arrival; one opened finished
+  // draws at once, as phase 4 did.
+  const [sawProcessing, setSawProcessing] = useState(false);
+  useEffect(() => {
+    if (processing) {
+      setSawProcessing(true);
     }
-    if (statusRow.kind === "uploadFailed") {
-      retryUpload(recordingId);
-      return;
-    }
-    setRetrying(true);
-    client
-      .retryRecording({ params: { id: recordingId } })
-      .catch(() => undefined)
-      .then(() =>
-        invalidate(
-          queryClient,
-          invalidationKeys.retryRecording(recordingId, id)
-        )
-      )
-      .catch(() => undefined)
-      .finally(() => setRetrying(false));
-  };
+  }, [processing]);
   const notFound =
     (query.isError && isGone(query.error)) || note?.trashedAt != null;
   const title = note?.title ?? summary?.title;
@@ -366,20 +378,23 @@ export default function NoteScreen() {
             </View>
           ) : null}
           {statusRow ? (
-            <NoteStatus
-              busy={retrying}
-              onRetry={retry}
-              row={statusRow}
-              style={styles.status}
-            />
+            <Animated.View exiting={collapse} style={styles.statusSlot}>
+              <NoteStatus busy={retrying} onRetry={retry} row={statusRow} />
+            </Animated.View>
           ) : null}
           <View style={styles.body} testID="note-body">
             {processing ? null : (
-              <BodyContent
-                isError={query.isError}
-                note={notFound ? undefined : note}
-                onRetry={() => query.refetch()}
-              />
+              <Animated.View
+                entering={
+                  sawProcessing ? FadeIn.duration(FINISH_MS) : undefined
+                }
+              >
+                <BodyContent
+                  isError={query.isError}
+                  note={notFound ? undefined : note}
+                  onRetry={() => query.refetch()}
+                />
+              </Animated.View>
             )}
             <View style={styles.bodyEnd} testID="note-body-end" />
           </View>
@@ -575,6 +590,11 @@ const styles = StyleSheet.create({
   share: { minWidth: SHARE_WIDTH },
   state: { alignItems: "center", paddingTop: spacing.xxl },
   stateButton: { marginTop: spacing.md },
-  status: { marginHorizontal: spacing.lg, marginTop: BODY_GAP },
+  // The gap above the row lives inside the collapsing slot, so it closes with the row.
+  statusSlot: {
+    overflow: "hidden",
+    paddingHorizontal: spacing.lg,
+    paddingTop: BODY_GAP,
+  },
   title: { paddingHorizontal: spacing.xl },
 });
