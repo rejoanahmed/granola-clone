@@ -49,7 +49,7 @@ type Props = {
   readonly anchor: MenuAnchor | null;
   /**
    * The model menu's layout (#22): a check column at the left, so every glyph moves right, labels
-   * may wrap to two lines, and the card is the darker #1E1E1E.
+   * may wrap to two lines, and the card is the darker `bg.iconButton`.
    */
   readonly checkable?: boolean;
   readonly entries: readonly ActionMenuEntry[];

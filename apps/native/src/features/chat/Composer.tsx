@@ -55,7 +55,7 @@ function useRotatingPlaceholder(scope: ChatScopeKind, paused: boolean) {
   return placeholderAt(scope, tick);
 }
 
-/** #19–#21: the #1A1A1A card, the growing input, then paperclip, model pill and mic/send. */
+/** #19–#21: the `bg.list` card, the growing input, then paperclip, model pill and mic/send. */
 export function Composer({
   autoFocus,
   draft,

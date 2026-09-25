@@ -9,7 +9,7 @@ import { colors, radii, sizes, spacing } from "./tokens";
 const SIDE_WIDTH = 88;
 
 type Props = {
-  /** The sheet's fill, when it is not #2A2A2A: Chat History (#24) and the note preview (#28). */
+  /** The sheet's fill, when it is not `bg.sheet`: Chat History (#24) and the note preview (#28). */
   readonly backgroundColor?: string;
   readonly children: ReactNode;
   /** The x on the left, as the chat sheets draw it (#24, #26, #28); the right side stays empty. */
