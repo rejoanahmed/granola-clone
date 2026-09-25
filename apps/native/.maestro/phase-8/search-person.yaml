@@ -53,12 +53,15 @@ env:
       id: note-title
       text: Launch planning review
     timeout: 15000
-- tapOn:
-    id: note-back
-- extendedWaitUntil:
-    visible:
-      id: person-screen
-    timeout: 10000
+# Back through the retrying tap: on the failing full run the touch reached SpringBoard's system
+# gesture window and never the app (no dispatch to its window in the device log), on a settled
+# screen, and Maestro saw the note's body change and did not retry. A second Back is harmless.
+- runFlow:
+    file: ../subflows/tap-footer-link.yaml
+    env:
+      TARGET: note-back
+      EXPECT: person-screen
+      TIMEOUT: "5000"
 - tapOn:
     id: person-back
 - extendedWaitUntil:
