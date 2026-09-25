@@ -25,20 +25,32 @@ export const queryKeys = {
     all: ["me"] as const,
     profile: () => ["me", "profile"] as const,
   },
-  // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. The list
-  // takes no filter, so one key covers every page of the infinite query.
+  // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. Home's
+  // list is `list()`; a person page's is `list({ person })`, a distinct entry under the same prefix,
+  // so invalidating `list()` after a trash or rename refreshes every person page with it.
   notes: {
     all: ["notes"] as const,
     detail: (id: string) => ["notes", "detail", id] as const,
-    list: () => ["notes", "list"] as const,
+    list: (filter?: { readonly person: string }) =>
+      filter === undefined
+        ? (["notes", "list"] as const)
+        : (["notes", "list", { person: filter.person }] as const),
     // Under the detail, so invalidating a note's detail refreshes its transcript with it.
     transcript: (id: string) => ["notes", "detail", id, "transcript"] as const,
+  },
+  // A person key starts `email:` or `name:`, so it cannot collide with `"detail"`.
+  people: {
+    all: ["people"] as const,
+    detail: (key: string) => ["people", "detail", key] as const,
   },
   // Every recording id starts `rec_`, so it cannot collide with `"detail"` either.
   recordings: {
     all: ["recordings"] as const,
     detail: (id: string) => ["recordings", "detail", id] as const,
   },
+  // Keyed on the trimmed query, so a response for a draft that has moved on lands under its own key
+  // and is never drawn for the current one. `["search"]` is the prefix of every query's results.
+  search: (q: string) => ["search", q] as const,
 } as const;
 
 export const queryDefaults = {

@@ -363,6 +363,38 @@ These must exist. The names are the specification; the phrasing in the test file
 - `personKeyOf` lowercases the email and prefers it, else normalises the name; the chips, the
   placeholders and the limits are the §4 constants; content trims before it measures
 
+### `Search/Search.test.ts` (phase 8)
+
+- a title match (`standup`, and `STANDUP` alike) and a body match (`forty`) find their note only, with
+  no people; `ra` gives Priya Raman and launch then solo, `an` gives launch, standup, solo
+- people by email (`example.com` → Priya, Sam, tied on their last meeting so by name); the caller
+  (`e2e`) is one person keyed `email:`, named from `user`, `isMe`, and renamed through
+  `ProfilesService.update`
+- trash (`archived`, and a guest only on a trashed note) and ownership (`other`, `zebracorn`, a guest
+  only on `other`'s note, and `other` searching `launch`) find nothing; `empty` finds nothing
+- `%` is literal and finds nothing, `_` finds solo; two casings of one address are one person named
+  from the newer note, a name-only guest on two notes is one `name:` person with a null email
+- the caps: 60 matching notes answer 50 newest first, 12 matching people answer 8
+
+### `Search/Search.http.test.ts`, `People/People.test.ts`, `People/People.http.test.ts`, `Domain/Search.test.ts` (phase 8)
+
+- `GET /search` parses as `SearchResults`, is 401 without a session, and 422 on a missing, blank
+  or 101-character `q`
+- a person reads their name, email, domain and `isMe`; the self key has `isMe` and `gcnotes.test`; a
+  `name:` key has a null email and domain; an unknown key, a key only `other`'s notes hold and a key
+  only on a trashed note are each `PersonNotFound`
+- `GET /people/{personKey}` through a URL-encoded key parses as `Person`, is 401, 404 with the
+  `PersonNotFound` body, and 422 on `person:priya`
+- `domainOf` answers null without an email or an `@`, and lower-cases; `SearchQuery` trims before
+  its 1..100 bounds
+
+### `Notes/Notes.test.ts` and `Notes/Notes.http.test.ts` — the person filter (phase 8)
+
+- `list` with Priya's key is launch alone, with the self key launch, standup, solo and never
+  archived; `limit 1` walks the filtered list with a null cursor on the last page
+- an unknown person and another user's guest are empty pages; `?person=` with a malformed key is 422
+- the chat person-scope cases stay green after the match moves to `personMatches` in `@gc/db`
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty

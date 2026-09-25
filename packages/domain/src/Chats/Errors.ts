@@ -6,8 +6,8 @@ export class ChatNotFound extends appError("ChatNotFound", 404) {}
 
 export class ChatMessageNotFound extends appError("ChatMessageNotFound", 404) {}
 
-// No live note of the caller's has this attendee, so there is nothing to ask about them over.
-export class PersonNotFound extends appError("PersonNotFound", 404) {}
+// One class, owned by People, so `on-error.ts` keeps a single mapping for it.
+export { PersonNotFound } from "../People/Errors";
 
 // An answer in the thread is still streaming. A stale one does not count: Retry is its recovery.
 export class ChatBusy extends appError("ChatBusy", 409) {}

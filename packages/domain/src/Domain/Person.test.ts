@@ -56,3 +56,44 @@ describe("PersonKey", () => {
     );
   });
 });
+
+// docs/spec/phase-8.md §6.2 and §7 case 17.
+describe("domainOf", () => {
+  it("answers null without an email", () => {
+    expect(Person.domainOf(null)).toBeNull();
+  });
+
+  it("answers null for an address with no @, or nothing after it", () => {
+    expect(Person.domainOf("priya")).toBeNull();
+    expect(Person.domainOf("priya@")).toBeNull();
+  });
+
+  it("lower-cases the part after the @", () => {
+    expect(Person.domainOf("Priya@Example.COM")).toBe("example.com");
+  });
+});
+
+describe("Person", () => {
+  it("parses a name-only person with a null email and domain", () => {
+    expect(
+      Person.Person.safeParse({
+        domain: null,
+        email: null,
+        isMe: false,
+        key: "name:dana lee",
+        name: "Dana Lee",
+      }).success
+    ).toBe(true);
+  });
+
+  it("refuses a summary whose key is malformed", () => {
+    expect(
+      Person.PersonSummary.safeParse({
+        email: null,
+        isMe: false,
+        key: "person:priya",
+        name: "Priya",
+      }).success
+    ).toBe(false);
+  });
+});

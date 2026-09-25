@@ -26,3 +26,32 @@ export const personKeyOf = ({
   const collapsed = (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
   return collapsed === "" ? null : `name:${collapsed}`;
 };
+
+// The name falls back to the email, then to the key's value, so a row always has something to draw.
+// `isMe` is computed against the caller's own `email:` key, never stored.
+export const PersonSummary = z.object({
+  email: z.string().nullable(),
+  isMe: z.boolean(),
+  key: PersonKey,
+  name: z.string(),
+});
+export type PersonSummary = z.infer<typeof PersonSummary>;
+
+export const Person = PersonSummary.extend({
+  domain: z.string().nullable(),
+});
+export type Person = z.infer<typeof Person>;
+
+// The part after the last "@", lower-cased. `null` without an email, or when there is nothing after
+// the "@" to call a domain.
+export const domainOf = (email: string | null): string | null => {
+  const at = email?.lastIndexOf("@") ?? -1;
+  if (email === null || at < 0) {
+    return null;
+  }
+  const domain = email
+    .slice(at + 1)
+    .trim()
+    .toLowerCase();
+  return domain === "" ? null : domain;
+};

@@ -34,6 +34,7 @@ export {
   unwrap,
 } from "./errors";
 export { makeNotesApi } from "./notes";
+export { makePeopleApi } from "./people";
 export { makeProfilesApi } from "./profiles";
 export {
   type ApiInfiniteQueryOptions,
@@ -49,3 +50,4 @@ export {
 } from "./query";
 export { invalidationKeys, queryDefaults, queryKeys } from "./query-keys";
 export { makeRecordingsApi, type UploadAudioInput } from "./recordings";
+export { makeSearchApi } from "./search";

@@ -271,7 +271,7 @@
 ## Deferred review items (phase 7)
 
 - **SQL case folding is ASCII only.** `personKeyOf` lowercases with JavaScript's full Unicode
-  `toLowerCase`, while the attendee match (`attendeeMatches`) and retrieval's LIKE prefilter
+  `toLowerCase`, while the attendee match (`personMatches` in `@gc/db` since phase 8) and retrieval's LIKE prefilter
   (`mentionsAny`, `containing`) compare against SQLite's `lower()`, which folds only A–Z. A `name:`
   key for an attendee with no address and a non-ASCII capital ("Élodie") is not found, so person
   Ask answers `PersonNotFound`, and a non-ASCII question term misses a note that capitalises it.
@@ -290,3 +290,18 @@
   hardware keyboard, so no flow can see the software keys stay down.
 - **The pin layout animation is not asserted.** `LayoutAnimation` moves the row into or out of
   Pinned; no flow can observe an animation.
+
+## Phase 8 API
+
+- **Search is substring, not ranked or full-text.** `instr(lower(…), q)` over one owner's live notes
+  is enough for a personal corpus and for proving scoping. An FTS5 table (with ranking, and snippets,
+  which discovery does not show) is a later change behind the same route.
+- **Case folding is ASCII-only.** SQLite's `lower` does not fold `É`, so "émile" does not find
+  "Émile". The fix is FTS5 with `unicode61`, or a lower-cased shadow column written by the
+  repository. The phase-7 entry on person keys is the same limit.
+- **Transcripts are not searched.** Discovery's copy scopes search to "title, notes, or people".
+  Chat retrieval (phase 7) does read transcripts. Recorded, not built.
+- **Search results are capped, not paged** (8 people, 50 meetings). A `nextCursor` can be added to
+  `SearchResults` without breaking clients.
+- **No avatars.** People get an initial (phase-8.md §3.3) until an avatar source exists (a calendar
+  provider in phase 11, or an uploaded profile photo).

@@ -505,6 +505,74 @@ describe("the phase-4 notes query keys", () => {
   });
 });
 
+describe("the phase-8 search and people endpoints", () => {
+  const RESULTS = { notes: [], people: [], query: "standup" };
+  const PERSON = {
+    domain: "example.com",
+    email: "priya@example.com",
+    isMe: false,
+    key: "email:priya@example.com",
+    name: "Priya Raman",
+  };
+
+  it("sends GET /search with q as a query string", async () => {
+    const { calls, stub } = recording(jsonResponse(RESULTS));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    const result = await client.search({ query: { q: "standup" } });
+
+    const url = new URL(only(calls).url);
+    expect(url.pathname).toBe("/search");
+    expect(url.searchParams.get("q")).toBe("standup");
+    expect<unknown>(result).toEqual(RESULTS);
+  });
+
+  it("URL-encodes the person key into GET /people/{personKey}", async () => {
+    const { calls, stub } = recording(jsonResponse(PERSON));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await client.getPerson({
+      params: { personKey: "email:priya@example.com" },
+    });
+
+    expect(only(calls).url).toBe(
+      `${BASE_URL}/people/email%3Apriya%40example.com`
+    );
+  });
+
+  it("sends the person filter on GET /notes", async () => {
+    const { calls, stub } = recording(
+      jsonResponse({ items: [], nextCursor: null })
+    );
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await client.listNotes({
+      query: { cursor: null, limit: 20, person: "name:dana lee" },
+    });
+
+    const url = new URL(only(calls).url);
+    expect(url.searchParams.get("person")).toBe("name:dana lee");
+    expect(url.searchParams.has("cursor")).toBe(false);
+  });
+
+  it("keys a person's notes apart from home's list, under the same prefix", () => {
+    const person = queryKeys.notes.list({ person: "email:priya@example.com" });
+
+    expect(person).toEqual([
+      "notes",
+      "list",
+      { person: "email:priya@example.com" },
+    ]);
+    expect<unknown>(person.slice(0, 2)).toEqual(queryKeys.notes.list());
+    expect(queryKeys.people.detail("name:dana lee")).toEqual([
+      "people",
+      "detail",
+      "name:dana lee",
+    ]);
+    expect(queryKeys.search("ra")).toEqual(["search", "ra"]);
+  });
+});
+
 describe("the infinite-query helper (phase 4)", () => {
   it("returns plain options useInfiniteQuery accepts, paging on nextCursor from null", async () => {
     const client = makeApiClient({
