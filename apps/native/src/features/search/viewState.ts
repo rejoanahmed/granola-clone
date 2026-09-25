@@ -17,8 +17,9 @@ type QueryView = {
 
 /**
  * What the body draws (docs/spec/phase-8.md §3.1). `data` may be the previous query's answer held by
- * `keepPreviousData`: drawing it while the next one loads is the point, so only a failure with
- * nothing to show is an error, and only a first request with nothing to show is loading.
+ * `keepPreviousData`: drawing it while the next one loads is the point, so only a first request
+ * with nothing to show is loading. A failure is an error even with an older answer held, because
+ * that answer is for a query the field no longer reads.
  */
 export function searchViewState(
   trimmedDraft: string,
@@ -27,13 +28,24 @@ export function searchViewState(
   if (trimmedDraft === "") {
     return "empty";
   }
-  if (query.data === undefined) {
-    return query.isError ? "error" : "loading";
-  }
   if (query.isError) {
     return "error";
+  }
+  if (query.data === undefined) {
+    return "loading";
   }
   return query.data.notes.length + query.data.people.length === 0
     ? "none"
     : "results";
+}
+
+/** The placeholder a new query may show: the last answer, unless it predates the last clear. */
+export function heldUnlessCleared<T>(
+  previous: T | undefined,
+  answeredAt: number | undefined,
+  clearedAt: number
+): T | undefined {
+  return answeredAt !== undefined && answeredAt > clearedAt
+    ? previous
+    : undefined;
 }

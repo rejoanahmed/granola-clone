@@ -3,12 +3,12 @@ import { z } from "zod";
 // A person is not a row: they are whoever appears as an attendee. The key is the one normalisation
 // person-scoped Ask and phase 8's person page both call, so the two can never disagree on who is
 // the same person.
-export const PersonKey = z
+const PersonKeyShape = z
   .string()
   .min(3)
   .max(260)
   .regex(/^(email|name):.+$/);
-export type PersonKey = z.infer<typeof PersonKey>;
+export type PersonKey = z.infer<typeof PersonKeyShape>;
 
 // `null` for an attendee with neither an address nor a name: `name:` alone is not a key, and such
 // a row names nobody a person scope could be asked over.
@@ -26,6 +26,20 @@ export const personKeyOf = ({
   const collapsed = (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
   return collapsed === "" ? null : `name:${collapsed}`;
 };
+
+// Only a key `personKeyOf` could have minted: the match compares against the canonical form, so
+// `email:Priya@Example.com` or `name:dana  lee` would otherwise be a silent miss, never a 422.
+const isCanonical = (key: string): boolean => {
+  const value = key.slice(key.indexOf(":") + 1);
+  const minted = key.startsWith("email:")
+    ? personKeyOf({ email: value, name: null })
+    : personKeyOf({ email: null, name: value });
+  return minted === key;
+};
+
+export const PersonKey = PersonKeyShape.refine(isCanonical, {
+  message: "not a canonical person key: lower-case, trimmed, single-spaced",
+});
 
 // The name falls back to the email, then to the key's value, so a row always has something to draw.
 // `isMe` is computed against the caller's own `email:` key, never stored.

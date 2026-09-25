@@ -7,7 +7,12 @@ import {
   spacing,
   typography,
 } from "@native/design";
-import { Keyboard as KeyboardGlyph, Search, X } from "lucide-react-native";
+import {
+  ChevronDown,
+  Keyboard as KeyboardGlyph,
+  Search,
+  X,
+} from "lucide-react-native";
 import { useRef, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { SEARCH_COPY } from "./copy";
@@ -20,6 +25,10 @@ const GLYPH_INSET = 20;
 const INPUT_GAP = 12;
 const CLEAR = 20;
 const CLEAR_GLYPH = 13;
+// #60's toggle is iOS's hide-keyboard glyph: a keyboard over a small down chevron.
+const KEY_GLYPH = 22;
+const CHEVRON_GLYPH = 12;
+const CHEVRON_OVERLAP = -4;
 
 type Props = {
   readonly draft: string;
@@ -94,8 +103,14 @@ export function SearchField({ draft, onChangeDraft }: Props) {
       >
         <KeyboardGlyph
           color={colors.text.primary}
-          size={sizes.glyph}
+          size={KEY_GLYPH}
           strokeWidth={ICON_STROKE}
+        />
+        <ChevronDown
+          color={colors.text.primary}
+          size={CHEVRON_GLYPH}
+          strokeWidth={ICON_STROKE}
+          style={styles.chevron}
         />
       </Pressable>
     </View>
@@ -103,6 +118,7 @@ export function SearchField({ draft, onChangeDraft }: Props) {
 }
 
 const styles = StyleSheet.create({
+  chevron: { marginTop: CHEVRON_OVERLAP },
   clear: {
     alignItems: "center",
     backgroundColor: colors.text.tertiary,

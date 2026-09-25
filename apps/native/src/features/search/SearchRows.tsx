@@ -48,6 +48,9 @@ export function SearchSection({
   );
 }
 
+// One accessibility element per row, labelled "{name}, {email}" or "{title}, {day}". iOS hides an
+// accessible parent's children from XCUITest, so the lines' ids (spec §5) are for the render tree
+// and a flow reads the row's label.
 function Row({
   children,
   label,

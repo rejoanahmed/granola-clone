@@ -296,8 +296,9 @@
 - **Search is substring, not ranked or full-text.** `instr(lower(…), q)` over one owner's live notes
   is enough for a personal corpus and for proving scoping. An FTS5 table (with ranking, and snippets,
   which discovery does not show) is a later change behind the same route.
-- **Case folding is ASCII-only.** SQLite's `lower` does not fold `É`, so "émile" does not find
-  "Émile". The fix is FTS5 with `unicode61`, or a lower-cased shadow column written by the
+- **Case folding is ASCII-only for meetings.** SQLite's `lower` does not fold `É`, so "émile" does
+  not find a note titled "Émile". The People section no longer has this limit: it matches in
+  JavaScript over the owner's attendee rows (see the review items below). The fix is FTS5 with `unicode61`, or a lower-cased shadow column written by the
   repository. The phase-7 entry on person keys is the same limit.
 - **Transcripts are not searched.** Discovery's copy scopes search to "title, notes, or people".
   Chat retrieval (phase 7) does read transcripts. Recorded, not built.
@@ -305,3 +306,43 @@
   `SearchResults` without breaking clients.
 - **No avatars.** People get an initial (phase-8.md §3.3) until an avatar source exists (a calendar
   provider in phase 11, or an uploaded profile photo).
+
+## Phase 8 native
+
+- **Designed states no flow reaches.** `search-loading`, `search-error`, `person-loading`,
+  `person-error`, `person-list-more` / `person-list-more-retry`, `person-not-found` and the name-only
+  person header (spec §9) need a response the harness cannot script: a held or failing `/search`
+  or `/people`, a second page that fails, or a guest with no address in the seed. They belong to the
+  scripted-response harness seam deferred above. What stands in: `features/search/viewState.test.ts`
+  and `features/people/viewState.test.ts` cover the state selection (including the new "resolves
+  with no notes" → not found), and the People and Search API tests cover the name-only person. None
+  of these states is proven on device.
+- **The keyboard toggle's label follows focus, not keyboard visibility.** "Hide keyboard" /
+  "Show keyboard" is driven by the input's focus, which is the only thing on the page that raises
+  the keyboard. On a simulator with a hardware keyboard attached, AC1 would therefore pass with no
+  software keyboard on screen, so it proves "the input autofocused". On this simulator the software
+  keyboard does show (the `phase-8-search-empty` screenshot); driving the label from
+  keyboard-controller's visibility would make AC1 fail on a hardware-keyboard simulator instead.
+  Accepted.
+
+## Deferred review items (phase 8)
+
+- **A positive search wait can be satisfied by an intermediate prefix query.** `inputText` types
+  character by character and `keepPreviousData` holds the last answer, so a wait for a row can match
+  the answer to "fo" before "forty" lands. Only AC5 is pinned, by the echoed query. Exposing the
+  settled query on screen for Maestro needs an element that is either visible (a design deviation)
+  or a hidden accessibility node (noise for VoiceOver). In practice XCUITest types a word well
+  inside the 250 ms debounce, so one request is sent. Recorded, not built.
+- **`personMatches` in `@gc/db` is not `personKeyOf`.** SQL `lower()` folds only A–Z and the
+  whitespace collapse folds only tab, LF, CR and space, so a `name:` key for "Élodie" (or a name
+  holding a non-breaking space) opens a person page that says "isn't in your notes anymore", and
+  `/notes?person=` is empty. Search's People section already matches in JavaScript. Fixing the other
+  three callers (people, the notes filter, chat scope) means selecting the owner's attendee rows,
+  comparing `personKeyOf(row) === key`, and passing the note ids back as one bound
+  `json_each(?)` parameter, because D1 caps bound parameters at 100. That reshapes three repos and
+  the notes keyset query, and it moves `personKeyOf` below `@gc/db`. It is not a local fix. Deferred
+  with the phase-7 entry on person keys.
+- **People and Search tests seed through the E2E harness via `buildContainer`.** `Notes.test.ts`'s
+  person cases now seed through `NotesService.create`. A shared fixture helper for the others would
+  have to build the E2E repo, and `scripts/check-architecture.mjs` forbids importing a repo as a
+  value outside `container.ts` and a `*.test.ts`. Left as is.

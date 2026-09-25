@@ -250,6 +250,13 @@ Apostrophes and quotes are typographic (`’`, `“`, `”`), as in the rest of 
 | Person | `person-screen`, `person-back`, `person-avatar`, `person-name`, `person-email`, `person-domain`, `person-loading`, `person-list`, `person-day-<yyyy-mm-dd>`, `person-note-<noteId>`, `person-note-<noteId>-title`, `person-note-<noteId>-time`, `person-list-more`, `person-list-more-retry`, `person-ask-button`, `person-not-found`, `person-error`, `person-retry` |
 | Unchanged, reused | `home-search-button`, `attendees-row-<attendeeId>`, `note-screen`, `note-title`, `chat-screen`, `chat-back`, `chat-title`, `chat-chip-0..2` |
 
+*(review, phase 8)* A search row and a person-page row are each one accessibility element, so
+their line ids (`-name`, `-email`, `-title`, `-date`, `-time`) exist in the render tree but are
+hidden from XCUITest. Flows assert the row id against its label instead: `search-note-<id>` reads
+"{title}, {day}", `search-person-<i>` reads "{name}, {email}" (or "{name}"), and
+`person-note-<id>` reads "{title}, {time}". The AC table below names the line ids; the flows prove
+the same text through the label.
+
 ---
 
 ## 6. API

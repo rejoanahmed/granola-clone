@@ -50,6 +50,19 @@ describe("PersonKey", () => {
     expect(Person.PersonKey.safeParse("email:").success).toBe(false);
   });
 
+  // docs/spec/phase-8.md §6.3: a key that could never match is a 422, not an empty answer.
+  it.each([
+    "email:Priya@Example.com",
+    "email: priya@example.com",
+    "email:   ",
+    "name:Dana Lee",
+    "name:dana  lee",
+    "name: dana lee",
+    "name:   ",
+  ])("refuses the non-canonical key %j", (key) => {
+    expect(Person.PersonKey.safeParse(key).success).toBe(false);
+  });
+
   it("refuses a key over 260 characters", () => {
     expect(Person.PersonKey.safeParse(`name:${"a".repeat(256)}`).success).toBe(
       false

@@ -1,7 +1,7 @@
 import { searchQuery } from "@native/lib/api";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
-import { searchViewState } from "./viewState";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { heldUnlessCleared, searchViewState } from "./viewState";
 
 // Designed (docs/spec/phase-8.md §3.1): long enough that a word typed at speed is one request, short
 // enough that results feel live.
@@ -23,16 +23,28 @@ function useDebounced(value: string, ms: number): string {
 
 /**
  * The query key is the settled, trimmed draft, so an answer for a draft that has moved on lands
- * under its own key and is never drawn for the current one. `keepPreviousData` holds the last answer
- * on screen while the next is in flight, so typing never flashes empty.
+ * under its own key and is never drawn for the current one. The last answer is held on screen while
+ * the next is in flight, so typing never flashes empty — but not across a clear: the next query
+ * after an emptied field starts from loading, never from results the user already cleared.
  */
 export function useSearch(draft: string) {
   const trimmed = draft.trim();
   const settled = useDebounced(trimmed, SEARCH_DEBOUNCE_MS);
+  const clearedAt = useRef(0);
+  useEffect(() => {
+    if (trimmed === "") {
+      clearedAt.current = Date.now();
+    }
+  }, [trimmed]);
   const query = useQuery({
     ...searchQuery(settled),
     enabled: settled !== "",
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) =>
+      heldUnlessCleared(
+        previous,
+        previousQuery?.state.dataUpdatedAt,
+        clearedAt.current
+      ),
   });
   const data = trimmed === "" ? undefined : query.data;
   return {

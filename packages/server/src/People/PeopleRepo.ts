@@ -31,8 +31,9 @@ const effective = {
 
 // Reads only: a person is derived from `note_attendees`, never stored. No policy, no clock.
 export const makePeopleRepo = (db: DrizzleClient) => ({
-  // The most recent matching row that carries a name, else the most recent one: `name is null`
-  // sorts last, then the note list's own order. Scoped to the owner's live notes in SQL, so a key
+  // The most recent matching row that carries a name, else the most recent one: a missing or blank
+  // name sorts last, then the note list's own order. Blank is absent, as `personKeyOf` and search
+  // read it, so an account whose name is still "" never names the header. Scoped to the owner's live notes in SQL, so a key
   // known only from another user's notes or from a trashed note answers `null`.
   personForOwner: async (
     ownerId: UserId,
@@ -51,7 +52,7 @@ export const makePeopleRepo = (db: DrizzleClient) => ({
         )
       )
       .orderBy(
-        sql`${effective.name} is null`,
+        sql`nullif(trim(${effective.name}), '') is null`,
         desc(notes.startedAt),
         desc(notes.id)
       )
@@ -63,7 +64,7 @@ export const makePeopleRepo = (db: DrizzleClient) => ({
     return {
       email: email === "" ? null : email,
       key,
-      name: row.name,
+      name: row.name === null || row.name.trim() === "" ? null : row.name,
       ownerId,
     };
   },

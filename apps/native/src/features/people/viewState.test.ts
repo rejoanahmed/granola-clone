@@ -4,22 +4,61 @@ import { personLines, personViewState } from "./viewState";
 describe("personViewState", () => {
   it("is loading until both requests answer", () => {
     expect(
-      personViewState({ failed: false, notFound: false, settled: false })
+      personViewState({
+        failed: false,
+        noNotes: false,
+        notFound: false,
+        settled: false,
+      })
     ).toBe("loading");
   });
 
   it("is populated once both have answered", () => {
     expect(
-      personViewState({ failed: false, notFound: false, settled: true })
+      personViewState({
+        failed: false,
+        noNotes: false,
+        notFound: false,
+        settled: true,
+      })
     ).toBe("populated");
+  });
+
+  it("is not found when the person resolves with no notes to list", () => {
+    expect(
+      personViewState({
+        failed: false,
+        noNotes: true,
+        notFound: false,
+        settled: true,
+      })
+    ).toBe("notFound");
+    expect(
+      personViewState({
+        failed: false,
+        noNotes: true,
+        notFound: false,
+        settled: false,
+      })
+    ).toBe("loading");
   });
 
   it("lets not found win over error, and error over loading", () => {
     expect(
-      personViewState({ failed: true, notFound: true, settled: false })
+      personViewState({
+        failed: true,
+        noNotes: false,
+        notFound: true,
+        settled: false,
+      })
     ).toBe("notFound");
     expect(
-      personViewState({ failed: true, notFound: false, settled: false })
+      personViewState({
+        failed: true,
+        noNotes: false,
+        notFound: false,
+        settled: false,
+      })
     ).toBe("error");
   });
 });
@@ -30,6 +69,7 @@ describe("personLines", () => {
       domain: null,
       email: null,
       name: "Priya Raman",
+      nameOnly: false,
     });
     expect(personLines(undefined, undefined).name).toBe("");
   });
@@ -48,12 +88,13 @@ describe("personLines", () => {
       domain: "example.com",
       email: "priya@example.com",
       name: "Priya Raman",
+      nameOnly: false,
     });
   });
 
   it("has neither line for a name-only person", () => {
     expect(
       personLines({ domain: null, email: null, name: "Dana Lee" }, undefined)
-    ).toEqual({ domain: null, email: null, name: "Dana Lee" });
+    ).toEqual({ domain: null, email: null, name: "Dana Lee", nameOnly: true });
   });
 });

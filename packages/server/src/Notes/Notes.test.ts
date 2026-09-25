@@ -2,13 +2,10 @@ import { ValidationFailed } from "@gc/domain/Errors";
 import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
-import { buildContainer } from "../container";
-import { E2E_USERS } from "../E2E/Fixtures";
 import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import type { Ids } from "../Runtime/Ids";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
-import type { Env } from "../Runtime/WorkerEnv";
 import {
   actor,
   makeTestD1,
@@ -66,7 +63,7 @@ type NotesService = {
   get: (who: Actor, id: string) => Promise<Note>;
   list: (
     who: Actor,
-    query: { cursor: string | null; limit: number }
+    query: { cursor: string | null; limit: number; person?: string }
   ) => Promise<Page>;
   restore: (who: Actor, id: string) => Promise<Note>;
   trash: (who: Actor, id: string) => Promise<Note>;
@@ -727,65 +724,83 @@ describe("the notes tables", () => {
   });
 });
 
-// docs/spec/phase-8.md §7 cases 18–20, over the E2E seed so the attendees are the ones the person
-// page shows. Seeded into the same database as the two users above: the E2E users have their own ids.
+// docs/spec/phase-8.md §7 cases 18–20. Seeded through `create`, so each attendee row is exactly what
+// the shipped write stores: the owner's row links the account, and a guest keeps what was typed.
 describe("NotesService.list with a person", () => {
-  const person = E2E_USERS.person;
-  const other = E2E_USERS.other;
-  const SELF = "email:e2e-person@gcnotes.test";
   const PRIYA = "email:priya@example.com";
+  const SELF = `email:${actor().email}`;
+
+  const withGuests = (
+    who: Actor,
+    startedAt: number,
+    title: string,
+    attendees: readonly { email?: string; name?: string }[]
+  ) => service().create(who, { attendees, startedAt, title });
+
+  let launch: Note;
+  let standup: Note;
+  let solo: Note;
 
   beforeEach(async () => {
-    const env = {
-      API_URL: "http://localhost:3001",
-      BETTER_AUTH_SECRET: "auth-secret-32-characters-long-000000",
-      BETTER_AUTH_URL: "http://localhost:3001",
-      DB: d1,
-      E2E_HARNESS: "true",
-      E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
-      FLAGS_MODE: "fake",
-      NATIVE_SCHEME: "gcnotes",
-      NODE_ENV: "test",
-    } satisfies Env;
-    const harness = buildContainer(env).e2e;
-    if (harness === null) {
-      throw new Error("an armed configuration built no harness");
-    }
-    await harness.seed();
+    solo = await withGuests(actor(), AT, "Solo", []);
+    standup = await withGuests(actor(), AT + SECOND, "Standup", [
+      { name: "Dana \t Lee" },
+      { email: "sam@example.com", name: "Dana Lee" },
+    ]);
+    launch = await withGuests(actor(), AT + 2 * SECOND, "Launch", [
+      { email: "Priya@Example.com", name: "Priya Raman" },
+    ]);
+    const trashed = await withGuests(actor(), AT + 3 * SECOND, "Trashed", [
+      { email: "priya@example.com", name: "Priya Raman" },
+    ]);
+    await service().trash(actor(), trashed.id);
+    await withGuests(otherActor(), AT + 4 * SECOND, "Theirs", [
+      { email: "riley@example.com", name: "Riley" },
+    ]);
   });
 
-  type PersonList = (
-    who: Actor,
-    query: { cursor: string | null; limit: number; person: string }
-  ) => Promise<Page>;
   const listFor = (
     who: Actor,
-    personKey: string,
+    person: string,
     limit = 20,
     cursor: string | null = null
-  ) =>
-    (service().list as PersonList)(who, { cursor, limit, person: personKey });
+  ) => service().list(who, { cursor, limit, person });
 
   // §7 case 18
   it("lists only the notes the person attends, and the owner's own key lists every live note", async () => {
-    expect(idsOf(await listFor(person, PRIYA))).toEqual(["not_e2e_launch"]);
-    expect(idsOf(await listFor(person, SELF))).toEqual([
-      "not_e2e_launch",
-      "not_e2e_standup",
-      "not_e2e_solo",
+    expect(idsOf(await listFor(actor(), PRIYA))).toEqual([launch.id]);
+    expect(idsOf(await listFor(actor(), SELF))).toEqual([
+      launch.id,
+      standup.id,
+      solo.id,
     ]);
+  });
+
+  // A `name:` key is the collapsed, lower-cased name, and matches only a guest with no address:
+  // the guest who also gave an email is keyed by it.
+  it("matches a name key over a guest stored with other case and spacing", async () => {
+    expect(idsOf(await listFor(actor(), "name:dana lee"))).toEqual([
+      standup.id,
+    ]);
+    expect(idsOf(await listFor(actor(), "email:sam@example.com"))).toEqual([
+      standup.id,
+    ]);
+    expect(await listFor(actor(), "name:sam")).toEqual({
+      items: [],
+      nextCursor: null,
+    });
   });
 
   // §7 case 19
   it("pages the filtered list with the same cursor, ending on a null cursor", async () => {
-    const first = await listFor(person, SELF, 1);
-    const second = await listFor(person, SELF, 1, first.nextCursor);
-    const third = await listFor(person, SELF, 1, second.nextCursor);
+    const first = await listFor(actor(), SELF, 1);
+    const second = await listFor(actor(), SELF, 1, first.nextCursor);
+    const third = await listFor(actor(), SELF, 1, second.nextCursor);
 
     expect([first, second, third].map(idsOf)).toEqual([
-      ["not_e2e_launch"],
-      ["not_e2e_standup"],
-      ["not_e2e_solo"],
+      [launch.id],
+      [standup.id],
+      [solo.id],
     ]);
     expect(first.nextCursor).not.toBeNull();
     expect(second.nextCursor).not.toBeNull();
@@ -794,12 +809,10 @@ describe("NotesService.list with a person", () => {
 
   // §7 case 20
   it("is an empty page for an unknown person and for another user's guest", async () => {
-    const unknown = await listFor(person, "email:nobody@example.com");
-    const othersOwn = await listFor(person, `email:${other.email}`);
-    const priyaToOther = await listFor(other, PRIYA);
+    const none = { items: [], nextCursor: null };
 
-    expect(unknown).toEqual({ items: [], nextCursor: null });
-    expect(othersOwn).toEqual({ items: [], nextCursor: null });
-    expect(priyaToOther).toEqual({ items: [], nextCursor: null });
+    expect(await listFor(actor(), "email:nobody@example.com")).toEqual(none);
+    expect(await listFor(actor(), "email:riley@example.com")).toEqual(none);
+    expect(await listFor(otherActor(), PRIYA)).toEqual(none);
   });
 });

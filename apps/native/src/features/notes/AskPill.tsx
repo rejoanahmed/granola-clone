@@ -33,22 +33,32 @@ function BottomFade() {
 
 type Props = {
   readonly accessibilityLabel: string;
+  /** Above the bottom safe area. #10 draws 12; #65 draws 16. */
+  readonly bottomGap?: number;
+  /** From each screen edge. #10 draws 20; #65 draws 16. */
+  readonly inset?: number;
   readonly onPress: () => void;
   readonly testID: string;
 };
 
 /** The note page's and the person page's Ask pill, absolutely placed at the screen's foot. */
-export function AskPill({ accessibilityLabel, onPress, testID }: Props) {
+export function AskPill({
+  accessibilityLabel,
+  bottomGap = ASK_GAP,
+  inset = spacing.lg,
+  onPress,
+  testID,
+}: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.layer, { paddingBottom: insets.bottom + ASK_GAP }]}
+      style={[styles.layer, { paddingBottom: insets.bottom + bottomGap }]}
     >
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <BottomFade />
       </View>
-      <View style={styles.fill}>
+      <View style={{ paddingHorizontal: inset }}>
         <PillButton
           accessibilityLabel={accessibilityLabel}
           filledIcon
@@ -64,7 +74,6 @@ export function AskPill({ accessibilityLabel, onPress, testID }: Props) {
 }
 
 const styles = StyleSheet.create({
-  fill: { paddingHorizontal: spacing.lg },
   layer: {
     bottom: 0,
     left: 0,

@@ -5,7 +5,6 @@ import {
   ChatModelUnavailable,
   ChatNotFound,
   FeedbackNotAllowed,
-  PersonNotFound,
 } from "@gc/domain/Chats/Errors";
 import type { ChatEvent } from "@gc/domain/Chats/Events";
 import {
@@ -28,6 +27,7 @@ import {
 import type { Page } from "@gc/domain/Domain/Page";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
+import { PersonNotFound } from "@gc/domain/People/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import {

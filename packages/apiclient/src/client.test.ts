@@ -497,10 +497,18 @@ describe("the phase-4 notes query keys", () => {
       ["notes", "list"],
     ];
 
-    expect(keys.updateNote?.(ID)).toEqual(both);
-    expect(keys.trashNote?.(ID)).toEqual(both);
-    expect(keys.restoreNote?.(ID)).toEqual(both);
+    // Phase 8: search results and person pages are built from the same notes.
+    const withSearch = [...both, ["search"], ["people"]];
+
+    expect(keys.updateNote?.(ID)).toEqual(withSearch);
+    expect(keys.trashNote?.(ID)).toEqual(withSearch);
+    expect(keys.restoreNote?.(ID)).toEqual(withSearch);
     expect(keys.retryNoteGeneration?.(ID)).toEqual(both);
+    expect(keys.updateMe?.()).toEqual([
+      ["me", "profile"],
+      ["people"],
+      ["search"],
+    ]);
     expect(keys.createNote?.()).toEqual([["notes", "list"]]);
   });
 });
@@ -569,7 +577,7 @@ describe("the phase-8 search and people endpoints", () => {
       "detail",
       "name:dana lee",
     ]);
-    expect(queryKeys.search("ra")).toEqual(["search", "ra"]);
+    expect(queryKeys.search.results("ra")).toEqual(["search", "ra"]);
   });
 });
 

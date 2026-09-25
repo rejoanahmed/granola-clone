@@ -357,7 +357,7 @@ export type PersonDetail = Awaited<ReturnType<typeof client.getPerson>>;
 
 /** Keyed on the trimmed draft; the caller only enables it for a non-empty one. */
 export const searchQuery = (q: string) =>
-  api.query(keys.search(q), ({ signal }) =>
+  api.query(keys.search.results(q), ({ signal }) =>
     client.search({ query: { q } }, { signal })
   );
 

@@ -8,6 +8,8 @@ tags:
 env:
   APP_ID: com.rejoan.gcnotes
 ---
+# A row is one accessibility element labelled "{title}, {day}" or "{name}, {email}" (§3.1), so the
+# flow reads the row's label: iOS hides an accessible row's children from XCUITest.
 - runFlow: ../subflows/open-home.yaml
 - runFlow: ../subflows/open-search.yaml
 - runFlow:
@@ -16,8 +18,8 @@ env:
       QUERY: e2e
 - extendedWaitUntil:
     visible:
-      id: search-person-0-name
-      text: E2E Person
+      id: search-person-0
+      text: "E2E Person, .*"
     timeout: 15000
 - assertNotVisible:
     id: search-section-meetings

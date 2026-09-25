@@ -251,6 +251,88 @@ describe("SearchService.search: people", () => {
   });
 });
 
+describe("SearchService.search: a person's name and recency", () => {
+  // docs/spec/phase-8.md §6.3: name and order come from all of the person's live rows, as the
+  // person page reads them, not only from the rows that matched.
+  it("names and orders a person by their newest meeting when the match is an older spelling", async () => {
+    await addNotes([
+      {
+        guests: [{ email: "lee@example.com", name: "Lee Raman" }],
+        id: "not_t_lee",
+        owner: person,
+        startedAt: AT - HOUR,
+      },
+      {
+        guests: [{ email: "priya@example.com", name: "Priya R." }],
+        id: "not_t_priya_new",
+        owner: person,
+        startedAt: AT,
+      },
+    ]);
+
+    expect((await search(person, "raman")).people).toEqual([
+      {
+        email: "priya@example.com",
+        isMe: false,
+        key: "email:priya@example.com",
+        name: "Priya R.",
+      },
+      {
+        email: "lee@example.com",
+        isMe: false,
+        key: "email:lee@example.com",
+        name: "Lee Raman",
+      },
+    ]);
+  });
+
+  it("reads a blank stored name as no name, falling back to an older named row", async () => {
+    await addNotes([
+      {
+        guests: [{ email: "blank@example.com", name: "Blake Named" }],
+        id: "not_t_blank_old",
+        owner: person,
+        startedAt: AT - HOUR,
+      },
+      {
+        guests: [{ email: "blank@example.com", name: "   " }],
+        id: "not_t_blank_new",
+        owner: person,
+        startedAt: AT,
+      },
+    ]);
+
+    expect(await names(person, "blank@")).toEqual(["Blake Named"]);
+  });
+});
+
+describe("SearchService.search: a blank query", () => {
+  // The contract trims before the service sees `q`; a caller with no HTTP context does not.
+  it("answers whitespace with two empty sections and the trimmed echo, without reading", async () => {
+    const repo = makeSearchRepo(makeDrizzle(d1));
+    const reads: string[] = [];
+    const service = makeSearchService({
+      repo: {
+        notesMatching: (...args) => {
+          reads.push("notes");
+          return repo.notesMatching(...args);
+        },
+        peopleMatching: (...args) => {
+          reads.push("people");
+          return repo.peopleMatching(...args);
+        },
+      },
+    });
+
+    expect(await service.search(person, { q: " \t  " })).toEqual({
+      notes: [],
+      people: [],
+      query: "",
+    });
+    expect(reads).toEqual([]);
+  });
+});
+
 describe("SearchService.search: scoping", () => {
   // §7 case 6
   it("never answers a trashed note, nor a guest met only on one", async () => {

@@ -1,5 +1,6 @@
 import * as ChatErrors from "@gc/domain/Chats/Errors";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
+import { PersonNotFound } from "@gc/domain/People/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -600,7 +601,7 @@ describe("ChatsService.ask, scoped", () => {
       })
     );
 
-    expect(error).toBeInstanceOf(ChatErrors.PersonNotFound);
+    expect(error).toBeInstanceOf(PersonNotFound);
     expect(await count("SELECT count(*) AS n FROM chat_threads")).toBe(threads);
     expect(await count("SELECT count(*) AS n FROM chat_messages")).toBe(
       messages
@@ -669,7 +670,7 @@ describe("ChatsService.ask, ownership", () => {
       })
     );
 
-    expect(error).toBeInstanceOf(ChatErrors.PersonNotFound);
+    expect(error).toBeInstanceOf(PersonNotFound);
   });
 
   it("refuses a send into another user's thread with ChatNotFound, and never reads it", async () => {

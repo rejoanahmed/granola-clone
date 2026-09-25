@@ -126,6 +126,31 @@ describe("PeopleService.get", () => {
     ).toMatchObject({ email: "priya@example.com", name: "Priya Raman" });
   });
 
+  // A blank name is no name, as search reads it, so the two never disagree on what to call someone.
+  it("reads a blank stored name as no name", async () => {
+    await notes().create(person, {
+      attendees: [{ email: "priya@example.com", name: "   " }],
+      startedAt: AT,
+      title: "Follow-up",
+    });
+
+    expect(
+      await service().get(person, "email:priya@example.com")
+    ).toMatchObject({ name: "Priya Raman" });
+  });
+
+  it("falls back to the address when every stored name is blank", async () => {
+    await notes().create(person, {
+      attendees: [{ email: "blank@example.com", name: "   " }],
+      startedAt: AT,
+      title: "Follow-up",
+    });
+
+    expect(
+      await service().get(person, "email:blank@example.com")
+    ).toMatchObject({ email: "blank@example.com", name: "blank@example.com" });
+  });
+
   // §7 case 16
   it("is PersonNotFound for an unknown key, another user's guest, and a trashed note's only guest", async () => {
     const trashed = await notes().create(person, {

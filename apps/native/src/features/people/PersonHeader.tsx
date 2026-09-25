@@ -53,10 +53,9 @@ function Line({
 }
 
 export function PersonHeader({ lines }: { readonly lines: PersonLines }) {
-  const nameOnly = lines.email === null;
   return (
     <View>
-      <View style={[styles.block, nameOnly ? styles.centred : null]}>
+      <View style={[styles.block, lines.nameOnly ? styles.centred : null]}>
         <Avatar
           initial={initialFor(lines.name || lines.email)}
           size={sizes.personAvatar}

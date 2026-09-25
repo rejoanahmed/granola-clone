@@ -747,7 +747,6 @@ describe("the chats routes, phase 7", () => {
   it.each([
     ["ChatNotFound", 404],
     ["ChatMessageNotFound", 404],
-    ["PersonNotFound", 404],
     ["ChatBusy", 409],
     ["ChatMessageNotRetryable", 409],
     ["ChatModelUnavailable", 422],
@@ -805,8 +804,10 @@ describe("the chats routes, phase 7", () => {
     expect(doc.paths["/people/{personKey}"]?.get?.tags).toEqual(["People"]);
   });
 
-  it("renders PersonNotFound from People/Errors as a 404, the same class Chats re-exports", async () => {
-    const chats = await import("@gc/domain/Chats/Errors");
+  it("renders PersonNotFound from People/Errors as a 404, with no second name in Chats", async () => {
+    const chats: Record<string, unknown> = await import(
+      "@gc/domain/Chats/Errors"
+    );
     const failing = new Hono<AppEnv>()
       .get("/", () => {
         throw new PersonNotFound({ personKey: "email:nobody@example.com" });
@@ -815,7 +816,7 @@ describe("the chats routes, phase 7", () => {
 
     const response = await failing.request("/");
 
-    expect(chats.PersonNotFound).toBe(PersonNotFound);
+    expect(chats.PersonNotFound).toBeUndefined();
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
       _tag: "PersonNotFound",

@@ -215,6 +215,11 @@ describe("POST /notes and GET /notes", () => {
   it.each([
     ["a bad prefix", "/notes?person=person%3Apriya"],
     ["a prefix with no value", "/notes?person=email%3A"],
+    [
+      "an address that is not lower-cased",
+      "/notes?person=email%3APriya%40Example.com",
+    ],
+    ["a name with a doubled space", "/notes?person=name%3Adana%20%20lee"],
   ])("is 422 for a person key with %s", async (_what, path) => {
     const { app, calls } = appAs(actor());
 

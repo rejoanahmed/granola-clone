@@ -36,8 +36,12 @@ type Met = {
   readonly email: string | null;
   readonly key: NonNullable<ReturnType<typeof personKeyOf>>;
   readonly lastMet: number;
+  matched: boolean;
   name: string | null;
 };
+
+const holds = (value: string | null, q: string): boolean =>
+  value?.toLowerCase().includes(q) ?? false;
 
 // A blank stored name names nobody, exactly as `personKeyOf` reads it.
 const nameIn = (name: string | null): string | null =>
@@ -89,10 +93,13 @@ export const makeSearchRepo = (db: DrizzleClient) => ({
     }));
   },
 
-  // Grouped over the matched rows here rather than in SQL, because the key is `personKeyOf`'s and
-  // SQLite cannot collapse whitespace the way it does. The rows come newest first, so each
-  // person's first row is their most recent meeting and their first named row names them. Bounded
-  // by one owner's attendees, which the owner's partial index already selects.
+  // Grouped here rather than in SQL, because the key is `personKeyOf`'s and SQLite cannot collapse
+  // whitespace the way it does. Every live row is read, not only the ones that match `q`: a person
+  // is named by their most recent named row and ordered by their most recent meeting, exactly as the
+  // person page reads them, so a match on an older spelling still shows the current name. The rows
+  // come newest first, so each person's first row is their last meeting. The match itself is
+  // JavaScript's `toLowerCase`, which folds more than SQLite's ASCII `lower`. Bounded by one
+  // owner's attendees, which the owner's partial index already selects.
   peopleMatching: async (
     ownerId: UserId,
     callerEmail: string,
@@ -104,12 +111,7 @@ export const makeSearchRepo = (db: DrizzleClient) => ({
       .from(noteAttendees)
       .innerJoin(notes, eq(notes.id, noteAttendees.noteId))
       .leftJoin(user, eq(user.id, noteAttendees.userId))
-      .where(
-        and(
-          liveNotesOf(ownerId),
-          or(contains(effective.name, q), contains(effective.email, q))
-        )
-      )
+      .where(liveNotesOf(ownerId))
       .orderBy(desc(notes.startedAt), desc(notes.id))
       .all();
     const people = new Map<string, Met>();
@@ -118,20 +120,24 @@ export const makeSearchRepo = (db: DrizzleClient) => ({
       if (key === null) {
         continue;
       }
+      const hit = holds(row.name, q) || holds(row.email, q);
       const seen = people.get(key);
       if (seen === undefined) {
         people.set(key, {
           email: key.startsWith("email:") ? key.slice("email:".length) : null,
           key,
           lastMet: row.startedAt,
+          matched: hit,
           name: nameIn(row.name),
         });
-      } else if (seen.name === null) {
-        seen.name = nameIn(row.name);
+      } else {
+        seen.matched ||= hit;
+        seen.name ??= nameIn(row.name);
       }
     }
     const me = personKeyOf({ email: callerEmail, name: null });
     return [...people.values()]
+      .filter((person) => person.matched)
       .map((person) => ({
         email: person.email,
         isMe: person.key === me,

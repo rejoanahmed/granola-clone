@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { searchViewState } from "./viewState";
+import { heldUnlessCleared, searchViewState } from "./viewState";
 
 const hit = { notes: [{}], people: [] };
 const miss = { notes: [], people: [] };
@@ -41,5 +41,19 @@ describe("searchViewState", () => {
       "error"
     );
     expect(searchViewState("ra", { data: hit, isError: true })).toBe("error");
+  });
+});
+
+describe("heldUnlessCleared", () => {
+  it("holds an answer that landed after the last clear", () => {
+    expect(heldUnlessCleared(hit, 200, 100)).toBe(hit);
+  });
+
+  it("drops an answer from before the field was cleared, so it never flashes under a new query", () => {
+    expect(heldUnlessCleared(hit, 50, 100)).toBeUndefined();
+  });
+
+  it("has nothing to hold before any answer", () => {
+    expect(heldUnlessCleared(undefined, undefined, 0)).toBeUndefined();
   });
 });

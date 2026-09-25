@@ -8,6 +8,8 @@ tags:
 env:
   APP_ID: com.rejoan.gcnotes
 ---
+# A row is one accessibility element labelled "{title}, {day}" or "{name}, {email}" (§3.1), so the
+# flow reads the row's label: iOS hides an accessible row's children from XCUITest.
 - runFlow: ../subflows/open-home.yaml
 - runFlow: ../subflows/open-search.yaml
 - runFlow:
@@ -21,11 +23,8 @@ env:
 - assertVisible:
     id: search-section-meetings
 - assertVisible:
-    id: search-note-not_e2e_standup-title
-    text: Weekly standup
-- assertVisible:
-    id: search-note-not_e2e_standup-date
-    text: Sat 12 Sep
+    id: search-note-not_e2e_standup
+    text: "Weekly standup, Sat 12 Sep( 2026)?"
 - assertNotVisible:
     id: search-section-people
 - assertNotVisible:
