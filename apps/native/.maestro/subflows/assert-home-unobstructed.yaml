@@ -36,6 +36,10 @@ env:
     id: folder-delete-sheet
 - assertNotVisible:
     id: add-to-folder-sheet
+- assertNotVisible:
+    id: desktop-sheet
+- assertNotVisible:
+    id: work-email-sheet
 - assertVisible:
     id: home-ask-button
 - assertVisible:

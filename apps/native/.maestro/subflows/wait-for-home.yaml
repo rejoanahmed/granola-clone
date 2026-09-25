@@ -1,0 +1,17 @@
+# After a relaunch that keeps the Keychain (relaunch-app.yaml): the adopted session carries the app
+# straight home. The 180 s covers the dev client bundling from Metro again, as open-home-as.yaml's
+# first launch does; the list then settles before anything is tapped.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 180000
+- extendedWaitUntil:
+    notVisible:
+      id: home-list-loading
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000

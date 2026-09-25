@@ -3,8 +3,13 @@ import { Forbidden } from "@gc/domain/Errors";
 import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
+import { buildContainer } from "../container";
+import type { E2eService } from "../E2E/E2eService";
+import { E2E_USERS } from "../E2E/Fixtures";
+import { makeNotesRepo } from "../Notes/NotesRepo";
 import type { Clock } from "../Runtime/Clock";
 import { makeDrizzle } from "../Runtime/Drizzle";
+import type { Env } from "../Runtime/WorkerEnv";
 import {
   actor,
   fixedClock,
@@ -320,6 +325,156 @@ describe("the profile policies", () => {
     expect(() => canEditProfile(profile, otherActor())).toThrow(Forbidden);
     expect(() => canEditProfile(profile, otherActor())).toThrow(
       expect.objectContaining({ details: { action: "profiles.edit" } })
+    );
+  });
+});
+
+// ── Phase 10: the deletion preview and deleting an account (docs/spec/phase-10.md §7 cases 7–10) ──
+// Over the real E2E world, because the counts are its fixtures: person has three live notes and one
+// trashed, `empty` has none (§6.5). The service gains a type-only `notes: Pick<NotesRepo,
+// "countLive">` dependency (§6.3); `deletionPreview` and `deleteAccount` do not exist yet, so the
+// service is read through a cast and the phase 3 cases above keep compiling.
+//
+// Names these tests fix where the spec leaves them open: `makeProfilesService({ clock, notes,
+// repo })` with `notes` the notes repo, `deletionPreview(actor) → { noteCount }` and
+// `deleteAccount(actor) → void`.
+
+describe("ProfilesService deletion, phase 10", () => {
+  type Deleting = ProfilesService & {
+    deleteAccount: (who: Actor) => Promise<void>;
+    deletionPreview: (who: Actor) => Promise<{ noteCount: number }>;
+  };
+
+  let world: TestD1;
+  let harness: E2eService;
+  const person: Actor = E2E_USERS.person;
+  const other: Actor = E2E_USERS.other;
+  const empty: Actor = E2E_USERS.empty;
+
+  beforeEach(async () => {
+    world = makeTestD1();
+    const built = buildContainer({
+      API_URL: "http://localhost:3001",
+      BETTER_AUTH_SECRET: "auth-secret-32-characters-long-000000",
+      BETTER_AUTH_URL: "http://localhost:3001",
+      DB: world,
+      E2E_HARNESS: "true",
+      E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
+      FLAGS_MODE: "fake",
+      NATIVE_SCHEME: "gcnotes",
+      NODE_ENV: "test",
+    } satisfies Env).e2e;
+    if (built === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = built;
+    await harness.seed();
+  });
+
+  afterEach(() => {
+    world.close();
+  });
+
+  const deleting = (): Deleting => {
+    const deps = {
+      clock: fixedClock(AT),
+      notes: makeNotesRepo(makeDrizzle(world)),
+      repo: makeProfilesRepo(makeDrizzle(world)),
+    };
+    return makeProfilesService(deps) as Deleting;
+  };
+
+  const countWhere = async (sql: string, id: string): Promise<number> =>
+    Number(await world.prepare(sql).bind(id).first("n"));
+
+  // §7 case 7
+  it("counts the caller's live notes, not the trashed one, and 0 for empty", async () => {
+    await expect(deleting().deletionPreview(person)).resolves.toEqual({
+      noteCount: 3,
+    });
+    await expect(deleting().deletionPreview(empty)).resolves.toEqual({
+      noteCount: 0,
+    });
+
+    await world
+      .prepare("UPDATE notes SET trashed_at = ? WHERE id = ?")
+      .bind(AT, "not_e2e_launch")
+      .run();
+
+    await expect(deleting().deletionPreview(person)).resolves.toEqual({
+      noteCount: 2,
+    });
+  });
+
+  // §7 case 8: one delete of the user row, and the cascades take everything that was theirs.
+  it("deletes the account and everything it owned, and leaves other untouched", async () => {
+    await harness.signIn("person", "http://localhost:3001");
+    await (
+      harness as unknown as { seedFolders: () => Promise<unknown> }
+    ).seedFolders();
+    await world
+      .prepare(
+        "INSERT INTO user_settings (user_id, chat_dictation_auto_send, notify_upcoming_meetings, use_data_for_training, updated_at) VALUES (?, 1, 0, 1, ?)"
+      )
+      .bind(person.id, AT)
+      .run();
+    const othersNotes = await countWhere(
+      "SELECT count(*) AS n FROM notes WHERE owner_id = ?",
+      other.id
+    );
+    const othersProfile = await world
+      .prepare("SELECT * FROM profiles WHERE user_id = ?")
+      .bind(other.id)
+      .first();
+    expect(othersNotes).toBeGreaterThan(0);
+
+    await expect(deleting().deleteAccount(person)).resolves.toBeUndefined();
+
+    await expect(deleting().me(person)).rejects.toBeInstanceOf(ProfileNotFound);
+    for (const sql of [
+      "SELECT count(*) AS n FROM notes WHERE owner_id = ?",
+      "SELECT count(*) AS n FROM folders WHERE owner_id = ?",
+      "SELECT count(*) AS n FROM chat_threads WHERE owner_id = ?",
+      "SELECT count(*) AS n FROM profiles WHERE user_id = ?",
+      "SELECT count(*) AS n FROM user_settings WHERE user_id = ?",
+      "SELECT count(*) AS n FROM session WHERE user_id = ?",
+      "SELECT count(*) AS n FROM user WHERE id = ?",
+    ]) {
+      // biome-ignore lint/performance/noAwaitInLoops: one table at a time names the one that kept a row
+      expect({ n: await countWhere(sql, person.id), sql }).toEqual({
+        n: 0,
+        sql,
+      });
+    }
+    expect(
+      await countWhere(
+        "SELECT count(*) AS n FROM notes WHERE owner_id = ?",
+        other.id
+      )
+    ).toBe(othersNotes);
+    expect(
+      await world
+        .prepare("SELECT * FROM profiles WHERE user_id = ?")
+        .bind(other.id)
+        .first()
+    ).toEqual(othersProfile);
+  });
+
+  // §7 case 9
+  it("is ProfileNotFound the second time", async () => {
+    await deleting().deleteAccount(person);
+
+    await expect(deleting().deleteAccount(person)).rejects.toBeInstanceOf(
+      ProfileNotFound
+    );
+  });
+
+  // §7 case 10
+  it("answers ProfileNotFound to a preview for a deleted actor", async () => {
+    await deleting().deleteAccount(person);
+
+    await expect(deleting().deletionPreview(person)).rejects.toBeInstanceOf(
+      ProfileNotFound
     );
   });
 });

@@ -5,7 +5,10 @@
 # Ask pill: it opens the global chat since phase 7 (docs/spec/phase-7.md §8), and the phase-7 flows
 # own it. Nor is the magnifier: it pushes Search since phase 8 (docs/spec/phase-8.md §8), and
 # phase-8/search-empty.yaml owns it. Nor is the folder button: it opens the folders drawer since
-# phase 9 (docs/spec/phase-9.md §8), and phase-9/folders-empty.yaml owns it.
+# phase 9 (docs/spec/phase-9.md §8), and phase-9/folders-empty.yaml owns it. Nor are Get desktop and
+# the events card: they open the Get desktop sheet and the work-email upsell since phase 10
+# (docs/spec/phase-10.md §8), and phase-10/get-desktop.yaml and phase-10/work-email.yaml own them.
+# The phone button stays inert.
 appId: ${APP_ID}
 name: Home shell controls are inert and do not crash
 tags:
@@ -16,11 +19,5 @@ env:
 ---
 - runFlow: ../subflows/open-home.yaml
 - tapOn:
-    id: home-get-desktop-button
-- runFlow: ../subflows/assert-home-unobstructed.yaml
-- tapOn:
     id: home-phone-button
-- runFlow: ../subflows/assert-home-unobstructed.yaml
-- tapOn:
-    id: home-events-card
 - runFlow: ../subflows/assert-home-unobstructed.yaml

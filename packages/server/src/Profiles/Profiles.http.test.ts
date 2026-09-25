@@ -1,3 +1,4 @@
+import * as ProfileShapes from "@gc/domain/Domain/Profile";
 import { Profile } from "@gc/domain/Domain/Profile";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -42,6 +43,15 @@ const appAs = (who: Actor | null) => {
       completeOnboarding: answer("completeOnboarding", {
         onboardedAt: 1_700_000_000_000,
       }),
+      // Phase 10 (docs/spec/phase-10.md §6.1): the preview answers a count, the delete nothing.
+      deleteAccount: (...args: unknown[]) => {
+        calls.push({ args, method: "deleteAccount" });
+        return Promise.resolve();
+      },
+      deletionPreview: (...args: unknown[]) => {
+        calls.push({ args, method: "deletionPreview" });
+        return Promise.resolve({ noteCount: 3 });
+      },
       me: answer("me"),
       update: (caller: Actor, patch: Record<string, unknown>) =>
         answer("update", patch)(caller, patch),
@@ -167,6 +177,65 @@ describe("POST /me/onboarding", () => {
     const { app, calls } = appAs(null);
 
     const res = await app.request("/me/onboarding", { method: "POST" });
+
+    expect(res.status).toBe(401);
+    expect(calls).toEqual([]);
+  });
+});
+
+// ── Phase 10: the deletion preview and DELETE /me (docs/spec/phase-10.md §7, §6.1) ────────────
+// That a following GET /me with the same cookie is a 401 needs the real session middleware, so it is
+// `apps/api/src/e2e-harness.test.ts`'s.
+
+type Schema = { safeParse: (value: unknown) => { success: boolean } };
+
+const deletionPreviewShape = (): Schema => {
+  const found = (ProfileShapes as unknown as Record<string, Schema | undefined>)
+    .DeletionPreview;
+  if (found === undefined) {
+    throw new Error("no DeletionPreview in @gc/domain/Domain/Profile");
+  }
+  return found;
+};
+
+describe("GET /me/deletion-preview", () => {
+  it("answers 200 with the caller's live note count, parsing as DeletionPreview", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await app.request("/me/deletion-preview");
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ noteCount: 3 });
+    expect(deletionPreviewShape().safeParse(body).success).toBe(true);
+    expect(calls).toEqual([{ args: [actor()], method: "deletionPreview" }]);
+  });
+
+  it("is 401 without an actor, and never reaches the service", async () => {
+    const { app, calls } = appAs(null);
+
+    const res = await app.request("/me/deletion-preview");
+
+    expect(res.status).toBe(401);
+    expect(calls).toEqual([]);
+  });
+});
+
+describe("DELETE /me", () => {
+  it("answers 204 with an empty body, having handed the service the caller", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await app.request("/me", { method: "DELETE" });
+
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+    expect(calls).toEqual([{ args: [actor()], method: "deleteAccount" }]);
+  });
+
+  it("is 401 without an actor, and never reaches the service", async () => {
+    const { app, calls } = appAs(null);
+
+    const res = await app.request("/me", { method: "DELETE" });
 
     expect(res.status).toBe(401);
     expect(calls).toEqual([]);

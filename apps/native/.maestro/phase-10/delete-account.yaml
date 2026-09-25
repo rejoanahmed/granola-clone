@@ -1,0 +1,88 @@
+# AC9, the phase-10 exit (docs/spec/phase-10.md §8, §3.3, designed): Delete Account first checks how
+# many notes would be lost (person has three live ones, §6.5), Close backs out with nothing deleted,
+# and confirming deletes the account and lands on welcome. A relaunch with the Keychain kept stays
+# signed out, and signing in again with the same address is a new account, so it onboards.
+#
+# The account is gone for the rest of this flow only: the next flow's reset and seed re-create
+# person under the same id (§6.5).
+appId: ${APP_ID}
+name: Delete the account
+tags:
+  - phase-10
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: profile-delete
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- assertVisible:
+    id: profile-delete-note
+- tapOn:
+    id: profile-delete
+- extendedWaitUntil:
+    visible:
+      id: delete-account-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: delete-account-body
+      text: You’ll lose 3 notes\. This can’t be undone\.
+    timeout: 15000
+- assertVisible:
+    id: delete-account-confirm
+    text: Delete account
+- takeScreenshot: phase-10-delete-sheet
+
+- tapOn:
+    id: delete-account-close
+- extendedWaitUntil:
+    notVisible:
+      id: delete-account-sheet
+    timeout: 10000
+- assertVisible:
+    id: profile-screen
+
+- tapOn:
+    id: profile-delete
+- extendedWaitUntil:
+    visible:
+      id: delete-account-confirm
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: delete-account-confirm
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 30000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertNotVisible:
+    id: home-screen
+
+- runFlow:
+    file: ../subflows/sign-in.yaml
+    env:
+      EMAIL: e2e-person@gcnotes.test
+- extendedWaitUntil:
+    visible:
+      id: onboarding-name-screen
+    timeout: 30000

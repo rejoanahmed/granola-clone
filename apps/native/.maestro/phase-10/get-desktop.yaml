@@ -1,0 +1,68 @@
+# AC10 (docs/spec/phase-10.md §8, #51, #89): Get desktop opens from home's button and from the
+# settings banner; Done closes it; Remind me later closes it with a toast and mails the caller a link
+# through the fake Email port (designed). Share link opens the system share sheet and is checked by
+# hand (§9).
+appId: ${APP_ID}
+name: The Get desktop sheet, from home and from settings
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- tapOn:
+    id: home-get-desktop-button
+- extendedWaitUntil:
+    visible:
+      id: desktop-sheet
+    timeout: 10000
+- assertVisible:
+    id: desktop-hero
+- assertVisible:
+    id: desktop-title
+    text: Meeting notes on your computer
+- assertVisible:
+    id: desktop-body
+    text: Take notes on video calls with Notes for Mac or Windows\.
+- assertVisible:
+    id: desktop-share
+    text: Share link
+- assertVisible:
+    id: desktop-remind
+    text: Remind me later
+- assertVisible:
+    id: desktop-done
+    text: Done
+- takeScreenshot: phase-10-get-desktop
+- tapOn:
+    id: desktop-done
+- extendedWaitUntil:
+    notVisible:
+      id: desktop-sheet
+    timeout: 10000
+- runFlow: ../subflows/assert-home-unobstructed.yaml
+
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: settings-desktop-banner
+- extendedWaitUntil:
+    visible:
+      id: desktop-sheet
+    timeout: 10000
+- tapOn:
+    id: desktop-remind
+- extendedWaitUntil:
+    notVisible:
+      id: desktop-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: We’ll email you a link to get Notes on your computer\.
+    timeout: 10000
+- runScript:
+    file: ../scripts/e2e-support.js
+    env:
+      KIND: desktop-reminder
+      EXPECT_SUBJECT: Get Notes for Mac or Windows

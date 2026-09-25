@@ -1,0 +1,52 @@
+# AC7 (docs/spec/phase-10.md §8, §3.9, designed): Send feedback is the bug form's sibling with no
+# Diagnostics section; a sent message closes the sheet with its toast and reaches the fake Email
+# port's outbox under the discovered subject line.
+appId: ${APP_ID}
+name: Send feedback through the fake email port
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-feedback
+- extendedWaitUntil:
+    visible:
+      id: feedback-sheet
+    timeout: 10000
+- assertVisible:
+    id: feedback-send
+    enabled: false
+- assertNotVisible:
+    id: report-bug-diagnostics
+- takeScreenshot: phase-10-feedback
+
+- tapOn:
+    id: feedback-message
+- inputText: Love the search
+- extendedWaitUntil:
+    visible:
+      id: feedback-send
+      enabled: true
+    timeout: 5000
+- tapOn:
+    id: feedback-send
+- extendedWaitUntil:
+    notVisible:
+      id: feedback-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Thanks for your feedback\.
+    timeout: 10000
+- runScript:
+    file: ../scripts/e2e-support.js
+    env:
+      KIND: feedback
+      EXPECT_SUBJECT: "Feedback on Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      EXPECT_BODY: Love the search

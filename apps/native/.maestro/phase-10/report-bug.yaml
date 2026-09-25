@@ -1,0 +1,96 @@
+# AC6 (docs/spec/phase-10.md §8, #90): Report a bug opens with Send disabled and diagnostics on; a
+# blank message keeps Send disabled; a sent report closes the sheet with a toast and reaches the
+# fake Email port's outbox; the next open starts empty; Close returns to Settings.
+#
+# Diagnostics is switched off before the message is typed rather than after (§8 has it after): the
+# order changes nothing that is sent, and it keeps the tap clear of the keyboard the message field
+# raises over the diagnostics card.
+appId: ${APP_ID}
+name: Report a bug through the fake email port
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-report-bug
+- extendedWaitUntil:
+    visible:
+      id: report-bug-sheet
+    timeout: 10000
+- assertVisible:
+    id: report-bug-send
+    enabled: false
+- assertVisible:
+    id: report-bug-message-card
+- assertVisible:
+    id: report-bug-diagnostics
+    selected: true
+- takeScreenshot: phase-10-report-bug
+
+- tapOn:
+    id: report-bug-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: report-bug-diagnostics
+      selected: false
+    timeout: 5000
+
+- tapOn:
+    id: report-bug-message
+- inputText: "   "
+- assertVisible:
+    id: report-bug-send
+    enabled: false
+- eraseText: 10
+- inputText: "Steps: tapped Share twice"
+- extendedWaitUntil:
+    visible:
+      id: report-bug-send
+      enabled: true
+    timeout: 5000
+- tapOn:
+    id: report-bug-send
+- extendedWaitUntil:
+    notVisible:
+      id: report-bug-sheet
+    timeout: 15000
+- assertVisible:
+    id: settings-screen
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Thanks — your report was sent\.
+    timeout: 10000
+- runScript:
+    file: ../scripts/e2e-support.js
+    env:
+      KIND: bug-report
+      EXPECT_SUBJECT: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      EXPECT_BODY: "Diagnostics: not included"
+
+# The draft is not kept (§3.8): a second open starts from the placeholder.
+- tapOn:
+    id: settings-report-bug
+- extendedWaitUntil:
+    visible:
+      id: report-bug-sheet
+    timeout: 10000
+- assertNotVisible:
+    id: report-bug-message
+    text: "Steps: tapped Share twice"
+- assertVisible:
+    id: report-bug-send
+    enabled: false
+- tapOn:
+    id: report-bug-close
+- extendedWaitUntil:
+    notVisible:
+      id: report-bug-sheet
+    timeout: 10000
+- assertVisible:
+    id: settings-screen
