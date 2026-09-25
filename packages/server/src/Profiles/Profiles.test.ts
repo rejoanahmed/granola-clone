@@ -75,7 +75,11 @@ afterEach(() => {
 const repo = () => makeProfilesRepo(makeDrizzle(d1));
 
 const service = (clock: Clock = fixedClock(AT)): ProfilesService =>
-  makeProfilesService({ clock, repo: repo() });
+  makeProfilesService({
+    clock,
+    notes: makeNotesRepo(makeDrizzle(d1)),
+    repo: repo(),
+  });
 
 // The real repository, except that its read deletes the account on the way out: the window
 // between `existing()` and the write, forced open.
@@ -83,6 +87,7 @@ const vanishingAfterRead = (): ProfilesService => {
   const real = repo();
   return makeProfilesService({
     clock: fixedClock(AT),
+    notes: makeNotesRepo(makeDrizzle(d1)),
     repo: {
       ...real,
       byId: async (id) => {
