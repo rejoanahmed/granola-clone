@@ -1,3 +1,4 @@
+import type { ChatModelId, ChatScopeKind } from "@gc/domain/Domain/Chat";
 import type { Utterance } from "@gc/domain/Domain/Recording";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 
@@ -30,4 +31,45 @@ export type NoteAnswer = { readonly raw: string; readonly truncated: boolean };
 // each onto a queue decision and, in the end, a `GenerationFailure`.
 export type LlmPort = {
   generateNote: (request: NoteRequest) => Promise<NoteAnswer>;
+};
+
+// ── Chat (phase 7) ─────────────────────────────────────────────────────────────────────────────
+
+// Asked before the first delta, and again while held: `hold` is how a flow keeps "Thinking..." on
+// screen. Separate from `LlmMode` because the two switches are flipped independently.
+export type ChatLlmMode = "auto" | "fail" | "hold";
+
+// The whole answer has to arrive inside this; the chat path never retries on its own.
+export const CHAT_LLM_TIMEOUT_MS = 60_000;
+
+export type ChatContextNote = {
+  readonly bodyMarkdown: string;
+  // The citation number the model must write as `[index]`.
+  readonly index: number;
+  readonly startedAt: Timestamp;
+  readonly title: string;
+  // "" when the note has no recording.
+  readonly transcriptText: string;
+};
+
+export type ChatAnswerRequest = {
+  readonly history: readonly {
+    readonly content: string;
+    readonly role: "assistant" | "user";
+  }[];
+  // `<assistantMessageId>:<attempt>`, the first attempt being 1.
+  readonly key: string;
+  readonly model: ChatModelId;
+  // Only what retrieval handed over: the model never sees a note it was not given.
+  readonly notes: readonly ChatContextNote[];
+  readonly question: string;
+  readonly scope: ChatScopeKind;
+  readonly timeoutMs: number;
+};
+
+// Merged into `LlmPort` by the build that implements the fake's chat half. Deltas are words with
+// their trailing space; failures are thrown as the `@gc/domain/Llm/Errors` classes.
+export type ChatLlmPort = {
+  streamAnswer: (request: ChatAnswerRequest) => AsyncIterable<string>;
+  titleChat: (request: { readonly question: string }) => Promise<string>;
 };

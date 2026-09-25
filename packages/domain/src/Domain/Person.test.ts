@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 7: the person key is specified (phase-7.md §6.2, §11 API 1), not built
 import * as Person from "./Person";
 
 // docs/spec/phase-7.md §6.2 and §7 case 22. A person is not a row: they are whoever appears as an

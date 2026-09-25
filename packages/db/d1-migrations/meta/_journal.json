@@ -43,6 +43,13 @@
       "when": 1790281854295,
       "tag": "0005_note_generations",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790303477637,
+      "tag": "0006_chats",
+      "breakpoints": true
     }
   ]
 }

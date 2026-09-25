@@ -212,3 +212,21 @@
 - **An edit to the fallback body while generating is covered by a unit test, not a flow.** The
   page hides the body while generating, so no flow can reach it; `Generations.test.ts` "keeps a body
   edited while generating" pins the user-wins rule through the service.
+
+## Phase 7 API
+
+- **No live LLM for chat.** `streamAnswer` and `titleChat` exist only in `LlmFake`. A live client
+  needs a prompt that emits `[k]` markers from the numbered context, a streaming transport, and a
+  real model list behind the `ChatModelId` ids; the model list is fake by design, with neutral
+  names. The stub: the fake runs everywhere, under the phase-6 `LLM_MODE`, and `live` is still
+  refused at startup.
+- **Retrieval is keyword scoring, not semantic.** `searchTerms` and `scoreNote` are enough to prove
+  scoping and ownership and to drive the UI; a real product would embed the notes. Recorded, not
+  built.
+- **Person scope has an interim entry.** The attendees-sheet row opens person chat until phase 8's
+  person page (#65) exists and takes over the entry through its Ask pill (phase-7.md §3.7).
+- **Streaming on device relies on `expo/fetch`.** React Native's global `fetch` exposes no response
+  body stream on iOS, so `askChat` takes the fetch as a parameter and native passes `expo/fetch`.
+  If it does not stream through a dev build, the stub is to read the whole body at `done` and render
+  it at once: the UI's states are unchanged and only the token-by-token growth is lost. Record it
+  here if that happens.

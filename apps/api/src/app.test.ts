@@ -749,7 +749,6 @@ describe("the chats routes, phase 7", () => {
   ] as const)(
     "renders %s through on-error as %i with its details",
     async (tag, status) => {
-      // @ts-expect-error phase 7: the chat errors are specified (phase-7.md §6.2), not built
       const errors = (await import("@gc/domain/Chats/Errors")) as Record<
         string,
         ErrorClass

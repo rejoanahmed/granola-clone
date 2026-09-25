@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 7: the chat shapes are specified (phase-7.md §6.2, §11 API 1), not built
 import * as Chat from "./Chat";
 
 // docs/spec/phase-7.md §6.2 and §4. The chips, the placeholders and the limits are one constant

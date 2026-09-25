@@ -1,8 +1,5 @@
-// @ts-expect-error phase 7: the chat errors are specified (phase-7.md §6.2, §11 API 2), not built
 import * as ChatErrors from "@gc/domain/Chats/Errors";
-// @ts-expect-error phase 7: the SSE event union is specified (phase-7.md §6.4, §11 API 2), not built
 import * as Events from "@gc/domain/Chats/Events";
-// @ts-expect-error phase 7: the chat shapes are specified (phase-7.md §6.2, §11 API 1), not built
 import * as Chat from "@gc/domain/Domain/Chat";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";

@@ -1,4 +1,3 @@
-// @ts-expect-error phase 7: the chat errors are specified (phase-7.md §6.2, §11 API 2), not built
 import * as ChatErrors from "@gc/domain/Chats/Errors";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

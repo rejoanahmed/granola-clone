@@ -1,5 +1,4 @@
 import { describe, expect, it } from "bun:test";
-// @ts-expect-error phase 7: the SSE parser is specified (phase-7.md §7, §11 API 8), not built
 import * as ChatStream from "./chatStream";
 
 // docs/spec/phase-7.md §7 "packages/apiclient/src/chatStream.test.ts". The parser turns the bytes
