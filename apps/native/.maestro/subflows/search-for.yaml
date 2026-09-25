@@ -1,0 +1,15 @@
+# Replace whatever the search field holds with QUERY (docs/spec/phase-8.md §8). Results are live,
+# so the caller waits for its own outcome, which also absorbs the 250 ms debounce.
+#
+#   - runFlow:
+#       file: ../subflows/search-for.yaml
+#       env:
+#         QUERY: standup
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: search-input
+- eraseText
+- inputText: ${QUERY}

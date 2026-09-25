@@ -1,0 +1,21 @@
+# From home, push Search (docs/spec/phase-8.md §8) and wait for its empty state and its input.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-search-button
+    timeout: 30000
+- tapOn:
+    id: home-search-button
+- extendedWaitUntil:
+    visible:
+      id: search-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: search-empty
+    timeout: 10000
+- assertVisible:
+    id: search-input

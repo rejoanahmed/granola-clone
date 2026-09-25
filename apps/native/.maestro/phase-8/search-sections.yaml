@@ -1,0 +1,57 @@
+# AC4 (docs/spec/phase-8.md §8, #61, #62): one query fills both sections, meetings newest first, and
+# Clear returns to the empty state with the keyboard down.
+appId: ${APP_ID}
+name: Search answers in People and Previous meetings
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: ra
+- extendedWaitUntil:
+    visible:
+      id: search-person-0-name
+      text: Priya Raman
+    timeout: 15000
+- assertVisible:
+    id: search-section-people
+- assertVisible:
+    id: search-person-0-email
+    text: priya@example.com
+- assertNotVisible:
+    id: search-person-1
+- extendedWaitUntil:
+    visible:
+      id: search-note-not_e2e_solo
+    timeout: 10000
+- assertVisible:
+    id: search-section-meetings
+- assertVisible:
+    id: search-note-not_e2e_launch
+    above:
+      id: search-note-not_e2e_solo
+- assertVisible:
+    id: search-note-not_e2e_solo
+    below:
+      id: search-note-not_e2e_launch
+- takeScreenshot: phase-8-search-results
+- tapOn:
+    id: search-clear
+- extendedWaitUntil:
+    visible:
+      id: search-empty
+    timeout: 10000
+- assertNotVisible:
+    id: search-clear
+- extendedWaitUntil:
+    visible:
+      id: search-keyboard-toggle
+      text: Show keyboard
+    timeout: 5000
+- takeScreenshot: phase-8-search-cleared

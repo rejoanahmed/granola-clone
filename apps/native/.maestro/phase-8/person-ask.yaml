@@ -1,0 +1,53 @@
+# AC8 (docs/spec/phase-8.md §8, #66): the person page's Ask pill opens phase 7's person chat, and
+# Back returns to the page.
+appId: ${APP_ID}
+name: Asking from a person page
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: priya
+- extendedWaitUntil:
+    visible:
+      id: search-person-0
+    timeout: 15000
+- tapOn:
+    id: search-person-0
+- extendedWaitUntil:
+    visible:
+      id: person-note-not_e2e_launch
+    timeout: 15000
+- tapOn:
+    id: person-ask-button
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
+- assertVisible:
+    id: chat-back
+- assertVisible:
+    id: chat-title
+    text: Priya Raman
+- assertVisible:
+    id: chat-chip-0
+    text: List action items
+- assertVisible:
+    id: chat-chip-1
+    text: Write follow-up email
+- assertVisible:
+    id: chat-chip-2
+    text: List Q&A
+- takeScreenshot: phase-8-person-chat
+- tapOn:
+    id: chat-back
+- extendedWaitUntil:
+    visible:
+      id: person-screen
+    timeout: 10000

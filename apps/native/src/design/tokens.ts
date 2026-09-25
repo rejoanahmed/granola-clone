@@ -161,7 +161,9 @@ export const sizes = {
   hairline: 1,
   iconButton: 44,
   listTile: 44,
+  personAvatar: 62,
   pillLarge: 56,
+  searchAvatar: 46,
   sendButton: 36,
   sendGlyph: 20,
 } as const;

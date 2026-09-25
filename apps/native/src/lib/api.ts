@@ -347,3 +347,32 @@ export async function removeNoteFromList(
   await queryClient.cancelQueries({ queryKey: keys.notes.list() });
   mapItems(queryClient, (items) => items.filter((item) => item.id !== id));
 }
+
+// ---- Search and people (docs/spec/phase-8.md §3, §6) ----
+
+export type SearchResults = Awaited<ReturnType<typeof client.search>>;
+export type SearchPerson = SearchResults["people"][number];
+export type SearchNote = SearchResults["notes"][number];
+export type PersonDetail = Awaited<ReturnType<typeof client.getPerson>>;
+
+/** Keyed on the trimmed draft; the caller only enables it for a non-empty one. */
+export const searchQuery = (q: string) =>
+  api.query(keys.search(q), ({ signal }) =>
+    client.search({ query: { q } }, { signal })
+  );
+
+export const personQuery = (personKey: string) =>
+  api.query(keys.people.detail(personKey), ({ signal }) =>
+    client.getPerson({ params: { personKey } }, { signal })
+  );
+
+// A distinct entry under home's `notes.list()` prefix, so a trash or rename refreshes it too.
+export const personNotesInfiniteQuery = (person: string) =>
+  api.infinite<NoteListItem>(
+    keys.notes.list({ person }),
+    (cursor, { signal }) =>
+      client.listNotes(
+        { query: { cursor, limit: NOTES_PAGE_SIZE, person } },
+        { signal }
+      )
+  );

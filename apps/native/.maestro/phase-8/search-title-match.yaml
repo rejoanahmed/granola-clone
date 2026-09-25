@@ -1,0 +1,48 @@
+# AC2 (docs/spec/phase-8.md §8, #61): a title match lists only that meeting, opens it, and Back keeps
+# the query and its results.
+appId: ${APP_ID}
+name: Searching finds a meeting by its title
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: standup
+- extendedWaitUntil:
+    visible:
+      id: search-note-not_e2e_standup
+    timeout: 15000
+- assertVisible:
+    id: search-section-meetings
+- assertVisible:
+    id: search-note-not_e2e_standup-title
+    text: Weekly standup
+- assertVisible:
+    id: search-note-not_e2e_standup-date
+    text: Sat 12 Sep
+- assertNotVisible:
+    id: search-section-people
+- assertNotVisible:
+    id: search-note-not_e2e_launch
+- tapOn:
+    id: search-note-not_e2e_standup
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Weekly standup
+    timeout: 15000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: search-note-not_e2e_standup
+    timeout: 10000
+- assertVisible:
+    id: search-input
+    text: standup

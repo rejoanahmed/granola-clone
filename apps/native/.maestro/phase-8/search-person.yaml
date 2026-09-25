@@ -1,0 +1,67 @@
+# AC6 (docs/spec/phase-8.md §8, #65): a person row opens their page, which lists only their meetings;
+# a meeting opens and Back returns through the page to search with the query intact.
+appId: ${APP_ID}
+name: Search opens a person and their meeting
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: priya
+- extendedWaitUntil:
+    visible:
+      id: search-person-0
+    timeout: 15000
+- tapOn:
+    id: search-person-0
+- extendedWaitUntil:
+    visible:
+      id: person-screen
+    timeout: 15000
+- assertVisible:
+    id: person-name
+    text: Priya Raman
+- extendedWaitUntil:
+    visible:
+      id: person-note-not_e2e_launch-title
+      text: Launch planning review
+    timeout: 15000
+- assertVisible:
+    id: person-email
+    text: .*priya@example\.com.*
+- assertVisible:
+    id: person-domain
+    text: .*example\.com.*
+- assertVisible:
+    id: person-day-2026-09-12
+    text: Sat 12 Sep
+- assertNotVisible:
+    id: person-note-not_e2e_standup
+- tapOn:
+    id: person-note-not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: note-title
+      text: Launch planning review
+    timeout: 15000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: person-screen
+    timeout: 10000
+- tapOn:
+    id: person-back
+- extendedWaitUntil:
+    visible:
+      id: search-screen
+    timeout: 10000
+- assertVisible:
+    id: search-input
+    text: priya

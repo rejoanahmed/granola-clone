@@ -683,11 +683,13 @@ apps/native/.maestro/
     send-chat.yaml       TEXT param: type into the composer, wait for Send, tap it
     wait-for-answer.yaml N param: wait for answer N's action row, which appears only after `done`
     swipe-history-row.yaml  THREAD_ID param: swipe a history row left until Delete and Pin show
+    open-search.yaml     from home, the magnifier, then wait for Search's empty state and its input
+    search-for.yaml      QUERY param: tap the search field, erase it, type QUERY; the caller waits
     assert-no-new-note.yaml  home holds only the seeded rows and the + FAB
     tap-footer-link.yaml TARGET/EXPECT/TIMEOUT: tap a keyboard-pinned footer control that may move
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-7/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-8/   tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -770,7 +772,8 @@ phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-
 (gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
 (#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
 `phase-6-short` (#40, #107) from short-recording.yaml; phase 7 adds the eleven `phase-7-*` shots
-listed in docs/spec/phase-7.md §8. Run with
+listed in docs/spec/phase-7.md §8, and phase 8 the seven `phase-8-*` shots listed in
+docs/spec/phase-8.md §8 (#60–#66). Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

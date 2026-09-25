@@ -1,0 +1,49 @@
+# AC5 (docs/spec/phase-8.md §8, #63): nonsense, a trashed note's title and another user's note title
+# all answer No results, each labelled with its own query.
+appId: ${APP_ID}
+name: Search shows no results
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: zzqx
+- extendedWaitUntil:
+    visible:
+      id: search-no-results-query
+      text: for “zzqx”
+    timeout: 15000
+- assertVisible:
+    id: search-no-results-title
+    text: No results
+- assertNotVisible:
+    id: search-results
+- takeScreenshot: phase-8-search-no-results
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: archived
+- extendedWaitUntil:
+    visible:
+      id: search-no-results-query
+      text: for “archived”
+    timeout: 15000
+- assertNotVisible:
+    id: search-results
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: other
+- extendedWaitUntil:
+    visible:
+      id: search-no-results-query
+      text: for “other”
+    timeout: 15000
+- assertNotVisible:
+    id: search-results

@@ -3,7 +3,8 @@
 # The avatar is no longer one of them: it opens Settings since phase 3, and sign-out.yaml owns it.
 # Nor is the + FAB: it starts a recording since phase 5, and the phase-5 flows own it. Nor is the
 # Ask pill: it opens the global chat since phase 7 (docs/spec/phase-7.md §8), and the phase-7 flows
-# own it.
+# own it. Nor is the magnifier: it pushes Search since phase 8 (docs/spec/phase-8.md §8), and
+# phase-8/search-empty.yaml owns it.
 appId: ${APP_ID}
 name: Home shell controls are inert and do not crash
 tags:
@@ -21,9 +22,6 @@ env:
 - runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-phone-button
-- runFlow: ../subflows/assert-home-unobstructed.yaml
-- tapOn:
-    id: home-search-button
 - runFlow: ../subflows/assert-home-unobstructed.yaml
 - tapOn:
     id: home-events-card

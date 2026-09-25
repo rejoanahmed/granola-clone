@@ -129,6 +129,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
               accessibilityLabel="Search"
               bare
               icon={Search}
+              onPress={() => router.push("/search")}
               testID="home-search-button"
             />
             <IconButton

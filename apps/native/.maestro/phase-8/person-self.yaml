@@ -1,0 +1,54 @@
+# AC7 (docs/spec/phase-8.md §8, #65): the caller's own page groups every live meeting of theirs by
+# day, newest first, and never shows a trashed note or another user's.
+appId: ${APP_ID}
+name: The self person page lists every meeting by day
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: e2e
+- extendedWaitUntil:
+    visible:
+      id: search-person-0-name
+      text: E2E Person
+    timeout: 15000
+- assertNotVisible:
+    id: search-section-meetings
+- tapOn:
+    id: search-person-0
+- extendedWaitUntil:
+    visible:
+      id: person-note-not_e2e_solo
+    timeout: 15000
+- assertVisible:
+    id: person-note-not_e2e_launch
+    below:
+      id: person-day-2026-09-12
+- assertVisible:
+    id: person-note-not_e2e_standup
+    below:
+      id: person-note-not_e2e_launch
+- assertVisible:
+    id: person-day-2026-08-05
+    text: Wed 5 Aug
+    below:
+      id: person-note-not_e2e_standup
+- assertVisible:
+    id: person-note-not_e2e_solo
+    below:
+      id: person-day-2026-08-05
+- assertNotVisible:
+    id: person-note-not_e2e_archived
+- assertNotVisible:
+    id: person-note-not_e2e_other
+- assertVisible:
+    id: person-domain
+    text: .*gcnotes\.test.*
+- takeScreenshot: phase-8-person

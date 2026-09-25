@@ -2,7 +2,7 @@ import { ChatScreen } from "@native/features/chat/ChatScreen";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 
-// Person-scoped Ask (#66), reached from an attendee row until phase 8's person page exists.
+// Person-scoped Ask (#66), reached from the person page's Ask pill (docs/spec/phase-8.md §3.2).
 export default function PersonChat() {
   const { name, personKey, thread, title } = useLocalSearchParams<{
     name?: string;

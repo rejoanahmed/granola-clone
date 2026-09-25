@@ -100,6 +100,9 @@ function ThemedLayout() {
           options={{ ...SHEET, sheetAllowedDetents: [1] }}
         />
         <Stack.Screen name="ask/index" options={{ presentation: "modal" }} />
+        {/* Pushes with no native header (docs/spec/phase-8.md §3.1, §3.2), like the note page. */}
+        <Stack.Screen name="search" />
+        <Stack.Screen name="people/[personKey]" />
         <Stack.Screen
           name="ask/history"
           // The large detent too, so the sheet can rise with the keyboard when Search is focused

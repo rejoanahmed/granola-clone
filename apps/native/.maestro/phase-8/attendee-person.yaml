@@ -1,0 +1,42 @@
+# AC9 (docs/spec/phase-8.md §8, §3.4, #16, #65): an attendee row now opens that person's page, not
+# the chat, and Back returns to the note.
+appId: ${APP_ID}
+name: An attendee opens their person page
+tags:
+  - phase-8
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- tapOn:
+    id: note-meta-pill
+- extendedWaitUntil:
+    visible:
+      id: attendees-row-att_e2e_launch_2
+    timeout: 10000
+- tapOn:
+    id: attendees-row-att_e2e_launch_2
+- extendedWaitUntil:
+    visible:
+      id: person-screen
+    timeout: 15000
+- assertNotVisible:
+    id: attendees-sheet
+- assertVisible:
+    id: person-name
+    text: Sam Okafor
+- extendedWaitUntil:
+    visible:
+      id: person-note-not_e2e_launch
+    timeout: 15000
+- tapOn:
+    id: person-back
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
