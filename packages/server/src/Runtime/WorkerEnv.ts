@@ -1,4 +1,5 @@
 import type { FlagshipBinding } from "../Integrations/FeatureFlags/Port";
+import type { GenerationQueueBinding } from "./CloudflareGenerationQueue";
 import type { AudioBucket } from "./R2AudioStore";
 
 // Split so `settingsOf` can hand `AppConfig` a value that cannot contain a live binding.
@@ -12,6 +13,11 @@ export type WorkerResources = {
   readonly DB: D1Database;
   /** Optional: `wrangler dev --local` binds no flag store, and the client fails closed without it. */
   readonly FLAGS?: FlagshipBinding;
+  /**
+   * The note-generation queue's producer. Optional so a test that never settles a transcript can
+   * build the container without one; the queue fails the first send, which the sweep then covers.
+   */
+  readonly GENERATION_QUEUE?: GenerationQueueBinding;
 };
 
 // Optional means the project runs without it: Google sign-in is opt-in, and the harness and the
@@ -37,6 +43,8 @@ export type WorkerSettings = {
   readonly FLAGS_ON?: string;
   readonly GOOGLE_CLIENT_ID?: string;
   readonly GOOGLE_CLIENT_SECRET?: string;
+  /** `fake` (the default) is refused in production, and `live` until a vendor client exists. */
+  readonly LLM_MODE?: "fake" | "live";
   readonly NATIVE_SCHEME: string;
   readonly NODE_ENV: "development" | "production" | "test";
   /** `fake` (the default) is refused in production, and `live` until a vendor client exists. */
@@ -48,6 +56,12 @@ export type Env = WorkerResources & WorkerSettings;
 // The rest destructuring is deliberate: a binding added to `WorkerResources` but not named here is
 // a type error at the return, rather than a binding leaking into `AppConfig`.
 export const settingsOf = (env: Env): WorkerSettings => {
-  const { AUDIO: _audio, DB: _db, FLAGS: _flags, ...settings } = env;
+  const {
+    AUDIO: _audio,
+    DB: _db,
+    FLAGS: _flags,
+    GENERATION_QUEUE: _generationQueue,
+    ...settings
+  } = env;
   return settings;
 };

@@ -54,8 +54,7 @@ const present = (note: Authorized<NoteRecord>, actor: Actor): Note => ({
     .sort((a, b) => Number(b.isMe) - Number(a.isMe)),
   bodyMarkdown: note.bodyMarkdown,
   createdAt: note.createdAt,
-  // Contract stub: the phase-6 build carries the row through NotesRepo's detail read.
-  generation: null,
+  generation: note.generation,
   id: note.id,
   recording: note.recording,
   source: note.source,

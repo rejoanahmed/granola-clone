@@ -8,4 +8,8 @@ export {
   seedD1,
   type TestD1,
 } from "./Database";
+export {
+  type MemoryGenerationQueue,
+  makeMemoryGenerationQueue,
+} from "./GenerationQueue";
 export { sequentialIds } from "./Ids";

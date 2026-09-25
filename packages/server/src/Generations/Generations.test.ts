@@ -4,7 +4,6 @@ import * as LlmErrors from "@gc/domain/Llm/Errors";
 import { NoteNotFound } from "@gc/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
-// @ts-expect-error phase 6: the LLM fake is specified (phase-6.md §6.6, §11 API 4), not built
 import * as LlmFake from "../Integrations/Llm/LlmFake";
 import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import { makeTranscriptionFake } from "../Integrations/Transcription/TranscriptionFake";
@@ -26,9 +25,7 @@ import {
   type TestD1,
 } from "../Testing";
 import { makeMemoryAudioStore } from "../Testing/AudioStore";
-// @ts-expect-error phase 6: the repository is specified (phase-6.md §11 API 5), not built
 import * as Repo from "./GenerationsRepo";
-// @ts-expect-error phase 6: the service is specified (phase-6.md §6.4, §11 API 5), not built
 import * as Svc from "./GenerationsService";
 
 // docs/spec/phase-6.md §7 cases 1–20: the generations service over the real repositories and the

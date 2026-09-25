@@ -21,6 +21,7 @@ import {
   type TestD1,
 } from "../Testing";
 import * as MemoryAudio from "../Testing/AudioStore";
+import { makeMemoryGenerationQueue } from "../Testing/GenerationQueue";
 import * as Repo from "./RecordingsRepo";
 import * as Svc from "./RecordingsService";
 
@@ -156,6 +157,7 @@ const service = (
   Svc.makeRecordingsService({
     audio,
     clock,
+    generationQueue: makeMemoryGenerationQueue(),
     ids,
     repo: repo(),
     transcription: overrides.transcription ?? fake,
@@ -908,7 +910,14 @@ describe("RecordingsService.retry", () => {
       await repo().fail(id, staleJob, "transcription_unavailable", now)
     ).toBe(false);
     const staleDone = await makeUnitOfWork(d1).commit((stage) =>
-      repo().stageComplete(stage, id, staleJob, [], now)
+      repo().stageComplete(
+        stage,
+        id,
+        staleJob,
+        [],
+        "gen_0000000000009999" as never,
+        now
+      )
     );
     expect(staleDone.changes).toBe(0);
     await expect(service().get(actor(), recording.id)).resolves.toMatchObject({

@@ -320,7 +320,6 @@ const RETRY_PATH = `/notes/${NOTE_ID}/generation/retry`;
 type Router = typeof notesRouter;
 
 const retryAppAs = async (who: Actor | null, answer?: () => unknown) => {
-  // @ts-expect-error phase 6: the retry route's router is specified (phase-6.md §11 API 5), not built
   const http = await import("../Generations/Http");
   const { generationsRouter } = http as { generationsRouter: Router };
   const calls: Call[] = [];

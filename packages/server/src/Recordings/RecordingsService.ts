@@ -1,3 +1,4 @@
+import { GenerationId } from "@gc/domain/Domain/Generation";
 import type { UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
@@ -37,12 +38,14 @@ import {
 } from "@gc/domain/Transcription/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
+import type { GenerationQueue } from "../Generations/GenerationQueue";
 import type {
   TranscriptionAnswer,
   TranscriptionPort,
 } from "../Integrations/Transcription/Port";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";
+import { logEvent } from "../Runtime/Logger";
 import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { AudioStore } from "./AudioStore";
 import { canEditRecording, canReadRecording } from "./Policy";
@@ -55,6 +58,8 @@ import type {
 export type RecordingsDeps = {
   readonly audio: AudioStore;
   readonly clock: Clock;
+  // Told once the transcript lands; the job row itself is written in the same batch.
+  readonly generationQueue: GenerationQueue;
   readonly ids: Ids;
   readonly repo: RecordingsRepo;
   readonly transcription: TranscriptionPort;
@@ -223,10 +228,26 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
       ...segment,
       id: deps.ids.generate("seg_"),
     }));
+    const generationId = GenerationId.parse(deps.ids.generate("gen_"));
     const claimed = await deps.uow.commit((stage) =>
-      deps.repo.stageComplete(stage, id, jobId, segments, now)
+      deps.repo.stageComplete(stage, id, jobId, segments, generationId, now)
     );
-    return claimed.changes > 0 ? "completed" : "lost";
+    if (claimed.changes === 0) {
+      return "lost";
+    }
+    // Logged and swallowed: the recording is already `transcribed` and the row already `queued`,
+    // so failing the upload would buy only a replay that can no longer claim anything, and the
+    // generations sweep sends the row once it has waited.
+    try {
+      await deps.generationQueue.send({ generationId });
+    } catch (error) {
+      logEvent("generation.enqueue.failed", {
+        error: String(error),
+        generationId,
+        recordingId: id,
+      });
+    }
+    return "completed";
   };
 
   // Submits the stored audio and settles whatever comes back, on a row already claimed into
