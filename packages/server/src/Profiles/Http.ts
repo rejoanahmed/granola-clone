@@ -1,5 +1,7 @@
 import {
   completeOnboardingRoute,
+  deleteMeRoute,
+  getDeletionPreviewRoute,
   getMeRoute,
   patchMeRoute,
 } from "@gc/domain/Profile/Contract";
@@ -27,4 +29,14 @@ export const profilesRouter = new OpenAPIHono<AppEnv>()
       await c.var.svc.profiles.completeOnboarding(requireActor(c.var.actor)),
       200
     )
-  );
+  )
+  .openapi(getDeletionPreviewRoute, async (c) =>
+    c.json(
+      await c.var.svc.profiles.deletionPreview(requireActor(c.var.actor)),
+      200
+    )
+  )
+  .openapi(deleteMeRoute, async (c) => {
+    await c.var.svc.profiles.deleteAccount(requireActor(c.var.actor));
+    return c.body(null, 204);
+  });

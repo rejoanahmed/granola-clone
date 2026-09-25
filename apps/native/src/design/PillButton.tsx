@@ -37,6 +37,8 @@ type Props = {
   /** Draw the glyph filled rather than stroked, as the Ask pill's speech bubble is. */
   readonly filledIcon?: boolean;
   readonly icon?: LucideIcon;
+  /** Leading by default; #87's "Get Started →" puts its arrow after the label. */
+  readonly iconPosition?: "leading" | "trailing";
   readonly label: string;
   /** In flight: a spinner replaces the label, taps are ignored, and the testID stays put. */
   readonly loading?: boolean;
@@ -111,6 +113,7 @@ export function PillButton({
   disabledLook = "dim",
   filledIcon = false,
   icon: Icon,
+  iconPosition = "leading",
   label,
   loading = false,
   onPress,
@@ -124,6 +127,14 @@ export function PillButton({
   const isGlass = tone === "glass" || tone === "ask";
   const variant: TypeVariant = isGlass ? "askLabel" : "pillLabel";
   const glyph = isGlass ? sizes.glyphLarge : sizes.glyph;
+  const glyphNode = Icon ? (
+    <Icon
+      color={palette.text}
+      fill={filledIcon ? palette.text : "none"}
+      size={glyph}
+      strokeWidth={ICON_STROKE}
+    />
+  ) : null;
 
   return (
     <Pressable
@@ -143,19 +154,13 @@ export function PillButton({
       testID={testID}
     >
       {loading ? <ActivityIndicator color={palette.text} /> : null}
-      {!loading && Icon ? (
-        <Icon
-          color={palette.text}
-          fill={filledIcon ? palette.text : "none"}
-          size={glyph}
-          strokeWidth={ICON_STROKE}
-        />
-      ) : null}
+      {!loading && Icon && iconPosition === "leading" ? glyphNode : null}
       {loading ? null : (
         <Text color={palette.text} numberOfLines={1} variant={variant}>
           {label}
         </Text>
       )}
+      {!loading && Icon && iconPosition === "trailing" ? glyphNode : null}
     </Pressable>
   );
 }

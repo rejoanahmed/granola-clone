@@ -40,6 +40,13 @@ env:
     visible:
       id: settings-screen
     timeout: 10000
+# Phase 10 (docs/spec/phase-10.md §8): the full settings list puts Sign out and the version below
+# the fold.
+- scrollUntilVisible:
+    element:
+      id: settings-version
+    direction: DOWN
+    timeout: 20000
 - assertVisible:
     id: settings-sign-out
 # app.json's version and ios.buildNumber (§2.6), so a missing build number cannot read as "(0)".

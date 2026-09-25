@@ -9,6 +9,8 @@ import { peopleRouter } from "@gc/server/People/Http";
 import { profilesRouter } from "@gc/server/Profiles/Http";
 import { recordingsRouter } from "@gc/server/Recordings/Http";
 import { searchRouter } from "@gc/server/Search/Http";
+import { settingsRouter } from "@gc/server/Settings/Http";
+import { supportRouter } from "@gc/server/Support/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   authRateLimit,
@@ -54,6 +56,8 @@ app.route("/", chatsRouter);
 app.route("/", peopleRouter);
 app.route("/", searchRouter);
 app.route("/", foldersRouter);
+app.route("/", settingsRouter);
+app.route("/", supportRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.

@@ -1,0 +1,102 @@
+# AC3 (docs/spec/phase-10.md §8, §3.2 Validation, designed): a blank name is refused and reverts, a
+# LinkedIn username outside [A-Za-z0-9-]{3,100} is refused with its message, a pasted profile URL is
+# reduced to the username, and a cleared job title saves as cleared (its placeholder shows again).
+#
+# Each field is ended by moving focus or with Return: both are its `onEndEditing`.
+appId: ${APP_ID}
+name: Profile validation and clearing a field
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+
+- tapOn:
+    id: profile-name
+- eraseText: 40
+- tapOn:
+    id: profile-job-title
+- extendedWaitUntil:
+    visible:
+      id: profile-name-error
+      text: Your name can’t be empty\.
+    timeout: 5000
+- assertVisible:
+    id: profile-name
+    text: E2E Person
+- pressKey: Enter
+
+- scrollUntilVisible:
+    element:
+      id: profile-linkedin
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: profile-linkedin
+- inputText: a b
+- pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: profile-linkedin-error
+      text: Use 3–100 letters, numbers or hyphens\.
+    timeout: 5000
+
+- tapOn:
+    id: profile-linkedin
+- eraseText: 40
+- inputText: https://www.linkedin.com/in/e2e-person/
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible:
+      id: profile-linkedin-error
+    timeout: 5000
+- assertVisible:
+    id: profile-linkedin
+    text: e2e-person
+
+- scrollUntilVisible:
+    element:
+      id: profile-job-title
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: profile-job-title
+- eraseText: 40
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible:
+      id: profile-saving
+    timeout: 10000
+- tapOn:
+    id: profile-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 15000
+# A relaunch, so the reopened profile is read back from the server rather than from the cached
+# `me`: a clear applied only locally would otherwise pass.
+- runFlow: ../subflows/relaunch-app.yaml
+- runFlow: ../subflows/wait-for-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+# An empty iOS field reports its placeholder as its text.
+- assertVisible:
+    id: profile-job-title
+    text: Your job title

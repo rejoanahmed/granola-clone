@@ -827,3 +827,150 @@ describe("POST /e2e/folders, phase 9", () => {
     expect(await countOf("SELECT count(*) AS n FROM folders")).toBe(0);
   });
 });
+
+// ── Phase 10: support mail, settings and deleting an account over the real app ──────────────
+// (docs/spec/phase-10.md §6.1, §7.) The report a flow sends is read back by `scripts/e2e-support.js`
+// through `GET /e2e/support`; what the harness reads is `packages/server/src/E2E/E2E.test.ts`'s,
+// and this is the wire end to end: the session middleware, the email fake writing the outbox, and
+// the cascade that takes a deleted account's session with it.
+
+const withCookie = (
+  cookie: string,
+  method: "DELETE" | "GET" | "PATCH" | "POST",
+  path: string,
+  body?: unknown
+) =>
+  app.request(
+    path,
+    {
+      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: {
+        cookie,
+        origin: API,
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+      },
+      method,
+    },
+    live
+  );
+
+describe("GET /e2e/support, phase 10", () => {
+  it("does not exist when the harness is off", async () => {
+    const response = await app.request(
+      "/e2e/support?kind=bug-report",
+      { headers: { "x-e2e-secret": SECRET } },
+      off
+    );
+
+    expect(response.status).toBe(404);
+  });
+
+  it("reads back the bug report person sent, and 422s the otp kind", async () => {
+    await freshWorld();
+    const cookie = await sessionFor("person");
+
+    const sent = await withCookie(cookie, "POST", "/support/bug-reports", {
+      appVersion: "1.0.0 (1)",
+      includeDiagnostics: false,
+      message: "Steps: tapped Share twice",
+    });
+    const listed = await harness("GET", "/e2e/support?kind=bug-report");
+    const otp = await harness("GET", "/e2e/support?kind=otp");
+
+    expect(sent.status).toBe(202);
+    const receipt = (await sent.json()) as { id: string };
+    expect(listed.status).toBe(200);
+    const { items } = (await listed.json()) as {
+      items: {
+        body: string;
+        payload: Record<string, string>;
+        subject: string;
+        to: string;
+      }[];
+    };
+    expect(items[0]).toMatchObject({
+      payload: { includeDiagnostics: "false", receiptId: receipt.id },
+      subject: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      to: "support@notes.example",
+    });
+    expect(items[0]?.body).toContain("Diagnostics: not included");
+    expect(otp.status).toBe(422);
+  });
+
+  it("is emptied by a reset", async () => {
+    await freshWorld();
+    await withCookie(
+      await sessionFor("person"),
+      "POST",
+      "/me/desktop-reminder"
+    );
+
+    expect((await harness("POST", "/e2e/reset")).status).toBe(200);
+
+    const listed = await harness("GET", "/e2e/support?kind=desktop-reminder");
+    expect(listed.status).toBe(200);
+    await expect(listed.json()).resolves.toEqual({ items: [] });
+  });
+});
+
+describe("/me/settings, phase 10", () => {
+  it("reads the defaults, and a patch is what the next read answers", async () => {
+    await freshWorld();
+    const cookie = await sessionFor("person");
+
+    const before = await withCookie(cookie, "GET", "/me/settings");
+    const patched = await withCookie(cookie, "PATCH", "/me/settings", {
+      notifyUpcomingMeetings: false,
+    });
+    const after = await withCookie(cookie, "GET", "/me/settings");
+
+    expect(before.status).toBe(200);
+    await expect(before.json()).resolves.toEqual({
+      chatDictationAutoSend: true,
+      notifyUpcomingMeetings: true,
+      useDataForTraining: true,
+    });
+    expect(patched.status).toBe(200);
+    await expect(after.json()).resolves.toEqual({
+      chatDictationAutoSend: true,
+      notifyUpcomingMeetings: false,
+      useDataForTraining: true,
+    });
+  });
+});
+
+describe("DELETE /me, phase 10", () => {
+  it("previews person's three live notes, deletes the account, and the same cookie is then a 401", async () => {
+    await freshWorld();
+    const cookie = await sessionFor("person");
+
+    const preview = await withCookie(cookie, "GET", "/me/deletion-preview");
+    const deleted = await withCookie(cookie, "DELETE", "/me");
+    const after = await withCookie(cookie, "GET", "/me");
+
+    expect(preview.status).toBe(200);
+    await expect(preview.json()).resolves.toEqual({ noteCount: 3 });
+    expect(deleted.status).toBe(204);
+    expect(await deleted.text()).toBe("");
+    expect(after.status).toBe(401);
+    expect(
+      await countOf("SELECT count(*) AS n FROM user WHERE id = ?", PERSON.id)
+    ).toBe(0);
+  });
+
+  it("puts person back under the same id on the next reset and seed", async () => {
+    await freshWorld();
+    const deleted = await withCookie(
+      await sessionFor("person"),
+      "DELETE",
+      "/me"
+    );
+    expect(deleted.status).toBe(204);
+
+    await freshWorld();
+
+    expect(
+      await countOf("SELECT count(*) AS n FROM user WHERE id = ?", PERSON.id)
+    ).toBe(1);
+  });
+});

@@ -1,0 +1,164 @@
+# AC2, the phase-10 exit (docs/spec/phase-10.md §8, #82–#84): every profile field saves on edit with
+# no Save button, Back flushes the field still focused, home's avatar initial follows the new name,
+# and a relaunch reads every value back from the server.
+#
+# A single-line field is ended with Return, which is its `onEndEditing` (§3.2 Saving); the
+# multiline description is ended by moving focus to the LinkedIn field; the LinkedIn field is left
+# focused on purpose, so Back is what saves it.
+appId: ${APP_ID}
+name: Editing the profile persists across a relaunch
+tags:
+  - phase-10
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- assertVisible:
+    id: profile-title
+    text: Your profile
+- assertVisible:
+    id: profile-email
+    text: e2e-person@gcnotes\.test
+- assertVisible:
+    id: profile-avatar
+- assertVisible:
+    id: profile-name
+    text: E2E Person
+- assertVisible:
+    id: profile-job-title
+    text: Engineer
+- assertVisible:
+    id: profile-company-name
+    text: Notes E2E
+- assertVisible:
+    id: profile-user-type
+    text: Startup/Generalist.*
+- takeScreenshot: phase-10-profile-top
+
+- tapOn:
+    id: profile-name
+- eraseText: 40
+- inputText: Riley Park
+- pressKey: Enter
+- tapOn:
+    id: profile-job-title
+- eraseText: 40
+- inputText: Designer
+- pressKey: Enter
+- tapOn:
+    id: profile-company-name
+- eraseText: 40
+- inputText: Acme
+- pressKey: Enter
+- extendedWaitUntil:
+    notVisible:
+      id: profile-saving
+    timeout: 10000
+
+- tapOn:
+    id: profile-user-type
+- extendedWaitUntil:
+    visible:
+      id: profile-user-type-menu
+    timeout: 5000
+# The last option, which ran off the bottom of the screen before the menu was clamped (#84 shows
+# all five).
+- assertVisible:
+    id: profile-user-type-option-other
+- takeScreenshot: phase-10-user-type-menu
+- tapOn:
+    id: profile-user-type-option-investing
+- extendedWaitUntil:
+    notVisible:
+      id: profile-user-type-menu
+    timeout: 5000
+- assertVisible:
+    id: profile-user-type
+    text: Investing.*
+
+- scrollUntilVisible:
+    element:
+      id: profile-company-description
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- tapOn:
+    id: profile-company-description
+- inputText: We build tools.
+- scrollUntilVisible:
+    element:
+      id: profile-linkedin
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: profile-linkedin
+- inputText: riley-park
+- tapOn:
+    id: profile-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 15000
+
+- tapOn:
+    id: settings-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: home-avatar-initial
+      text: R
+    timeout: 15000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- runFlow: ../subflows/wait-for-home.yaml
+- assertVisible:
+    id: home-avatar-initial
+    text: R
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-profile
+- extendedWaitUntil:
+    visible:
+      id: profile-screen
+    timeout: 10000
+- assertVisible:
+    id: profile-name
+    text: Riley Park
+- assertVisible:
+    id: profile-job-title
+    text: Designer
+- assertVisible:
+    id: profile-company-name
+    text: Acme
+- assertVisible:
+    id: profile-user-type
+    text: Investing.*
+- scrollUntilVisible:
+    element:
+      id: profile-linkedin-url
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: profile-company-description
+    text: We build tools\.
+- assertVisible:
+    id: profile-linkedin
+    text: riley-park
+- assertVisible:
+    id: profile-linkedin-url
+    text: linkedin\.com/in/riley-park
+- takeScreenshot: phase-10-profile-bottom

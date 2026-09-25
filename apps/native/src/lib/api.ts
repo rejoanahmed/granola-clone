@@ -12,6 +12,7 @@ import { useToast } from "@native/design";
 import { authClient, EXPO_AUTH_SCHEME } from "@native/lib/auth-client";
 import {
   type QueryClient,
+  type UseMutationOptions,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -440,4 +441,66 @@ export function restoreToFolderList(
   summary: NoteListItem
 ): void {
   insertSummary(queryClient, summary, keys.notes.list({ folder }));
+}
+
+// --- Phase 10: settings, support and account deletion (docs/spec/phase-10.md §6.4). ---
+
+export type UserSettings = Awaited<ReturnType<typeof client.getSettings>>;
+export type SettingsPatch = NonNullable<
+  NonNullable<Parameters<typeof client.patchSettings>[0]>["body"]
+>;
+
+export const settingsQuery = () =>
+  api.query(queryKeys.settings.me(), ({ signal }) =>
+    client.getSettings(undefined, { signal })
+  );
+
+export const patchSettings = (body: SettingsPatch) =>
+  client.patchSettings({ body });
+
+export type SettingsMutationOptions<C> = Omit<
+  UseMutationOptions<UserSettings, Error, SettingsPatch, C>,
+  "mutationFn"
+>;
+
+// The optimistic flip, its revert and the cache write are `toggleMutation`'s
+// (`features/settings/useSetting.ts`); this only fixes what the mutation sends.
+export function useUpdateSetting<C>(options: SettingsMutationOptions<C>) {
+  return useMutation({ ...options, mutationFn: patchSettings });
+}
+
+// No cache: the sheet promised to check, so every open asks again.
+export const deletionPreviewQuery = () => ({
+  ...api.query(queryKeys.me.deletionPreview(), ({ signal }) =>
+    client.getDeletionPreview(undefined, { signal })
+  ),
+  gcTime: 0,
+  staleTime: 0,
+});
+
+export function useDeleteAccount() {
+  return useMutation({ mutationFn: () => client.deleteMe() });
+}
+
+export type BugReport = NonNullable<
+  NonNullable<Parameters<typeof client.createBugReport>[0]>["body"]
+>;
+export type Feedback = NonNullable<
+  NonNullable<Parameters<typeof client.createFeedback>[0]>["body"]
+>;
+
+export function useBugReport() {
+  return useMutation({
+    mutationFn: (body: BugReport) => client.createBugReport({ body }),
+  });
+}
+
+export function useFeedback() {
+  return useMutation({
+    mutationFn: (body: Feedback) => client.createFeedback({ body }),
+  });
+}
+
+export function useDesktopReminder() {
+  return useMutation({ mutationFn: () => client.createDesktopReminder() });
 }

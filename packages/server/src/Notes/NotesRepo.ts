@@ -204,6 +204,17 @@ export const makeNotesRepo = (db: DrizzleClient) => ({
     };
   },
 
+  // The same predicate as `notes_owner_live_idx`, so the count is answered from the partial index:
+  // trashed notes are not counted because the person cannot see them.
+  countLive: async (ownerId: UserId): Promise<number> => {
+    const row = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(notes)
+      .where(and(eq(notes.ownerId, ownerId), isNull(notes.trashedAt)))
+      .get();
+    return row?.n ?? 0;
+  },
+
   // Joined to the folder's owner though only the owner writes a membership today: the answer stays
   // the caller's own folders once a note can be shared into somebody else's.
   folderIdsOf: async (id: NoteId, ownerId: UserId): Promise<FolderId[]> =>

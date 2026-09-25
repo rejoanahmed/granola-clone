@@ -721,3 +721,101 @@ describe("the phase-9 folder endpoints and keys", () => {
     expect(keys.restoreNote?.(NOTE)).toContainEqual(["folders"]);
   });
 });
+
+// ── Phase 10: settings, support and the account endpoints (docs/spec/phase-10.md §6.4) ────────
+// The endpoints and keys do not exist yet, so they are read through casts and the phase 1–9 cases
+// above keep compiling.
+
+describe("the phase-10 endpoints and keys", () => {
+  type Callable = (options?: unknown) => Promise<unknown>;
+  type KeyFn = (...args: unknown[]) => readonly unknown[];
+
+  const endpointOf = (client: unknown, name: string): Callable => {
+    const found = (client as Record<string, Callable | undefined>)[name];
+    if (found === undefined) {
+      throw new Error(`the client has no ${name}`);
+    }
+    return found;
+  };
+
+  it("sends the settings, support and account requests to their routes", async () => {
+    const { calls, stub } = recording(jsonResponse({ id: "sup_1" }));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await endpointOf(client, "getSettings")();
+    await endpointOf(
+      client,
+      "patchSettings"
+    )({
+      body: { notifyUpcomingMeetings: false },
+    });
+    await endpointOf(
+      client,
+      "createBugReport"
+    )({
+      body: {
+        appVersion: "1.0.0 (1)",
+        includeDiagnostics: true,
+        message: "Steps",
+      },
+    });
+    await endpointOf(
+      client,
+      "createFeedback"
+    )({
+      body: { appVersion: "1.0.0 (1)", message: "Love the search" },
+    });
+    await endpointOf(client, "createDesktopReminder")();
+    await endpointOf(client, "getDeletionPreview")();
+
+    expect(
+      calls.map((call) => [
+        call.init.method ?? "GET",
+        new URL(call.url).pathname,
+      ])
+    ).toEqual([
+      ["GET", "/me/settings"],
+      ["PATCH", "/me/settings"],
+      ["POST", "/support/bug-reports"],
+      ["POST", "/support/feedback"],
+      ["POST", "/me/desktop-reminder"],
+      ["GET", "/me/deletion-preview"],
+    ]);
+  });
+
+  it("sends DELETE /me", async () => {
+    const { calls, stub } = recording(new Response(null, { status: 204 }));
+    const client = makeApiClient({ baseUrl: BASE_URL, fetch: stub });
+
+    await endpointOf(client, "deleteMe")();
+
+    expect(
+      calls.map((call) => [call.init.method, new URL(call.url).pathname])
+    ).toEqual([["DELETE", "/me"]]);
+  });
+
+  it("keys the settings and the deletion preview", () => {
+    const keys = queryKeys as unknown as {
+      me: { deletionPreview?: () => readonly unknown[] };
+      profile?: { deletionPreview?: () => readonly unknown[] };
+      settings?: { all: readonly unknown[]; me: () => readonly unknown[] };
+    };
+
+    expect(keys.settings?.all).toEqual(["settings"]);
+    expect(keys.settings?.me()).toEqual(["settings", "me"]);
+    const preview =
+      keys.me.deletionPreview ?? keys.profile?.deletionPreview ?? null;
+    expect(preview?.()).toEqual(["me", "deletion-preview"]);
+  });
+
+  // The toggles write the server's answer into the cache instead: an invalidation would refetch,
+  // and a slow refetch is what flips a switch back mid-animation.
+  it("has no invalidation for a settings patch", () => {
+    const keys = invalidationKeys as unknown as Record<
+      string,
+      KeyFn | undefined
+    >;
+
+    expect(keys.patchSettings).toBeUndefined();
+  });
+});

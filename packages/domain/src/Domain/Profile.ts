@@ -66,3 +66,8 @@ export const ProfilePatch = z.strictObject({
   userType: UserType.nullable().optional(),
 });
 export type ProfilePatch = z.output<typeof ProfilePatch>;
+
+// What deleting the account would cost, in the caller's live notes. Trashed notes are not counted:
+// the user cannot see them, so a number that included them could not be checked against the app.
+export const DeletionPreview = z.object({ noteCount: z.number().int().min(0) });
+export type DeletionPreview = z.infer<typeof DeletionPreview>;

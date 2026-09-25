@@ -37,8 +37,10 @@ export const queryKeys = {
     all: ["folders"] as const,
     list: () => ["folders", "list"] as const,
   },
+  // The preview sits under `me`, so clearing the caller's own keys takes it with them.
   me: {
     all: ["me"] as const,
+    deletionPreview: () => ["me", "deletion-preview"] as const,
     profile: () => ["me", "profile"] as const,
   },
   // `"list"` cannot collide with an id at `detail`'s position: every note id starts `not_`. Home's
@@ -71,6 +73,12 @@ export const queryKeys = {
   search: {
     all: ["search"] as const,
     results: (q: string) => ["search", q] as const,
+  },
+  // One settings document per user. A toggle writes the patch's answer straight into
+  // `settings.me()` and invalidates nothing, so a slow refetch cannot flip a switch back.
+  settings: {
+    all: ["settings"] as const,
+    me: () => ["settings", "me"] as const,
   },
 } as const;
 

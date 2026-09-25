@@ -7,6 +7,7 @@ import {
 } from "@gc/domain/Domain/Profile";
 import type { Timestamp } from "@gc/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
+import { unlessUserGone } from "../Runtime/ForeignKey";
 
 // A column with no CHECK can hold a value the enum no longer has (a rename, a hand edit). Reading
 // it as "not chosen" is the honest answer; a 500 on `GET /me` would lock the person out of the app.
@@ -27,39 +28,11 @@ const detailsOf = (patch: ProfilePatch) =>
     }).filter(([, value]) => value !== undefined)
   );
 
-// SQLite's message, which D1 passes through; drizzle wraps it, so the chain of causes is walked.
-const FOREIGN_KEY_FAILED = /FOREIGN KEY constraint failed/;
-
-const isForeignKeyFailure = (error: unknown): boolean => {
-  let current: unknown = error;
-  while (current instanceof Error) {
-    if (FOREIGN_KEY_FAILED.test(current.message)) {
-      return true;
-    }
-    current = current.cause;
-  }
-  return false;
-};
-
-// The service reads the user row before it writes, but the account can be deleted between the two
-// (the cascade takes `profiles` with it). The insert then fails the foreign key; answering `false`
-// lets the service report the `ProfileNotFound` it would have reported a moment earlier, instead of
-// the constraint surfacing as a 500.
-const unlessUserGone = async (write: Promise<unknown>): Promise<boolean> => {
-  try {
-    await write;
-    return true;
-  } catch (error) {
-    if (isForeignKeyFailure(error)) {
-      return false;
-    }
-    throw error;
-  }
-};
-
-// Reads better-auth's `user` table and never writes it: better-auth owns that row's lifecycle, and
-// a second writer is how a profile edit and a sign-in race each other into a lost update. The
-// details live in `profiles`, which this repo does write.
+// Reads better-auth's `user` table and writes it exactly once, in `deleteUser`: better-auth owns
+// that row's lifecycle, and a second writer is how a profile edit and a sign-in race each other
+// into a lost update. Deletion is the exception because it must answer `ProfileNotFound`, sit
+// beside the preview that promised the count, and be the only way to delete an account (the
+// better-auth endpoint stays disabled). The details live in `profiles`, which this repo writes.
 export const makeProfilesRepo = (db: DrizzleClient) => ({
   // A left join, so a person who has never saved a detail reads all-null rather than 404 — and
   // reading never inserts the row, because a read that writes is a write on the hottest endpoint.
@@ -100,6 +73,13 @@ export const makeProfilesRepo = (db: DrizzleClient) => ({
       onboardedAt: row.onboardedAt,
       userType: userTypeOf(row.userType),
     };
+  },
+
+  // Every domain table cascades from `user.id` (sessions and accounts too), so this one statement
+  // is the whole deletion. `false` when no row matched: the account was already gone.
+  deleteUser: async (id: UserId): Promise<boolean> => {
+    const result = await db.delete(user).where(eq(user.id, id)).run();
+    return result.meta.changes === 1;
   },
 
   // One statement, so the first save of a detail and a concurrent onboarding completion cannot

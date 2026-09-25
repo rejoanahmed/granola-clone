@@ -94,6 +94,12 @@ describe("the worker's HTTP assembly", () => {
         "/folders/{id}",
         "/folders/{id}/notes",
         "/folders/{id}/notes/{noteId}",
+        // Phase 10 (docs/spec/phase-10.md §6.1). `DELETE /me` shares `/me`; `/e2e/support` is absent.
+        "/me/settings",
+        "/me/deletion-preview",
+        "/me/desktop-reminder",
+        "/support/bug-reports",
+        "/support/feedback",
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
@@ -104,6 +110,8 @@ describe("the worker's HTTP assembly", () => {
       "Search",
       "People",
       "Folders",
+      "Settings",
+      "Support",
     ]);
   });
 
@@ -910,4 +918,65 @@ describe("the folders routes, phase 9", () => {
       });
     }
   );
+});
+
+describe("the settings, support and account routes, phase 10", () => {
+  it.each([
+    ["GET", "/me/settings"],
+    ["PATCH", "/me/settings"],
+    ["GET", "/me/deletion-preview"],
+    ["DELETE", "/me"],
+    ["POST", "/support/bug-reports"],
+    ["POST", "/support/feedback"],
+    ["POST", "/me/desktop-reminder"],
+  ])(
+    "mounts %s %s, answering 401 Unauthorized without a session",
+    async (method, route) => {
+      const response = await app.request(route, { method }, env);
+
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toMatchObject({
+        _tag: "Unauthorized",
+      });
+    }
+  );
+
+  it("documents each route under its tag, DELETE /me's 204 and the 202s, and not /e2e/support", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as {
+      paths: Record<
+        string,
+        Record<string, { responses?: Record<string, unknown>; tags?: string[] }>
+      >;
+    };
+
+    for (const [route, method, tag] of [
+      ["/me/settings", "get", "Settings"],
+      ["/me/settings", "patch", "Settings"],
+      ["/me/deletion-preview", "get", "Profile"],
+      ["/me", "delete", "Profile"],
+      ["/support/bug-reports", "post", "Support"],
+      ["/support/feedback", "post", "Support"],
+      ["/me/desktop-reminder", "post", "Support"],
+    ] as const) {
+      expect({ method, route, tags: doc.paths[route]?.[method]?.tags }).toEqual(
+        { method, route, tags: [tag] }
+      );
+    }
+    expect(Object.keys(doc.paths["/me"]?.delete?.responses ?? {})).toContain(
+      "204"
+    );
+    for (const route of [
+      "/support/bug-reports",
+      "/support/feedback",
+      "/me/desktop-reminder",
+    ]) {
+      const responses = Object.keys(doc.paths[route]?.post?.responses ?? {});
+      expect({ responses, route }).toEqual({
+        responses: expect.arrayContaining(["202", "503"]),
+        route,
+      });
+    }
+    expect(Object.keys(doc.paths)).not.toContain("/e2e/support");
+  });
 });

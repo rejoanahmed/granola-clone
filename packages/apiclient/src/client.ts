@@ -14,6 +14,8 @@ import { makePeopleApi } from "./people";
 import { makeProfilesApi } from "./profiles";
 import { makeRecordingsApi } from "./recordings";
 import { makeSearchApi } from "./search";
+import { makeSettingsApi } from "./settings";
+import { makeSupportApi } from "./support";
 
 // Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
 // router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
@@ -34,7 +36,9 @@ export type AnyRoute = {
 
 // Checked against Hono's status union so a transposed digit is a compile error rather than a route
 // that silently never matches. The `hono` import is type-only: nothing from it is in the bundle.
-const SUCCESS_STATUSES = [200, 201] as const satisfies readonly StatusCode[];
+const SUCCESS_STATUSES = [
+  200, 201, 202,
+] as const satisfies readonly StatusCode[];
 
 type InputOf<S> = S extends z.ZodType ? z.input<S> : never;
 type OutputOf<S> = S extends z.ZodType ? z.output<S> : never;
@@ -52,7 +56,9 @@ type SuccessSchema<R> = R extends {
   ? JsonSchema<T>
   : R extends { responses: Record<(typeof SUCCESS_STATUSES)[1], infer T> }
     ? JsonSchema<T>
-    : never;
+    : R extends { responses: Record<(typeof SUCCESS_STATUSES)[2], infer T> }
+      ? JsonSchema<T>
+      : never;
 
 type ParamsSchema<R> = R extends {
   request: Record<"params", infer S extends z.ZodType>;
@@ -296,6 +302,8 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
     ...makeProfilesApi(endpoint),
     ...makeRecordingsApi(endpoint),
     ...makeSearchApi(endpoint),
+    ...makeSettingsApi(endpoint),
+    ...makeSupportApi(endpoint),
   };
 };
 
@@ -306,4 +314,6 @@ export type ApiClient = ReturnType<typeof makeChatsApi> &
   ReturnType<typeof makePeopleApi> &
   ReturnType<typeof makeProfilesApi> &
   ReturnType<typeof makeRecordingsApi> &
-  ReturnType<typeof makeSearchApi>;
+  ReturnType<typeof makeSearchApi> &
+  ReturnType<typeof makeSettingsApi> &
+  ReturnType<typeof makeSupportApi>;

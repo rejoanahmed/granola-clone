@@ -3,7 +3,7 @@
 // rather than a change to a service.
 
 /** What the message is for. The outbox and the E2E harness select on it. */
-export type EmailKind = "otp";
+export type EmailKind = "otp" | "bug-report" | "feedback" | "desktop-reminder";
 
 export type EmailMessage = {
   readonly body: string;

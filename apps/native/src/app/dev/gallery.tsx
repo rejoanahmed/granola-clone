@@ -13,11 +13,14 @@ import {
   PillButton,
   radii,
   SendButton,
+  SettingsCard,
+  SettingsRow,
   sizes,
   spacing,
   Text,
   TextField,
   Toast,
+  Toggle,
   ToolbarCapsule,
   type TypeVariant,
   typography,
@@ -25,8 +28,11 @@ import {
 } from "@native/design";
 import { useRouter } from "expo-router";
 import {
+  Bell,
+  BookText,
   CalendarDays,
   Copy,
+  CreditCard,
   Folder,
   Laptop,
   MessageCircle,
@@ -93,6 +99,8 @@ export default function GalleryScreen() {
   const router = useRouter();
   const [field, setField] = useState("");
   const [row, setRow] = useState("");
+  const [green, setGreen] = useState(true);
+  const [lime, setLime] = useState(false);
   const [menuFrame, setMenuFrame] = useState<Frame | null>(null);
   const menuButton = useRef<View>(null);
   const toast = useToast();
@@ -322,6 +330,68 @@ export default function GalleryScreen() {
           />
         </Section>
 
+        <Section testID="gallery-settings" title="Settings">
+          <View style={styles.wrap}>
+            <Toggle
+              accessibilityLabel="Green"
+              onValueChange={setGreen}
+              testID="gallery-toggle-green"
+              value={green}
+            />
+            <Toggle
+              accessibilityLabel="Lime"
+              onValueChange={setLime}
+              testID="gallery-toggle-lime"
+              tone="lime"
+              value={lime}
+            />
+          </View>
+          <SettingsCard style={styles.flushCard}>
+            <SettingsRow
+              accessory={{ kind: "chevron" }}
+              icon={Bell}
+              label="Chevron"
+              onPress={() => undefined}
+              testID="gallery-settings-chevron"
+            />
+            <SettingsRow
+              accessory={{ kind: "external" }}
+              icon={BookText}
+              label="External"
+              onPress={() => undefined}
+              testID="gallery-settings-external"
+            />
+            <SettingsRow
+              accessory={{
+                kind: "badge",
+                label: "Coming soon",
+                testID: "gallery-settings-badge",
+              }}
+              disabled
+              icon={CreditCard}
+              label="Badge"
+              testID="gallery-settings-disabled"
+            />
+            <SettingsRow
+              accessory={{
+                kind: "control",
+                node: (
+                  <Toggle
+                    accessibilityLabel="Toggle row"
+                    onValueChange={setGreen}
+                    testID="gallery-settings-toggle"
+                    value={green}
+                  />
+                ),
+              }}
+              icon={Phone}
+              label="Toggle"
+              onPress={() => setGreen((on) => !on)}
+              testID="gallery-settings-toggle-row"
+            />
+          </SettingsCard>
+        </Section>
+
         <Section testID="gallery-toast" title="Toast">
           <Toast
             action={{ label: "Undo", onPress: () => undefined }}
@@ -350,6 +420,7 @@ export default function GalleryScreen() {
 const styles = StyleSheet.create({
   cardLines: { flex: 1, gap: sizes.cardLineGap },
   content: { gap: spacing.xxl, paddingBottom: BOTTOM_CLEARANCE },
+  flushCard: { marginHorizontal: 0 },
   form: {
     borderColor: colors.border.hairline,
     borderRadius: FORM_RADIUS,

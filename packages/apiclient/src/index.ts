@@ -52,3 +52,5 @@ export {
 export { invalidationKeys, queryDefaults, queryKeys } from "./query-keys";
 export { makeRecordingsApi, type UploadAudioInput } from "./recordings";
 export { makeSearchApi } from "./search";
+export { makeSettingsApi } from "./settings";
+export { makeSupportApi } from "./support";

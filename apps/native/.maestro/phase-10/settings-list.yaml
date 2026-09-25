@@ -1,0 +1,124 @@
+# AC1 (docs/spec/phase-10.md §8, #80, #81): the settings list — the desktop banner, Account with the
+# disabled Subscription row and its Coming soon badge, Features, Support, Data & sharing with its
+# toggle on by default, Sign out and the version. Recover Corrupted Notes answers with a toast.
+appId: ${APP_ID}
+name: The settings list and its sections
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-settings.yaml
+- assertVisible:
+    id: settings-desktop-banner
+    text: Get Notes for Mac or Windows
+- assertVisible:
+    id: settings-section-account
+- assertVisible:
+    id: settings-profile
+- assertVisible:
+    id: settings-notifications
+- assertVisible:
+    id: settings-subscription
+- assertVisible:
+    id: settings-subscription-badge
+    text: Coming soon
+- takeScreenshot: phase-10-settings-top
+
+# Subscription is not a button (§3.1): a tap leaves the list exactly where it was.
+- tapOn:
+    id: settings-subscription
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: settings-screen
+- assertVisible:
+    id: settings-desktop-banner
+- assertNotVisible:
+    id: profile-screen
+- assertNotVisible:
+    id: notifications-screen
+
+- scrollUntilVisible:
+    element:
+      id: settings-chat
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-section-features
+- scrollUntilVisible:
+    element:
+      id: settings-phone-calls
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: settings-watch
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: settings-feedback
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-section-support
+- scrollUntilVisible:
+    element:
+      id: settings-report-bug
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: settings-help
+    direction: DOWN
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      id: settings-share-app
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-share-app
+    text: Share Notes for iPhone
+- scrollUntilVisible:
+    element:
+      id: settings-recover
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+
+- tapOn:
+    id: settings-recover
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: No corrupted notes found\.
+    timeout: 10000
+# The toast sits over the Sign out card; wait it out, so the asserts below and the #81 screenshot
+# see the card rather than pass over it.
+- extendedWaitUntil:
+    notVisible:
+      id: toast-message
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      id: settings-version
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-section-data
+- extendedWaitUntil:
+    visible:
+      id: settings-use-my-data
+      selected: true
+    timeout: 10000
+- assertVisible:
+    id: settings-sign-out
+- assertVisible:
+    id: settings-version
+    text: "1\\.0\\.0 \\(1\\)"
+- takeScreenshot: phase-10-settings-bottom

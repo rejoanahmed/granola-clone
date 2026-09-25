@@ -427,6 +427,40 @@ These must exist. The names are the specification; the phrasing in the test file
   with Priya's key it is launch alone; an unknown folder and `other`'s are `FolderNotFound` (404)
 - `?folder=bad` is 422; the detail carries `folderIds`, `[]` for a note in no folder
 
+### `Settings/Settings.test.ts` and `Settings/Settings.http.test.ts` (phase 10)
+
+- a user with no row reads the defaults, all on, and the read writes no row
+- a patch of one key answers the merged settings, writes one row stamped with the clock, and a
+  second patch keeps the keys it does not name
+- `{}` is a no-op: no row for a user without one, `updatedAt` unmoved for a user with one
+- `person`'s patch never reaches `other`, and the row cascades away with its user
+- `GET /me/settings` parses as `UserSettings`; `PATCH` is 200, and 422 on a non-boolean and on an
+  unknown key; both are 401 without a session
+
+### `Profiles/Profiles.test.ts` — deletion (phase 10)
+
+- the preview counts `person`'s three live notes (not the trashed one), `empty`'s 0, and 2 once
+  launch is trashed
+- `deleteAccount` removes the user and, by cascade, their notes, folders, chat threads, profile,
+  settings and sessions, leaving `other` untouched; a second delete and a preview afterwards are
+  `ProfileNotFound`
+- `GET /me/deletion-preview` is 200 `DeletionPreview`; `DELETE /me` is 204 with no body, and the
+  same cookie then gets 401 on `GET /me`
+
+### `Support/Support.test.ts`, `Support/Support.http.test.ts`, `Domain/Support.test.ts` (phase 10)
+
+- a bug report is one `bug-report` message to `support@notes.example`, subject
+  `Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test`, the trimmed message, the
+  diagnostics line (`included` / `not included`) and `From: E2E Person e2e-person@gcnotes.test`,
+  with a `sup_` receipt id equal to `payload.receiptId`
+- feedback's subject is `Feedback on Notes 1.0.0 (1) | …` and its body ends `Sincerely,\nE2E Person`;
+  the desktop reminder goes to the caller with `payload.link` the desktop URL
+- `EmailUnavailable` propagates from all three (503 on the wire) and nothing reaches the outbox
+- both forms are 202 `SupportReceipt`, and 422 on `{}` and an extra key; all three routes are 401
+  without a session
+- `BugReportCreate` refuses `"   "`, 5001 characters, a missing `includeDiagnostics` and an extra
+  key, and trims; `UserSettingsPatch` is strict
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -454,6 +488,8 @@ These must exist. The names are the specification; the phrasing in the test file
 - (phase 9) the base seed gives `person` no folders and `other` `fld_e2e_other` holding their note;
   `seedFolders()` (`POST /e2e/folders`) writes Personal (solo) and Product (launch, standup,
   archived) at fixed instants, a second call changes nothing, and a reset clears every folder
+- (phase 10) `supportMessages(kind)` (`GET /e2e/support?kind=`) answers that kind's outbox rows,
+  newest first, at most 10; `otp` and any other kind are 422, and a reset empties it
 
 ### `Integrations/Email/Email.test.ts` and `AuthEmails/AuthEmails.test.ts`
 
@@ -728,9 +764,14 @@ apps/native/.maestro/
     open-add-to-folder.yaml  NOTE_ID param: open the note, its folder+ button, wait for the sheet to load
     create-folder.yaml   NAME param: on the New folder sheet, type NAME and tap Create; the caller waits
     filter-by-folder.yaml  FOLDER_ID/NAME: open the drawer, pick the folder, wait for home's title
+    open-settings.yaml   from home, the avatar, then wait for Settings
+    open-settings-row.yaml  ROW param: open-settings, scroll the list until ROW shows, tap it
+    wait-for-home.yaml   after relaunch-app.yaml, the adopted session back on home and its list settled
+                         (the support mail a phase-10 flow sent is checked by scripts/e2e-support.js,
+                         KIND/EXPECT_SUBJECT/EXPECT_BODY, through `runScript`)
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-9/   tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-10/  tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -815,8 +856,8 @@ phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-
 `phase-6-short` (#40, #107) from short-recording.yaml; phase 7 adds the eleven `phase-7-*` shots
 listed in docs/spec/phase-7.md §8, phase 8 the seven `phase-8-*` shots listed in
 docs/spec/phase-8.md §8 (#60–#66), and phase 9 the ten `phase-9-*` shots listed in
-docs/spec/phase-9.md §8 (#17, #18, #50). Run with
-`--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
+docs/spec/phase-9.md §8 (#17, #18, #50), and phase 10 the fourteen `phase-10-*` shots listed in
+docs/spec/phase-10.md §8 (#04, #51, #80–#90). Run with `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or
 recorded in `docs/plan/BLOCKERS.md`. The comparison is by eye, deliberately: discovery was shot on

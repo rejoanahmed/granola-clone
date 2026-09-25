@@ -1,18 +1,24 @@
-import type { Profile, ProfilePatch } from "@gc/domain/Domain/Profile";
+import { hasChanges } from "@gc/domain/Domain/Patch";
+import type {
+  DeletionPreview,
+  Profile,
+  ProfilePatch,
+} from "@gc/domain/Domain/Profile";
 import { ProfileNotFound } from "@gc/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { Authorized } from "../Auth/Policy";
+import type { NotesRepo } from "../Notes/NotesRepo";
 import type { Clock } from "../Runtime/Clock";
 import { canEditProfile, canReadProfile } from "./Policy";
 import type { ProfilesRepo } from "./ProfilesRepo";
 
 export type ProfilesDeps = {
   readonly clock: Clock;
+  // Only the count: the preview promises how many notes a deletion takes, and nothing here may
+  // read or write a note beyond that.
+  readonly notes: Pick<NotesRepo, "countLive">;
   readonly repo: ProfilesRepo;
 };
-
-const hasChanges = (patch: ProfilePatch): boolean =>
-  Object.values(patch).some((value) => value !== undefined);
 
 export const makeProfilesService = (deps: ProfilesDeps) => {
   // A live session whose user row is gone is a 404, not a 401: the credential is valid, the thing
@@ -41,6 +47,20 @@ export const makeProfilesService = (deps: ProfilesDeps) => {
         throw new ProfileNotFound({ id: actor.id });
       }
       return me(actor);
+    },
+
+    // Checked on the existing profile, so a deleted account is `ProfileNotFound`; a second delete
+    // racing the first finds no row to remove and answers the same.
+    deleteAccount: async (actor: Actor): Promise<void> => {
+      const subject = await editing(actor);
+      if (!(await deps.repo.deleteUser(subject.id))) {
+        throw new ProfileNotFound({ id: actor.id });
+      }
+    },
+
+    deletionPreview: async (actor: Actor): Promise<DeletionPreview> => {
+      const subject = await me(actor);
+      return { noteCount: await deps.notes.countLive(subject.id) };
     },
 
     me,

@@ -8,7 +8,14 @@ import {
   Text,
 } from "@native/design";
 import { Check } from "lucide-react-native";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { USER_TYPES } from "./userTypes";
 
 /** Where the row that opened the menu sits on screen, from `measureInWindow`. */
@@ -22,6 +29,8 @@ type Props = {
   readonly onClose: () => void;
   readonly onSelect: (value: UserType) => void;
   readonly selected: UserType | null;
+  /** Onboarding's ids by default; Profile passes `profile-user-type` (docs/spec/phase-10.md §3.2). */
+  readonly testIDPrefix?: string;
 };
 
 // Measured off #84 (428pt wide): a 248pt card whose top lands 16pt into the row it opened from,
@@ -32,10 +41,32 @@ const ROW_HEIGHT = 44;
 const CHECK_COLUMN = 28;
 const MENU_RADIUS = 24;
 const MENU_PADDING = 8;
+const MENU_HEIGHT =
+  USER_TYPES.length * ROW_HEIGHT + 2 * MENU_PADDING + 2 * sizes.hairline;
+
+// Below the row, as #84 draws it, unless that would run past the safe area — Profile's row sits low
+// on the screen, and a Modal cannot be scrolled to reach a clipped option. Then it slides up just
+// far enough, as a UIMenu does, never above the top inset.
+export const menuTop = (
+  anchorTop: number,
+  windowHeight: number,
+  insets: { readonly bottom: number; readonly top: number }
+): number => {
+  const lowest = windowHeight - insets.bottom - spacing.sm - MENU_HEIGHT;
+  return Math.max(insets.top, Math.min(anchorTop + INTO_ROW, lowest));
+};
 
 // Drawn here rather than as a native UIMenu: a UIMenu item carries no testID, and Maestro selects
 // by id only. At rest it looks like #84; tapping outside dismisses it with no change, as #84 does.
-export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
+export function UserTypeMenu({
+  anchor,
+  onClose,
+  onSelect,
+  selected,
+  testIDPrefix = "onboarding-user-type",
+}: Props) {
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   return (
     <Modal
       animationType="fade"
@@ -47,15 +78,15 @@ export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
         accessibilityLabel="Close menu"
         onPress={onClose}
         style={StyleSheet.absoluteFill}
-        testID="onboarding-user-type-backdrop"
+        testID={`${testIDPrefix}-backdrop`}
       />
       {anchor ? (
         <View
           style={[
             styles.menu,
-            { right: anchor.right, top: anchor.top + INTO_ROW },
+            { right: anchor.right, top: menuTop(anchor.top, height, insets) },
           ]}
-          testID="onboarding-user-type-menu"
+          testID={`${testIDPrefix}-menu`}
         >
           {USER_TYPES.map((option) => {
             const isSelected = option.value === selected;
@@ -69,7 +100,7 @@ export function UserTypeMenu({ anchor, onClose, onSelect, selected }: Props) {
                   styles.row,
                   pressed ? styles.pressed : null,
                 ]}
-                testID={`onboarding-user-type-option-${option.value}`}
+                testID={`${testIDPrefix}-option-${option.value}`}
               >
                 <View style={styles.check}>
                   {isSelected ? (

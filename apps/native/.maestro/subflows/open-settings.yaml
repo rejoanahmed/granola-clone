@@ -1,0 +1,16 @@
+# From home, open Settings with the avatar and wait for it (docs/spec/phase-10.md §8). The list has
+# no loading state of its own (§3.1), so the screen root is enough to act on.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: home-settings-button
+    timeout: 30000
+- tapOn:
+    id: home-settings-button
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000

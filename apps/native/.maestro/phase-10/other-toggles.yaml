@@ -1,0 +1,103 @@
+# AC5 (docs/spec/phase-10.md §8, #81, #86): Chat's Auto-send dictation and Data & sharing's Use my
+# data are stored like Upcoming meetings, each independently of the others, and both survive a
+# relaunch.
+appId: ${APP_ID}
+name: The chat and data toggles persist
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-chat
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-screen
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-auto-send
+      selected: true
+    timeout: 10000
+- assertVisible:
+    id: chat-settings-dictation-row
+- takeScreenshot: phase-10-chat-settings
+- tapOn:
+    id: chat-settings-auto-send
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-auto-send
+      selected: false
+      enabled: true
+    timeout: 10000
+- tapOn:
+    id: chat-settings-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- tapOn:
+    id: settings-chat
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-auto-send
+      selected: false
+    timeout: 10000
+- tapOn:
+    id: chat-settings-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+
+- scrollUntilVisible:
+    element:
+      id: settings-use-my-data
+    direction: DOWN
+    timeout: 20000
+    centerElement: true
+- extendedWaitUntil:
+    visible:
+      id: settings-use-my-data
+      selected: true
+    timeout: 10000
+- tapOn:
+    id: settings-use-my-data
+- extendedWaitUntil:
+    visible:
+      id: settings-use-my-data
+      selected: false
+      enabled: true
+    timeout: 10000
+
+- runFlow: ../subflows/relaunch-app.yaml
+- runFlow: ../subflows/wait-for-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-chat
+- extendedWaitUntil:
+    visible:
+      id: chat-settings-auto-send
+      selected: false
+    timeout: 10000
+- tapOn:
+    id: chat-settings-back
+- extendedWaitUntil:
+    visible:
+      id: settings-screen
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: settings-use-my-data
+    direction: DOWN
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: settings-use-my-data
+      selected: false
+    timeout: 10000

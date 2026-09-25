@@ -47,7 +47,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 7 | Ask / chat | done |
 | 8 | Search and people | done |
 | 9 | Folders | done |
-| 10 | Settings, profile and upsells | todo |
+| 10 | Settings, profile and upsells | done |
 | 11 | Upcoming events (fake calendar) | todo |
 | 12 | Parity pass and CI | todo |
 
@@ -132,9 +132,12 @@ attendees.
 
 ### 12 — Parity pass and CI
 An agent screenshots every clone screen at the same state and compares it against the matching
-discovery shot; gaps become issues, which are fixed or deferred with a reason. Maestro runs in CI
-on a macOS runner. Pin Bun to the version in `packageManager`.
-**Exit:** a parity report with no open "must" gaps; CI green including Maestro.
+discovery shot; gaps become issues, which are fixed or deferred with a reason. CI runs the gate that
+needs no simulator — `bun run check` and `bun run test` — on every push. **Maestro stays local only**
+(decided 2026-09-25): no macOS runner and no Maestro job in CI; the local full-suite gate per phase is
+the E2E check. Pin Bun to the version in `packageManager`.
+**Exit:** a parity report with no open "must" gaps; CI green for check and unit tests; the full
+Maestro suite green locally.
 
 ## Out of scope
 Phone-call recording, Apple Watch, the desktop app, real integrations (Google Calendar, real

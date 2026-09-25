@@ -97,6 +97,7 @@ describe("makeTestD1", () => {
       "session",
       "transcript_segments",
       "user",
+      "user_settings",
       "verification",
     ]);
   });

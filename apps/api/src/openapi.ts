@@ -41,6 +41,16 @@ const TAGS = [
       "Folders: named sets of the signed-in person's own notes. A note can sit in any number of folders and never leaves My notes; a trashed member keeps its place but is not listed or counted. A folder's notes are GET /notes?folder=.",
     name: "Folders",
   },
+  {
+    description:
+      "The signed-in person's settings: three switches, all on until changed. Reading never writes; a patch changes only the keys it sends.",
+    name: "Settings",
+  },
+  {
+    description:
+      "Messages to the Notes team (a bug report, feedback) and to the signed-in person (the desktop link), sent through the email provider. Each answers 202 with a receipt.",
+    name: "Support",
+  },
 ];
 
 export const OPENAPI_DOCUMENT = {

@@ -32,6 +32,9 @@ export const e2eRouter = new Hono<E2eEnv>()
   .get("/e2e/otp", async (c) =>
     c.json(await c.var.e2e.latestOtp(c.req.query("email") ?? ""), 200)
   )
+  .get("/e2e/support", async (c) =>
+    c.json(await c.var.e2e.supportMessages(c.req.query("kind")), 200)
+  )
   .post("/e2e/reset", async (c) => c.json(await c.var.e2e.reset(), 200))
   .post("/e2e/seed", async (c) => c.json(await c.var.e2e.seed(), 200))
   .post("/e2e/folders", async (c) => c.json(await c.var.e2e.seedFolders(), 200))

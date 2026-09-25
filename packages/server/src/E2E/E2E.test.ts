@@ -225,6 +225,28 @@ describe("the E2E harness, phase 4", () => {
     expect(restored).toMatchObject({ title: "Launch planning review" });
     expect(restored.attendees).toHaveLength(3);
   });
+
+  // A flow renames e2e-person through better-auth's update-user; `user` survives a reset, so the
+  // seed is what must put the name (and a photo) back, on the same id a minted session names.
+  it("restores a seeded person's name and image on re-seed, keeping their id", async () => {
+    await fresh();
+    await d1
+      .prepare("UPDATE user SET name = ?, image = ? WHERE id = ?")
+      .bind("Riley Park", "https://img.example/riley.png", E2E_USERS.person.id)
+      .run();
+
+    await fresh();
+
+    const row = await d1
+      .prepare("SELECT id, name, image FROM user WHERE email = ?")
+      .bind(E2E_USERS.person.email)
+      .first<{ id: string; image: string | null; name: string }>();
+    expect(row).toEqual({
+      id: E2E_USERS.person.id,
+      image: null,
+      name: E2E_USERS.person.name,
+    });
+  });
 });
 
 // ── Phase 5: seeded transcripts and the transcription switch (docs/spec/phase-5.md §6.4, §7) ──
@@ -993,5 +1015,132 @@ describe("the E2E harness, phase 9", () => {
 
     expect(await rows("SELECT id FROM folders")).toEqual([]);
     expect(await rows("SELECT folder_id FROM folder_notes")).toEqual([]);
+  });
+});
+
+// ── Phase 10: the support outbox read (docs/spec/phase-10.md §6.1, §6.3 "Harness", §7) ─────────
+// `GET /e2e/support?kind=` is what `scripts/e2e-support.js` asserts a sent report against. The rows
+// are written straight into `email_outbox` at fixed instants, so "newest first" and "at most 10" are
+// exact; the send-then-read round trip through the real app is `apps/api/src/e2e-harness.test.ts`'s.
+// The harness method is not built yet, so it is read through a cast, and it is named here:
+// `supportMessages(kind) → { items: { to, subject, body, payload, createdAt }[] }`.
+
+type SupportItem = {
+  readonly body: string;
+  readonly createdAt: number;
+  readonly payload: Readonly<Record<string, string>>;
+  readonly subject: string;
+  readonly to: string;
+};
+type SupportHarness = {
+  supportMessages: (
+    kind: unknown
+  ) => Promise<{ readonly items: readonly SupportItem[] }>;
+};
+
+describe("the E2E harness, phase 10", () => {
+  let d1: TestD1;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    const container = buildContainer(envOver(d1));
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  const support = () => {
+    const read = (harness as unknown as Partial<SupportHarness>)
+      .supportMessages;
+    if (read === undefined) {
+      throw new Error("phase 10: the harness has no supportMessages (§6.3)");
+    }
+    return (kind: unknown) => read.call(harness, kind);
+  };
+
+  const AT = Date.UTC(2026, 8, 25, 12);
+
+  const outbox = async (
+    id: string,
+    kind: string,
+    createdAt: number,
+    subject = `Subject ${id}`
+  ) => {
+    await d1
+      .prepare(
+        "INSERT INTO email_outbox (id, kind, recipient, subject, body, payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+      )
+      .bind(
+        id,
+        kind,
+        "support@notes.example",
+        subject,
+        `Body ${id}`,
+        JSON.stringify({ receiptId: `sup_${id}` }),
+        createdAt
+      )
+      .run();
+  };
+
+  it("answers only the kind asked for, newest first, with its fields", async () => {
+    await harness.reset();
+    await harness.seed();
+    await outbox("out_1", "bug-report", AT);
+    await outbox(
+      "out_2",
+      "bug-report",
+      AT + 1000,
+      "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+    );
+    await outbox("out_3", "feedback", AT + 2000);
+    await outbox("out_4", "otp", AT + 3000);
+
+    const { items } = await support()("bug-report");
+
+    expect(items.map((item) => item.subject)).toEqual([
+      "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      "Subject out_1",
+    ]);
+    expect(items[0]).toEqual({
+      body: "Body out_2",
+      createdAt: AT + 1000,
+      payload: { receiptId: "sup_out_2" },
+      subject: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      to: "support@notes.example",
+    });
+    expect((await support()("feedback")).items).toHaveLength(1);
+    expect((await support()("desktop-reminder")).items).toEqual([]);
+  });
+
+  it("answers at most 10", async () => {
+    await harness.reset();
+    for (let i = 0; i < 12; i += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: fixed instants, one row at a time
+      await outbox(`out_${i}`, "feedback", AT + i * 1000);
+    }
+
+    const { items } = await support()("feedback");
+
+    expect(items).toHaveLength(10);
+    expect(items[0]?.subject).toBe("Subject out_11");
+  });
+
+  it("refuses the otp kind, and any other it does not serve, as ValidationFailed", async () => {
+    await expect(support()("otp")).rejects.toMatchObject({
+      _tag: "ValidationFailed",
+    });
+    await expect(support()("anything")).rejects.toMatchObject({
+      _tag: "ValidationFailed",
+    });
+  });
+
+  it("answers an empty list after a reset", async () => {
+    await outbox("out_reset", "bug-report", AT);
+
+    await harness.reset();
+
+    expect((await support()("bug-report")).items).toEqual([]);
   });
 });

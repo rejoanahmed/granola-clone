@@ -1,0 +1,33 @@
+# AC8, the phase-10 exit (docs/spec/phase-10.md §8): Sign out, now below the fold of the full
+# settings list, still ends the session — welcome shows with an empty email field, and a relaunch
+# that keeps the Keychain stays on welcome, so the credential was deleted rather than hidden.
+appId: ${APP_ID}
+name: Sign out from the full settings list
+tags:
+  - phase-10
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-settings-row.yaml
+    env:
+      ROW: settings-sign-out
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 30000
+# An empty iOS field reports its placeholder as its text.
+- assertVisible:
+    id: welcome-email
+    text: you@example\.com
+
+- runFlow: ../subflows/relaunch-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 180000
+- assertNotVisible:
+    id: home-screen

@@ -1,0 +1,63 @@
+# AC11 (docs/spec/phase-10.md §8, #04): the events card opens the work-email upsell. The seeded
+# address is not a personal provider, so the body is the designed copy. Continue anyway closes it
+# and leaves the card on home (designed); Sign up with work email signs out to an empty welcome
+# (designed).
+appId: ${APP_ID}
+name: The work-email upsell from the events card
+tags:
+  - phase-10
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- tapOn:
+    id: home-events-card
+- extendedWaitUntil:
+    visible:
+      id: work-email-sheet
+    timeout: 10000
+- assertVisible:
+    id: work-email-mark
+- assertVisible:
+    id: work-email-title
+    text: Much better with your work email
+- assertVisible:
+    id: work-email-body
+    text: Sign up with the email you use for work to see your meetings in Notes\.
+- assertVisible:
+    id: work-email-benefits
+- assertVisible:
+    id: work-email-sign-up
+    text: Sign up with work email
+- assertVisible:
+    id: work-email-continue
+    text: Continue anyway
+- takeScreenshot: phase-10-work-email
+
+- tapOn:
+    id: work-email-continue
+- extendedWaitUntil:
+    notVisible:
+      id: work-email-sheet
+    timeout: 10000
+- runFlow: ../subflows/assert-home-unobstructed.yaml
+- assertVisible:
+    id: home-events-card
+
+- tapOn:
+    id: home-events-card
+- extendedWaitUntil:
+    visible:
+      id: work-email-sheet
+    timeout: 10000
+- tapOn:
+    id: work-email-sign-up
+- extendedWaitUntil:
+    visible:
+      id: welcome-screen
+    timeout: 30000
+# An empty iOS field reports its placeholder as its text.
+- assertVisible:
+    id: welcome-email
+    text: you@example\.com
