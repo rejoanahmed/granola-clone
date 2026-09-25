@@ -1,0 +1,67 @@
+# AC1, exit criterion (docs/spec/phase-11.md §8, §3.1, #85, #01): with §6.5's standard schedule
+# staged, home's card lists person's first three upcoming meetings in the server's order — the one
+# in progress with its Now badge, then tomorrow's two — and "+1 more" for the fourth. The ended
+# meeting, the one past tomorrow and other's never show, and the notes list still sits below.
+appId: ${APP_ID}
+name: The events card lists seeded meetings
+tags:
+  - phase-11
+  - regression
+  - smoke
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/seed-calendar.yaml
+    env:
+      PRESET: standard
+- extendedWaitUntil:
+    visible:
+      id: home-events-list
+    timeout: 15000
+- assertNotVisible:
+    id: home-events-card
+- assertNotVisible:
+    id: home-events-loading
+- assertNotVisible:
+    id: home-events-error
+
+# Rows in the server's order (startAt, endAt, id), each read by its grouped a11y label (§3.1).
+- assertVisible:
+    id: home-event-cev_e2e_person_1
+    text: "Design review, ${output.nowLine}, Now"
+- assertVisible:
+    id: home-event-cev_e2e_person_2
+    text: "Catch up with the team, Tomorrow, 1:00 PM ‒ 2:00 PM"
+    below:
+      id: home-event-cev_e2e_person_1
+- assertVisible:
+    id: home-event-cev_e2e_person_3
+    text: "Weekly planning, Tomorrow, 3:00 PM ‒ 3:30 PM"
+    below:
+      id: home-event-cev_e2e_person_2
+- assertVisible:
+    id: home-events-more
+    text: '\+1 more'
+    below:
+      id: home-event-cev_e2e_person_3
+
+# The fourth is behind "+1 more"; ended, past tomorrow and another user's are never listed.
+- assertNotVisible:
+    id: home-event-cev_e2e_person_4
+- assertNotVisible:
+    id: home-event-cev_e2e_person_5
+- assertNotVisible:
+    id: home-event-cev_e2e_person_6
+- assertNotVisible:
+    id: home-event-cev_e2e_other_1
+
+- extendedWaitUntil:
+    visible:
+      id: home-note-not_e2e_launch
+      below:
+        id: home-events-list
+    timeout: 15000
+# Compared by eye against #85's preview row and #01's card (docs/TESTING.md §8, "Visual check").
+- takeScreenshot: phase-11-events-card

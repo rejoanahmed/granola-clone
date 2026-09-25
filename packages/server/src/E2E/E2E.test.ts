@@ -1,4 +1,12 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { makeSessions } from "../Auth/Sessions";
 import { buildContainer } from "../container";
 import { makeDrizzle } from "../Runtime/Drizzle";
@@ -1142,5 +1150,294 @@ describe("the E2E harness, phase 10", () => {
     await harness.reset();
 
     expect((await support()("bug-report")).items).toEqual([]);
+  });
+});
+
+// ── Phase 11: the fake calendar's store (docs/spec/phase-11.md §6.1, §6.5, §7 case 19) ────────────
+// `stageCalendar` (behind `POST /e2e/calendar`) replaces one role's rows in `fake_calendar_events`;
+// `setCalendarMode` (behind `POST /e2e/calendar/mode`) writes the `calendar` switch the fake reads.
+// Neither exists yet, so both are read through a cast. The demo preset is relative to the server's
+// clock, so the container's clock is pinned with fake timers (Date only) rather than a new dep.
+
+type CalendarHarness = {
+  setCalendarMode: (mode: unknown) => Promise<{ mode: string }>;
+  stageCalendar: (
+    body: unknown
+  ) => Promise<{ items: { id: string; title: string | null }[] }>;
+};
+type CalendarView = {
+  upcoming: (
+    who: E2eUser,
+    query: { until: number }
+  ) => Promise<{ items: { id: string; title: string | null }[] }>;
+};
+
+describe("the E2E harness, phase 11", () => {
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+  // 12:20 UTC, so the demo's `h` (the next whole UTC hour) is 13:00.
+  const T = Date.UTC(2026, 8, 25, 12, 20);
+  const H = Date.UTC(2026, 8, 25, 13);
+
+  let d1: TestD1;
+  let container: ReturnType<typeof buildContainer>;
+  let harness: E2eService;
+
+  beforeAll(() => {
+    d1 = makeTestD1();
+    container = buildContainer(envOver(d1));
+    if (container.e2e === null) {
+      throw new Error("an armed configuration built no harness");
+    }
+    harness = container.e2e;
+  });
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(T);
+    await harness.reset();
+    await harness.seed();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const calendar = () => harness as unknown as CalendarHarness;
+
+  const rows = async (sql: string) => (await d1.prepare(sql).all()).results;
+
+  const staged = () =>
+    rows(
+      "SELECT user_id, id, title, start_at, end_at, color, attendees, created_at FROM fake_calendar_events ORDER BY user_id, start_at, id"
+    );
+
+  const meeting = (title: string | null, startAt: number, endAt: number) => ({
+    endAt,
+    startAt,
+    title,
+  });
+
+  // §7 case 19
+  it("stages one role's events, defaulting ids to cev_e2e_<role>_<n> in array order", async () => {
+    const answer = await calendar().stageCalendar({
+      events: [
+        {
+          ...meeting("Design review", T - 15 * MINUTE, T + 45 * MINUTE),
+          attendees: [{ email: "priya@example.com", name: "Priya Raman" }],
+        },
+        { ...meeting(null, T + HOUR, T + 2 * HOUR), color: "#00FF00" },
+        { ...meeting("Named", T + 3 * HOUR, T + 4 * HOUR), id: "cev_given" },
+      ],
+      role: "person",
+    });
+
+    expect(answer).toEqual({
+      items: [
+        { id: "cev_e2e_person_1", title: "Design review" },
+        { id: "cev_e2e_person_2", title: null },
+        { id: "cev_given", title: "Named" },
+      ],
+    });
+    const written = await staged();
+    expect(written).toHaveLength(3);
+    expect(written[0]).toMatchObject({
+      created_at: T,
+      end_at: T + 45 * MINUTE,
+      id: "cev_e2e_person_1",
+      start_at: T - 15 * MINUTE,
+      title: "Design review",
+      user_id: E2E_USERS.person.id,
+    });
+    expect(JSON.parse(String(written[0]?.attendees))).toEqual([
+      { email: "priya@example.com", name: "Priya Raman" },
+    ]);
+    expect(written[1]).toMatchObject({ color: "#00FF00", title: null });
+  });
+
+  it("replaces only that role's rows", async () => {
+    await calendar().stageCalendar({
+      events: [meeting("Other’s meeting", T + HOUR, T + 2 * HOUR)],
+      role: "other",
+    });
+    await calendar().stageCalendar({
+      events: [
+        meeting("First", T + HOUR, T + 2 * HOUR),
+        meeting("Second", T + 3 * HOUR, T + 4 * HOUR),
+      ],
+      role: "person",
+    });
+
+    await calendar().stageCalendar({
+      events: [meeting("Only", T + HOUR, T + 2 * HOUR)],
+      role: "person",
+    });
+
+    expect(
+      (await staged()).map(({ id, title, user_id }) => ({ id, title, user_id }))
+    ).toEqual(
+      [
+        {
+          id: "cev_e2e_other_1",
+          title: "Other’s meeting",
+          user_id: E2E_USERS.other.id,
+        },
+        { id: "cev_e2e_person_1", title: "Only", user_id: E2E_USERS.person.id },
+      ].sort((a, b) => (a.user_id < b.user_id ? -1 : 1))
+    );
+
+    await calendar().stageCalendar({ events: [], role: "person" });
+
+    expect((await staged()).map(({ user_id }) => user_id)).toEqual([
+      E2E_USERS.other.id,
+    ]);
+  });
+
+  it.each([
+    [
+      "an event that ends at its start",
+      { events: [meeting("Zero", T, T)], role: "person" },
+    ],
+    [
+      "an event that ends before its start",
+      { events: [meeting("Backwards", T + HOUR, T)], role: "person" },
+    ],
+    [
+      "more than 50 attendees",
+      {
+        events: [
+          {
+            ...meeting("Crowd", T, T + HOUR),
+            attendees: Array.from({ length: 51 }, (_, n) => ({
+              name: `Guest ${n}`,
+            })),
+          },
+        ],
+        role: "person",
+      },
+    ],
+    [
+      "more than 50 events",
+      {
+        events: Array.from({ length: 51 }, (_, n) =>
+          meeting(`Meeting ${n}`, T + n * HOUR, T + n * HOUR + MINUTE)
+        ),
+        role: "person",
+      },
+    ],
+    ["an unknown role", { events: [], role: "administrator" }],
+    ["an unknown preset", { preset: "busy", role: "person" }],
+    [
+      "a key the event does not own",
+      {
+        events: [{ ...meeting("Extra", T, T + HOUR), location: "Room 1" }],
+        role: "person",
+      },
+    ],
+  ])(
+    "refuses %s as ValidationFailed (422), writing nothing",
+    async (_, body) => {
+      await expect(calendar().stageCalendar(body)).rejects.toMatchObject({
+        _tag: "ValidationFailed",
+        status: 422,
+      });
+      expect(await staged()).toEqual([]);
+    }
+  );
+
+  it("stages the demo preset at the next whole UTC hour of the server clock", async () => {
+    const answer = await calendar().stageCalendar({
+      preset: "demo",
+      role: "person",
+    });
+
+    expect(answer.items.map((item) => item.title)).toEqual([
+      "Design review",
+      "Catch up with the team",
+      "Weekly planning",
+    ]);
+    const written = await staged();
+    expect(
+      written.map((row) => ({
+        attendees: JSON.parse(String(row.attendees)).map(
+          (a: { name: string | null }) => a.name
+        ),
+        end_at: row.end_at,
+        start_at: row.start_at,
+        title: row.title,
+      }))
+    ).toEqual([
+      {
+        attendees: ["Priya Raman"],
+        end_at: H + HOUR,
+        start_at: H,
+        title: "Design review",
+      },
+      {
+        attendees: ["Priya Raman", "Sam Okafor"],
+        end_at: H + 3 * HOUR,
+        start_at: H + 2 * HOUR,
+        title: "Catch up with the team",
+      },
+      {
+        attendees: [],
+        end_at: H + 24 * HOUR + 30 * MINUTE,
+        start_at: H + 24 * HOUR,
+        title: "Weekly planning",
+      },
+    ]);
+
+    await calendar().stageCalendar({ preset: "demo", role: "person" });
+
+    expect(await staged()).toEqual(written);
+  });
+
+  it("sets the calendar switch, refusing a mode it does not know", async () => {
+    await expect(calendar().setCalendarMode("fail")).resolves.toEqual({
+      mode: "fail",
+    });
+    expect(
+      await rows("SELECT value FROM e2e_switches WHERE name = 'calendar'")
+    ).toEqual([{ value: "fail" }]);
+
+    await expect(calendar().setCalendarMode("sometimes")).rejects.toMatchObject(
+      {
+        _tag: "ValidationFailed",
+        status: 422,
+      }
+    );
+  });
+
+  it("serves the staged rows through the container's calendar, and fails them while the switch reads fail", async () => {
+    await calendar().stageCalendar({
+      events: [meeting("Design review", T + HOUR, T + 2 * HOUR)],
+      role: "person",
+    });
+    const upcoming = (container as unknown as { calendar: CalendarView })
+      .calendar;
+
+    await expect(
+      upcoming.upcoming(E2E_USERS.person, { until: T + 24 * HOUR })
+    ).resolves.toMatchObject({
+      items: [{ id: "cev_e2e_person_1", title: "Design review" }],
+    });
+
+    await calendar().setCalendarMode("fail");
+
+    await expect(
+      upcoming.upcoming(E2E_USERS.person, { until: T + 24 * HOUR })
+    ).rejects.toMatchObject({ _tag: "CalendarUnavailable", status: 503 });
+  });
+
+  it("empties the table and the switch on reset", async () => {
+    await calendar().stageCalendar({ preset: "demo", role: "person" });
+    await calendar().setCalendarMode("fail");
+
+    await harness.reset();
+
+    expect(await staged()).toEqual([]);
+    expect(
+      await rows("SELECT value FROM e2e_switches WHERE name = 'calendar'")
+    ).toEqual([]);
   });
 });

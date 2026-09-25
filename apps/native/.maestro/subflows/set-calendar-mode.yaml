@@ -1,0 +1,10 @@
+# Script the fake calendar for this run: MODE is `auto` or `fail` (docs/spec/phase-11.md §6.1).
+# Every reset puts it back to `auto`. The caller relaunches or refetches to see the change.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-calendar-mode.js
+    env:
+      MODE: ${MODE}

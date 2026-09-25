@@ -32,6 +32,7 @@ const MISSING_ID = "not_0000000000009999";
 const NOTE_ID = /^not_[A-Za-z0-9_-]{8,}$/;
 const ATTENDEE_ID = /^att_[A-Za-z0-9_-]{8,}$/;
 const CHECK_FAILED = /CHECK constraint failed/;
+const UNIQUE_FAILED = /UNIQUE constraint failed/;
 
 // The shapes these tests read back, written out because the service's own types do not exist yet.
 type Attendee = {
@@ -958,5 +959,65 @@ describe("NotesService with folders, phase 9", () => {
       .bind(LAUNCH)
       .run();
     expect(await notes.get(person, LAUNCH)).toMatchObject({ folderIds: [] });
+  });
+});
+
+// ── Phase 11: restore and the meeting link (docs/spec/phase-11.md §6.3 "Why trashing unlinks", §7
+// case 18) ────────────────────────────────────────────────────────────────────────────────────────
+// `notes_owner_event_live_idx` allows one live note per (owner, event). Trashing a linked note frees
+// the event, so a newer note may take it; restoring the older one then must not break the index,
+// so restore clears the restored note's `calendar_event_id` — and only when another live note holds
+// the event. The links are stamped by SQL, standing for a create from a meeting (Recordings).
+
+describe("NotesService.restore with a meeting link, phase 11", () => {
+  const linkTo = (id: string, eventId: string | null) =>
+    d1
+      .prepare("UPDATE notes SET calendar_event_id = ? WHERE id = ?")
+      .bind(eventId, id)
+      .run();
+
+  const linkOf = async (id: string) =>
+    (await rowsOf("SELECT calendar_event_id FROM notes WHERE id = ?", id))[0]
+      ?.calendar_event_id;
+
+  // §7 case 18
+  it("unlinks the restored note when a newer live note holds its event, and leaves that one linked", async () => {
+    const a = await service().create(actor(), {
+      title: "Catch up with the team",
+    });
+    await linkTo(a.id, "cev_1");
+    await service().trash(actor(), a.id);
+    const b = await service().create(actor(), {
+      title: "Catch up with the team",
+    });
+    await linkTo(b.id, "cev_1");
+
+    await expect(service().restore(actor(), a.id)).resolves.toMatchObject({
+      id: a.id,
+      trashedAt: null,
+    });
+
+    expect(await linkOf(a.id)).toBeNull();
+    expect(await linkOf(b.id)).toBe("cev_1");
+  });
+
+  it("keeps the link of a restored note whose event nobody else holds", async () => {
+    const a = await service().create(actor(), { title: "Design review" });
+    await linkTo(a.id, "cev_1");
+    await service().trash(actor(), a.id);
+
+    await service().restore(actor(), a.id);
+
+    expect(await linkOf(a.id)).toBe("cev_1");
+  });
+
+  it("refuses a second live note for one owner's event, and allows it for another owner", async () => {
+    const a = await service().create(actor(), { title: "One" });
+    const b = await service().create(actor(), { title: "Two" });
+    const theirs = await service().create(otherActor(), { title: "Theirs" });
+    await linkTo(a.id, "cev_1");
+
+    await expect(linkTo(b.id, "cev_1")).rejects.toThrow(UNIQUE_FAILED);
+    await expect(linkTo(theirs.id, "cev_1")).resolves.toBeDefined();
   });
 });

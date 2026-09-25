@@ -386,3 +386,106 @@ describe("GET /notes/{id}/transcript", () => {
     });
   });
 });
+
+// ── Phase 11: POST /recordings from a meeting (docs/spec/phase-11.md §6.1, §7 case 21) ─────────────
+// The body gains `calendarEventId`; the service's two new refusals reach the wire with their
+// status. The error classes do not exist yet, so they are imported inside the block and the phase 5
+// cases above keep running.
+
+describe("POST /recordings with a calendar event, phase 11", () => {
+  type ErrorClass = new (details: object) => Error;
+
+  const calendarError = async (name: string): Promise<ErrorClass> => {
+    // @ts-expect-error phase 11: the calendar errors are specified (phase-11.md §6.2, §11 API 1), not built
+    const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
+      string,
+      ErrorClass | undefined
+    >;
+    const found = errors[name];
+    if (found === undefined) {
+      throw new Error(`no ${name} in @gc/domain/Calendar/Errors`);
+    }
+    return found;
+  };
+
+  it("hands the service the event id with the start", async () => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(app, "POST", "/recordings", {
+      calendarEventId: "cev_e2e_person_2",
+      startedAt: AT,
+    });
+
+    expect(res.status).toBe(201);
+    expect(calls).toEqual([
+      {
+        args: [actor(), { calendarEventId: "cev_e2e_person_2", startedAt: AT }],
+        method: "create",
+      },
+    ]);
+  });
+
+  it.each([
+    ["a malformed id", { calendarEventId: "bad id!" }],
+    ["a key the body does not own", { calendarEventId: "cev_1", extra: 1 }],
+  ])("is 422 for %s, and never reaches the service", async (_, body) => {
+    const { app, calls } = appAs(actor());
+
+    const res = await send(app, "POST", "/recordings", body);
+
+    expect(res.status).toBe(422);
+    expect(calls).toEqual([]);
+  });
+
+  it("is 404 CalendarEventNotFound for an event no longer on the calendar", async () => {
+    const NotFound = await calendarError("CalendarEventNotFound");
+    const { app } = appAs(actor(), {
+      create: () =>
+        Promise.reject(new NotFound({ calendarEventId: "cev_gone" })),
+    });
+
+    const res = await send(app, "POST", "/recordings", {
+      calendarEventId: "cev_gone",
+    });
+
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({
+      _tag: "CalendarEventNotFound",
+      details: { calendarEventId: "cev_gone" },
+    });
+  });
+
+  it("is 409 CalendarEventHasNote carrying the note it already has", async () => {
+    const HasNote = await calendarError("CalendarEventHasNote");
+    const { app } = appAs(actor(), {
+      create: () =>
+        Promise.reject(
+          new HasNote({ calendarEventId: "cev_1", noteId: NOTE_ID })
+        ),
+    });
+
+    const res = await send(app, "POST", "/recordings", {
+      calendarEventId: "cev_1",
+    });
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      _tag: "CalendarEventHasNote",
+      details: { calendarEventId: "cev_1", noteId: NOTE_ID },
+    });
+  });
+
+  it("is 503 CalendarUnavailable when the calendar is down", async () => {
+    const Unavailable = await calendarError("CalendarUnavailable");
+    const { app } = appAs(actor(), {
+      create: () => Promise.reject(new Unavailable({})),
+    });
+
+    const res = await send(app, "POST", "/recordings", {
+      calendarEventId: "cev_1",
+    });
+
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ _tag: "CalendarUnavailable" });
+  });
+});

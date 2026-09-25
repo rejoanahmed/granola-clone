@@ -23,6 +23,7 @@
           "EXPECT_SUBJECT",
           "KIND",
           "MODE",
+          "PRESET",
           "ROLE",
           "TIMES",
           "http",

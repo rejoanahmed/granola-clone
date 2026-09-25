@@ -461,6 +461,55 @@ These must exist. The names are the specification; the phrasing in the test file
 - `BugReportCreate` refuses `"   "`, 5001 characters, a missing `includeDiagnostics` and an extra
   key, and trims; `UserSettingsPatch` is strict
 
+### `Integrations/Calendar/Calendar.test.ts`, `Calendar/Calendar.test.ts`, `Calendar/Calendar.http.test.ts`, `Domain/Calendar.test.ts` (phase 11)
+
+- the fake lists exactly one user's events overlapping `[from, until)`, records every call, answers
+  `null` for an unknown id, and raises `CalendarUnavailable` after recording the call under
+  `failWith("unavailable")` or a `fail` switch; `FakeCalendarRepo` keys rows by `(user, id)`
+- `upcoming` with nothing staged is `{ items: [] }` and asked the fake for `[T, until)`; it keeps
+  in-progress, later-today and tomorrow, and drops ended-at-T, starts-at-until and `endAt ≤ startAt`
+- 25 events come back as the first 20 by `(startAt, endAt, id)`
+- a blank title is `null`, 600 characters are cut to 500, `#db35f2` is `#DB35F2` and `magenta` the
+  default, a nameless and addressless attendee is dropped, `E2E-Person@GCNotes.test` is `isMe`
+- a live note with the event links it by `noteId`, a trashed one does not, and another user's never
+- `until = T` and `T + 14d + 1` are 422 and ask the calendar nothing; `T + 14d` is accepted; an
+  outage is 503
+- `GET /calendar/events` is 200 `UpcomingEventsPage` with `until` coerced, 422 without `until`, with
+  `abc` or a fraction, 503 on an outage and 401 anonymous
+
+### `Recordings/Recordings.test.ts` and `Recordings.http.test.ts` — from a meeting (phase 11)
+
+- a create with `cev_e2e_person_2` is titled "Catch up with the team", lists
+  `[E2E Person (me), Priya Raman, Sam Okafor]` (the owner's own invite entry dropped), stores
+  `calendar_event_id` and the body's `startedAt`, and calls `getEvent` once
+- an unknown event (or another user's) is 404 `CalendarEventNotFound` and writes nothing; a second
+  create is 409 `CalendarEventHasNote` naming the first note, until that note is trashed; a create
+  that loses the race to a concurrent insert is 409 with the winner's id, never 500
+- a blank title is "Untitled note"; 250 characters are cut at a word to at most 200; name-only and
+  email-only guests are kept, duplicates by person key once, 60 capped at 50 plus the owner
+- no `calendarEventId` never calls the port; an outage during a create from a meeting is 503 and
+  writes nothing
+- `POST /recordings` hands the service `calendarEventId`, and is 422 for `"bad id!"` and an extra
+  key, 404/409/503 with the service's tags and details
+
+### `Generations`, `Notes`, `E2E`, `AppConfig`, `app.test.ts`, apiclient — phase 11
+
+- a note titled after its meeting keeps its title through a successful generation
+- restoring a trashed linked note while a newer live note holds its event clears the restored
+  note's `calendar_event_id` and leaves the newer one linked; the partial unique index refuses a
+  second live note per owner and event
+- `stageCalendar` replaces only one role's rows, defaults ids to `cev_e2e_<role>_<n>`, refuses
+  `endAt ≤ startAt`, more than 50 attendees or events, an unknown role or preset, an extra key; the
+  demo preset lands at the next whole UTC hour; `setCalendarMode` writes the `calendar` switch; the
+  container's calendar serves the staged rows and fails while the switch reads `fail`; reset empties
+  both
+- `CALENDAR_MODE` defaults to `fake`, is refused as `fake` in production and as `live`, naming the
+  blocker
+- the OpenAPI document lists `/calendar/events` under `Calendar` and no `/e2e/calendar*`; the three
+  errors render with their statuses; the client sends `GET /calendar/events?until=`, keys
+  `calendar.all` / `calendar.upcoming(until)`, and `createRecording`, `trashNote` and `restoreNote`
+  invalidate `["calendar"]`
+
 ### `Testing/Database.test.ts` — the harness itself
 
 - the real migration files apply, and the database starts empty
@@ -766,12 +815,15 @@ apps/native/.maestro/
     filter-by-folder.yaml  FOLDER_ID/NAME: open the drawer, pick the folder, wait for home's title
     open-settings.yaml   from home, the avatar, then wait for Settings
     open-settings-row.yaml  ROW param: open-settings, scroll the list until ROW shows, tap it
+    seed-calendar.yaml   PRESET param (standard | none): stage the fake calendar (scripts/e2e-calendar.js,
+                         which also sets output.nowLine), then relaunch and wait for home to refetch
+    set-calendar-mode.yaml  MODE param (auto | fail): script the fake calendar (scripts/e2e-calendar-mode.js)
     wait-for-home.yaml   after relaunch-app.yaml, the adopted session back on home and its list settled
                          (the support mail a phase-10 flow sent is checked by scripts/e2e-support.js,
                          KIND/EXPECT_SUBJECT/EXPECT_BODY, through `runScript`)
   smoke/
     launch.yaml          tag `smoke`: launches signed out and lands on welcome-screen
-  phase-2/ … phase-10/  tagged per phase (plus `regression`); phase-3 signs in with real codes
+  phase-2/ … phase-11/  tagged per phase (plus `regression`); phase-3 signs in with real codes
 ```
 
 The API-backed flows need the local API running with the E2E harness armed; `scripts/maestro.sh`
@@ -857,7 +909,7 @@ phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-
 listed in docs/spec/phase-7.md §8, phase 8 the seven `phase-8-*` shots listed in
 docs/spec/phase-8.md §8 (#60–#66), and phase 9 the ten `phase-9-*` shots listed in
 docs/spec/phase-9.md §8 (#17, #18, #50), and phase 10 the fourteen `phase-10-*` shots listed in
-docs/spec/phase-10.md §8 (#04, #51, #80–#90). Run with `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
+docs/spec/phase-10.md §8 (#04, #51, #80–#90), and phase 11 `phase-11-events-card`, `phase-11-live-card`, `phase-11-has-notes`, `phase-11-events-error` and `phase-11-event-gone` (#85, #01, #102; the rest designed). Run with `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or
 recorded in `docs/plan/BLOCKERS.md`. The comparison is by eye, deliberately: discovery was shot on

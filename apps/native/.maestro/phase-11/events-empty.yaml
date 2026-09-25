@@ -1,0 +1,31 @@
+# AC3 (docs/spec/phase-11.md §8, §3.1, #01, #04): with nothing staged, the card is #01's empty
+# state, unchanged since phase 10 — its label, no list — and it still opens the work-email upsell.
+appId: ${APP_ID}
+name: The events card with no upcoming meetings
+tags:
+  - phase-11
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+# The base seed stages no events (§6.5), so nothing is staged here.
+- runFlow: ../subflows/open-home.yaml
+- extendedWaitUntil:
+    visible:
+      id: home-events-card
+    timeout: 15000
+- assertVisible:
+    id: home-events-card
+    text: "No upcoming events, Sign up with your work email\\."
+- assertNotVisible:
+    id: home-events-list
+- assertNotVisible:
+    id: home-events-loading
+- assertNotVisible:
+    id: home-events-error
+- tapOn:
+    id: home-events-card
+- extendedWaitUntil:
+    visible:
+      id: work-email-sheet
+    timeout: 10000

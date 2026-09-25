@@ -1,0 +1,48 @@
+# AC4 (docs/spec/phase-11.md §8, §3.1): with the calendar failing, the card is the designed error
+# state and neither the list nor the empty card; once the calendar is back, a tap on the error card
+# refetches and the meetings appear.
+appId: ${APP_ID}
+name: The events card when the calendar cannot be read
+tags:
+  - phase-11
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/set-calendar-mode.yaml
+    env:
+      MODE: fail
+# The seed relaunches the app, so its first fetch meets the failing calendar.
+- runFlow:
+    file: ../subflows/seed-calendar.yaml
+    env:
+      PRESET: standard
+- extendedWaitUntil:
+    visible:
+      id: home-events-error
+    timeout: 20000
+- assertVisible:
+    id: home-events-error
+    text: "Couldn’t load your calendar\\. Tap to try again\\."
+- assertNotVisible:
+    id: home-events-list
+- assertNotVisible:
+    id: home-events-card
+- takeScreenshot: phase-11-events-error
+
+- runFlow:
+    file: ../subflows/set-calendar-mode.yaml
+    env:
+      MODE: auto
+- tapOn:
+    id: home-events-error
+- extendedWaitUntil:
+    visible:
+      id: home-events-list
+    timeout: 15000
+- assertVisible:
+    id: home-event-cev_e2e_person_2
+- assertNotVisible:
+    id: home-events-error

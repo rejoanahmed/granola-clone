@@ -100,6 +100,8 @@ describe("the worker's HTTP assembly", () => {
         "/me/desktop-reminder",
         "/support/bug-reports",
         "/support/feedback",
+        // Phase 11 (docs/spec/phase-11.md §6.1). `/e2e/calendar` and its mode are absent.
+        "/calendar/events",
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
@@ -112,6 +114,7 @@ describe("the worker's HTTP assembly", () => {
       "Folders",
       "Settings",
       "Support",
+      "Calendar",
     ]);
   });
 
@@ -978,5 +981,71 @@ describe("the settings, support and account routes, phase 10", () => {
       });
     }
     expect(Object.keys(doc.paths)).not.toContain("/e2e/support");
+  });
+});
+
+describe("the calendar routes, phase 11", () => {
+  it("mounts GET /calendar/events, answering 401 Unauthorized without a session", async () => {
+    const response = await app.request("/calendar/events?until=1", {}, env);
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({
+      _tag: "Unauthorized",
+    });
+  });
+
+  it("documents /calendar/events under the Calendar tag with its 422 and 503, and not the harness's calendar routes", async () => {
+    const response = await app.request("/api/doc", {}, env);
+    const doc = (await response.json()) as {
+      paths: Record<
+        string,
+        Record<string, { responses?: Record<string, unknown>; tags?: string[] }>
+      >;
+    };
+
+    const operation = doc.paths["/calendar/events"]?.get;
+    expect(operation?.tags).toEqual(["Calendar"]);
+    expect(Object.keys(operation?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "422", "503"])
+    );
+    expect(
+      Object.keys(doc.paths["/recordings"]?.post?.responses ?? {})
+    ).toEqual(expect.arrayContaining(["201", "404", "409", "503"]));
+    expect(Object.keys(doc.paths)).not.toContain("/e2e/calendar");
+    expect(Object.keys(doc.paths)).not.toContain("/e2e/calendar/mode");
+  });
+
+  it.each([
+    ["CalendarUnavailable", 503, {}],
+    ["CalendarEventNotFound", 404, { calendarEventId: "cev_gone" }],
+    [
+      "CalendarEventHasNote",
+      409,
+      { calendarEventId: "cev_1", noteId: "not_0000000000000001" },
+    ],
+  ])("renders %s as %i in the error envelope", async (tag, status, details) => {
+    type ErrorClass = new (init: object) => Error;
+    // @ts-expect-error phase 11: the calendar errors are specified (phase-11.md §6.2, §11 API 1), not built
+    const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
+      string,
+      ErrorClass | undefined
+    >;
+    const ErrorOf = errors[tag];
+    if (ErrorOf === undefined) {
+      throw new Error(`no ${tag} in @gc/domain/Calendar/Errors`);
+    }
+    const failing = new Hono<AppEnv>()
+      .get("/", () => {
+        throw new ErrorOf(details);
+      })
+      .onError(onError);
+
+    const response = await failing.request("/");
+
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toMatchObject({
+      _tag: tag,
+      details,
+    });
   });
 });

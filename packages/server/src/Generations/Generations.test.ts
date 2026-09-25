@@ -1186,3 +1186,28 @@ describe("GenerationsService.sweep", () => {
     expect(queue.sent).toHaveLength(sentBefore);
   });
 });
+
+// ── Phase 11: a meeting's title survives generation (docs/spec/phase-11.md §6.3, §7 case 17) ──────
+// A note started from a meeting is written with the meeting's title rather than "Untitled note"
+// (§6.3). The title is stamped here by SQL, standing for that create: what is under test is that
+// generation writes a title only over the default, which phase 6 already guarantees. No code
+// changes for this case; it pins the rule the meeting's title depends on.
+
+describe("a meeting's title, phase 11", () => {
+  // §7 case 17
+  it("keeps a note titled after its meeting through a successful generation, and writes the body", async () => {
+    const { generationId, noteId } = await settled();
+    await d1
+      .prepare("UPDATE notes SET title = ? WHERE id = ?")
+      .bind("Catch up with the team", noteId)
+      .run();
+
+    await expect(generations().run(generationId)).resolves.toBe("done");
+
+    expect(await rowOf(generationId)).toMatchObject({ status: "generated" });
+    await expect(notes().get(actor(), noteId)).resolves.toMatchObject({
+      bodyMarkdown: briefBody(GREETING_PARAGRAPH),
+      title: "Catch up with the team",
+    });
+  });
+});

@@ -1,0 +1,19 @@
+# Stage the fake calendar (docs/spec/phase-11.md §6.5): PRESET is `standard` (§6.5's table, and
+# `output.nowLine` = row 1's time text) or `none`. Run after open-home.yaml, whose reset clears the
+# table; home has already fetched its events by then, so the app is relaunched (Keychain kept) and
+# home fetches the staged rows on the way back. Fails the flow on anything but a 200.
+#
+#   - runFlow:
+#       file: ../subflows/seed-calendar.yaml
+#       env:
+#         PRESET: standard
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runScript:
+    file: ../scripts/e2e-calendar.js
+    env:
+      PRESET: ${PRESET}
+- runFlow: relaunch-app.yaml
+- runFlow: wait-for-home.yaml
