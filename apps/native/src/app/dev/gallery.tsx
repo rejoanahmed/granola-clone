@@ -251,10 +251,6 @@ export default function GalleryScreen() {
           </View>
         </Section>
 
-        <Section testID="gallery-calendar" title="Events card">
-          <CalendarGallery now={now} />
-        </Section>
-
         <Section testID="gallery-fields" title="Fields">
           <TextField
             onChangeText={setField}
@@ -417,6 +413,10 @@ export default function GalleryScreen() {
               tone="dark"
             />
           </View>
+        </Section>
+
+        <Section testID="gallery-calendar" title="Events card">
+          <CalendarGallery now={now} />
         </Section>
       </ScrollView>
     </SafeAreaView>
