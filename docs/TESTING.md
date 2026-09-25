@@ -682,7 +682,9 @@ itself cover the app on every clean launch. All of them are inert in a Release b
 
 No assertion notices that Newsreader fell back to the system font or that a colour drifted, so the
 phase-2 flows also take screenshots: `phase-2-home` (home-shell.yaml), `phase-2-gallery`
-(gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml). Run with
+(gallery.yaml) and `phase-2-sheet-demo` (gallery-sheet.yaml); phase 6 adds `phase-6-generating`
+(#106), `phase-6-generated` (#10), `phase-6-generated-end` (#11) from generate-notes.yaml and
+`phase-6-short` (#40, #107) from short-recording.yaml. Run with
 `--test-output-dir <dir>` so they land in one place, then open each next to its discovery shot
 (`screens/01-home/shot.png` for home, `screens/16-note-attendees-sheet/shot.png` for the sheet)
 before the phase's review step. Check the serif title, the gutters and the fills; a gap is fixed or

@@ -31,7 +31,7 @@ env:
     visible:
       id: note-status-text
       text: Generating notes\.\.\.
-    timeout: 30000
+    timeout: 15000
 
 # Three inline passes in `fail`, one attempt each; the third writes `failed` (§8 note 1).
 - runFlow:
@@ -42,7 +42,7 @@ env:
     visible:
       id: note-status-text
       text: Couldn.t generate notes\.
-    timeout: 30000
+    timeout: 15000
 - assertVisible:
     id: note-status-retry
     text: Retry
@@ -74,7 +74,7 @@ env:
 - extendedWaitUntil:
     notVisible:
       id: note-status
-    timeout: 30000
+    timeout: 15000
 - extendedWaitUntil:
     visible:
       id: note-title

@@ -30,7 +30,7 @@ env:
     visible:
       id: note-status-text
       text: Generating notes\.\.\.
-    timeout: 30000
+    timeout: 15000
 
 - tapOn:
     id: note-back
@@ -78,7 +78,7 @@ env:
 - extendedWaitUntil:
     notVisible:
       id: note-status
-    timeout: 30000
+    timeout: 15000
 - assertVisible:
     id: note-title
     text: My own title

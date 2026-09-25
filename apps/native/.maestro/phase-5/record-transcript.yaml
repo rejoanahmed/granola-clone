@@ -96,7 +96,7 @@ env:
 - extendedWaitUntil:
     notVisible:
       id: note-status
-    timeout: 30000
+    timeout: 15000
 - extendedWaitUntil:
     visible:
       id: note-title

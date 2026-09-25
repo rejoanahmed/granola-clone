@@ -52,7 +52,7 @@ env:
     visible:
       id: note-status-text
       text: Generating notes\.\.\.
-    timeout: 30000
+    timeout: 15000
 - assertVisible:
     id: note-status
 - assertVisible:
@@ -75,7 +75,7 @@ env:
 - extendedWaitUntil:
     notVisible:
       id: note-status
-    timeout: 30000
+    timeout: 15000
 - extendedWaitUntil:
     visible:
       id: note-title
@@ -111,6 +111,8 @@ env:
       id: note-body-end
     direction: DOWN
     timeout: 20000
+# note-body-end reads visible under the Ask pill; one more scroll brings the last block above it.
+- scroll
 # Compared by eye against #11 (docs/TESTING.md §8, "Visual check").
 - takeScreenshot: phase-6-generated-end
 - scrollUntilVisible:
