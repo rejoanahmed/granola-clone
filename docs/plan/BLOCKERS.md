@@ -230,3 +230,19 @@
   If it does not stream through a dev build, the stub is to read the whole body at `done` and render
   it at once: the UI's states are unchanged and only the token-by-token growth is lost. Record it
   here if that happens.
+- **The turn write is ordered, not atomic.** `ChatsService` takes no `UnitOfWork` (its deps are
+  `{ clock, ids, llm, logger, repo }`), so `ChatsRepo.writeTurn` writes the thread, then both
+  messages in one statement, then the thread's clock. A failure between the first two leaves an
+  empty thread in history (preview ""), never a message without its thread. A concurrent send into
+  the same thread loses on the unique `(thread_id, position)` and answers `ChatBusy`.
+- **A `name:` person key is matched on `lower(trim(name))` in SQL.** `personKeyOf` also collapses
+  inner whitespace, which SQLite cannot express without a function; a stored name with a double
+  space is not found under its key. Attendees with an address (every seeded one) use `email:`.
+- **A client that disconnects mid-answer relies on the request staying alive.** The service runs
+  the answer detached from its reader and `pipe` drains it without writing, so the answer is stored
+  as long as the Worker keeps the request's promise. If the runtime cancels it after the client
+  goes, the row stays `streaming`, reads as `failed` after two minutes, and Retry recovers it. No
+  `waitUntil` is wired: the handler has no seam for it without Hono reaching the service.
+- **`traced()` spans `Llm.streamAnswer` for the call only, not the stream.** The wrapper ends a span
+  when a function returns a non-promise, so the span measures creating the iterator; the answer's
+  duration is visible only through the `chat.answer.*` log events.
