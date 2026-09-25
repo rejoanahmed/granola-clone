@@ -12,6 +12,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, SectionList, StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { chatsInfiniteQuery, useDeleteChat, usePinChat } from "./api";
 import { CHAT_COPY } from "./copy";
@@ -148,58 +149,62 @@ export function HistorySheet({ onClose }: { readonly onClose: () => void }) {
 
   const menuThread = menu?.thread;
   return (
-    <View ref={root} style={styles.flex}>
-      <SheetChrome
-        backgroundColor={colors.bg.history}
-        closeOnLeft
-        closeTestID="chat-history-close"
-        divider={false}
-        onClose={onClose}
-        testID="chat-history-sheet"
-        title={CHAT_COPY.history.title}
-      >
-        <View style={styles.flex}>{content}</View>
-        <HistorySearch onChange={setText} value={text} />
-      </SheetChrome>
-      <ActionMenu
-        anchor={
-          menu ? { align: "left", frame: menu.frame, gap: MENU_GAP } : null
-        }
-        entries={
-          menuThread
-            ? [
-                {
-                  icon: menuThread.pinned ? PinOff : Pin,
-                  label: menuThread.pinned
-                    ? CHAT_COPY.history.unpin
-                    : CHAT_COPY.history.pin,
-                  onPress: () => {
-                    setMenu(null);
-                    pin.mutate({
-                      id: menuThread.id,
-                      pinned: !menuThread.pinned,
-                    });
+    // A formSheet is its own native presentation, outside the app root's gesture root, so the
+    // rows' swipe needs one of its own or a swipe reads as a tap on the row.
+    <GestureHandlerRootView style={styles.flex}>
+      <View ref={root} style={styles.flex}>
+        <SheetChrome
+          backgroundColor={colors.bg.history}
+          closeOnLeft
+          closeTestID="chat-history-close"
+          divider={false}
+          onClose={onClose}
+          testID="chat-history-sheet"
+          title={CHAT_COPY.history.title}
+        >
+          <View style={styles.list}>{content}</View>
+          <HistorySearch onChange={setText} value={text} />
+        </SheetChrome>
+        <ActionMenu
+          anchor={
+            menu ? { align: "left", frame: menu.frame, gap: MENU_GAP } : null
+          }
+          entries={
+            menuThread
+              ? [
+                  {
+                    icon: menuThread.pinned ? PinOff : Pin,
+                    label: menuThread.pinned
+                      ? CHAT_COPY.history.unpin
+                      : CHAT_COPY.history.pin,
+                    onPress: () => {
+                      setMenu(null);
+                      pin.mutate({
+                        id: menuThread.id,
+                        pinned: !menuThread.pinned,
+                      });
+                    },
+                    testID: "chat-history-menu-pin",
                   },
-                  testID: "chat-history-menu-pin",
-                },
-                {
-                  destructive: true,
-                  icon: Trash2,
-                  label: CHAT_COPY.history.delete,
-                  onPress: () => {
-                    setMenu(null);
-                    remove.mutate(menuThread.id);
+                  {
+                    destructive: true,
+                    icon: Trash2,
+                    label: CHAT_COPY.history.delete,
+                    onPress: () => {
+                      setMenu(null);
+                      remove.mutate(menuThread.id);
+                    },
+                    testID: "chat-history-menu-delete",
                   },
-                  testID: "chat-history-menu-delete",
-                },
-              ]
-            : []
-        }
-        inline
-        onClose={() => setMenu(null)}
-        testID="chat-history-menu"
-      />
-    </View>
+                ]
+              : []
+          }
+          inline
+          onClose={() => setMenu(null)}
+          testID="chat-history-menu"
+        />
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -214,6 +219,8 @@ const styles = StyleSheet.create({
   centred: { textAlign: "center" },
   emptyTitle: { fontSize: 28, lineHeight: 34 },
   flex: { flex: 1 },
+  // Clipped, so a scrolled list never draws over the sheet's header.
+  list: { flex: 1, overflow: "hidden" },
   section: {
     fontWeight: "500",
     marginBottom: spacing.md,

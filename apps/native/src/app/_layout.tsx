@@ -100,7 +100,15 @@ function ThemedLayout() {
           options={{ ...SHEET, sheetAllowedDetents: [1] }}
         />
         <Stack.Screen name="ask/index" options={{ presentation: "modal" }} />
-        <Stack.Screen name="ask/history" options={CHAT_SHEET} />
+        <Stack.Screen
+          name="ask/history"
+          // The large detent too, so the sheet can rise with the keyboard when Search is focused
+          // and the rows stay above it.
+          options={{
+            ...SHEET,
+            sheetAllowedDetents: [CHAT_SHEET_DETENT, 1],
+          }}
+        />
         <Stack.Screen name="ask/activity/[messageId]" options={CHAT_SHEET} />
         <Stack.Screen name="ask/citation/[noteId]" options={CHAT_SHEET} />
         <Stack.Screen

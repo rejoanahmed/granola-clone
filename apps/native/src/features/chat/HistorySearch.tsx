@@ -8,6 +8,8 @@ import {
 } from "@native/design";
 import { Search, X } from "lucide-react-native";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CHAT_COPY } from "./copy";
 
@@ -25,8 +27,15 @@ export function HistorySearch({
   readonly value: string;
 }) {
   const insets = useSafeAreaInsets();
+  // Docked above the keyboard (#24): the sheet's bottom is the screen's, so it rides the
+  // keyboard's own height.
+  const keyboard = useReanimatedKeyboardAnimation();
+  const rest = insets.bottom + spacing.sm;
+  const lift = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(rest, -keyboard.height.value + spacing.sm),
+  }));
   return (
-    <View style={[styles.dock, { paddingBottom: insets.bottom + spacing.sm }]}>
+    <Animated.View style={[styles.dock, lift]}>
       <View style={styles.field}>
         <Search
           color={colors.text.tertiary}
@@ -60,7 +69,7 @@ export function HistorySearch({
           </Pressable>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

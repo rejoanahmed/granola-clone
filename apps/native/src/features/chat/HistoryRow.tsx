@@ -11,6 +11,7 @@ import {
 import { Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useRef } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable as GesturePressable } from "react-native-gesture-handler";
 import ReanimatedSwipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -118,51 +119,54 @@ export function HistoryRow({
       )}
       rightThreshold={ACTIONS_WIDTH / 2}
     >
-      <Pressable
-        accessibilityRole="button"
-        delayLongPress={LONG_PRESS_MS}
-        onLongPress={() =>
-          row.current?.measureInWindow((x, y, width, height) =>
-            onLongPress({ height, width, x, y })
-          )
-        }
-        onPress={onOpen}
-        ref={row}
-        style={({ pressed }) => [
-          styles.row,
-          pressed ? styles.rowPressed : null,
-        ]}
-        testID={id}
-      >
-        <View style={styles.titleLine}>
-          {thread.pinned ? (
-            <Pin
-              color={colors.text.secondary}
-              size={PIN_GLYPH}
-              strokeWidth={ICON_STROKE}
-            />
-          ) : null}
-          <Text
-            numberOfLines={1}
-            style={styles.flex}
-            testID={`${id}-title`}
-            variant="rowTitle"
-          >
-            {thread.title}
-          </Text>
-        </View>
-        <View style={styles.subLine}>
-          <Text
-            numberOfLines={1}
-            style={styles.flex}
-            testID={`${id}-preview`}
-            variant="secondary"
-          >
-            {previewLine(thread.preview)}
-          </Text>
-          <Text variant="secondary">{` · ${formatHistoryDate(thread.updatedAt, now)}`}</Text>
-        </View>
-      </Pressable>
+      {/* Gesture handler's Pressable, not React Native's: inside a sheet the JS responder claimed a
+          quick swipe as a tap and opened the thread, where this one yields to the swipeable. */}
+      <View ref={row}>
+        <GesturePressable
+          accessibilityRole="button"
+          delayLongPress={LONG_PRESS_MS}
+          onLongPress={() =>
+            row.current?.measureInWindow((x, y, width, height) =>
+              onLongPress({ height, width, x, y })
+            )
+          }
+          onPress={onOpen}
+          style={({ pressed }) => [
+            styles.row,
+            pressed ? styles.rowPressed : null,
+          ]}
+          testID={id}
+        >
+          <View style={styles.titleLine}>
+            {thread.pinned ? (
+              <Pin
+                color={colors.text.secondary}
+                size={PIN_GLYPH}
+                strokeWidth={ICON_STROKE}
+              />
+            ) : null}
+            <Text
+              numberOfLines={1}
+              style={styles.flex}
+              testID={`${id}-title`}
+              variant="rowTitle"
+            >
+              {thread.title}
+            </Text>
+          </View>
+          <View style={styles.subLine}>
+            <Text
+              numberOfLines={1}
+              style={styles.flex}
+              testID={`${id}-preview`}
+              variant="secondary"
+            >
+              {previewLine(thread.preview)}
+            </Text>
+            <Text variant="secondary">{` · ${formatHistoryDate(thread.updatedAt, now)}`}</Text>
+          </View>
+        </GesturePressable>
+      </View>
     </ReanimatedSwipeable>
   );
 }
