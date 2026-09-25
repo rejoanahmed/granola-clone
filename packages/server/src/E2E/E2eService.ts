@@ -5,6 +5,11 @@ import type {
   GenerationsService,
   InlineSweepResult,
 } from "../Generations/GenerationsService";
+import type {
+  FakeCalendarRepo,
+  StagedCalendarEvent,
+} from "../Integrations/Calendar/FakeCalendarRepo";
+import type { CalendarMode } from "../Integrations/Calendar/Port";
 import type { ChatLlmMode, LlmMode } from "../Integrations/Llm/Port";
 import type { TranscriptionMode } from "../Integrations/Transcription/Port";
 import type { LatestOtp, OutboxRepo } from "../Outbox/OutboxRepo";
@@ -15,6 +20,8 @@ import type { UnitOfWork } from "../Runtime/UnitOfWork";
 import type { E2eRepo, E2eSupportMessage } from "./E2eRepo";
 import { NoOutboxMail } from "./Errors";
 import {
+  CalendarStageBody,
+  demoCalendarFor,
   E2E_CHATS,
   E2E_FOLDERS,
   E2E_NEWCOMER,
@@ -26,6 +33,7 @@ import {
   type E2eRole,
   type E2eUser,
   isE2eRole,
+  type StagedEvent,
 } from "./Fixtures";
 import { secretMatches, sessionCookieFor } from "./Secret";
 
@@ -72,6 +80,36 @@ export const chatModeOf = (value: string | null): ChatLlmMode => {
   return parsed.success ? parsed.data : "auto";
 };
 
+// The row the fake calendar's `readMode` reads (container.ts).
+export const CALENDAR_SWITCH = "calendar";
+
+const CalendarModeInput = z.enum(["auto", "fail"]);
+
+export const calendarModeOf = (value: string | null): CalendarMode => {
+  const parsed = CalendarModeInput.safeParse(value);
+  return parsed.success ? parsed.data : "auto";
+};
+
+// A missing id is `cev_e2e_<role>_<n>`, 1-based in array order, so a flow knows each row's testID
+// without reading the answer.
+const calendarRowsOf = (
+  role: E2eRole,
+  events: readonly StagedEvent[],
+  createdAt: number
+): StagedCalendarEvent[] =>
+  events.map((event, index) => ({
+    attendees: (event.attendees ?? []).map((attendee) => ({
+      email: attendee.email ?? null,
+      name: attendee.name ?? null,
+    })),
+    color: event.color ?? null,
+    createdAt,
+    endAt: event.endAt,
+    id: event.id ?? `cev_e2e_${role}_${index + 1}`,
+    startAt: event.startAt,
+    title: event.title,
+  }));
+
 const folderRowsOf = (fixtures: readonly E2eFolder[]) =>
   fixtures.map((folder) => ({
     createdAt: folder.createdAt,
@@ -88,6 +126,8 @@ const LlmRuns = z.number().int().min(1).max(MAX_LLM_RUNS);
 export type E2eDeps = {
   /** Signs the session cookie better-auth will verify — not the harness's own secret. */
   readonly authSecret: string;
+  /** The fake calendar's own store: the harness is its only writer. */
+  readonly calendarStore: Pick<FakeCalendarRepo, "stageReplace">;
   readonly clock: Clock;
   /** Only the inline sweep: a flow finishes a job here rather than waiting on the local queue. */
   readonly generations: Pick<GenerationsService, "sweepInline">;
@@ -272,6 +312,15 @@ export const makeE2eService = (deps: E2eDeps) => ({
     return { folders: seeded.map(({ id, name }) => ({ id, name })) };
   },
 
+  setCalendarMode: async (mode: unknown) => {
+    const parsed = CalendarModeInput.safeParse(mode);
+    if (!parsed.success) {
+      throw new ValidationFailed({ mode }, "Unknown calendar mode");
+    }
+    await deps.repo.setSwitch(CALENDAR_SWITCH, parsed.data);
+    return { mode: parsed.data };
+  },
+
   setChatMode: async (mode: unknown) => {
     const parsed = ChatModeInput.safeParse(mode);
     if (!parsed.success) {
@@ -326,6 +375,33 @@ export const makeE2eService = (deps: E2eDeps) => ({
       }),
       user: person,
     };
+  },
+
+  // Replaces that role's rows and nobody else's, in one batch. Validated here rather than by a
+  // contract, because the harness routes are not in the OpenAPI document.
+  stageCalendar: async (body: unknown) => {
+    const parsed = CalendarStageBody.safeParse(body);
+    if (!parsed.success) {
+      throw new ValidationFailed(
+        { issues: parsed.error.issues },
+        "Invalid calendar stage"
+      );
+    }
+    const { role } = parsed.data;
+    if (!isE2eRole(role)) {
+      throw new ValidationFailed({ role }, "Unknown e2e role");
+    }
+    const now = deps.clock.now();
+    const events =
+      "preset" in parsed.data ? demoCalendarFor(now) : parsed.data.events;
+    const rows = calendarRowsOf(role, events, now);
+    if (new Set(rows.map((row) => row.id)).size !== rows.length) {
+      throw new ValidationFailed({ role }, "Duplicate event id");
+    }
+    await deps.uow.commit((stage) =>
+      deps.calendarStore.stageReplace(stage, E2E_USERS[role].id, rows)
+    );
+    return { items: rows.map(({ id, title }) => ({ id, title })) };
   },
 
   supportMessages: async (

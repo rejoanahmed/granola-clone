@@ -1,5 +1,8 @@
+import { CalendarEventId } from "@gc/domain/Domain/Calendar";
 import { UserId } from "@gc/domain/Domain/Ids";
 import type { UserType } from "@gc/domain/Domain/Profile";
+import { Timestamp } from "@gc/domain/Domain/Time";
+import { z } from "zod";
 
 // Fixed ids and addresses, never generated: reset-then-seed must produce the same world on every
 // run, so a failing assertion names a bug rather than yesterday's data. Two people with notes, so a
@@ -384,3 +387,72 @@ export const E2E_FOLDERS: readonly E2eFolder[] = [
     ownerRole: "person",
   },
 ];
+
+// ── The fake calendar (phase-11.md §6.5) ────────────────────────────────────────────────────────
+
+const CALENDAR_STAGE_MAX = 50;
+const STAGED_ATTENDEES_MAX = 50;
+
+// What a flow may put on the fake's calendar: strict, so a field the fake does not store (a
+// location, say) is a 422 rather than silently dropped and then missed on screen.
+export const StagedEvent = z
+  .strictObject({
+    attendees: z
+      .array(
+        z.strictObject({
+          email: z.string().min(1).max(320).optional(),
+          name: z.string().min(1).max(200).optional(),
+        })
+      )
+      .max(STAGED_ATTENDEES_MAX)
+      .optional(),
+    color: z.string().max(32).optional(),
+    endAt: Timestamp,
+    id: CalendarEventId.optional(),
+    startAt: Timestamp,
+    title: z.string().max(1000).nullable(),
+  })
+  .refine((event) => event.endAt > event.startAt, {
+    message: "endAt must be after startAt",
+    path: ["endAt"],
+  });
+export type StagedEvent = z.infer<typeof StagedEvent>;
+
+export const CalendarStageBody = z.union([
+  z.strictObject({
+    events: z.array(StagedEvent).max(CALENDAR_STAGE_MAX),
+    role: z.string(),
+  }),
+  z.strictObject({ preset: z.literal("demo"), role: z.string() }),
+]);
+
+const HOUR_MS = 60 * 60 * 1000;
+const PRIYA = { email: "priya@example.com", name: "Priya Raman" };
+const SAM = { email: "sam@example.com", name: "Sam Okafor" };
+
+// For someone driving the app by hand against `wrangler dev`: three meetings from the next whole
+// UTC hour, so the card has something in progress soon, later today, and tomorrow. Neutral titles,
+// and the phase-4 seed's guests.
+export const demoCalendarFor = (now: number): StagedEvent[] => {
+  const h = Math.floor(now / HOUR_MS) * HOUR_MS + HOUR_MS;
+  return [
+    {
+      attendees: [PRIYA],
+      endAt: h + HOUR_MS,
+      startAt: h,
+      title: "Design review",
+    },
+    {
+      attendees: [PRIYA, SAM],
+      endAt: h + 3 * HOUR_MS,
+      startAt: h + 2 * HOUR_MS,
+      title: "Catch up with the team",
+    },
+    {
+      attendees: [],
+      endAt: h + 24 * HOUR_MS + HOUR_MS / 2,
+      startAt: h + 24 * HOUR_MS,
+      title: "Weekly planning",
+    },
+  ];
+};
