@@ -2,17 +2,19 @@ import {
   CalendarEventHasNote,
   CalendarEventNotFound,
 } from "@gc/domain/Calendar/Errors";
-import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
+import {
+  type CalendarEventId,
+  meetingAttendeesOf,
+} from "@gc/domain/Domain/Calendar";
 import { GenerationId } from "@gc/domain/Domain/Generation";
 import type { UserId } from "@gc/domain/Domain/Ids";
 import {
   AttendeeId,
   DEFAULT_NOTE_TITLE,
-  NOTE_TITLE_MAX,
+  meetingTitleOf,
   type Note,
   NoteId,
 } from "@gc/domain/Domain/Note";
-import { personKeyOf } from "@gc/domain/Domain/Person";
 import {
   AUDIO_MAX_BYTES,
   groupUtterances,
@@ -201,55 +203,14 @@ const measured = (body: ReadableStream<Uint8Array>, length: number) => {
   return { mismatched: () => mismatched, stream };
 };
 
-// `NoteCreate`'s cap, so a note started from a meeting holds no more guests than one made by hand.
-const MEETING_GUESTS_MAX = 50;
-
-// Cut at the last space that fits, so a long meeting title never ends mid-word; a single word
-// longer than the cap is cut hard, since there is no word boundary to prefer.
-export const meetingTitleOf = (raw: string | null): string => {
-  const trimmed = raw?.trim() ?? "";
-  if (trimmed === "") {
-    return DEFAULT_NOTE_TITLE;
-  }
-  if (trimmed.length <= NOTE_TITLE_MAX) {
-    return trimmed;
-  }
-  const space = trimmed.slice(0, NOTE_TITLE_MAX + 1).lastIndexOf(" ");
-  return space > 0
-    ? trimmed.slice(0, space).trimEnd()
-    : trimmed.slice(0, NOTE_TITLE_MAX);
-};
-
-const blankToNull = (value: string | null): string | null => {
-  const trimmed = value?.trim() ?? "";
-  return trimmed === "" ? null : trimmed;
-};
-
-// The owner is position 0 already, so the invite's own entry for them is skipped by address; the
-// person key then drops any guest listed twice, as the attendees sheet would show them once.
+// The owner is position 0 already, so the invite's own entry for them is not a guest.
 const meetingGuestsOf = (
   event: CalendarEventRecord,
   ownerEmail: string
-): { readonly email: string | null; readonly name: string | null }[] => {
-  const seen = new Set([personKeyOf({ email: ownerEmail, name: null })]);
-  const guests: { email: string | null; name: string | null }[] = [];
-  for (const attendee of event.attendees) {
-    const guest = {
-      email: blankToNull(attendee.email),
-      name: blankToNull(attendee.name),
-    };
-    const key = personKeyOf(guest);
-    if (key === null || seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    guests.push(guest);
-    if (guests.length === MEETING_GUESTS_MAX) {
-      break;
-    }
-  }
-  return guests;
-};
+): { readonly email: string | null; readonly name: string | null }[] =>
+  meetingAttendeesOf(event.attendees, ownerEmail)
+    .filter((attendee) => !attendee.isMe)
+    .map(({ email, name }) => ({ email, name }));
 
 export const makeRecordingsService = (deps: RecordingsDeps) => {
   // Absent and not-yours are one answer carrying only the id the caller sent (D018).
@@ -435,8 +396,8 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
         })
       );
       const title = meeting?.title ?? DEFAULT_NOTE_TITLE;
-      try {
-        await deps.uow.commit((stage) =>
+      const write = () =>
+        deps.uow.commit((stage) =>
           deps.repo.stageCreate(
             stage,
             {
@@ -453,23 +414,38 @@ export const makeRecordingsService = (deps: RecordingsDeps) => {
             { createdAt: now, id, noteId, ownerId: actor.id, startedAt }
           )
         );
-      } catch (error) {
-        if (meeting === null) {
+      // The winner of a race the pre-check lost, or null when it was trashed before it could be
+      // read. Any failure other than the unique index is rethrown as it came.
+      const winnerOf = async (error: unknown): Promise<NoteId | null> => {
+        if (meeting === null || !deps.repo.isEventConflict(error)) {
           throw error;
         }
-        const winner = await deps.repo.eventConflict(
-          error,
-          actor.id,
-          meeting.eventId
-        );
-        if (winner === null) {
-          throw error;
-        }
-        throw new CalendarEventHasNote(
-          { calendarEventId: meeting.eventId, noteId: winner },
+        return await deps.repo.liveNoteForEvent(actor.id, meeting.eventId);
+      };
+      const hasNote = (winner: NoteId, error: unknown) =>
+        new CalendarEventHasNote(
+          { calendarEventId: input.calendarEventId, noteId: winner },
           undefined,
           { cause: error }
         );
+      try {
+        await write();
+      } catch (error) {
+        const winner = await winnerOf(error);
+        if (winner !== null) {
+          throw hasNote(winner, error);
+        }
+        // The winner is gone, so the slot is free and the batch, which wrote nothing, is tried
+        // once more: a benign race must not surface as a 500.
+        try {
+          await write();
+        } catch (retryError) {
+          const again = await winnerOf(retryError);
+          if (again === null) {
+            throw retryError;
+          }
+          throw hasNote(again, retryError);
+        }
       }
       const recording = await get(actor, id);
       const note: Note = {

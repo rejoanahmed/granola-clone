@@ -301,12 +301,12 @@ export const buildContainer = (
     }
   };
   const calendarPort: CalendarPort = traced(
-    "Calendar",
+    "CalendarProvider",
     calendarFor(config.calendar.mode)
   );
 
-  // The service shares the port's module name: its only method, `upcoming`, cannot be mistaken
-  // for the port's `listEvents` and `getEvent` in a trace.
+  // The port is `CalendarProvider`, not `Calendar`: a vendor call and a domain call must be told
+  // apart by module in a trace, whatever the methods come to be named.
   const calendar = traced(
     "Calendar",
     makeCalendarService({

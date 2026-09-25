@@ -487,7 +487,7 @@ code.
   transcription blockers.
 - `container.ts` builds `makeCalendarFake({ store: traced("FakeCalendarRepo", makeFakeCalendarRepo(db)), readMode })`,
   where `readMode` reads the `calendar` switch when the harness is armed and is `auto` otherwise.
-  It wraps the fake in `traced("Calendar", …)` and hands it to `CalendarService` and
+  It wraps the fake in `traced("CalendarProvider", …)` (the service is `traced("Calendar", …)`, so a vendor call and a domain call differ by module) and hands it to `CalendarService` and
   `RecordingsService`.
 
 ### 6.4 Client (`packages/apiclient`)
@@ -681,7 +681,9 @@ The full earlier suite must still pass (the phase loop's gate).
 
 - **409 `CalendarEventHasNote` on the device.** The client never sends a linked meeting: the row
   opens the note instead. Only a second device racing the first can reach it. It is covered by API
-  tests 12–13, and the client branch by a unit test on `liveRecording.ts`'s error mapping.
+  tests 12–13, and the client branch by a unit test on `liveRecording.ts`'s error mapping. If the card
+  was minimised before the 409 arrived, `useMeetingHandoff` (mounted at the root) clears the live
+  state and opens the note as soon as the card is not on screen.
 - **The loading card.** It shows for one local round trip. The flows wait past it, and
   `UpcomingEventsCard` renders it in the dev gallery (`app/dev/gallery.tsx` gains the four card
   states over fixture data) for the visual check.
@@ -690,8 +692,9 @@ The full earlier suite must still pass (the phase loop's gate).
 - **A row with a null title, a non-magenta colour, or both the Now badge and the notes mark.** These
   are shown in the dev gallery, not in a flow.
 - **Starting from a meeting through the mic primer.** The simulator's microphone is already
-  granted. The primer path is phase 5's, unchanged apart from carrying the event, and it is covered
-  by a unit test on `useNewRecording`.
+  granted. The primer path is phase 5's, unchanged apart from carrying the event. Its rules live in
+  `features/recording/newRecordingFlow.ts` (the hook `useNewRecording` only wires them to React), and
+  `newRecordingFlow.test.ts` covers Allow starting the meeting's recording and Close forgetting it.
 
 ---
 

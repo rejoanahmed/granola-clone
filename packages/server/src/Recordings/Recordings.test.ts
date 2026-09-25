@@ -1389,36 +1389,53 @@ describe("RecordingsService.create from a meeting, phase 11", () => {
   });
 
   // §7 case 13
-  it("answers a create that loses the race to a concurrent one with 409 and the winner's id, not 500", async () => {
-    const WINNER = "not_winner_000001";
-    const real = repo() as Repo.RecordingsRepo & Record<string, unknown>;
-    const racing = {
+  const winnerRow = (id: string) => ({
+    rows: [
+      {
+        body_markdown: "",
+        calendar_event_id: EVENT_ID,
+        created_at: AT,
+        id,
+        owner_id: person.id,
+        source: "phone",
+        started_at: AT,
+        title: "Catch up with the team",
+        trashed_at: null,
+        updated_at: AT,
+      },
+    ],
+    table: "notes",
+  });
+
+  // The pre-check sees nothing, and `beforeBatch` runs before the batch does: the other device's
+  // create landing in between. `beforeWinnerRead` runs before the read of the race's winner.
+  const racingRepo = (
+    beforeBatch: () => Promise<unknown>,
+    beforeWinnerRead: () => Promise<unknown> = async () => undefined
+  ) => {
+    const real = repo();
+    let reads = 0;
+    return {
       ...real,
-      // The pre-check sees nothing, and the winner lands before the batch runs.
-      liveNoteForEvent: async () => {
-        await seedD1(d1, [
-          {
-            rows: [
-              {
-                body_markdown: "",
-                calendar_event_id: EVENT_ID,
-                created_at: AT,
-                id: WINNER,
-                owner_id: person.id,
-                source: "phone",
-                started_at: AT,
-                title: "Catch up with the team",
-                trashed_at: null,
-                updated_at: AT,
-              },
-            ],
-            table: "notes",
-          },
-        ]);
-        return null;
+      liveNoteForEvent: async (ownerId: never, eventId: string) => {
+        reads += 1;
+        if (reads === 1) {
+          await beforeBatch();
+          return null;
+        }
+        if (reads === 2) {
+          await beforeWinnerRead();
+        }
+        return await real.liveNoteForEvent(ownerId, eventId);
       },
     } as Repo.RecordingsRepo;
-    const svc = await meetingService({ repo: racing });
+  };
+
+  it("answers a create that loses the race to a concurrent one with 409 and the winner's id, not 500", async () => {
+    const WINNER = "not_winner_000001";
+    const svc = await meetingService({
+      repo: racingRepo(() => seedD1(d1, [winnerRow(WINNER)])),
+    });
 
     await expect(
       svc.create(person, { calendarEventId: EVENT_ID })
@@ -1428,6 +1445,46 @@ describe("RecordingsService.create from a meeting, phase 11", () => {
       status: 409,
     });
     expect(await count("SELECT count(*) AS n FROM recordings")).toBe(0);
+  });
+
+  it("retries once, and answers 201, when the race's winner is trashed before it can be read", async () => {
+    const WINNER = "not_winner_000002";
+    const svc = await meetingService({
+      // The winner is trashed between the refused batch and the read of it.
+      repo: racingRepo(
+        () => seedD1(d1, [winnerRow(WINNER)]),
+        () =>
+          d1
+            .prepare("UPDATE notes SET trashed_at = ? WHERE id = ?")
+            .bind(AT, WINNER)
+            .run()
+      ),
+    });
+
+    const created = await svc.create(person, { calendarEventId: EVENT_ID });
+
+    expect(created.note.id).not.toBe(WINNER);
+    expect(await linkOf(created.note.id)).toBe(EVENT_ID);
+    expect(await count("SELECT count(*) AS n FROM recordings")).toBe(1);
+  });
+
+  it("reads the unique index's refusal however deep the driver nests it", () => {
+    const sqlite = new Error(
+      "UNIQUE constraint failed: notes.owner_id, notes.calendar_event_id: SQLITE_CONSTRAINT"
+    );
+    const d1Error = new Error("D1_ERROR: batch failed", { cause: sqlite });
+    const drizzleError = new Error("Failed query: insert into notes", {
+      cause: d1Error,
+    });
+    const other = new Error("Failed query", {
+      cause: new Error("UNIQUE constraint failed: recordings.id"),
+    });
+
+    expect(repo().isEventConflict(sqlite)).toBe(true);
+    expect(repo().isEventConflict(d1Error)).toBe(true);
+    expect(repo().isEventConflict(drizzleError)).toBe(true);
+    expect(repo().isEventConflict(other)).toBe(false);
+    expect(repo().isEventConflict("not an error")).toBe(false);
   });
 
   // §7 case 14

@@ -59,6 +59,10 @@ env:
     timeout: 15000
 - assertNotVisible:
     id: recording-screen
+# The transcriber is held, so the note is still waiting on it: without this the notVisible wait
+# after the release would pass at once on a page that never showed a status.
+- assertVisible:
+    id: note-status
 - assertVisible:
     id: note-title
     text: Catch up with the team
@@ -101,10 +105,16 @@ env:
     timeout: 10000
 
 # Generation writes the body and leaves the meeting's title alone (§6.3).
+- assertVisible:
+    id: note-status
 - runFlow: ../subflows/release-transcription.yaml
 - extendedWaitUntil:
     notVisible:
       id: note-status
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: note-block-0
     timeout: 15000
 - assertVisible:
     id: note-title

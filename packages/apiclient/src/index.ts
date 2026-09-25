@@ -1,6 +1,4 @@
 export {
-  CALENDAR_EVENT_HAS_NOTE_TAG,
-  CALENDAR_EVENT_NOT_FOUND_TAG,
   calendarEventNoteId,
   isCalendarEventNotFound,
   makeCalendarApi,

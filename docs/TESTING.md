@@ -471,6 +471,9 @@ These must exist. The names are the specification; the phrasing in the test file
 - 25 events come back as the first 20 by `(startAt, endAt, id)`
 - a blank title is `null`, 600 characters are cut to 500, `#db35f2` is `#DB35F2` and `magenta` the
   default, a nameless and addressless attendee is dropped, `E2E-Person@GCNotes.test` is `isMe`
+- attendees are read as the create reads them: a whitespace email or name is null, two name-only
+  "Dana" entries and two spellings of one address are one guest, at most 50 guests are kept, and
+  the owner's entry is kept (as `isMe`) even when it comes after the fiftieth guest
 - a live note with the event links it by `noteId`, a trashed one does not, and another user's never
 - `until = T` and `T + 14d + 1` are 422 and ask the calendar nothing; `T + 14d` is accepted; an
   outage is 503
@@ -484,7 +487,9 @@ These must exist. The names are the specification; the phrasing in the test file
   `calendar_event_id` and the body's `startedAt`, and calls `getEvent` once
 - an unknown event (or another user's) is 404 `CalendarEventNotFound` and writes nothing; a second
   create is 409 `CalendarEventHasNote` naming the first note, until that note is trashed; a create
-  that loses the race to a concurrent insert is 409 with the winner's id, never 500
+  that loses the race to a concurrent insert is 409 with the winner's id, never 500; one whose
+  winner is trashed before it can be read is retried once and answers 201; the unique index's
+  refusal is recognised however deep the driver nests it in the cause chain
 - a blank title is "Untitled note"; 250 characters are cut at a word to at most 200; name-only and
   email-only guests are kept, duplicates by person key once, 60 capped at 50 plus the owner
 - no `calendarEventId` never calls the port; an outage during a create from a meeting is 503 and
@@ -922,3 +927,17 @@ the API.
 
 If a smoke run fails on `welcome-screen is visible`, look at the simulator before the flow: a stale
 system sheet or Metro not running are the usual causes, and `scripts/maestro.sh` checks the second.
+
+Two phase-11 flows carry a timing exposure that no code change removes, so a failure matching
+either is rerun rather than fixed:
+
+- **Local midnight.** `scripts/e2e-calendar.js` computes the "Tomorrow, …" labels (and the seed's
+  times) when it stages the calendar, and the app computes them again when the flow asserts; the
+  note page's `Today h:mm AM` pill is the device's day. A run of `events-card.yaml` or
+  `event-to-note.yaml` that crosses local midnight between the seed and the assertion fails on a
+  label that is one day off. Do not run the phase-11 flows in the minute or two around midnight.
+- **The card's 60 s refetch.** `event-gone.yaml` empties the calendar without a relaunch and relies
+  on the card still holding the stale row when it taps it. `useUpcomingEvents` refetches every
+  60 s while home is focused, so a tick landing between the script and the tap drops the row and
+  the tap misses. The flow asserts the row straight after the script to keep that gap to one
+  step; a miss there is the interval, not the 404 path.

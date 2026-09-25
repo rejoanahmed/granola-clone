@@ -14,8 +14,8 @@ export const makeCalendarApi = (endpoint: Endpoint) => ({
 // The two ways `createRecording { calendarEventId }` fails that the live card answers differently
 // from any other failure. The tags are the error classes' in `@gc/domain/Calendar/Errors`, written
 // out because that module is a value import this package keeps out of the client bundles.
-export const CALENDAR_EVENT_NOT_FOUND_TAG = "CalendarEventNotFound";
-export const CALENDAR_EVENT_HAS_NOTE_TAG = "CalendarEventHasNote";
+const CALENDAR_EVENT_NOT_FOUND_TAG = "CalendarEventNotFound";
+const CALENDAR_EVENT_HAS_NOTE_TAG = "CalendarEventHasNote";
 
 /** The meeting left the calendar between the fetch and the tap. */
 export const isCalendarEventNotFound = (

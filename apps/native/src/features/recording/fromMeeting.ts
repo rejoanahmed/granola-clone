@@ -1,3 +1,4 @@
+import { meetingTitleOf } from "@gc/domain/Domain/Note";
 import {
   calendarEventNoteId,
   isCalendarEventNotFound,
@@ -21,23 +22,41 @@ export function startFailureOf(error: unknown): StartFailure {
   return noteId ? { kind: "taken", noteId } : { kind: "other" };
 }
 
-/** The owner first, then each other attendee's name or email, deduped by email. */
+/**
+ * The owner first, then each other attendee's name or email. The server has already read the
+ * guest list the way the create will (blanks to null, one entry per person, at most 50), so this
+ * draws exactly the people the note will hold, and the pill's `+N` counts them.
+ */
 export function meetingAttendeeNames(
   event: Pick<UpcomingEvent, "attendees">,
   ownerName: string
 ): readonly string[] {
   const names = [ownerName];
-  const seen = new Set<string>();
   for (const attendee of event.attendees) {
     const label = attendee.name ?? attendee.email;
-    const email = attendee.email?.trim().toLowerCase() ?? null;
-    if (attendee.isMe || !label || (email && seen.has(email))) {
-      continue;
+    if (!attendee.isMe && label) {
+      names.push(label);
     }
-    if (email) {
-      seen.add(email);
-    }
-    names.push(label);
   }
   return names;
+}
+
+/**
+ * The meeting's title as the note will hold it (trimmed, cut at a word), or null for a blank one,
+ * which the card draws as the grey "Untitled note" placeholder, as generation will still name it.
+ */
+export function meetingLiveTitle(
+  event: Pick<UpcomingEvent, "title">
+): string | null {
+  return event.title?.trim() ? meetingTitleOf(event.title) : null;
+}
+
+/** The owner as the live card names them: the account's name, else its address. */
+export function ownerLabelOf(
+  user:
+    | { readonly email?: string | null; readonly name?: string | null }
+    | null
+    | undefined
+): string {
+  return user?.name?.trim() || user?.email?.trim() || "";
 }

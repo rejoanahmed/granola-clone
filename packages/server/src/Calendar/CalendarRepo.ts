@@ -1,10 +1,10 @@
-import { and, eq, inArray, isNotNull, isNull, notes } from "@gc/db";
+import { liveEventNotes, notes } from "@gc/db";
 import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
 import type { NoteId, UserId } from "@gc/domain/Domain/Ids";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 // A read of `notes`, not an import of `NotesRepo`: the calendar only needs to know which of its
-// events already have a live note, and the partial unique index answers exactly that.
+// events already have a live note. The predicate is `@gc/db`'s, shared with the recordings create.
 export const makeCalendarRepo = (db: DrizzleClient) => ({
   liveNoteIdsByEvent: async (
     ownerId: UserId,
@@ -16,14 +16,7 @@ export const makeCalendarRepo = (db: DrizzleClient) => ({
     const rows = await db
       .select({ eventId: notes.calendarEventId, id: notes.id })
       .from(notes)
-      .where(
-        and(
-          eq(notes.ownerId, ownerId),
-          isNotNull(notes.calendarEventId),
-          isNull(notes.trashedAt),
-          inArray(notes.calendarEventId, [...eventIds])
-        )
-      )
+      .where(liveEventNotes(ownerId, eventIds))
       .all();
     const linked = new Map<CalendarEventId, NoteId>();
     for (const row of rows) {

@@ -13,6 +13,7 @@ import { AppState } from "react-native";
 import { deleteLooseFile, keepRecordingFile } from "./files";
 import {
   meetingAttendeeNames,
+  meetingLiveTitle,
   type StartFailure,
   startFailureOf,
 } from "./fromMeeting";
@@ -236,7 +237,7 @@ export function startRecording(meeting?: {
     recordingId: null,
     sessionId,
     startedAt,
-    title: event?.title ?? null,
+    title: event ? meetingLiveTitle(event) : null,
   };
   emit();
 
@@ -396,6 +397,13 @@ export async function endRecording(): Promise<string | null> {
 
 export function useLiveRecording(): LiveRecording | null {
   return useSyncExternalStore(subscribe, () => live);
+}
+
+/** The note another device started for this meeting, while the hand-off to it is still owed. */
+export function useTakenNoteId(): string | null {
+  return useSyncExternalStore(subscribe, () =>
+    live?.phase === "taken" ? live.noteId : null
+  );
 }
 
 /** Only the few fields home reads, so its list does not re-render at the ticker's 10 Hz. */

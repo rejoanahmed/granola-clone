@@ -3,7 +3,8 @@ import {
   CalendarColor,
   type CalendarEventId,
   DEFAULT_CALENDAR_COLOR,
-  type EventAttendee,
+  meetingAttendeesOf,
+  UPCOMING_EVENT_TITLE_MAX,
   UPCOMING_EVENTS_MAX,
   type UpcomingEvent,
   type UpcomingEventsPage,
@@ -25,11 +26,9 @@ export type CalendarDeps = {
   readonly repo: CalendarRepo;
 };
 
-const TITLE_MAX = 500;
-
 const titleOf = (raw: string | null): string | null => {
   const trimmed = raw?.trim() ?? "";
-  return trimmed === "" ? null : trimmed.slice(0, TITLE_MAX);
+  return trimmed === "" ? null : trimmed.slice(0, UPCOMING_EVENT_TITLE_MAX);
 };
 
 // Upper-cased first, so `#db35f2` is the token rather than a miss that falls back to it anyway.
@@ -39,18 +38,6 @@ const colorOf = (raw: string | null): string => {
     ? upper
     : DEFAULT_CALENDAR_COLOR;
 };
-
-const attendeesOf = (
-  record: CalendarEventRecord,
-  me: string
-): EventAttendee[] =>
-  record.attendees
-    .filter((a) => a.email !== null || a.name !== null)
-    .map((a) => ({
-      email: a.email,
-      isMe: a.email?.trim().toLowerCase() === me,
-      name: a.name,
-    }));
 
 const byStartEndId = (a: CalendarEventRecord, b: CalendarEventRecord) =>
   a.startAt - b.startAt ||
@@ -82,9 +69,9 @@ export const makeCalendarService = (deps: CalendarDeps) => ({
       .slice(0, UPCOMING_EVENTS_MAX);
     const ids = upcoming.map((r) => r.id as CalendarEventId);
     const linked = await deps.repo.liveNoteIdsByEvent(userId, ids);
-    const me = actor.email.toLowerCase();
     const items: UpcomingEvent[] = upcoming.map((r) => ({
-      attendees: attendeesOf(r, me),
+      // The same reading the create applies, so the card draws exactly what the note will hold.
+      attendees: meetingAttendeesOf(r.attendees, actor.email),
       color: colorOf(r.color),
       endAt: r.endAt,
       id: r.id as CalendarEventId,

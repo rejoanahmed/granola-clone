@@ -27,6 +27,7 @@ export {
   sql,
 } from "drizzle-orm";
 export { alias } from "drizzle-orm/sqlite-core";
+export { liveEventNotes } from "./event-note";
 export { personMatches } from "./person-match";
 export { RESET_ORDER } from "./reset-order";
 export * from "./schema";

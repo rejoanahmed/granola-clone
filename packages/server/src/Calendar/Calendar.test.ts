@@ -262,6 +262,43 @@ describe("CalendarService.upcoming", () => {
     expect(plain?.title).toBe("Design review");
   });
 
+  it("reads attendees exactly as the create will: blanks to null, a person once, at most 50 guests", async () => {
+    const crowd = Array.from({ length: 55 }, (_, n) => ({
+      email: `guest${n}@example.com`,
+      name: `Guest ${n}`,
+    }));
+    await stage(person, [
+      {
+        attendees: [
+          { email: "   ", name: "Dana" },
+          { email: null, name: " dana " },
+          { email: "sam@example.com", name: "  " },
+          { email: " SAM@example.com ", name: "Sam Again" },
+          ...crowd,
+          { email: "e2e-person@gcnotes.test", name: "Me, listed last" },
+        ],
+        endAt: T + 2 * HOUR,
+        id: "cev_crowd",
+        startAt: T + HOUR,
+        title: "All hands",
+      },
+    ]);
+
+    const [event] = (await service().upcoming(person, { until: UNTIL })).items;
+    const guests = event?.attendees.filter((a) => !a.isMe) ?? [];
+
+    expect(guests.slice(0, 2)).toEqual([
+      { email: null, isMe: false, name: "Dana" },
+      { email: "sam@example.com", isMe: false, name: null },
+    ]);
+    expect(guests).toHaveLength(50);
+    expect(event?.attendees.at(-1)).toEqual({
+      email: "e2e-person@gcnotes.test",
+      isMe: true,
+      name: "Me, listed last",
+    });
+  });
+
   // §7 case 7
   it("links the caller's live note for an event, unlinks it once trashed, and ignores another user's", async () => {
     await stage(person, [

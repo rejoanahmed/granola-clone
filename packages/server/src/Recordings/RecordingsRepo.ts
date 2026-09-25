@@ -4,6 +4,7 @@ import {
   eq,
   isNotNull,
   isNull,
+  liveEventNotes,
   lt,
   noteAttendees,
   noteGenerations,
@@ -79,8 +80,22 @@ const ATTENDEE_COLUMNS = 7;
 const EVENT_CONFLICT =
   /UNIQUE constraint failed: notes\.owner_id, notes\.calendar_event_id/;
 
-const causeOf = (error: unknown): string =>
-  error instanceof Error ? String(error.cause ?? error.message) : String(error);
+// Every message down the cause chain: drizzle, D1's `D1_ERROR` wrapper and the SQLite error each
+// wrap the last, and how deep the constraint's text sits is theirs to change, not ours to guess.
+const CAUSE_DEPTH_MAX = 8;
+const causeChainOf = (error: unknown): string => {
+  const messages: string[] = [];
+  let current: unknown = error;
+  for (
+    let depth = 0;
+    depth < CAUSE_DEPTH_MAX && current !== undefined && current !== null;
+    depth += 1
+  ) {
+    messages.push(current instanceof Error ? current.message : String(current));
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return messages.join("\n");
+};
 
 // Columns per segment insert row, for `addChunked` to stay under D1's bound-parameter ceiling.
 const SEGMENT_COLUMNS = 7;
@@ -146,13 +161,7 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
     const row = await db
       .select({ id: notes.id })
       .from(notes)
-      .where(
-        and(
-          eq(notes.ownerId, ownerId),
-          eq(notes.calendarEventId, eventId),
-          isNull(notes.trashedAt)
-        )
-      )
+      .where(liveEventNotes(ownerId, [eventId]))
       .get();
     return row === undefined ? null : NoteId.parse(row.id);
   };
@@ -220,16 +229,6 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         status: "uploading",
         updatedAt: now,
       }),
-    // The winner of a lost race, when `error` is the one-live-note-per-meeting index refusing the
-    // insert; null for any other failure, which the caller rethrows.
-    eventConflict: async (
-      error: unknown,
-      ownerId: UserId,
-      eventId: string
-    ): Promise<NoteId | null> =>
-      EVENT_CONFLICT.test(causeOf(error))
-        ? await liveNoteForEvent(ownerId, eventId)
-        : null,
 
     fail: async (
       id: RecordingId,
@@ -243,6 +242,10 @@ export const makeRecordingsRepo = (db: DrizzleClient) => {
         { failure, status: "failed", updatedAt: now },
         jobId
       ),
+    // Whether `error` is the one-live-note-per-meeting index refusing the insert. The caller reads
+    // the winner with `liveNoteForEvent`, which may already be gone again (trashed in between).
+    isEventConflict: (error: unknown): boolean =>
+      EVENT_CONFLICT.test(causeChainOf(error)),
 
     // The sweep's work list, oldest first so a backlog drains in order.
     listTranscribing: async (limit: number): Promise<SubmittedRecording[]> => {

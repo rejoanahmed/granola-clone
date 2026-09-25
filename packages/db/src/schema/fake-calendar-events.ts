@@ -35,6 +35,3 @@ export const fakeCalendarEvents = sqliteTable(
     ),
   ]
 );
-
-export type FakeCalendarEventRow = typeof fakeCalendarEvents.$inferSelect;
-export type NewFakeCalendarEventRow = typeof fakeCalendarEvents.$inferInsert;

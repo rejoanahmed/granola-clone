@@ -15,6 +15,7 @@ import {
 } from "@native/design";
 import { RECORDING_COPY } from "@native/features/recording/copy";
 import { formatLiveStart } from "@native/features/recording/format";
+import { ownerLabelOf } from "@native/features/recording/fromMeeting";
 import {
   canSkipAhead,
   discardRecording,
@@ -192,7 +193,7 @@ export default function RecordingScreen() {
       setMenuFrame({ height, width, x, y: y + insets.top })
     );
 
-  const owner = session?.user.name ?? "";
+  const owner = ownerLabelOf(session?.user);
   const pillDate = formatLiveStart(live.startedAt);
   const attendeeNames = live.attendeeNames ?? [owner];
 

@@ -9,7 +9,8 @@ vi.mock("@native/lib/api", async () => {
   };
 });
 
-const { meetingAttendeeNames, startFailureOf } = await import("./fromMeeting");
+const { meetingAttendeeNames, meetingLiveTitle, ownerLabelOf, startFailureOf } =
+  await import("./fromMeeting");
 
 const apiError = (tag: string, status: number, details = {}) =>
   new ApiError({ details, message: tag, status, tag });
@@ -65,18 +66,45 @@ describe("meetingAttendeeNames", () => {
     ).toEqual(["E2E Person", "Priya Raman", "Sam Okafor"]);
   });
 
-  it("uses the email when there is no name, and dedupes by email", () => {
+  it("uses the email when there is no name, and counts every guest the server sent", () => {
     expect(
       meetingAttendeeNames(
         {
           attendees: [
             attendee(null, "dana@example.com"),
-            attendee("Dana Lee", "DANA@example.com"),
-            attendee(null, null),
+            attendee("Dana Lee", null),
           ],
         },
         "Me"
       )
-    ).toEqual(["Me", "dana@example.com"]);
+    ).toEqual(["Me", "dana@example.com", "Dana Lee"]);
+  });
+});
+
+describe("meetingLiveTitle", () => {
+  it("draws a blank title as the placeholder, and trims and cuts one as the note holds it", () => {
+    expect(meetingLiveTitle({ title: null })).toBeNull();
+    expect(meetingLiveTitle({ title: "   " })).toBeNull();
+    expect(meetingLiveTitle({ title: "  Catch up  " })).toBe("Catch up");
+    const long = Array.from({ length: 60 }, (_, n) => `word${n}`).join(" ");
+    const cut = meetingLiveTitle({ title: long }) ?? "";
+    expect(cut.length).toBeLessThanOrEqual(200);
+    expect(long.startsWith(cut)).toBe(true);
+    expect(long[cut.length]).toBe(" ");
+  });
+});
+
+describe("ownerLabelOf", () => {
+  it("names the owner, falling back to the address when the account has no name", () => {
+    expect(ownerLabelOf({ email: "me@example.com", name: "E2E Person" })).toBe(
+      "E2E Person"
+    );
+    expect(ownerLabelOf({ email: "me@example.com", name: "" })).toBe(
+      "me@example.com"
+    );
+    expect(ownerLabelOf({ email: "me@example.com", name: null })).toBe(
+      "me@example.com"
+    );
+    expect(ownerLabelOf(undefined)).toBe("");
   });
 });
