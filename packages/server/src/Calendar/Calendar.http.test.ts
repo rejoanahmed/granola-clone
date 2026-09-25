@@ -1,6 +1,4 @@
-// @ts-expect-error phase 11: the calendar errors are specified (phase-11.md §6.2, §11 API 1), not built
 import * as CalErrors from "@gc/domain/Calendar/Errors";
-// @ts-expect-error phase 11: the calendar shapes are specified (phase-11.md §6.2, §11 API 1), not built
 import * as Shapes from "@gc/domain/Domain/Calendar";
 import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
@@ -63,7 +61,7 @@ const errorClass = (name: string): ErrorClass => {
 };
 
 const schema = (name: string): Schema => {
-  const found = (Shapes as Record<string, Schema | undefined>)[name];
+  const found = (Shapes as unknown as Record<string, Schema | undefined>)[name];
   if (found === undefined) {
     throw new Error(`no ${name} in @gc/domain/Domain/Calendar`);
   }

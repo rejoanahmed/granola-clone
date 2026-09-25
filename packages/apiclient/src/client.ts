@@ -1,5 +1,6 @@
 import type { StatusCode } from "hono/utils/http-status";
 import type { z } from "zod";
+import { makeCalendarApi } from "./calendar";
 import { makeChatsApi } from "./chats";
 import {
   type ApiClientConfig,
@@ -295,6 +296,7 @@ export const makeEndpoint = (config: ApiClientConfig): Endpoint => {
 export const makeApiClient = (config: ApiClientConfig): ApiClient => {
   const endpoint = makeEndpoint(config);
   return {
+    ...makeCalendarApi(endpoint),
     ...makeChatsApi(endpoint),
     ...makeFoldersApi(endpoint),
     ...makeNotesApi(endpoint),
@@ -308,7 +310,8 @@ export const makeApiClient = (config: ApiClientConfig): ApiClient => {
 };
 
 // One `ReturnType<…>` per context, intersected, as contexts are added.
-export type ApiClient = ReturnType<typeof makeChatsApi> &
+export type ApiClient = ReturnType<typeof makeCalendarApi> &
+  ReturnType<typeof makeChatsApi> &
   ReturnType<typeof makeFoldersApi> &
   ReturnType<typeof makeNotesApi> &
   ReturnType<typeof makePeopleApi> &

@@ -501,9 +501,17 @@ describe("the phase-4 notes query keys", () => {
     const withSearch = [...both, ["search"], ["people"]];
 
     expect(keys.updateNote?.(ID)).toEqual(withSearch);
-    // Phase 9: a trash or restore moves a folder's count.
-    expect(keys.trashNote?.(ID)).toEqual([...withSearch, ["folders"]]);
-    expect(keys.restoreNote?.(ID)).toEqual([...withSearch, ["folders"]]);
+    // Phase 9: a trash or restore moves a folder's count; phase 11: a meeting's notes mark.
+    expect(keys.trashNote?.(ID)).toEqual([
+      ...withSearch,
+      ["folders"],
+      ["calendar"],
+    ]);
+    expect(keys.restoreNote?.(ID)).toEqual([
+      ...withSearch,
+      ["folders"],
+      ["calendar"],
+    ]);
     expect(keys.retryNoteGeneration?.(ID)).toEqual(both);
     expect(keys.updateMe?.()).toEqual([
       ["me", "profile"],

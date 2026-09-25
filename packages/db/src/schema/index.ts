@@ -4,6 +4,7 @@ export * from "./chat-preferences";
 export * from "./chat-threads";
 export * from "./e2e-switches";
 export * from "./email-outbox";
+export * from "./fake-calendar-events";
 export * from "./folders";
 export * from "./note-attendees";
 export * from "./note-generations";

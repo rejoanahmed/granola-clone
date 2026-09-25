@@ -1025,7 +1025,6 @@ describe("the calendar routes, phase 11", () => {
     ],
   ])("renders %s as %i in the error envelope", async (tag, status, details) => {
     type ErrorClass = new (init: object) => Error;
-    // @ts-expect-error phase 11: the calendar errors are specified (phase-11.md §6.2, §11 API 1), not built
     const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
       string,
       ErrorClass | undefined

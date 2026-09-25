@@ -87,6 +87,7 @@ describe("makeTestD1", () => {
       "chat_threads",
       "e2e_switches",
       "email_outbox",
+      "fake_calendar_events",
       "folder_notes",
       "folders",
       "note_attendees",

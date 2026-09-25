@@ -396,7 +396,6 @@ describe("POST /recordings with a calendar event, phase 11", () => {
   type ErrorClass = new (details: object) => Error;
 
   const calendarError = async (name: string): Promise<ErrorClass> => {
-    // @ts-expect-error phase 11: the calendar errors are specified (phase-11.md §6.2, §11 API 1), not built
     const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
       string,
       ErrorClass | undefined

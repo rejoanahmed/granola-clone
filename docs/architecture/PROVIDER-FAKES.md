@@ -75,6 +75,22 @@ A per-environment `*_MODE` var is set in **every** `env` block of `wrangler.json
 must say `live` out loud — the default in `AppConfig` is `fake`, so a forgotten var fails safe
 (nothing is charged) rather than silently live.
 
+### The calendar fake (phase 11)
+
+`Integrations/Calendar/` has `Port.ts` and `CalendarFake.ts` but no `CalendarClient.ts` yet: the
+live client waits on Google OAuth (BLOCKERS.md, "No live calendar client"). So `CALENDAR_MODE`
+differs from the table above in two ways. `live` is refused at startup because there is nothing to
+select, and production therefore fails to boot on it, as it already does for email and
+transcription.
+
+The fake is not in-memory. It reads `fake_calendar_events` through `FakeCalendarRepo`, the same
+arrangement as `EmailFake` and `email_outbox`, because a Maestro flow stages meetings through the
+E2E harness (`POST /e2e/calendar`) and the Worker that serves the app must see them. It is still
+deterministic: its output depends only on the stored rows and the query. It records every call, and
+it raises `CalendarUnavailable` after recording when told to `failWith("unavailable")` or when the
+harness's `calendar` switch reads `fail` (`POST /e2e/calendar/mode`). A unit test hands it an
+array-backed store instead of the repo.
+
 ## What the fakes do not prove
 
 That the vendor's real API matches the client's mapping, that its latency fits the request budget,

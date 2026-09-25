@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error phase 11: the calendar shapes are specified (phase-11.md §6.2, §11 API 1), not built
 import * as Calendar from "./Calendar";
 import * as Recording from "./Recording";
 
@@ -13,7 +12,9 @@ const HOUR = 60 * 60 * 1000;
 const AT = Date.UTC(2026, 8, 25, 12);
 
 const schema = (name: string): Schema => {
-  const found = (Calendar as Record<string, Schema | undefined>)[name];
+  const found = (Calendar as unknown as Record<string, Schema | undefined>)[
+    name
+  ];
   if (found === undefined) {
     throw new Error(`no ${name} in @gc/domain/Domain/Calendar`);
   }
