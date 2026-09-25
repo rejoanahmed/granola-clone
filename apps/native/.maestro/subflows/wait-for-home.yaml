@@ -5,10 +5,10 @@ appId: ${APP_ID}
 env:
   APP_ID: com.rejoan.gcnotes
 ---
-- extendedWaitUntil:
-    visible:
-      id: home-screen
-    timeout: 180000
+- runFlow:
+    file: wait-for-launch.yaml
+    env:
+      SCREEN_ID: home-screen
 - extendedWaitUntil:
     notVisible:
       id: home-list-loading

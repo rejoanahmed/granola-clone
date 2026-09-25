@@ -20,10 +20,10 @@ env:
 # The first launch after `clearState` bundles from Metro, which is what the 180 s covers — the same
 # allowance `start-clean.yaml` gives welcome. Welcome must never show on the way: the splash is held
 # until the adopted session and `GET /me` resolve.
-- extendedWaitUntil:
-    visible:
-      id: home-screen
-    timeout: 180000
+- runFlow:
+    file: wait-for-launch.yaml
+    env:
+      SCREEN_ID: home-screen
 - assertNotVisible:
     id: welcome-screen
 # Home appears before its list has answered. A flow that taps the shell straight away is tapping a
