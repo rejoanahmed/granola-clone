@@ -1,10 +1,10 @@
 # P19-3 (docs/parity/REPORT.md, #19/#23): a toast raised from the chat composer is drawn above the
-# keyboard, in a window of its own over any native modal. It used to sit at a fixed height in the root
-# view, under the keyboard (and behind the global chat's modal), so the idle mic's "Dictation isn’t
-# available yet." reached the hierarchy and never the screen. The screenshot is the visual half of
-# the proof; the assertions pin the toast's text and that the composer kept its keyboard.
+# keyboard and the composer docked on it. It used to sit at a fixed height, under the keyboard, so the
+# idle mic's "Dictation isn’t available yet." reached the hierarchy and never the screen. The
+# screenshot is the visual half of the proof. The assertions pin the toast's text and that the
+# composer kept its keyboard.
 appId: ${APP_ID}
-name: A toast from the chat composer is visible over the modal and the keyboard
+name: A toast from the chat composer is visible above the keyboard
 tags:
   - phase-12
   - regression

@@ -12,7 +12,6 @@ import { AccessibilityInfo, Pressable, StyleSheet, View } from "react-native";
 import { useKeyboardState } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FullWindowOverlay } from "react-native-screens";
 import { Text } from "./Text";
 import {
   colors,
@@ -46,6 +45,8 @@ const MIN_HEIGHT = 52;
 // Home and the detail both float a 64pt bar 12 above the bottom safe area; the toast sits 12 above
 // that bar (docs/spec/phase-4.md §2.9), so it never covers the FAB or the Ask pill.
 const BAR_GAP = spacing.sm;
+// The chat composer (#19–#21) is the tallest control that docks on the keyboard: its card is 96pt.
+const KEYBOARD_DOCK = 96;
 
 const ToastContext = createContext<ToastApi | null>(null);
 
@@ -98,35 +99,33 @@ function ToastView({
   const keyboard = useKeyboardState((state) =>
     state.isVisible ? state.height : 0
   );
-  // Over the keyboard when it is up: a toast from a composer (the chat's mic) sat under it.
+  // Above the keyboard and whatever docks on it: at the old fixed height a toast from the chat's
+  // composer (its mic) drew under the keyboard, and right on the keyboard it covered the paperclip.
   const bottom =
     keyboard > 0
-      ? keyboard + BAR_GAP
+      ? keyboard + BAR_GAP + KEYBOARD_DOCK + BAR_GAP
       : insets.bottom + BAR_GAP + sizes.askPill + BAR_GAP;
-  // A window of its own, above every native modal: rendered in the root view, a toast raised from
-  // a sheet or a modal (the chat, Add to folder) drew behind it and nobody saw it
-  // (docs/parity/REPORT.md, #23).
   return (
-    <FullWindowOverlay>
-      <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-        <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
-          <Toast
-            action={
-              toast.action
-                ? {
-                    label: toast.action.label,
-                    onPress: () => {
-                      onHide();
-                      toast.action?.onPress();
-                    },
-                  }
-                : undefined
-            }
-            message={toast.message}
-          />
-        </View>
-      </View>
-    </FullWindowOverlay>
+    <View
+      // A toast with no action takes no touch, so it never swallows a tap meant for what it covers.
+      pointerEvents={toast.action ? "box-none" : "none"}
+      style={[styles.layer, { bottom }]}
+    >
+      <Toast
+        action={
+          toast.action
+            ? {
+                label: toast.action.label,
+                onPress: () => {
+                  onHide();
+                  toast.action?.onPress();
+                },
+              }
+            : undefined
+        }
+        message={toast.message}
+      />
+    </View>
   );
 }
 
