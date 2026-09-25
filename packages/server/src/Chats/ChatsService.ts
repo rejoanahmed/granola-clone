@@ -286,12 +286,15 @@ export const makeChatsService = (deps: ChatsDeps) => {
       : await deps.repo.recent(run.ownerId, run.scope, CHAT_FALLBACK_LIMIT);
   };
 
-  // Steps 3–6 of §6.4. It never throws: any failure after the turn is written marks the answer
-  // failed (latched, so a late failure cannot undo a finish) and ends the stream with `error`.
+  // Steps 3–6 of §6.4. It never throws: a failure before the answer is stored marks it failed
+  // (latched on the run's attempt, so a late failure cannot undo a finish or blank a retry) and ends
+  // the stream with `error`. Nothing after the store is covered by that catch: an answer already
+  // stored is never reported as failed.
   async function* answer(run: AnswerRun): AsyncGenerator<ChatEvent> {
     if (run.turn !== null) {
       yield run.turn;
     }
+    let message: StoredMessage | null;
     try {
       const notes = await retrieve(run);
       const steps = stepsFor(run.scope, notes);
@@ -322,9 +325,10 @@ export const makeChatsService = (deps: ChatsDeps) => {
         content += text;
         yield { data: { text }, event: "token" };
       }
-      const message = await deps.repo.completeAnswer(
+      message = await deps.repo.completeAnswer(
         run.ownerId,
         run.assistantId,
+        run.attempt,
         {
           activity: [...steps, { kind: "done" }],
           citations: citedIn(content, citations),
@@ -332,22 +336,6 @@ export const makeChatsService = (deps: ChatsDeps) => {
         },
         deps.clock.now()
       );
-      if (message === null) {
-        // The latch was lost: the answer went stale and a retry claimed it. That one reports.
-        deps.logger("chat.answer.superseded", { messageId: run.assistantId });
-        yield {
-          data: { code: "superseded", message: PUBLIC_FAILURE },
-          event: "error",
-        };
-        return;
-      }
-      yield {
-        data: {
-          message: presentMessage(message),
-          thread: await summaryOf(run.threadId),
-        },
-        event: "done",
-      };
     } catch (error) {
       const code = failureCodeOf(error);
       deps.logger("chat.answer.failed", { code, messageId: run.assistantId });
@@ -355,6 +343,7 @@ export const makeChatsService = (deps: ChatsDeps) => {
         await deps.repo.failAnswer(
           run.ownerId,
           run.assistantId,
+          run.attempt,
           code,
           deps.clock.now()
         );
@@ -363,8 +352,51 @@ export const makeChatsService = (deps: ChatsDeps) => {
         deps.logger("chat.answer.unrecorded", { messageId: run.assistantId });
       }
       yield { data: { code, message: PUBLIC_FAILURE }, event: "error" };
+      return;
     }
+    yield await settled(run, message);
   }
+
+  // The last event of an answer whose store has run. A lost latch is either a retry that took the
+  // row over (that one reports) or a thread deleted under the answer; the two are told apart by
+  // whether the thread is still there, and a thread gone after the store is the same `gone`.
+  const settled = async (
+    run: AnswerRun,
+    message: StoredMessage | null
+  ): Promise<ChatEvent> => {
+    let thread: ChatThreadRecord | null;
+    try {
+      thread = await deps.repo.summary(run.threadId);
+    } catch (error) {
+      const code = failureCodeOf(error);
+      deps.logger("chat.answer.unconfirmed", {
+        code,
+        messageId: run.assistantId,
+      });
+      return { data: { code, message: PUBLIC_FAILURE }, event: "error" };
+    }
+    if (thread === null) {
+      deps.logger("chat.answer.gone", { messageId: run.assistantId });
+      return {
+        data: { code: "chat_not_found", message: PUBLIC_FAILURE },
+        event: "error",
+      };
+    }
+    if (message === null) {
+      deps.logger("chat.answer.superseded", { messageId: run.assistantId });
+      return {
+        data: { code: "superseded", message: PUBLIC_FAILURE },
+        event: "error",
+      };
+    }
+    return {
+      data: {
+        message: presentMessage(message),
+        thread: presentSummary(thread),
+      },
+      event: "done",
+    };
+  };
 
   const detached = (run: AnswerRun): AsyncIterable<ChatEvent> =>
     runDetached(answer(run), (error) => {
@@ -384,8 +416,7 @@ export const makeChatsService = (deps: ChatsDeps) => {
   }> => {
     switch (scope.kind) {
       case "note": {
-        const note = await deps.repo.liveNoteForOwner(actor.id, scope.noteId);
-        if (note === null) {
+        if (!(await deps.repo.ownsLiveNote(actor.id, scope.noteId))) {
           throw new NoteNotFound({ id: scope.noteId });
         }
         return { personName: null, scope };
@@ -557,16 +588,23 @@ export const makeChatsService = (deps: ChatsDeps) => {
         readonly q?: string;
       }
     ): Promise<Page<ChatThreadSummary>> => {
+      const trimmed = query.q?.trim() ?? "";
+      const q = trimmed === "" ? null : trimmed;
       const position =
         query.cursor === null ? null : decodeChatsCursor(query.cursor);
       if (query.cursor !== null && position === null) {
         throw new ValidationFailed({ field: "cursor" }, "Unreadable cursor");
       }
-      const q = query.q?.trim() ?? "";
+      if (position !== null && position.q !== q) {
+        throw new ValidationFailed(
+          { field: "cursor" },
+          "Cursor is from another query"
+        );
+      }
       const rows = await deps.repo.list(actor.id, {
         limit: query.limit + 1,
         position,
-        q: q === "" ? null : q,
+        q,
       });
       const items = rows.slice(0, query.limit);
       const last = items.at(-1);
@@ -577,6 +615,7 @@ export const makeChatsService = (deps: ChatsDeps) => {
             ? encodeChatsCursor({
                 id: last.id,
                 pinned: last.pinned ? 1 : 0,
+                q,
                 updatedAt: last.updatedAt,
               })
             : null,
@@ -632,6 +671,17 @@ export const makeChatsService = (deps: ChatsDeps) => {
       );
       if (target.role !== "assistant" || question === undefined) {
         throw new ChatMessageNotRetryable({ id: messageId });
+      }
+      // The same guard `ask` has: one answer streams per thread, so retrying an older answer while
+      // a newer one is live is refused rather than run beside it. The target itself, if still
+      // live, is refused by the claim below.
+      if (
+        thread.messages.some(
+          (message) =>
+            message.status === "streaming" && message.id !== target.id
+        )
+      ) {
+        throw new ChatBusy({ id: thread.id });
       }
       const claimed = await deps.repo.claimRetry(
         actor.id,

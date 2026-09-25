@@ -331,7 +331,13 @@ describe("the streaming routes", () => {
       content: "Anything?",
       scope: { kind: "person", personKey: "email:x@y.z" },
     });
+    const retryBusy = appAs(actor(), {
+      retry: () => {
+        throw new ChatErrors.ChatBusy({ id: THREAD_ID });
+      },
+    });
     const retryRes = await send(notRetryable.app, "POST", RETRY_PATH);
+    const retryBusyRes = await send(retryBusy.app, "POST", RETRY_PATH);
 
     expect(busyRes.status).toBe(409);
     expect(await busyRes.json()).toMatchObject({ _tag: "ChatBusy" });
@@ -343,6 +349,8 @@ describe("the streaming routes", () => {
     expect(await retryRes.json()).toMatchObject({
       _tag: "ChatMessageNotRetryable",
     });
+    expect(retryBusyRes.status).toBe(409);
+    expect(await retryBusyRes.json()).toMatchObject({ _tag: "ChatBusy" });
   });
 
   // §7 case 20

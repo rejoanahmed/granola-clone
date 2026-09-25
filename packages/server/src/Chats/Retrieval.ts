@@ -45,7 +45,6 @@ const STOPWORDS = new Set([
   "how",
   "into",
   "its",
-  "me",
   "mine",
   "not",
   "our",

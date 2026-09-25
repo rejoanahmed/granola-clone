@@ -48,40 +48,48 @@ export default function AttendeesSheet() {
       {query.data ? (
         <View>
           {/* In the API's order, which the contract fixes: the caller first, then by position. */}
-          {query.data.attendees.map((attendee) => (
-            <View key={attendee.id}>
-              <Pressable
-                accessibilityLabel={displayName(attendee)}
-                accessibilityRole="button"
-                accessible
-                onPress={() => {
-                  router.back();
-                  router.push({
-                    params: {
-                      name: attendee.name ?? attendee.email ?? "",
-                      personKey: personKeyOf(attendee),
-                    },
-                    pathname: "/ask/person/[personKey]",
-                  });
-                }}
-                style={({ pressed }) => [
-                  styles.row,
-                  pressed ? styles.rowPressed : null,
-                ]}
-                testID={`attendees-row-${attendee.id}`}
-              >
-                <View style={styles.avatar}>
-                  <Text variant="rowTitle">
-                    {initialFor(attendee.name ?? attendee.email)}
+          {query.data.attendees.map((attendee) => {
+            // An attendee with neither a name nor an address has no key, so nothing to ask over.
+            const personKey = personKeyOf(attendee);
+            return (
+              <View key={attendee.id}>
+                <Pressable
+                  accessibilityLabel={displayName(attendee)}
+                  accessibilityRole="button"
+                  accessible
+                  disabled={personKey === null}
+                  onPress={() => {
+                    if (personKey === null) {
+                      return;
+                    }
+                    router.back();
+                    router.push({
+                      params: {
+                        name: attendee.name ?? attendee.email ?? "",
+                        personKey,
+                      },
+                      pathname: "/ask/person/[personKey]",
+                    });
+                  }}
+                  style={({ pressed }) => [
+                    styles.row,
+                    pressed ? styles.rowPressed : null,
+                  ]}
+                  testID={`attendees-row-${attendee.id}`}
+                >
+                  <View style={styles.avatar}>
+                    <Text variant="rowTitle">
+                      {initialFor(attendee.name ?? attendee.email)}
+                    </Text>
+                  </View>
+                  <Text numberOfLines={1} style={styles.name} variant="body">
+                    {displayName(attendee)}
                   </Text>
-                </View>
-                <Text numberOfLines={1} style={styles.name} variant="body">
-                  {displayName(attendee)}
-                </Text>
-              </Pressable>
-              <View style={styles.divider} />
-            </View>
-          ))}
+                </Pressable>
+                <View style={styles.divider} />
+              </View>
+            );
+          })}
         </View>
       ) : (
         <ActivityIndicator

@@ -267,3 +267,26 @@
   react-native-screens resized the list to the whole sheet anyway and drew the rows over the
   header, so each route renders `SheetScrollDecoy`, an empty inert `ScrollView`, as its first
   child: the frame correction lands on it and the real list keeps its layout.
+
+## Deferred review items (phase 7)
+
+- **SQL case folding is ASCII only.** `personKeyOf` lowercases with JavaScript's full Unicode
+  `toLowerCase`, while the attendee match (`attendeeMatches`) and retrieval's LIKE prefilter
+  (`mentionsAny`, `containing`) compare against SQLite's `lower()`, which folds only A–Z. A `name:`
+  key for an attendee with no address and a non-ASCII capital ("Élodie") is not found, so person
+  Ask answers `PersonNotFound`, and a non-ASCII question term misses a note that capitalises it.
+  The fix is a normalised column written at insert time (`note_attendees.name_key`, and a folded
+  search text on notes and segments), which is a migration plus a backfill, or matching in the
+  repository in JavaScript over the owner's attendees. Every seeded attendee has an address, and
+  `email:` keys are ASCII in practice. What was fixed: `personKeyOf` no longer returns the invalid
+  `name:` for an attendee with neither an address nor a name; it answers `null`, and the attendees
+  sheet leaves that row inert.
+- **The dimmed home barely peeks above the global chat sheet.** The route is a native page sheet,
+  so the peek and its dimming are UIKit's; the home's `#262626` header dims to near the status bar's
+  black, which is why the strip above the card reads as dark rather than as the home (#70). The
+  grabber #70 draws is now drawn in the sheet (`chat-grabber`).
+- **The soft-keyboard half of "a thread from history does not autofocus" is not asserted.** The
+  screen now dismisses the keyboard when history loads a thread, but the simulator runs with a
+  hardware keyboard, so no flow can see the software keys stay down.
+- **The pin layout animation is not asserted.** `LayoutAnimation` moves the row into or out of
+  Pinned; no flow can observe an animation.

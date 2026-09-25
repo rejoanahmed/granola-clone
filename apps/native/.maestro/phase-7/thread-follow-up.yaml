@@ -1,6 +1,7 @@
 # AC6 (docs/spec/phase-7.md §8, #25, #30): a follow-up in a thread from history is answered as turn
 # 1; New chat then empties the screen back to the greeting and chips, and the thread's history row
-# now previews the follow-up's answer, under Today because its updatedAt moved to now.
+# now previews the follow-up’s answer, under Today because its updatedAt moved to now. A note-scoped
+# thread opened from the same history then gives New chat that note’s scope.
 appId: ${APP_ID}
 name: A follow-up, then a new chat
 tags:
@@ -63,3 +64,25 @@ env:
       id: chat-history-section-today
     above:
       id: chat-history-section-older
+
+# §3.1: a thread brings its own scope. The note-scoped solo thread, opened in the global modal, makes
+# New chat an empty chat about that note: its title and three chips, no greeting.
+- tapOn:
+    id: chat-history-row-cht_e2e_solo
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-actions
+    timeout: 15000
+- tapOn:
+    id: chat-new-button
+- extendedWaitUntil:
+    visible:
+      id: chat-chip-2
+    timeout: 10000
+- assertVisible:
+    id: chat-title
+    text: Solo reflection thoughts
+- assertNotVisible:
+    id: chat-greeting
+- assertNotVisible:
+    id: chat-chip-3

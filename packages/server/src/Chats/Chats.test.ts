@@ -15,6 +15,7 @@ import type { Env } from "../Runtime/WorkerEnv";
 import { makeTestD1, sequentialIds, type TestD1 } from "../Testing";
 import * as Repo from "./ChatsRepo";
 import * as Svc from "./ChatsService";
+import * as Detached from "./Detached";
 import * as Pipe from "./Pipe";
 
 // docs/spec/phase-7.md §7 cases 1–21: the chats service over the real repository and the shipped
@@ -198,7 +199,6 @@ type ChatLlm = {
 type SseMessage = { data: string; event?: string; id?: string };
 type SseSink = {
   aborted: boolean;
-  onAbort: (listener: () => void) => void;
   writeSSE: (message: SseMessage) => Promise<void>;
 };
 
@@ -972,27 +972,22 @@ describe("ChatsService, failure and retry", () => {
 
   it("still stores the answer when the SSE stream aborts mid-answer, through the handler's pipe", async () => {
     const written: string[] = [];
-    const listeners: (() => void)[] = [];
     const sink: SseSink = {
       aborted: false,
-      onAbort: (listener) => {
-        listeners.push(listener);
-      },
       // Hono's writes after an abort fail silently; this one stops recording at the same point.
       writeSSE: (message) => {
         if (!sink.aborted) {
           written.push(message.event ?? "message");
           if (message.event === "citations") {
             sink.aborted = true;
-            for (const listener of listeners) {
-              listener();
-            }
           }
         }
         return Promise.resolve();
       },
     };
 
+    // The cast is from this file's unbranded event shape to the domain's branded one, not a
+    // widening: the service hands `pipe` the branded stream in production.
     await Pipe.pipe(
       (await service().ask(person, {
         content: PRICING,
@@ -1015,6 +1010,293 @@ describe("ChatsService, failure and retry", () => {
         (await service().get(person, threadId)).messages[1]?.status ===
         "complete"
     );
+  });
+});
+
+// The latch and the tail of an answer: what happens when two runs of one answer, or a delete, or
+// the repository itself, race the stream. The review of phase 7 found the first unguarded.
+describe("ChatsService, races around one answer", () => {
+  type Repo = ReturnType<typeof Repo.makeChatsRepo>;
+  const repo = (): Repo => Repo.makeChatsRepo(makeDrizzle(d1));
+  const serviceOver = (over: Partial<Repo>): ChatsService =>
+    Svc.makeChatsService({
+      clock,
+      ids,
+      llm: llm as unknown as Svc.ChatsDeps["llm"],
+      logger: (event: string, fields: Record<string, unknown> = {}) => {
+        logged.push({ event, fields });
+      },
+      repo: { ...repo(), ...over },
+    }) as unknown as ChatsService;
+  const events = () => logged.map((entry) => entry.event);
+  const row = async (id: string) =>
+    await d1
+      .prepare(
+        "SELECT attempt, content, status FROM chat_messages WHERE id = ?"
+      )
+      .bind(id)
+      .first<{ attempt: number; content: string; status: string }>();
+
+  // Opens an answer held at "Thinking...", past its citations.
+  const holdOpen = async () => {
+    chatMode = "hold";
+    held = true;
+    const open = (
+      await service().ask(person, { content: PRICING, scope: GLOBAL })
+    )[Symbol.asyncIterator]();
+    return { open, turn: turnOf(await readUntil(open, "citations")) };
+  };
+  const rest = async (open: AsyncIterator<ChatEvent>) => {
+    const seen: ChatEvent[] = [];
+    for (;;) {
+      // biome-ignore lint/performance/noAwaitInLoops: a stream is read one event at a time
+      const next = await open.next();
+      if (next.done === true) {
+        return seen;
+      }
+      seen.push(next.value);
+    }
+  };
+
+  it("does not let a late original finish over the retry streaming into its row", async () => {
+    const { open, turn } = await holdOpen();
+    now = AT + STALE_AFTER_MS + 1;
+    const waiting = sleepers.length;
+
+    // The retry holds too, so it is still streaming when the original finishes.
+    const retry = (
+      await service().retry(person, turn.threadId, turn.assistantMessageId)
+    )[Symbol.asyncIterator]();
+    await readUntil(retry, "citations");
+
+    chatMode = "auto";
+    for (const resolve of sleepers.splice(0, waiting)) {
+      resolve();
+    }
+    expect((await rest(open)).at(-1)).toMatchObject({
+      data: { code: "superseded" },
+      event: "error",
+    });
+    expect(await row(turn.assistantMessageId)).toMatchObject({
+      attempt: 2,
+      content: "",
+      status: "streaming",
+    });
+    expect(events()).toContain("chat.answer.superseded");
+
+    wake();
+    expect(doneOf(await rest(retry)).message.status).toBe("complete");
+    expect((await row(turn.assistantMessageId))?.status).toBe("complete");
+  });
+
+  it("does not let a late original's failure blank the retry streaming into its row", async () => {
+    const { open, turn } = await holdOpen();
+    now = AT + STALE_AFTER_MS + 1;
+    const waiting = sleepers.length;
+
+    // The retry holds too, so it is still streaming when the original fails.
+    const retry = (
+      await service().retry(person, turn.threadId, turn.assistantMessageId)
+    )[Symbol.asyncIterator]();
+    await readUntil(retry, "citations");
+    expect(await row(turn.assistantMessageId)).toMatchObject({
+      attempt: 2,
+      status: "streaming",
+    });
+
+    chatMode = "fail";
+    for (const resolve of sleepers.splice(0, waiting)) {
+      resolve();
+    }
+    expect((await rest(open)).at(-1)?.event).toBe("error");
+    expect(await row(turn.assistantMessageId)).toMatchObject({
+      attempt: 2,
+      status: "streaming",
+    });
+
+    chatMode = "auto";
+    wake();
+    expect(doneOf(await rest(retry)).message.status).toBe("complete");
+    expect((await row(turn.assistantMessageId))?.status).toBe("complete");
+  });
+
+  it("lets exactly one of two concurrent retry claims win", async () => {
+    chatMode = "fail";
+    const { assistantMessageId, threadId } = turnOf(
+      await askNew(person, GLOBAL, PRICING)
+    );
+    const claim = () =>
+      repo().claimRetry(
+        person.id as Parameters<Repo["claimRetry"]>[0],
+        threadId as Parameters<Repo["claimRetry"]>[1],
+        assistantMessageId as Parameters<Repo["claimRetry"]>[2],
+        now
+      );
+
+    const claims = await Promise.all([claim(), claim()]);
+
+    expect(claims.filter((claimed) => claimed !== null)).toHaveLength(1);
+    expect((await row(assistantMessageId))?.attempt).toBe(2);
+  });
+
+  it("reports a thread deleted mid-answer as gone, not superseded", async () => {
+    const { open, turn } = await holdOpen();
+    await service().remove(person, turn.threadId);
+
+    chatMode = "auto";
+    wake();
+    const late = await rest(open);
+
+    expect(late.at(-1)).toMatchObject({
+      data: { code: "chat_not_found" },
+      event: "error",
+    });
+    expect(events()).toContain("chat.answer.gone");
+    expect(events()).not.toContain("chat.answer.superseded");
+    expect(events()).not.toContain("chat.answer.failed");
+  });
+
+  it("never marks a stored answer failed when confirming it throws", async () => {
+    const summary = repo().summary;
+    let calls = 0;
+    const flaky = serviceOver({
+      // The turn event reads the summary once; the second read is the one after the store.
+      summary: (id) => {
+        calls += 1;
+        return calls > 1 ? Promise.reject(new Error("d1 down")) : summary(id);
+      },
+    });
+
+    const got = await collect(
+      await flaky.ask(person, { content: PRICING, scope: GLOBAL })
+    );
+
+    expect(got.at(-1)?.event).toBe("error");
+    expect(events()).toContain("chat.answer.unconfirmed");
+    expect(events()).not.toContain("chat.answer.failed");
+    expect((await row(turnOf(got).assistantMessageId))?.status).toBe(
+      "complete"
+    );
+  });
+
+  it("still ends with error when recording the failure throws", async () => {
+    chatMode = "fail";
+    const broken = serviceOver({
+      failAnswer: () => Promise.reject(new Error("d1 down")),
+    });
+
+    const got = await collect(
+      await broken.ask(person, { content: PRICING, scope: GLOBAL })
+    );
+
+    expect(got.at(-1)).toMatchObject({
+      data: { code: "llm_unavailable" },
+      event: "error",
+    });
+    expect(events()).toContain("chat.answer.unrecorded");
+  });
+
+  it("titles the thread from the question when the title call fails", async () => {
+    const untitled = serviceWith({
+      streamAnswer: llm.streamAnswer,
+      titleChat: () => Promise.reject(new Error("title model down")),
+    });
+
+    const got = await collect(
+      await untitled.ask(person, { content: PRICING, scope: GLOBAL })
+    );
+
+    expect(doneOf(got).thread.title).toBe(PRICING);
+  });
+
+  it("answers ChatBusy when a concurrent send took the turn's positions", async () => {
+    const writes = repo();
+    const turn = {
+      messages: [
+        {
+          content: "Racing?",
+          id: "msg_racer_aaaa" as never,
+          model: null,
+          position: 2,
+          role: "user" as const,
+          status: "complete" as const,
+        },
+      ],
+      now,
+      ownerId: person.id as never,
+      thread: null,
+      threadId: "cht_e2e_cohort" as never,
+    };
+    await expect(writes.writeTurn(turn)).resolves.toBe(true);
+    await expect(
+      writes.writeTurn({
+        ...turn,
+        messages: [{ ...turn.messages[0], id: "msg_racer_bbbb" as never }],
+      } as Parameters<Repo["writeTurn"]>[0])
+    ).resolves.toBe(false);
+
+    const busy = await caught(() =>
+      serviceOver({ writeTurn: () => Promise.resolve(false) }).ask(person, {
+        content: "Again?",
+        threadId: "cht_e2e_cohort",
+      })
+    );
+    expect(busy).toBeInstanceOf(ChatErrors.ChatBusy);
+  });
+
+  it("refuses to retry an older failed answer while a newer one streams, with ChatBusy", async () => {
+    chatMode = "fail";
+    const failed = turnOf(await askNew(person, GLOBAL, PRICING));
+    chatMode = "hold";
+    held = true;
+    const open = (
+      await service().ask(person, {
+        content: FOLLOW_UP,
+        threadId: failed.threadId,
+      })
+    )[Symbol.asyncIterator]();
+    await readUntil(open, "citations");
+
+    const busy = await caught(() =>
+      service().retry(person, failed.threadId, failed.assistantMessageId)
+    );
+
+    expect(busy).toBeInstanceOf(ChatErrors.ChatBusy);
+    expect((await row(failed.assistantMessageId))?.status).toBe("failed");
+  });
+
+  it("answers ChatMessageNotFound for retry and feedback on an unknown id in the caller's own thread", async () => {
+    const retry = await caught(() =>
+      service().retry(person, "cht_e2e_cohort", "msg_nobody_here")
+    );
+    const feedback = await caught(() =>
+      service().feedback(person, "cht_e2e_cohort", "msg_nobody_here", "up")
+    );
+
+    expect(retry).toBeInstanceOf(ChatErrors.ChatMessageNotFound);
+    expect(feedback).toBeInstanceOf(ChatErrors.ChatMessageNotFound);
+  });
+});
+
+describe("runDetached", () => {
+  it("hands a crash to onCrash and ends the reader's stream instead of throwing into it", async () => {
+    const crashes: unknown[] = [];
+    const boom = new Error("boom");
+    async function* source() {
+      yield 1;
+      await Promise.resolve();
+      throw boom;
+    }
+
+    const seen: number[] = [];
+    for await (const item of Detached.runDetached(source(), (error) => {
+      crashes.push(error);
+    })) {
+      seen.push(item);
+    }
+
+    expect(seen).toEqual([1]);
+    expect(crashes).toEqual([boom]);
   });
 });
 
@@ -1076,6 +1358,32 @@ describe("ChatsService.list", () => {
       label: "Solo reflection thoughts",
       noteId: "not_e2e_solo",
     });
+  });
+
+  it("refuses a cursor minted under another search with a 422", async () => {
+    await askNew(person, GLOBAL, PRICING);
+    const page = await service().list(person, {
+      cursor: null,
+      limit: 1,
+      q: "a",
+    });
+    expect(page.nextCursor).not.toBeNull();
+
+    const unsearched = await caught(() =>
+      service().list(person, { cursor: page.nextCursor, limit: 1 })
+    );
+    const researched = await caught(() =>
+      service().list(person, { cursor: page.nextCursor, limit: 1, q: "b" })
+    );
+    const same = await service().list(person, {
+      cursor: page.nextCursor,
+      limit: 1,
+      q: " a ",
+    });
+
+    expect(unsearched).toMatchObject({ status: 422 });
+    expect(researched).toMatchObject({ status: 422 });
+    expect(same.items).toHaveLength(1);
   });
 
   it("refuses a cursor it did not mint with a 422", async () => {

@@ -112,7 +112,10 @@ const lastAnswer = sql<
   string | null
 >`(select "m"."content" from "chat_messages" "m" where "m"."thread_id" = "chat_threads"."id" and "m"."role" = 'assistant' and "m"."status" = 'complete' order by "m"."position" desc limit 1)`;
 
-const pinnedRank = sql<number>`(case when ${chatThreads.pinnedAt} is null then 0 else 1 end)`;
+// The same expression `chat_threads_owner_rank_idx` is built on, so SQLite serves the history
+// order from the index rather than sorting: an index on raw `pinned_at` cannot serve an order on a
+// derived rank.
+const pinnedRank = sql<number>`(${chatThreads.pinnedAt} is not null)`;
 
 const summaryColumns = {
   id: chatThreads.id,
@@ -375,11 +378,13 @@ export const makeChatsRepo = (db: DrizzleClient) => {
       return row === undefined ? null : toMessage(row, now);
     },
 
-    // Latched on `status = 'streaming'`: a stale answer a retry has since claimed, or one already
-    // failed, is not overwritten by a late finish. `null` when the latch was lost.
+    // Latched on `status = 'streaming'` and on the run's `attempt`: a retry sets the row back to
+    // `streaming` and bumps the attempt, so the status alone would let a late original finish over
+    // the retry streaming into the same row. `null` when the latch was lost.
     completeAnswer: async (
       ownerId: UserId,
       id: ChatMessageId,
+      attempt: number,
       answer: Answer,
       now: Timestamp
     ): Promise<StoredMessage | null> => {
@@ -397,6 +402,7 @@ export const makeChatsRepo = (db: DrizzleClient) => {
           and(
             eq(chatMessages.id, id),
             eq(chatMessages.ownerId, ownerId),
+            eq(chatMessages.attempt, attempt),
             eq(chatMessages.status, "streaming")
           )
         )
@@ -413,6 +419,7 @@ export const makeChatsRepo = (db: DrizzleClient) => {
     failAnswer: async (
       ownerId: UserId,
       id: ChatMessageId,
+      attempt: number,
       failure: string,
       now: Timestamp
     ): Promise<boolean> => {
@@ -423,6 +430,7 @@ export const makeChatsRepo = (db: DrizzleClient) => {
           and(
             eq(chatMessages.id, id),
             eq(chatMessages.ownerId, ownerId),
+            eq(chatMessages.attempt, attempt),
             eq(chatMessages.status, "streaming")
           )
         )
@@ -431,7 +439,7 @@ export const makeChatsRepo = (db: DrizzleClient) => {
     },
 
     // Pinned first, then `updatedAt desc, id desc`, strictly after the cursor. The row-value
-    // comparison is the same order the index and the `orderBy` use, so no row is skipped or repeated.
+    // comparison is the same order the `orderBy` uses, so no row is skipped or repeated.
     list: async (
       ownerId: UserId,
       query: {
@@ -463,18 +471,13 @@ export const makeChatsRepo = (db: DrizzleClient) => {
       return rows.map(toRecord);
     },
 
-    liveNoteForOwner: async (
-      ownerId: UserId,
-      noteId: NoteId
-    ): Promise<{ readonly id: NoteId; readonly title: string } | null> => {
+    ownsLiveNote: async (ownerId: UserId, noteId: NoteId): Promise<boolean> => {
       const row = await db
-        .select({ id: notes.id, title: notes.title })
+        .select({ id: notes.id })
         .from(notes)
         .where(and(liveNotesOf(ownerId), eq(notes.id, noteId)))
         .get();
-      return row === undefined
-        ? null
-        : { id: NoteId.parse(row.id), title: row.title };
+      return row !== undefined;
     },
 
     // The most recent display name the person appears under among the caller's live notes, the

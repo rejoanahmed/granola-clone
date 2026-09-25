@@ -11,7 +11,13 @@ import {
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Pin, PinOff, Trash2 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, SectionList, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  LayoutAnimation,
+  SectionList,
+  StyleSheet,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { chatsInfiniteQuery, useDeleteChat, usePinChat } from "./api";
@@ -23,7 +29,8 @@ import { groupThreads } from "./historyGroups";
 
 const DEBOUNCE_MS = 250;
 const MENU_GAP = 12;
-const LEFT = spacing.lg + spacing.sm;
+// The rows' inset (HistoryRow): #24 has the header and the titles on one edge.
+const LEFT = spacing.lg + spacing.xxs;
 
 function useDebounced(value: string): string {
   const [settled, setSettled] = useState(value);
@@ -39,7 +46,13 @@ export function HistorySheet({ onClose }: { readonly onClose: () => void }) {
   const [text, setText] = useState("");
   const q = useDebounced(text).trim();
   const query = useInfiniteQuery(chatsInfiniteQuery(q));
-  const pin = usePinChat();
+  const pinChat = usePinChat();
+  // The optimistic regroup is one render; the layout animation is what moves the row into or out
+  // of Pinned rather than cutting it there (§3.5).
+  const togglePin = (thread: ChatThreadSummary) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    pinChat.mutate({ id: thread.id, pinned: !thread.pinned });
+  };
   const remove = useDeleteChat((id) =>
     emitHistory({ kind: "deleted", threadId: id })
   );
@@ -121,9 +134,7 @@ export function HistorySheet({ onClose }: { readonly onClose: () => void }) {
             onDelete={() => remove.mutate(item.id)}
             onLongPress={(frame) => openMenu(item, frame)}
             onOpen={() => open(item)}
-            onTogglePin={() =>
-              pin.mutate({ id: item.id, pinned: !item.pinned })
-            }
+            onTogglePin={() => togglePin(item)}
             onWillOpen={(row) => {
               if (openRow.current && openRow.current !== row) {
                 openRow.current.close();
@@ -180,10 +191,7 @@ export function HistorySheet({ onClose }: { readonly onClose: () => void }) {
                       : CHAT_COPY.history.pin,
                     onPress: () => {
                       setMenu(null);
-                      pin.mutate({
-                        id: menuThread.id,
-                        pinned: !menuThread.pinned,
-                      });
+                      togglePin(menuThread);
                     },
                     testID: "chat-history-menu-pin",
                   },

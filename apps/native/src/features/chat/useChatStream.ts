@@ -245,10 +245,14 @@ function applyEvent(
       }));
       return;
     default:
+      // The stored failed answer is blank (the server drops what streamed so far), so the screen
+      // drops it too rather than showing a half sentence that vanishes on reload.
       apply((s) => ({
         ...s,
         messages: patch(s.messages, current, (m) => ({
           ...m,
+          citations: [],
+          content: "",
           status: "failed",
         })),
       }));

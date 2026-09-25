@@ -24,6 +24,11 @@ describe("personKeyOf", () => {
     );
   });
 
+  it("answers null for an attendee with neither an email nor a name", () => {
+    expect(Person.personKeyOf({ email: "  ", name: " \t " })).toBeNull();
+    expect(Person.personKeyOf({ email: null, name: null })).toBeNull();
+  });
+
   it("treats a blank email as no email", () => {
     expect(Person.personKeyOf({ email: "   ", name: "Sam Okafor" })).toBe(
       "name:sam okafor"

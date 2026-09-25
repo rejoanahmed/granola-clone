@@ -1,6 +1,4 @@
-import { sql } from "drizzle-orm";
 import {
-  index,
   integer,
   sqliteTable,
   text,
@@ -31,7 +29,8 @@ export const chatMessages = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     position: integer("position").notNull(),
     role: text("role").notNull(),
-    // `streaming` is the latch completeAnswer, failAnswer and the retry claim all name.
+    // `streaming` plus `attempt` is the latch completeAnswer and failAnswer name; the retry claim
+    // moves both.
     status: text("status").notNull(),
     threadId: text("thread_id")
       .notNull()
@@ -43,10 +42,6 @@ export const chatMessages = sqliteTable(
       table.threadId,
       table.position
     ),
-    // Backs the ChatBusy check. Partial, so a finished answer costs the index nothing.
-    index("chat_messages_streaming_idx")
-      .on(table.threadId)
-      .where(sql`${table.status} = 'streaming'`),
   ]
 );
 

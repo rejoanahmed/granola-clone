@@ -38,6 +38,8 @@ type Props = {
   readonly scope: ChatScopeKind;
   /** An answer is streaming or the thread is loading: the draft stays editable, Send does not. */
   readonly sendDisabled: boolean;
+  /** An answer is streaming: Send stays the olive arrow, disabled, even with the draft cleared. */
+  readonly streaming: boolean;
 };
 
 function useRotatingPlaceholder(scope: ChatScopeKind, paused: boolean) {
@@ -67,6 +69,7 @@ export function Composer({
   onSend,
   scope,
   sendDisabled,
+  streaming,
 }: Props) {
   const pill = useRef<View>(null);
   const hasDraft = draft.trim() !== "";
@@ -156,7 +159,7 @@ export function Composer({
           disabled={sendDisabled}
           onPress={hasDraft ? submit : onDictate}
           size={CONTROL}
-          state={hasDraft ? "active" : "idle"}
+          state={hasDraft || streaming ? "active" : "idle"}
           testID="chat-send"
         />
       </View>

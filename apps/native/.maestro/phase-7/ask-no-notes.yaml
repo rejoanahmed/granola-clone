@@ -36,5 +36,11 @@ env:
 - assertVisible:
     id: chat-answer-0-block-0
     text: I couldn’t find anything in your notes about that\.
+# The answer's first block and its action row on screen together bracket the whole answer, so
+# the absence below means "not rendered", not "scrolled off" (assertNotVisible alone passes on both).
+- assertVisible:
+    id: chat-answer-0-block-0
+- assertVisible:
+    id: chat-answer-0-actions
 - assertNotVisible:
     id: chat-answer-0-cite-1

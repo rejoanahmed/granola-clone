@@ -80,7 +80,9 @@ There is one screen component, `features/chat/ChatScreen.tsx`, with three routes
 | `app/ask/person/[personKey].tsx` (`?name=` carries the display name for the first paint) | push | circular **Back** `chat-back` | the person's name (#66); the thread's title once opened from history |
 
 Every route accepts `?thread=<ChatThreadId>`. With it, the screen opens that thread (§3.5), and
-its scope comes from the thread, not the route.
+its scope comes from the thread, not the route. The same holds for a thread loaded from Chat
+History: the screen adopts the thread's scope (chips, placeholder and empty-state title), and New
+chat returns to an empty chat of that scope.
 
 **Nav row** (#19, #25): y 47–91. The left control is a 44pt circle at the gutter, drawn like the
 phase-2 `IconButton` (`#1E1E1E` + 1pt `#333` border). The title is centred, SF Pro 20pt semibold
@@ -169,7 +171,8 @@ Turn `n` (0-based, in thread order):
 **Send** return key, #70) does four things:
 
 1. The user bubble appears at once (optimistic).
-2. The draft clears, and the button returns to the mic.
+2. The draft clears. The button stays the olive send arrow, disabled, until the answer ends
+   (below); it returns to the mic then, if the draft is still empty.
 3. The answer area shows the activity row with "Searching notes..." and its spinner.
 4. `chat-answer-<n>-status` reads **"Thinking..."** in 17pt `#8A8A8A`, with a 1.2 s opacity pulse
    between 0.4 and 1.
@@ -294,7 +297,8 @@ scope: history is **global** (#24, #72).
   debounces 250 ms and refetches `GET /chats?q=`. There is a clear (x) button while text is
   present (`chat-history-search-clear`) *(designed)*.
 - **Sections** (`chat-history-section-<key>`): the header is 17pt medium `#A8AAA1` at the
-  gutter + 12 (#24: "Older" at x 51), with 24pt above it and 16pt below. Groups by the thread's
+  gutter + 4 (#24: "Older" at x 51 of 924 display px, about 24pt on the 428pt device), with 24pt
+  above it and 16pt below. The rows' titles share that edge. Groups by the thread's
   `updatedAt` in the device's zone, in this order, and an empty group is not drawn:
   - **Pinned** *(designed)*, every pinned thread, whatever its date;
   - **Today**;

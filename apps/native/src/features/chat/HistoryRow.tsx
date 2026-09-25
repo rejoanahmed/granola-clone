@@ -27,7 +27,8 @@ const ROW_INSET = 4;
 const PIN_GLYPH = 13;
 const ACTION_GLYPH = 18;
 const LONG_PRESS_MS = 500;
-const LEFT = spacing.lg + spacing.sm;
+// #24: "Older" and the titles at x 51 of 924 px, about 24pt on the 428pt device.
+const LEFT = spacing.lg + spacing.xxs;
 
 type Props = {
   readonly now: number;
@@ -42,12 +43,15 @@ type Props = {
 function Capsule({
   caption,
   fill,
+  filled = false,
   icon: Icon,
   onPress,
   testID,
 }: {
   readonly caption: string;
   readonly fill: string;
+  /** #73's pin is a solid glyph; the trash stays an outline. */
+  readonly filled?: boolean;
   readonly icon: typeof Pin;
   readonly onPress: () => void;
   readonly testID: string;
@@ -61,7 +65,12 @@ function Capsule({
       testID={testID}
     >
       <View style={[styles.capsule, { backgroundColor: fill }]}>
-        <Icon color={colors.text.primary} size={ACTION_GLYPH} strokeWidth={2} />
+        <Icon
+          color={colors.text.primary}
+          fill={filled ? colors.text.primary : "none"}
+          size={ACTION_GLYPH}
+          strokeWidth={2}
+        />
       </View>
       <Text style={styles.caption} variant="caption">
         {caption}
@@ -111,6 +120,7 @@ export function HistoryRow({
               thread.pinned ? CHAT_COPY.history.unpin : CHAT_COPY.history.pin
             }
             fill={colors.swipe.pin}
+            filled
             icon={thread.pinned ? PinOff : Pin}
             onPress={act(onTogglePin)}
             testID={`${id}-pin`}
@@ -157,7 +167,7 @@ export function HistoryRow({
           <View style={styles.subLine}>
             <Text
               numberOfLines={1}
-              style={styles.flex}
+              style={styles.preview}
               testID={`${id}-preview`}
               variant="secondary"
             >
@@ -191,6 +201,8 @@ const styles = StyleSheet.create({
   caption: { marginTop: 2 },
   flex: { flexShrink: 1 },
   pressed: { opacity: PRESSED_OPACITY },
+  // Grows as well as shrinks, so a short preview still leaves the date at the right gutter (§3.5).
+  preview: { flex: 1 },
   row: {
     height: ROW_HEIGHT,
     justifyContent: "center",

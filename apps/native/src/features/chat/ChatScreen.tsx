@@ -1,15 +1,23 @@
 import {
+  type ChatScope,
   type ChatScopeInput,
   GLOBAL_CHIPS,
   SCOPED_CHIPS,
 } from "@gc/domain/Domain/Chat";
-import { colors, type Frame, spacing, useToast } from "@native/design";
+import {
+  colors,
+  type Frame,
+  radii,
+  sizes,
+  spacing,
+  useToast,
+} from "@native/design";
 import { hasTag } from "@native/lib/api";
 import { useAuth } from "@native/lib/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Keyboard, StyleSheet, View } from "react-native";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -28,6 +36,18 @@ const MODAL_TOP = spacing.md;
 const NAV_TOP = 3;
 const MENU_GAP = 8;
 
+// A thread opened from history brings its own scope (§3.1), which New chat then keeps (§2).
+const inputOf = (scope: ChatScope): ChatScopeInput => {
+  switch (scope.kind) {
+    case "note":
+      return { kind: "note", noteId: scope.noteId };
+    case "person":
+      return { kind: "person", personKey: scope.personKey };
+    default:
+      return { kind: "global" };
+  }
+};
+
 type Props = {
   readonly presentation: "modal" | "push";
   readonly scope: ChatScopeInput;
@@ -40,8 +60,8 @@ type Props = {
 /** The one chat screen behind the three Ask routes (docs/spec/phase-7.md §3.1). */
 export function ChatScreen({
   presentation,
-  scope,
-  scopeTitle,
+  scope: routeScope,
+  scopeTitle: routeTitle,
   thread: threadParam,
   threadTitle,
 }: Props) {
@@ -49,6 +69,12 @@ export function ChatScreen({
   const toast = useToast();
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
+  const [adopted, setAdopted] = useState<{
+    readonly scope: ChatScopeInput;
+    readonly title: string;
+  } | null>(null);
+  const scope = adopted?.scope ?? routeScope;
+  const scopeTitle = adopted?.title ?? routeTitle;
   const chat = useChatStream(scope);
   const [draft, setDraft] = useState("");
   const [menu, setMenu] = useState<Frame | null>(null);
@@ -79,6 +105,10 @@ export function ChatScreen({
       openQuery.isFetchedAfterMount
     ) {
       load(openQuery.data);
+      setAdopted({
+        scope: inputOf(openQuery.data.scope),
+        title: openQuery.data.scope.label ?? "",
+      });
       setOpening(null);
     }
   }, [load, opening, openQuery.data, openQuery.isFetchedAfterMount]);
@@ -88,6 +118,8 @@ export function ChatScreen({
     () =>
       listenToHistory((event) => {
         if (event.kind === "open") {
+          // The composer took focus on mount; a loaded answer is for reading (§3.1, #25).
+          Keyboard.dismiss();
           setOpening({ id: event.threadId, title: event.title });
         } else if (event.threadId === currentId) {
           reset();
@@ -159,6 +191,9 @@ export function ChatScreen({
   const top = presentation === "modal" ? MODAL_TOP : insets.top + NAV_TOP;
   return (
     <View style={[styles.screen, { paddingTop: top }]} testID="chat-screen">
+      {presentation === "modal" ? (
+        <View style={styles.grabber} testID="chat-grabber" />
+      ) : null}
       <ChatNav
         hasMessages={messages.length > 0}
         left={presentation === "modal" ? "close" : "back"}
@@ -189,6 +224,7 @@ export function ChatScreen({
               onSend={() => send(draft)}
               scope={scope.kind}
               sendDisabled={chat.busy || opening !== null}
+              streaming={chat.busy}
             />
           </Animated.View>
         )}
@@ -210,5 +246,15 @@ export function ChatScreen({
 const styles = StyleSheet.create({
   center: { alignItems: "center", flex: 1, justifyContent: "center" },
   flex: { flex: 1 },
+  // #70: the page sheet's grabber, drawn as `SheetChrome` draws its own.
+  grabber: {
+    alignSelf: "center",
+    backgroundColor: colors.grabber,
+    borderRadius: radii.grabber,
+    height: sizes.grabberHeight,
+    position: "absolute",
+    top: spacing.xs,
+    width: sizes.grabberWidth,
+  },
   screen: { backgroundColor: colors.bg.app, flex: 1 },
 });

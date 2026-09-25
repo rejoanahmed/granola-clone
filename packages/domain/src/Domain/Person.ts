@@ -10,16 +10,19 @@ export const PersonKey = z
   .regex(/^(email|name):.+$/);
 export type PersonKey = z.infer<typeof PersonKey>;
 
+// `null` for an attendee with neither an address nor a name: `name:` alone is not a key, and such
+// a row names nobody a person scope could be asked over.
 export const personKeyOf = ({
   email,
   name,
 }: {
   readonly email: string | null;
   readonly name: string | null;
-}): PersonKey => {
+}): PersonKey | null => {
   const mail = email?.trim().toLowerCase() ?? "";
   if (mail !== "") {
     return `email:${mail}`;
   }
-  return `name:${(name ?? "").trim().toLowerCase().replace(/\s+/g, " ")}`;
+  const collapsed = (name ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return collapsed === "" ? null : `name:${collapsed}`;
 };

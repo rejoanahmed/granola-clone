@@ -20,7 +20,7 @@ export const chatThreads = sqliteTable(
     ownerId: text("owner_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    // A timestamp rather than a boolean only so it can sit in the index; the API exposes a boolean.
+    // A timestamp rather than a boolean so a pin records when; the API exposes a boolean.
     pinnedAt: integer("pinned_at"),
     scopeKind: text("scope_kind").notNull(),
     scopeNoteId: text("scope_note_id").references(() => notes.id, {
@@ -33,10 +33,11 @@ export const chatThreads = sqliteTable(
     updatedAt: integer("updated_at").notNull(),
   },
   (table) => [
-    // The history list's access path: one owner's threads in keyset order.
-    index("chat_threads_owner_order_idx").on(
+    // The history list's access path: one owner's threads in keyset order. The rank is an
+    // expression, and it must stay the one `ChatsRepo` orders by, or SQLite sorts in a temp B-tree.
+    index("chat_threads_owner_rank_idx").on(
       table.ownerId,
-      table.pinnedAt,
+      sql`(${table.pinnedAt} is not null) desc`,
       desc(table.updatedAt),
       desc(table.id)
     ),

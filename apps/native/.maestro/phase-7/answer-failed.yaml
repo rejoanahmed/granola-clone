@@ -45,5 +45,9 @@ env:
     id: chat-answer-0-status
 - assertVisible:
     id: chat-user-0
+# The question and the answer's action row on screen together bracket the thread's one turn, and
+# the thread follows its newest message, so a second turn would be in view: its absence is real.
+- assertVisible:
+    id: chat-answer-0-actions
 - assertNotVisible:
     id: chat-user-1

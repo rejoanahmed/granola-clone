@@ -141,7 +141,7 @@ export const sendChatMessageRoute = createRoute({
 
 export const retryChatMessageRoute = createRoute({
   description:
-    "Answers a failed question again, streamed into the same assistant message, with no turn event. Only a failed (or stale streaming) assistant message can be retried; anything else is a 409 ChatMessageNotRetryable.",
+    "Answers a failed question again, streamed into the same assistant message, with no turn event. Only a failed (or stale streaming) assistant message can be retried; anything else is a 409 ChatMessageNotRetryable. While another answer in the thread is still streaming it is a 409 ChatBusy.",
   method: "post",
   path: "/chats/{id}/messages/{messageId}/retry",
   request: { params: MessageParams },
@@ -150,7 +150,7 @@ export const retryChatMessageRoute = createRoute({
     404: messageNotFound,
     409: json(
       ErrorBody,
-      "ChatMessageNotRetryable: not an assistant message, or not failed"
+      "ChatMessageNotRetryable: not an assistant message, or not failed; ChatBusy: another answer in this chat is still streaming"
     ),
     ...commonErrors,
   },
