@@ -6,11 +6,17 @@ import {
   spacing,
   Text,
 } from "@native/design";
+import { FOLDERS_COPY } from "@native/features/folders/copy";
 import { formatDayHeader } from "@native/features/notes/format";
 import { groupByDay } from "@native/features/notes/group";
 import { type NoteListItem, notesInfiniteQuery } from "@native/lib/api";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { NotebookPen } from "lucide-react-native";
+import {
+  Folder,
+  FolderX,
+  type LucideIcon,
+  NotebookPen,
+} from "lucide-react-native";
 import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +28,7 @@ import {
 } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { homeListState } from "./listState";
 import { NoteRow, ROW_INSET } from "./NoteRow";
 
 // #01's measured rhythm: 28 above a day header, 12 from it to its first row, 8 between rows. Each
@@ -47,6 +54,10 @@ export const LIST_COPY = {
 } as const;
 
 type Props = {
+  /** The folder home is showing (docs/spec/phase-9.md §3.2), or null for My notes. */
+  readonly folder: string | null;
+  /** The gone state's way out: home back to My notes. */
+  readonly onBackToAll: () => void;
   /** The note whose recording is live on this device: its row draws the lime waveform. */
   readonly liveNoteId: string | null;
   readonly onLongPress: (note: NoteListItem, frame: Frame) => void;
@@ -71,11 +82,20 @@ function Skeleton() {
   );
 }
 
-function Empty() {
+type EmptyProps = {
+  readonly body?: string;
+  readonly children?: React.ReactNode;
+  readonly icon: LucideIcon;
+  readonly testID: string;
+  readonly title: string;
+};
+
+// Home's empty layout (phase 4), which a folder view reuses for its empty and gone states.
+function Empty({ body, children, icon: Icon, testID, title }: EmptyProps) {
   return (
-    <View style={styles.state} testID="home-empty">
+    <View style={styles.state} testID={testID}>
       <View style={styles.emptyTile}>
-        <NotebookPen
+        <Icon
           color={colors.text.secondary}
           size={EMPTY_GLYPH}
           strokeWidth={1.75}
@@ -83,14 +103,17 @@ function Empty() {
       </View>
       <Text
         style={styles.emptyTitle}
-        testID="home-empty-title"
+        testID={`${testID}-title`}
         variant="displaySheet"
       >
-        {LIST_COPY.emptyTitle}
+        {title}
       </Text>
-      <Text style={styles.centred} variant="secondary">
-        {LIST_COPY.emptyBody}
-      </Text>
+      {body ? (
+        <Text style={styles.centred} variant="secondary">
+          {body}
+        </Text>
+      ) : null}
+      {children}
     </View>
   );
 }
@@ -114,9 +137,16 @@ function ListError({ onRetry }: { readonly onRetry: () => void }) {
 
 // The home list (#01, docs/spec/phase-4.md §2.1, §3): notes by local day, newest first, the next
 // page on scroll, pull to refresh, and the designed loading, error and empty states in its place.
-export function NoteList({ liveNoteId, onLongPress, onOpen, onTrash }: Props) {
+export function NoteList({
+  folder,
+  liveNoteId,
+  onBackToAll,
+  onLongPress,
+  onOpen,
+  onTrash,
+}: Props) {
   const insets = useSafeAreaInsets();
-  const query = useInfiniteQuery(notesInfiniteQuery());
+  const query = useInfiniteQuery(notesInfiniteQuery(folder));
   const [pulling, setPulling] = useState(false);
   const openRow = useRef<SwipeableMethods | null>(null);
 
@@ -125,7 +155,16 @@ export function NoteList({ liveNoteId, onLongPress, onOpen, onTrash }: Props) {
     [query.data]
   );
   const sections = useMemo(() => groupByDay(items), [items]);
-  const isEmpty = query.isSuccess && items.length === 0;
+  const state = homeListState(
+    {
+      error: query.error,
+      isError: query.isError,
+      isPending: query.isPending,
+      itemCount: items.length,
+    },
+    folder
+  );
+  const isEmpty = state !== "rows" && state !== "loading";
 
   const refresh = () => {
     setPulling(true);
@@ -137,14 +176,42 @@ export function NoteList({ liveNoteId, onLongPress, onOpen, onTrash }: Props) {
     openRow.current = null;
   };
 
-  let placeholder: React.ReactElement | null = null;
-  if (query.isPending) {
-    placeholder = <Skeleton />;
-  } else if (query.isError && items.length === 0) {
-    placeholder = <ListError onRetry={() => query.refetch()} />;
-  } else if (isEmpty) {
-    placeholder = <Empty />;
-  }
+  const placeholder = {
+    empty: (
+      <Empty
+        body={LIST_COPY.emptyBody}
+        icon={NotebookPen}
+        testID="home-empty"
+        title={LIST_COPY.emptyTitle}
+      />
+    ),
+    error: <ListError onRetry={() => query.refetch()} />,
+    folderEmpty: (
+      <Empty
+        body={FOLDERS_COPY.folderEmptyBody}
+        icon={Folder}
+        testID="home-folder-empty"
+        title={FOLDERS_COPY.folderEmptyTitle}
+      />
+    ),
+    folderGone: (
+      <Empty
+        icon={FolderX}
+        testID="home-folder-gone"
+        title={FOLDERS_COPY.folderGone}
+      >
+        <PillButton
+          label={FOLDERS_COPY.folderGoneBack}
+          onPress={onBackToAll}
+          style={styles.retry}
+          testID="home-folder-gone-back"
+          tone="dark"
+        />
+      </Empty>
+    ),
+    loading: <Skeleton />,
+    rows: null,
+  }[state];
 
   let footer: React.ReactElement | null = null;
   if (query.isFetchingNextPage) {
@@ -228,7 +295,8 @@ export function NoteList({ liveNoteId, onLongPress, onOpen, onTrash }: Props) {
           {formatDayHeader(section.startedAt)}
         </Text>
       )}
-      sections={sections}
+      // A gone folder's cached rows belong to nothing any more, so only the gone state draws.
+      sections={state === "folderGone" ? [] : sections}
       stickySectionHeadersEnabled={false}
       style={styles.list}
       testID="home-list"

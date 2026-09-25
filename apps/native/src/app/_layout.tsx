@@ -90,6 +90,19 @@ function ThemedLayout() {
           name="notes/[id]/rename"
           options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
         />
+        {/* Folders (docs/spec/phase-9.md §3.3, §3.4, §3.6). */}
+        <Stack.Screen
+          name="folders/new"
+          options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
+        />
+        <Stack.Screen
+          name="folders/[id]/delete"
+          options={{ ...SHEET, sheetAllowedDetents: "fitToContents" }}
+        />
+        <Stack.Screen
+          name="notes/[id]/folder"
+          options={{ presentation: "modal" }}
+        />
         <Stack.Screen
           name="notes/[id]/transcript"
           options={{ ...SHEET, sheetAllowedDetents: [TRANSCRIPT_DETENT] }}

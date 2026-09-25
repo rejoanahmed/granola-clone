@@ -11,7 +11,16 @@ import {
   spacing,
   Text,
   ToolbarCapsule,
+  useToast,
 } from "@native/design";
+import { FOLDERS_COPY } from "@native/features/folders/copy";
+import { wasDeletedHere } from "@native/features/folders/created";
+import {
+  type CurrentFolder,
+  FoldersDrawer,
+} from "@native/features/folders/FoldersDrawer";
+import { useDrawer } from "@native/features/folders/useDrawer";
+import { useRemoveFromFolder } from "@native/features/folders/useFolders";
 import { useShareNote } from "@native/features/notes/useShareNote";
 import { RECORDING_COPY } from "@native/features/recording/copy";
 import {
@@ -24,16 +33,19 @@ import { MicCard } from "@native/features/recording/MicCard";
 import { MiniPill } from "@native/features/recording/MiniPill";
 import { useNewRecording } from "@native/features/recording/useNewRecording";
 import {
+  foldersQuery,
   invalidate,
   keys,
   type NoteListItem,
   useTrashNote,
 } from "@native/lib/api";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFocusEffect, useRouter } from "expo-router";
 import {
   CalendarDays,
   Folder,
+  FolderMinus,
+  FolderPlus,
   Laptop,
   MessageCircle,
   Pencil,
@@ -41,8 +53,9 @@ import {
   Search,
   Share as ShareIcon,
 } from "lucide-react-native";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { GestureDetector } from "react-native-gesture-handler";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -56,10 +69,13 @@ const EVENTS_LABEL = "No upcoming events, Sign up with your work email.";
 const BAR_GAP = 12;
 const TOOLBAR_GAP = 6;
 const HEADER_BAND_BOTTOM = 40;
+// §3.1: the edge pan starts within 20pt of the left edge, below the toolbar so its button still taps.
+const EDGE_WIDTH = 20;
+const EDGE_TOP = 64;
 
-// #01 with most destinations still to come: each control renders, is labelled and gives press
-// feedback, and none navigates until the phase that owns it — except the avatar, which opens
-// Settings (phase 3, for Sign out). `name` is the session user's.
+// #01. The controls a later phase owns render, are labelled and give press feedback, and do nothing
+// yet. `name` is the session user's. The current folder (docs/spec/phase-9.md §3.2) is held here and
+// never persisted: every launch opens on My notes.
 export function HomeShell({ name }: { readonly name?: string | null }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -75,6 +91,33 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
   const recording = useNewRecording();
   const isRecording = useIsRecording();
   const liveNoteId = useLiveNoteId();
+  const toast = useToast();
+  const drawer = useDrawer();
+  const [folder, setFolder] = useState<CurrentFolder | null>(null);
+  const removeFromFolder = useRemoveFromFolder();
+  const folders = useQuery({ ...foldersQuery(), enabled: folder !== null });
+
+  // A current folder that left `GET /folders` was deleted: home goes back to My notes, and says so
+  // only when it was not this device's own delete.
+  useEffect(() => {
+    if (
+      folder &&
+      folders.data &&
+      !folders.data.items.some((f) => f.id === folder.id)
+    ) {
+      setFolder(null);
+      if (!wasDeletedHere(folder.id)) {
+        toast.show({ message: FOLDERS_COPY.folderGoneToast });
+      }
+    }
+  }, [folder, folders.data, toast]);
+
+  const pick = (next: CurrentFolder | null) => {
+    drawer.close();
+    if (next?.id !== folder?.id) {
+      setFolder(next);
+    }
+  };
 
   // Back from the live card or a post-End page, the list refetches so the new row appears (or a
   // cancelled one goes) without a pull. It waits for any discard still deleting, or the refetch
@@ -109,6 +152,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
             <IconButton
               accessibilityLabel="Folders"
               icon={Folder}
+              onPress={drawer.open}
               testID="home-folders-button"
             />
             <PillButton
@@ -149,34 +193,41 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
 
         <Text
           accessibilityRole="header"
+          numberOfLines={1}
           style={styles.title}
           testID="home-title"
           variant="display"
         >
-          My notes
+          {folder?.name ?? FOLDERS_COPY.myNotes}
         </Text>
 
-        <Card
-          accessibilityLabel={EVENTS_LABEL}
-          pressable
-          style={styles.card}
-          testID="home-events-card"
-        >
-          <IconTile background={colors.bg.app} icon={CalendarDays} />
-          <View style={styles.cardLines}>
-            <Text variant="rowTitle">No upcoming events</Text>
-            <Text variant="secondary">
-              <Text style={styles.underline} variant="secondary">
-                Sign up
-              </Text>{" "}
-              with your work email.
-            </Text>
-          </View>
-        </Card>
+        {/* The calendar is not about a folder, so a folder view has no card (§3.2). */}
+        {folder ? null : (
+          <Card
+            accessibilityLabel={EVENTS_LABEL}
+            pressable
+            style={styles.card}
+            testID="home-events-card"
+          >
+            <IconTile background={colors.bg.app} icon={CalendarDays} />
+            <View style={styles.cardLines}>
+              <Text variant="rowTitle">No upcoming events</Text>
+              <Text variant="secondary">
+                <Text style={styles.underline} variant="secondary">
+                  Sign up
+                </Text>{" "}
+                with your work email.
+              </Text>
+            </View>
+          </Card>
+        )}
       </SafeAreaView>
 
       <NoteList
+        folder={folder?.id ?? null}
+        key={folder?.id ?? "all"}
         liveNoteId={liveNoteId}
+        onBackToAll={() => setFolder(null)}
         onLongPress={(note, frame) => setMenu({ frame, note })}
         onOpen={openNote}
         onTrash={(note) => trash.mutate(note.id)}
@@ -227,7 +278,19 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
         }}
       />
 
-      {/* #02: Edit title and Share notes. Add to folder waits for phase 9 rather than doing nothing. */}
+      {menu || recording.card || drawer.mounted ? null : (
+        <GestureDetector gesture={drawer.edgePan}>
+          <View
+            style={[styles.edge, { top: insets.top + EDGE_TOP }]}
+            testID="home-folders-edge"
+          />
+        </GestureDetector>
+      )}
+
+      {drawer.mounted ? (
+        <FoldersDrawer current={folder} drawer={drawer} onPick={pick} />
+      ) : null}
+
       <ActionMenu
         anchor={
           menu ? { align: "right", frame: menu.frame, gap: BAR_GAP } : null
@@ -256,6 +319,33 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
                   },
                   testID: "home-note-menu-share",
                 },
+                {
+                  icon: FolderPlus,
+                  label: FOLDERS_COPY.addSubmit,
+                  onPress: () => {
+                    closeMenu();
+                    router.push({
+                      params: { id: menu.note.id },
+                      pathname: "/notes/[id]/folder",
+                    });
+                  },
+                  testID: "home-note-menu-add-to-folder",
+                },
+                ...(folder
+                  ? [
+                      {
+                        icon: FolderMinus,
+                        label: FOLDERS_COPY.removeFromFolder,
+                        onPress: () => {
+                          closeMenu();
+                          removeFromFolder(folder, menu.note).catch(
+                            () => undefined
+                          );
+                        },
+                        testID: "home-note-menu-remove-from-folder",
+                      },
+                    ]
+                  : []),
               ]
             : []
         }
@@ -288,6 +378,7 @@ const styles = StyleSheet.create({
   },
   card: { marginHorizontal: spacing.lg, marginTop: spacing.lg },
   cardLines: { flex: 1, gap: sizes.cardLineGap },
+  edge: { bottom: 0, left: 0, position: "absolute", width: EDGE_WIDTH },
   header: {
     backgroundColor: colors.bg.app,
     paddingBottom: HEADER_BAND_BOTTOM,

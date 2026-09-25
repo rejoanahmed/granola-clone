@@ -341,7 +341,12 @@ export default function NoteScreen() {
               <Pressable
                 accessibilityLabel="Add to folder"
                 accessibilityRole="button"
-                onPress={() => undefined}
+                onPress={() =>
+                  router.push({
+                    params: { id },
+                    pathname: "/notes/[id]/folder",
+                  })
+                }
                 style={({ pressed }) => [
                   styles.folder,
                   pressed ? styles.pressed : null,
