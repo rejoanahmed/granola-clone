@@ -26,6 +26,7 @@ import {
   typography,
   useToast,
 } from "@native/design";
+import { CalendarGallery } from "@native/features/calendar/CalendarGallery";
 import { useRouter } from "expo-router";
 import {
   Bell,
@@ -105,6 +106,7 @@ export default function GalleryScreen() {
   const menuButton = useRef<View>(null);
   const toast = useToast();
   const closeMenu = () => setMenuFrame(null);
+  const [now] = useState(() => Date.now());
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
       <ScrollView
@@ -247,6 +249,10 @@ export default function GalleryScreen() {
               title="Solo reflection thoughts"
             />
           </View>
+        </Section>
+
+        <Section testID="gallery-calendar" title="Events card">
+          <CalendarGallery now={now} />
         </Section>
 
         <Section testID="gallery-fields" title="Fields">

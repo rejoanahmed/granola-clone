@@ -51,6 +51,11 @@ const TAGS = [
       "Messages to the Notes team (a bug report, feedback) and to the signed-in person (the desktop link), sent through the email provider. Each answers 202 with a receipt.",
     name: "Support",
   },
+  {
+    description:
+      "The signed-in person's upcoming meetings, read from their calendar provider on every request. Each says whether the caller already has a live note for it; POST /recordings with calendarEventId starts one.",
+    name: "Calendar",
+  },
 ];
 
 export const OPENAPI_DOCUMENT = {
