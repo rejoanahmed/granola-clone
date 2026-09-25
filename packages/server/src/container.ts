@@ -37,6 +37,8 @@ import { makeTranscriptionFake } from "./Integrations/Transcription/Transcriptio
 import { makeNotesRepo } from "./Notes/NotesRepo";
 import { makeNotesService, type NotesService } from "./Notes/NotesService";
 import { makeOutboxRepo } from "./Outbox/OutboxRepo";
+import { makePeopleRepo } from "./People/PeopleRepo";
+import { makePeopleService, type PeopleService } from "./People/PeopleService";
 import { makeProfilesRepo } from "./Profiles/ProfilesRepo";
 import {
   makeProfilesService,
@@ -58,6 +60,8 @@ import { makeR2AudioStore } from "./Runtime/R2AudioStore";
 import { traced } from "./Runtime/traced";
 import { makeUnitOfWork } from "./Runtime/UnitOfWork";
 import type { Env } from "./Runtime/WorkerEnv";
+import { makeSearchRepo } from "./Search/SearchRepo";
+import { makeSearchService, type SearchService } from "./Search/SearchService";
 
 // Between the fake's words: slow enough that an answer visibly grows on the phone, fast enough that
 // a flow's thirty-second wait is never close.
@@ -92,6 +96,17 @@ export const buildContainer = (
       repo: traced("NotesRepo", makeNotesRepo(db)),
       uow,
     })
+  );
+
+  // Both read only, and neither calls a provider: a person is derived from the caller's own notes.
+  const people = traced(
+    "People",
+    makePeopleService({ repo: traced("PeopleRepo", makePeopleRepo(db)) })
+  );
+
+  const search = traced(
+    "Search",
+    makeSearchService({ repo: traced("SearchRepo", makeSearchRepo(db)) })
   );
 
   // EMAIL_MODE is parsed in `AppConfig` and acted on here, nowhere else. `fake` is the only mode
@@ -252,8 +267,10 @@ export const buildContainer = (
     flags,
     generations,
     notes,
+    people,
     profiles,
     recordings,
+    search,
     ...overrides,
   };
 };
@@ -267,6 +284,8 @@ export type Container = {
   flags: FeatureFlagsPort;
   generations: GenerationsService;
   notes: NotesService;
+  people: PeopleService;
   profiles: ProfilesService;
   recordings: RecordingsService;
+  search: SearchService;
 };
