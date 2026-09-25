@@ -1,5 +1,6 @@
 import {
   colors,
+  FOOT,
   fonts,
   IconButton,
   PillButton,
@@ -215,7 +216,7 @@ export function PersonScreen({ paramName, personKey }: Props) {
       {state === "notFound" ? null : (
         <AskPill
           accessibilityLabel={PERSON_COPY.askLabel(lines.name)}
-          bottomGap={ASK_GAP}
+          bottom={FOOT.personAsk}
           inset={spacing.md}
           onPress={() =>
             router.push({

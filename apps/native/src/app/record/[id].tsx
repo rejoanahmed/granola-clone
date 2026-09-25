@@ -1,6 +1,7 @@
 import {
   ActionMenu,
   colors,
+  FOOT,
   type Frame,
   ICON_STROKE,
   IconButton,
@@ -385,7 +386,7 @@ export default function RecordingScreen() {
 
       <KeyboardStickyView
         offset={{
-          closed: -(insets.bottom + BAR_BOTTOM),
+          closed: -FOOT.recordingBar,
           opened: -MINI_GAP,
         }}
         style={styles.bottom}

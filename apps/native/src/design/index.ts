@@ -10,6 +10,7 @@ export { Avatar } from "./Avatar";
 export { Card } from "./Card";
 export { Fab } from "./Fab";
 export { FormDivider, FormRow } from "./FormRow";
+export { FOOT } from "./foot";
 export { IconButton } from "./IconButton";
 export { IconTile } from "./IconTile";
 export { ListRow } from "./ListRow";
