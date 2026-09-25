@@ -45,7 +45,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 5 | Recording and transcript | done |
 | 6 | AI notes | done |
 | 7 | Ask / chat | done |
-| 8 | Search and people | todo |
+| 8 | Search and people | done |
 | 9 | Folders | todo |
 | 10 | Settings, profile and upsells | todo |
 | 11 | Upcoming events (fake calendar) | todo |
