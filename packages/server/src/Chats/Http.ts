@@ -12,7 +12,7 @@ import {
 } from "@gc/domain/Chats/Contract";
 import type { ChatEvent } from "@gc/domain/Chats/Events";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import type { Context } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
@@ -23,9 +23,22 @@ import { pipe } from "./Pipe";
 const sse = (c: Context<AppEnv>, events: AsyncIterable<ChatEvent>) =>
   streamSSE(c, (stream) => pipe(events, stream));
 
+// Before the contract's validation, so an anonymous caller is told to sign in rather than that its
+// body is malformed: a 422 would describe a request nobody was allowed to make.
+const signedIn: MiddlewareHandler<AppEnv> = async (c, next) => {
+  requireActor(c.var.actor);
+  await next();
+};
+
+// Not chained: `use` is typed to return a plain `Hono`, which would erase `openapi` below.
+const router = new OpenAPIHono<AppEnv>();
+router.use("/chat/*", signedIn);
+router.use("/chats", signedIn);
+router.use("/chats/*", signedIn);
+
 // One expression per route (R6). Every `c.json()` names its status literal, as the notes router
 // does, or Hono infers the union of every declared code and the route stops compiling.
-export const chatsRouter = new OpenAPIHono<AppEnv>()
+export const chatsRouter = router
   .openapi(listChatModelsRoute, async (c) =>
     c.json(await c.var.svc.chats.models(requireActor(c.var.actor)), 200)
   )

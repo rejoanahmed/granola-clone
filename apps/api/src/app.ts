@@ -1,5 +1,6 @@
 import { ValidationFailed } from "@gc/domain/Errors";
 import type { AppEnv } from "@gc/server";
+import { chatsRouter } from "@gc/server/Chats/Http";
 import { e2eRouter } from "@gc/server/E2E/Http";
 import { generationsRouter } from "@gc/server/Generations/Http";
 import { notesRouter } from "@gc/server/Notes/Http";
@@ -46,6 +47,7 @@ app.route("/", profilesRouter);
 app.route("/", notesRouter);
 app.route("/", recordingsRouter);
 app.route("/", generationsRouter);
+app.route("/", chatsRouter);
 
 // Mounted unconditionally because module scope has no `env`: whether the harness exists is decided
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.

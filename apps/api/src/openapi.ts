@@ -1,3 +1,4 @@
+import { chatEventComponents } from "@gc/domain/Chats/Contract";
 import type { AppEnv } from "@gc/server";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
@@ -19,6 +20,11 @@ const TAGS = [
     description:
       "Recording a meeting: start it (which creates its note), save the notes typed while it runs, end it, upload the audio, and retry a failed transcription. The transcript itself is read through its note.",
     name: "Recordings",
+  },
+  {
+    description:
+      "Ask: a chat over the signed-in person's own live notes, in a global, note or person scope. An answer streams back as server-sent events (see the ChatEvent components); history lists, searches, pins and deletes threads; the model preference is per person.",
+    name: "Chats",
   },
 ];
 
@@ -43,6 +49,12 @@ export const mountOpenApi = (app: OpenAPIHono<AppEnv>): void => {
     name: "better-auth.session_token",
     type: "apiKey",
   });
+
+  // The SSE frames' schemas: a streamed 200 can only name a string body, so the frames are
+  // published as components for the client to be typed from.
+  for (const [name, schema] of Object.entries(chatEventComponents)) {
+    app.openAPIRegistry.register(name, schema);
+  }
 
   app.doc31(API_DOC_PATH, OPENAPI_DOCUMENT);
 
