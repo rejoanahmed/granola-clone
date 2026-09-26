@@ -1,0 +1,212 @@
+# AC2 (docs/spec/phase-12.md §3.2, §8): the launch note (#10) and its end with the chrome still pinned
+# (#11), More (#12), the transcript and its end (#13, #14), attendees (#16), the editor (#31), and the
+# solo note with its menu and transcript (#40–#42).
+appId: ${APP_ID}
+name: "Parity: note detail, menu, transcript, attendees, editor"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: note-body
+    timeout: 15000
+
+# #10
+- assertVisible:
+    id: note-back
+- assertVisible:
+    id: note-share
+    text: Share
+- assertVisible:
+    id: note-more
+- assertVisible:
+    id: note-title
+    text: Launch planning review
+- assertVisible:
+    id: note-meta-pill
+- assertVisible:
+    id: note-add-to-folder
+- assertVisible:
+    id: note-ask-button
+- takeScreenshot: parity-10-note
+
+# #11: the body scrolls under chrome that stays put.
+- scrollUntilVisible:
+    element:
+      id: note-body-end
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: note-back
+- assertVisible:
+    id: note-more
+- assertVisible:
+    id: note-ask-button
+- takeScreenshot: parity-11-note-end
+- scrollUntilVisible:
+    element:
+      id: note-meta-pill
+    direction: UP
+    timeout: 20000
+
+# #12
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-edit
+    text: Edit notes
+- assertVisible:
+    id: note-menu-transcript
+    text: View transcript
+- assertVisible:
+    id: note-menu-copy
+    text: Copy notes
+- assertVisible:
+    id: note-menu-trash
+    text: Move to trash
+- takeScreenshot: parity-12-note-menu
+
+# #13
+- tapOn:
+    id: note-menu-transcript
+- extendedWaitUntil:
+    visible:
+      id: transcript-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-loading
+    timeout: 15000
+- assertVisible:
+    id: transcript-title
+    text: Transcript
+- assertVisible:
+    id: transcript-share
+- assertVisible:
+    id: transcript-close
+- assertVisible:
+    id: transcript-avatar-0
+- assertVisible:
+    id: transcript-speaker-0
+- takeScreenshot: parity-13-transcript
+
+# #14
+- scrollUntilVisible:
+    element:
+      id: transcript-end
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: transcript-title
+- takeScreenshot: parity-14-transcript-end
+- tapOn:
+    id: transcript-close
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-sheet
+    timeout: 10000
+
+# #16
+- tapOn:
+    id: note-meta-pill
+- extendedWaitUntil:
+    visible:
+      id: attendees-sheet
+    timeout: 10000
+- assertVisible:
+    id: attendees-add
+    text: Add
+# The sheet's title is SheetChrome's header text, which has no id of its own.
+- assertVisible:
+    text: Attendees
+- assertVisible:
+    id: "attendees-row-.*"
+    index: 0
+- takeScreenshot: parity-16-attendees
+- tapOn:
+    id: attendees-close
+- extendedWaitUntil:
+    notVisible:
+      id: attendees-sheet
+    timeout: 10000
+
+# #31
+- runFlow: ../subflows/open-editor.yaml
+- assertVisible:
+    id: note-editor-close
+- assertVisible:
+    id: note-editor-save
+- assertVisible:
+    id: note-editor-keyboard-toggle
+- takeScreenshot: parity-31-editor
+- tapOn:
+    id: note-editor-close
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+
+# #40
+- runFlow:
+    file: ../subflows/open-note.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+- assertVisible:
+    id: note-title
+    text: Solo reflection thoughts
+- assertVisible:
+    id: note-body
+- takeScreenshot: parity-40-solo-note
+
+# #41
+- tapOn:
+    id: note-more
+- extendedWaitUntil:
+    visible:
+      id: note-menu
+    timeout: 5000
+- assertVisible:
+    id: note-menu-edit
+- assertVisible:
+    id: note-menu-transcript
+- assertVisible:
+    id: note-menu-copy
+- assertVisible:
+    id: note-menu-trash
+- takeScreenshot: parity-41-solo-menu
+
+# #42
+- tapOn:
+    id: note-menu-transcript
+- extendedWaitUntil:
+    visible:
+      id: transcript-sheet
+    timeout: 15000
+- extendedWaitUntil:
+    notVisible:
+      id: transcript-loading
+    timeout: 15000
+- assertVisible:
+    id: transcript-utterance-0
+- assertVisible:
+    id: transcript-speaker-0
+- takeScreenshot: parity-42-solo-transcript

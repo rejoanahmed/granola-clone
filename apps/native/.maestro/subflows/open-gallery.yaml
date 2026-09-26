@@ -4,10 +4,10 @@ env:
   APP_ID: com.rejoan.gcnotes
 ---
 - runFlow: launch-app.yaml
-- extendedWaitUntil:
-    visible:
-      id: welcome-screen
-    timeout: 180000
+- runFlow:
+    file: wait-for-launch.yaml
+    env:
+      SCREEN_ID: welcome-screen
 - runFlow:
     file: tap-footer-link.yaml
     env:

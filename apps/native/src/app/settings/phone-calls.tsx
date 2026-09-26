@@ -1,6 +1,7 @@
 import {
   colors,
   ICON_STROKE,
+  OFFSETS,
   PillButton,
   sizes,
   spacing,
@@ -116,7 +117,12 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xl,
     marginTop: spacing.xl,
   },
-  content: { alignItems: "center", flexGrow: 1, justifyContent: "center" },
+  content: {
+    alignItems: "center",
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingTop: OFFSETS.phoneCallsCentreShift,
+  },
   divider: { backgroundColor: colors.border.hairline, height: sizes.hairline },
   flex: { flex: 1 },
   ring: {

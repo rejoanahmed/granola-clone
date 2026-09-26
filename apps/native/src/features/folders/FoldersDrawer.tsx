@@ -1,6 +1,7 @@
 import {
   ActionMenu,
   colors,
+  FOOT,
   type Frame,
   ICON_STROKE,
   PillButton,
@@ -105,7 +106,7 @@ export function FoldersDrawer({ current, drawer, onPick }: Props) {
             onPress={() => router.push("/folders/new")}
             style={({ pressed }) => [
               styles.create,
-              { marginBottom: insets.bottom + spacing.md },
+              { marginBottom: FOOT.drawerCreate },
               pressed ? styles.pressed : null,
             ]}
             testID="folders-create"
@@ -300,6 +301,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: spacing.sm,
+    minHeight: sizes.iconButton,
     paddingHorizontal: spacing.md,
   },
   createTile: {

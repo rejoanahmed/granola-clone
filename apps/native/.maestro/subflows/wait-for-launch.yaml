@@ -1,0 +1,38 @@
+# Wait for the first screen after a launch, recovering once if the dev client stalls on its launcher.
+#
+#   - runFlow:
+#       file: ../subflows/wait-for-launch.yaml
+#       env:
+#         SCREEN_ID: home-screen
+#
+# `--initialUrl` (launch-app.yaml) makes the dev launcher load Metro at startup, but when that load
+# fails — seen under heavy load, with several Metro servers and another project's simulators busy —
+# the launcher drops to its DEVELOPMENT SERVERS list and stays there, and the flow then fails on its
+# first screen three minutes later with no product defect behind it. So: wait for the screen for
+# 60 s without failing; if the launcher list is up, type DEV_SERVER_URL into "Enter URL manually"
+# and Connect, then wait the full allowance again. The manual field rather than the listed server:
+# the list is filled by LAN discovery, which under the same load can still read "Searching for
+# development servers..." with nothing to tap. A healthy launch passes the first wait and pays nothing for the rest, and a slow
+# cold bundle still gets 60 s + 180 s rather than less than before.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- extendedWaitUntil:
+    visible:
+      id: ${SCREEN_ID}
+    timeout: 60000
+    optional: true
+- runFlow:
+    when:
+      visible: DEVELOPMENT SERVERS
+    commands:
+      - tapOn: Enter URL manually
+      - tapOn:
+          text: "http://"
+      - inputText: "${typeof DEV_SERVER_URL === 'undefined' ? 'http://localhost:8081' : DEV_SERVER_URL}"
+      - tapOn: Connect
+- extendedWaitUntil:
+    visible:
+      id: ${SCREEN_ID}
+    timeout: 180000

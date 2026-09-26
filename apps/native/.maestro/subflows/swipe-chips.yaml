@@ -1,0 +1,26 @@
+# On a chat's empty composer, swipe the chip row left until CHIP shows (#44, #71). The row sits above
+# the composer, where scrollUntilVisible's mid-screen swipe never reaches, so the row itself is the
+# swipe's anchor (the same reasoning as phase-7/ask-global.yaml).
+#
+#   - runFlow:
+#       file: ../subflows/swipe-chips.yaml
+#       env:
+#         CHIP: chat-chip-3
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- repeat:
+    times: 4
+    while:
+      notVisible:
+        id: ${CHIP}
+    commands:
+      - swipe:
+          from:
+            id: chat-chips
+          direction: LEFT
+- extendedWaitUntil:
+    visible:
+      id: ${CHIP}
+    timeout: 5000

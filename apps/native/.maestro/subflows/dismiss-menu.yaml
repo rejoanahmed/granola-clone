@@ -1,0 +1,23 @@
+# Close an open ActionMenu (a row menu, More, the history menu, the attachment menu) with no change by
+# tapping its scrim near the top edge, then wait for MENU to go. That point is clear of every menu
+# that opens under its anchor or is short. A tall menu is not: ActionMenu clamps the card to the top
+# safe area, and the model menu (#22) then has its first row at ~11%, where this tap selects a model
+# instead of dismissing. Such a menu is dismissed beside its card by its own flow, which then asserts
+# nothing changed, because a selection also closes the menu. (`point` takes no ${} variable, so the
+# spot cannot be a parameter here.)
+#
+#   - runFlow:
+#       file: ../subflows/dismiss-menu.yaml
+#       env:
+#         MENU: note-menu
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- tapOn:
+    id: action-menu-scrim
+    point: "50%,12%"
+- extendedWaitUntil:
+    notVisible:
+      id: ${MENU}
+    timeout: 5000

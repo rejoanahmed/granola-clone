@@ -15,8 +15,10 @@ code, copy or assets; the app is called Notes.
 bun run check
 ```
 
-Lint (ultracite/Biome) + syncpack + `scripts/check-architecture.mjs` + types, across the whole
-monorepo. **Do not end a session while it is failing.** `bun run fix` auto-fixes the lint and the
+Lint (ultracite/Biome) + syncpack + `scripts/check-architecture.mjs` + `scripts/check-ci.mjs`
+(the CI workflow's shape) + `scripts/check-branding.mjs` (no other product's name in source) +
+`scripts/check-parity-report.mjs` (the parity report is whole, with no `must` left open) + types,
+across the whole monorepo. **Do not end a session while it is failing.** `bun run fix` auto-fixes the lint and the
 version drift; the architecture failures are yours to fix by moving code.
 
 Two traps make a green run a lie:
@@ -26,7 +28,8 @@ Two traps make a green run a lie:
 - **`bun test` must be scoped** (`bun test src`) in any package that emits a `dist`, or every suite
   runs twice — once from source, once from the build.
 
-`bun run test` runs the unit suites. UI flows on the iOS simulator are separate and slower:
+`bun run test` runs the unit suites (`turbo test`) and then the gate scripts' own tests
+(`bun test scripts`). UI flows on the iOS simulator are separate and slower:
 `bun run e2e:ios`, then `bun run maestro:smoke` in a second terminal — see
 [docs/TESTING.md](docs/TESTING.md) §8. They target the simulator by UDID; never point them at a
 physical device.

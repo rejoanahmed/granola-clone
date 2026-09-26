@@ -12,7 +12,7 @@
   "scripts": {
     "auth:generate-schema": "bunx auth@1.7.4 generate --config packages/auth/src/mock.ts --output packages/db/src/schema/auth.ts -y",
     "build": "turbo build",
-    "check": "ultracite check --diagnostic-level=error && bun run syncpack:lint && node scripts/check-architecture.mjs && bun run check-types",
+    "check": "ultracite check --diagnostic-level=error && bun run syncpack:lint && node scripts/check-architecture.mjs && bun scripts/check-ci.mjs && node scripts/check-branding.mjs && node scripts/check-parity-report.mjs && bun run check-types",
     "check-types": "turbo type-check",
     "cl-install": "find . -name 'node_modules' -type d -prune -exec rm -rf {} + && find . -name 'bun.lock' -type f -delete && bun install",
     "db:generate": "turbo -F @gc/db db:generate",
@@ -31,10 +31,11 @@
     "maestro:smoke": "bash scripts/maestro.sh smoke",
     "migrate:dev": "turbo -F api migrate:dev",
     "migrate:prod": "turbo -F api migrate:prod",
+    "parity": "bash scripts/parity.sh",
     "prepare": "husky",
     "syncpack:fix": "syncpack fix && syncpack format",
     "syncpack:lint": "syncpack lint",
-    "test": "turbo test",
+    "test": "turbo test && bun test scripts",
     "update:all": "for file in package.json apps/*/package.json packages/*/package.json; do if [ -f \"$file\" ]; then reject='react,react-dom,@types/react'; case \"$file\" in apps/native/package.json) reject=\"$reject,typescript,@babel/core,react-native-worklets\";; esac; bunx npm-check-updates -u --packageFile \"$file\" --reject \"$reject\" || true; fi; done && bun install && (cd apps/native && echo 'y' | bunx expo install --fix || true) && bun install && bun run syncpack:fix"
   },
   "lint-staged": {

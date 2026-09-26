@@ -1,0 +1,150 @@
+# AC6 (docs/spec/phase-12.md §3.6, §8): from the note composer, history (#24), the seeded cohort
+# thread (#25), its Activity sheet collapsed and expanded (#26, #27), the citation preview (#28), a
+# long-press on the user message (#29), and New chat (#30).
+appId: ${APP_ID}
+name: "Parity: history, thread, activity, citation, new chat"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note-ask.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+
+# #24
+- runFlow: ../subflows/open-history.yaml
+- assertVisible:
+    id: chat-history-search
+- assertVisible:
+    id: "chat-history-section-.*"
+    index: 0
+- assertVisible:
+    id: chat-history-row-cht_e2e_cohort
+- takeScreenshot: parity-24-history
+
+# #25
+- tapOn:
+    id: chat-history-row-cht_e2e_cohort
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: chat-answer-0-actions
+    timeout: 15000
+- assertVisible:
+    id: chat-thread
+- assertVisible:
+    id: chat-title
+- assertVisible:
+    id: chat-new-button
+- assertVisible:
+    id: chat-history-button
+- assertVisible:
+    id: chat-user-0
+- assertVisible:
+    id: chat-answer-0-activity
+- assertVisible:
+    id: chat-answer-0-block-0
+- assertVisible:
+    id: chat-answer-0-cite-1
+- takeScreenshot: parity-25-thread
+
+# #26
+- tapOn:
+    id: chat-answer-0-activity
+- extendedWaitUntil:
+    visible:
+      id: chat-activity-sheet
+    timeout: 10000
+- assertVisible:
+    id: chat-activity-step-0
+# "Done" on screen, "All tool activity complete" to VoiceOver (phase-7.md §3.3).
+- assertVisible:
+    id: "chat-activity-step-\\d+"
+    text: (Done|All tool activity complete)
+- takeScreenshot: parity-26-activity
+
+# #27
+- tapOn:
+    id: chat-activity-step-0
+- extendedWaitUntil:
+    visible:
+      id: "chat-activity-step-0-note-.*"
+    timeout: 5000
+- takeScreenshot: parity-27-activity-expanded
+- tapOn:
+    id: chat-activity-close
+- extendedWaitUntil:
+    notVisible:
+      id: chat-activity-sheet
+    timeout: 10000
+
+# #28
+- tapOn:
+    id: chat-answer-0-cite-1
+- extendedWaitUntil:
+    visible:
+      id: citation-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: citation-title
+    timeout: 10000
+- assertVisible:
+    id: citation-close
+- assertVisible:
+    id: citation-meta-pill
+- assertVisible:
+    id: citation-body
+- takeScreenshot: parity-28-citation
+- tapOn:
+    id: citation-close
+- extendedWaitUntil:
+    notVisible:
+      id: citation-sheet
+    timeout: 10000
+
+# #29: the edit menu is UIKit's (§4.4 W9). What the clone controls is that the message is
+# selectable, and UIKit only offers Copy on selectable text, so its callout is the proof.
+- longPressOn:
+    id: chat-user-0
+- extendedWaitUntil:
+    visible:
+      text: Copy
+    timeout: 5000
+- assertVisible:
+    id: chat-user-0
+- takeScreenshot: parity-29-select
+
+# #30
+- tapOn:
+    id: chat-title
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    id: chat-new-button
+- extendedWaitUntil:
+    visible:
+      id: chat-greeting
+      text: Hi E2E, ask anything
+    timeout: 10000
+- assertNotVisible:
+    id: chat-new-button
+- assertVisible:
+    id: chat-chip-0
+- assertVisible:
+    id: chat-chip-1
+- takeScreenshot: parity-30-new-thread
+- runFlow:
+    file: ../subflows/swipe-chips.yaml
+    env:
+      CHIP: chat-chip-3
+- assertVisible:
+    id: chat-chip-3

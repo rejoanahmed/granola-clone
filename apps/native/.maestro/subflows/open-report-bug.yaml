@@ -1,0 +1,20 @@
+# From home, Settings → Report a bug (docs/spec/phase-10.md §3.8, #90), and wait for the sheet with
+# its message field and its diagnostics toggle, which starts on.
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: open-settings-row.yaml
+    env:
+      ROW: settings-report-bug
+- extendedWaitUntil:
+    visible:
+      id: report-bug-sheet
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: report-bug-message
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000

@@ -1,0 +1,31 @@
+# From home, open note NOTE_ID and its Ask pill (docs/spec/phase-7.md §3.1, #19), then wait for the
+# scoped chat to settle. The push animates in, so the caller's first assertion waits for stillness.
+#
+#   - runFlow:
+#       file: ../subflows/open-note-ask.yaml
+#       env:
+#         NOTE_ID: not_e2e_launch
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow:
+    file: open-note.yaml
+    env:
+      NOTE_ID: ${NOTE_ID}
+- extendedWaitUntil:
+    visible:
+      id: note-ask-button
+    timeout: 10000
+- tapOn:
+    id: note-ask-button
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: chat-input-bar
+    timeout: 10000
+- waitForAnimationToEnd:
+    timeout: 5000

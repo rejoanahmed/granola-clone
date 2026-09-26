@@ -16,7 +16,8 @@ import { useBugReport, useFeedback } from "@native/lib/api";
 import { useNavigation, useRouter } from "expo-router";
 import { FileText } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, TextInput, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SectionHeader } from "./SettingsPage";
 import {
   DIAGNOSTICS_COPY,
@@ -27,6 +28,8 @@ import { VERSION } from "./version";
 
 const MESSAGE_MIN_HEIGHT = 300;
 const MESSAGE_LINE = 26;
+// The focused field's bottom sits this far above the keyboard (docs/spec/phase-12.md §6.2).
+const KEYBOARD_CLEARANCE = 16;
 
 // Report a bug (#90) and its designed sibling, Send feedback. A closed form keeps no draft, as
 // phase 4's editor close does not, and asks nothing on the way out.
@@ -90,7 +93,13 @@ export function SupportForm({ variant }: { readonly variant: SupportVariant }) {
           tone="light"
         />
       </View>
-      <ScrollView keyboardShouldPersistTaps="handled">
+      {/* Keyboard-aware, so with the message focused the form can still scroll Diagnostics clear of
+          the keyboard and take a tap on it (#90); the inset is zero while the keyboard is down. */}
+      <KeyboardAwareScrollView
+        bottomOffset={KEYBOARD_CLEARANCE}
+        keyboardShouldPersistTaps="handled"
+        testID={id("scroll")}
+      >
         <SectionHeader label={config.section} />
         <SettingsCard style={styles.messageCard} testID={id("message-card")}>
           <Text color={colors.text.secondary} variant="body">
@@ -159,7 +168,7 @@ export function SupportForm({ variant }: { readonly variant: SupportVariant }) {
             </SettingsCard>
           </>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

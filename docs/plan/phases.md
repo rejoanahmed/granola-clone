@@ -3,7 +3,7 @@
 The autonomous loop reads this file, takes the first phase whose status is `todo`, runs it, and
 flips the status. A phase is `done` only when every exit criterion below holds on a clean tree.
 
-- **Spec source:** `~/personal/granola-clone-discovery/` (55 captured screens of Granola iOS 1.15.7).
+- **Spec source:** `~/personal/granola-clone-discovery/` (63 captured screens of Granola iOS 1.15.7).
   Every screen reference below (`#10`, `#25`, …) is a directory under `screens/`. It stays
   outside the repo because it is screenshots of someone else's product.
 - **Branding:** the app is "Notes". No Granola name, logo, copy that names Granola, or bundled
@@ -49,7 +49,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 9 | Folders | done |
 | 10 | Settings, profile and upsells | done |
 | 11 | Upcoming events (fake calendar) | done |
-| 12 | Parity pass and CI | todo |
+| 12 | Parity pass and CI | done |
 
 ### 2 — Design system and app shell
 Tokens from `discovery/README.md` (dark only: `#262626` header, `#1A1A1A` list, `#B0BF40` lime

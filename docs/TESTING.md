@@ -824,6 +824,8 @@ apps/native/.maestro/
                          which also sets output.nowLine), then relaunch and wait for home to refetch
     set-calendar-mode.yaml  MODE param (auto | fail): script the fake calendar (scripts/e2e-calendar-mode.js)
     wait-for-home.yaml   after relaunch-app.yaml, the adopted session back on home and its list settled
+    wait-for-launch.yaml SCREEN_ID param: the first screen after a launch; if the dev client stalls
+                         on its launcher list, types DEV_SERVER_URL into "Enter URL manually" once
                          (the support mail a phase-10 flow sent is checked by scripts/e2e-support.js,
                          KIND/EXPECT_SUBJECT/EXPECT_BODY, through `runScript`)
   smoke/
@@ -903,6 +905,12 @@ sheet **survives an app relaunch**, so one failed run leaves it covering the nex
 three dev-menu user defaults (`-EXDevMenuIsOnboardingFinished YES`, `-EXDevMenuShowsAtLaunch NO`,
 `-EXDevMenuShowFloatingActionButton NO`), without which the menu's first-run sheet and then the menu
 itself cover the app on every clean launch. All of them are inert in a Release build.
+
+`--initialUrl` is not infallible: under heavy machine load (several Metro servers, other projects'
+simulators) the launcher's load can fail, and it then sits on its DEVELOPMENT SERVERS list. The
+shared launch waits (`open-home-as`, `start-clean`, `open-gallery`, `wait-for-home`) therefore go
+through `wait-for-launch.yaml`, which waits 60 s without failing, connects through "Enter URL
+manually" if the launcher is up, and then waits the full 180 s. A healthy launch pays nothing extra.
 
 ### Visual check
 

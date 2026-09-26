@@ -1,0 +1,207 @@
+# AC5 (docs/spec/phase-12.md §3.5, §8): the note-scoped composer (#19) with the send button labelled
+# for dictation, relabelled Send while typed (#20) and back once cleared (#21); the model menu (#22);
+# the paperclip's outcome (#23); the solo note's composer and its scrolled chips (#43, #44); and the
+# person composer (#66).
+appId: ${APP_ID}
+name: "Parity: note- and person-scoped composer"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+
+# #19
+- runFlow:
+    file: ../subflows/open-note-ask.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- assertVisible:
+    id: chat-title
+    text: Launch planning review
+- assertVisible:
+    id: chat-history-button
+- assertVisible:
+    id: chat-chips
+- assertVisible:
+    id: chat-chip-0
+    text: List action items
+- assertVisible:
+    id: chat-chip-1
+    text: Write follow-up email
+- assertVisible:
+    id: chat-chip-2
+    text: List Q&A
+- assertVisible:
+    id: chat-input-bar
+- assertVisible:
+    id: chat-attach
+- assertVisible:
+    id: chat-model-button
+    text: .*Auto.*
+- assertVisible:
+    id: chat-send
+    text: Hold to dictate
+- takeScreenshot: parity-19-note-ask
+
+# #20
+- tapOn:
+    id: chat-input
+- inputText: What were the next steps
+- extendedWaitUntil:
+    visible:
+      id: chat-send
+      text: Send
+    timeout: 5000
+- takeScreenshot: parity-20-note-ask-typed
+
+# #21
+- eraseText: 40
+- extendedWaitUntil:
+    visible:
+      id: chat-send
+      text: Hold to dictate
+    timeout: 5000
+- takeScreenshot: parity-21-note-ask-cleared
+
+# #22
+- tapOn:
+    id: chat-model-button
+- extendedWaitUntil:
+    visible:
+      id: chat-model-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-model-auto
+- assertVisible:
+    id: chat-model-balanced
+- takeScreenshot: parity-22-model-menu
+# Not subflows/dismiss-menu.yaml: this card is tall enough to be clamped to the top safe area, so
+# its first row sits where that subflow taps. The card is left-aligned on the pill and spans ~17–79%
+# of the width, so the scrim is tapped to its right. The pill still reading Auto proves no row was hit.
+- tapOn:
+    id: action-menu-scrim
+    point: "92%,40%"
+- extendedWaitUntil:
+    notVisible:
+      id: chat-model-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-model-button
+    text: .*Auto.*
+
+# #23: the paperclip opens #23's menu with both items disabled and "Coming soon" (§4.4 W8, designed;
+# the phase-7 toast drew under the keyboard, so the control was inert in practice).
+- tapOn:
+    id: chat-attach
+- extendedWaitUntil:
+    visible:
+      id: chat-attach-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-attach-menu-library
+    text: Choose from Photo Library
+    enabled: false
+- assertVisible:
+    id: chat-attach-menu-camera
+    text: Take Photo
+    enabled: false
+- assertVisible:
+    id: chat-attach-menu-caption
+    text: Coming soon
+- takeScreenshot: parity-23-attach
+- runFlow:
+    file: ../subflows/dismiss-menu.yaml
+    env:
+      MENU: chat-attach-menu
+
+# #43
+- tapOn:
+    id: chat-back
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow:
+    file: ../subflows/open-note-ask.yaml
+    env:
+      NOTE_ID: not_e2e_solo
+- assertVisible:
+    id: chat-title
+    text: Solo reflection thoughts
+- assertVisible:
+    id: chat-chip-0
+- assertVisible:
+    id: chat-chip-1
+- assertVisible:
+    id: chat-chip-2
+- takeScreenshot: parity-43-solo-ask
+
+# #44: one swipe whether or not chip 2 already shows, since the shot is of the scrolled row.
+- swipe:
+    from:
+      id: chat-chips
+    direction: LEFT
+- runFlow:
+    file: ../subflows/swipe-chips.yaml
+    env:
+      CHIP: chat-chip-2
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertVisible:
+    id: chat-chip-2
+- takeScreenshot: parity-44-solo-chips-scrolled
+
+# #66: search → People → the person page's Ask pill.
+- tapOn:
+    id: chat-back
+- extendedWaitUntil:
+    visible:
+      id: note-screen
+    timeout: 10000
+- tapOn:
+    id: note-back
+- extendedWaitUntil:
+    visible:
+      id: home-screen
+    timeout: 10000
+- runFlow: ../subflows/open-search.yaml
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: e2e
+- extendedWaitUntil:
+    visible:
+      id: search-person-0
+      text: "E2E Person, .*"
+    timeout: 15000
+- tapOn:
+    id: search-person-0
+- extendedWaitUntil:
+    visible:
+      id: person-ask-button
+    timeout: 15000
+- tapOn:
+    id: person-ask-button
+- extendedWaitUntil:
+    visible:
+      id: chat-screen
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: chat-title
+    text: E2E Person
+- assertVisible:
+    id: chat-chip-0
+- assertVisible:
+    id: chat-chip-1
+- takeScreenshot: parity-66-person-ask

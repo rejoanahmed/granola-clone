@@ -1,5 +1,6 @@
 import {
   colors,
+  FOOT,
   ICON_STROKE,
   PillButton,
   PRESSED_OPACITY,
@@ -25,7 +26,6 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const COPY = SETTINGS_COPY.desktop;
 const TILE_HEIGHT = 108;
@@ -82,7 +82,6 @@ function Tile({
 export default function DesktopSheet() {
   const router = useRouter();
   const toast = useToast();
-  const insets = useSafeAreaInsets();
   const remind = useDesktopReminder();
   const busy = remind.isPending;
 
@@ -135,9 +134,7 @@ export default function DesktopSheet() {
           />
         </View>
       </View>
-      <View
-        style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}
-      >
+      <View style={[styles.footer, { paddingBottom: FOOT.sheetDone }]}>
         <PillButton
           label={COPY.done}
           onPress={() => router.back()}

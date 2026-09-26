@@ -49,7 +49,7 @@ export function DataSharingCard() {
   return (
     <SettingsCard style={styles.card} testID="settings-section-data">
       <Text variant="body">{copy.heading}</Text>
-      <Text style={styles.body} variant="secondary">
+      <Text style={styles.body} testID="settings-data-body" variant="secondary">
         {copy.body}
       </Text>
       <Link

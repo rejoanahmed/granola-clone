@@ -1,6 +1,7 @@
 import {
   ActionMenu,
   colors,
+  FOOT,
   type Frame,
   ICON_STROKE,
   IconButton,
@@ -56,7 +57,6 @@ const TITLE_GAP = 24;
 const META_GAP = 12;
 const NOTES_GAP = 24;
 const BAR_INSET = 24;
-const BAR_BOTTOM = 24;
 const MINI_GAP = 8;
 const MINI_HEIGHT = 48;
 const META_HEIGHT = 36;
@@ -183,6 +183,18 @@ export default function RecordingScreen() {
       router.push({ params: { id: noteId }, pathname: "/notes/[id]" });
     } else {
       setEnding(false);
+    }
+  };
+
+  // Phase 9's sheet, pushed over the card (docs/spec/phase-12.md §6.1): the card stays mounted
+  // underneath, so the recorder keeps running and close or submit lands back here.
+  const addToFolder = () => {
+    if (live.noteId) {
+      flushNotes();
+      router.push({
+        params: { from: "recording", id: live.noteId },
+        pathname: "/notes/[id]/folder",
+      });
     }
   };
 
@@ -335,7 +347,7 @@ export default function RecordingScreen() {
           accessibilityRole="button"
           accessibilityState={{ disabled: !ready }}
           disabled={!ready}
-          onPress={() => undefined}
+          onPress={addToFolder}
           style={({ pressed }) => [
             styles.folder,
             pressed ? styles.pressed : null,
@@ -373,7 +385,7 @@ export default function RecordingScreen() {
 
       <KeyboardStickyView
         offset={{
-          closed: -(insets.bottom + BAR_BOTTOM),
+          closed: -FOOT.recordingBar,
           opened: -MINI_GAP,
         }}
         style={styles.bottom}
@@ -453,7 +465,7 @@ const styles = StyleSheet.create({
   notes: {
     ...typography.body,
     flex: 1,
-    marginBottom: 64 + BAR_BOTTOM + spacing.md,
+    marginBottom: 64 + FOOT.recordingBar + spacing.md,
     marginTop: NOTES_GAP,
     paddingHorizontal: spacing.xl,
     paddingTop: 0,

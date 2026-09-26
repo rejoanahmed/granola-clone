@@ -1,5 +1,6 @@
 import {
   colors,
+  FOOT,
   fonts,
   IconButton,
   PillButton,
@@ -39,8 +40,6 @@ const DAY_ABOVE = 28 - ROW_INSET;
 const DAY_BELOW = 12 - ROW_INSET;
 const STATE_TOP = 64;
 const END_THRESHOLD = 0.5;
-// #65 (§3.2): the pill runs 16 from each edge, 16 above the home indicator.
-const ASK_GAP = 16;
 const SERIF: TextStyle = {
   fontFamily: fonts.serif,
   fontSize: 28,
@@ -148,7 +147,7 @@ export function PersonScreen({ paramName, personKey }: Props) {
     <View style={styles.screen} testID="person-screen">
       <SectionList
         contentContainerStyle={{
-          paddingBottom: sizes.askPill + ASK_GAP + spacing.md + insets.bottom,
+          paddingBottom: sizes.askPill + FOOT.personAsk + spacing.md,
           paddingTop: insets.top + BAR_TOP + sizes.iconButton,
         }}
         keyExtractor={(note) => note.id}
@@ -215,7 +214,7 @@ export function PersonScreen({ paramName, personKey }: Props) {
       {state === "notFound" ? null : (
         <AskPill
           accessibilityLabel={PERSON_COPY.askLabel(lines.name)}
-          bottomGap={ASK_GAP}
+          bottom={FOOT.personAsk}
           inset={spacing.md}
           onPress={() =>
             router.push({

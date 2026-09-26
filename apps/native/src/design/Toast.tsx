@@ -9,9 +9,11 @@ import {
   useState,
 } from "react";
 import { AccessibilityInfo, Pressable, StyleSheet, View } from "react-native";
+import { useKeyboardState } from "react-native-keyboard-controller";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./Text";
+import { toastBottom } from "./toastLayout";
 import {
   colors,
   PRESSED_OPACITY,
@@ -35,15 +37,14 @@ type ToastState = ToastInput & { readonly id: number };
 
 type ToastApi = {
   readonly hide: () => void;
+  /** What the current screen docks on the keyboard, for the toast to clear (`useToastKeyboardDock`). */
+  readonly setKeyboardDock: (height: number) => void;
   readonly show: (toast: ToastInput) => void;
 };
 
 export const TOAST_DURATION_MS = 5000;
 const FADE_MS = 150;
 const MIN_HEIGHT = 52;
-// Home and the detail both float a 64pt bar 12 above the bottom safe area; the toast sits 12 above
-// that bar (docs/spec/phase-4.md §2.9), so it never covers the FAB or the Ask pill.
-const BAR_GAP = spacing.sm;
 
 const ToastContext = createContext<ToastApi | null>(null);
 
@@ -55,9 +56,23 @@ export function useToast(): ToastApi {
   return api;
 }
 
+/**
+ * Declares that this screen docks `height` points on the keyboard while it is mounted, so a toast
+ * raised with the keyboard up clears it. Screens that dock nothing leave it at 0, and their toasts
+ * sit just above the keyboard.
+ */
+export function useToastKeyboardDock(height: number): void {
+  const { setKeyboardDock } = useToast();
+  useEffect(() => {
+    setKeyboardDock(height);
+    return () => setKeyboardDock(0);
+  }, [height, setKeyboardDock]);
+}
+
 // One toast at a time: a new one replaces the old one and restarts the clock.
 export function ToastProvider({ children }: { readonly children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [dock, setKeyboardDock] = useState(0);
   const nextId = useRef(0);
 
   const hide = useCallback(() => setToast(null), []);
@@ -75,27 +90,40 @@ export function ToastProvider({ children }: { readonly children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const api = useMemo(() => ({ hide, show }), [hide, show]);
+  const api = useMemo(() => ({ hide, setKeyboardDock, show }), [hide, show]);
 
   return (
     <ToastContext.Provider value={api}>
       {children}
-      {toast ? <ToastView key={toast.id} onHide={hide} toast={toast} /> : null}
+      {toast ? (
+        <ToastView dock={dock} key={toast.id} onHide={hide} toast={toast} />
+      ) : null}
     </ToastContext.Provider>
   );
 }
 
 function ToastView({
+  dock,
   onHide,
   toast,
 }: {
+  readonly dock: number;
   readonly onHide: () => void;
   readonly toast: ToastInput;
 }) {
   const insets = useSafeAreaInsets();
-  const bottom = insets.bottom + BAR_GAP + sizes.askPill + BAR_GAP;
+  const keyboard = useKeyboardState((state) =>
+    state.isVisible ? state.height : 0
+  );
+  // At the old fixed height a toast from the chat's composer (its mic) drew under the keyboard, and
+  // right on the keyboard it covered the paperclip (docs/parity/REPORT.md, P19-3).
+  const bottom = toastBottom({ dock, insetBottom: insets.bottom, keyboard });
   return (
-    <View pointerEvents="box-none" style={[styles.layer, { bottom }]}>
+    <View
+      // A toast with no action takes no touch, so it never swallows a tap meant for what it covers.
+      pointerEvents={toast.action ? "box-none" : "none"}
+      style={[styles.layer, { bottom }]}
+    >
       <Toast
         action={
           toast.action

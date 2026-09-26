@@ -1,0 +1,76 @@
+# AC7 (docs/spec/phase-12.md §3.7, §8): home's composer (#70) and its scrolled chips (#71), history
+# from it (#72), a row's swipe (#73) and its long-press menu (#74).
+appId: ${APP_ID}
+name: "Parity: the home composer and history actions"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-global-chat.yaml
+
+# #70
+- assertVisible:
+    id: chat-screen
+- assertVisible:
+    id: chat-grabber
+- assertVisible:
+    id: chat-greeting
+- assertVisible:
+    id: chat-chip-0
+    text: Who have I promised to follow up with\?
+- assertVisible:
+    id: chat-chip-1
+    text: What needs my attention first\?
+- assertVisible:
+    id: chat-input
+- takeScreenshot: parity-70-global-ask
+
+# #71
+- runFlow:
+    file: ../subflows/swipe-chips.yaml
+    env:
+      CHIP: chat-chip-3
+- assertVisible:
+    id: chat-chip-3
+    text: What are the top customer issues\?
+- takeScreenshot: parity-71-global-chips-scrolled
+
+# #72
+- runFlow: ../subflows/open-history.yaml
+- takeScreenshot: parity-72-global-history
+
+# #73
+- runFlow:
+    file: ../subflows/swipe-history-row.yaml
+    env:
+      THREAD_ID: cht_e2e_solo
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo-delete
+- assertVisible:
+    id: chat-history-row-cht_e2e_solo-pin
+- takeScreenshot: parity-73-history-swipe
+
+# #74
+- swipe:
+    from:
+      id: chat-history-row-cht_e2e_solo
+    direction: RIGHT
+- extendedWaitUntil:
+    notVisible:
+      id: chat-history-row-cht_e2e_solo-pin
+    timeout: 5000
+- longPressOn:
+    id: chat-history-row-cht_e2e_solo
+- extendedWaitUntil:
+    visible:
+      id: chat-history-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-history-menu-pin
+- assertVisible:
+    id: chat-history-menu-delete
+- takeScreenshot: parity-74-history-menu

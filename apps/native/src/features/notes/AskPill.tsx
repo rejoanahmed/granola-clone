@@ -1,12 +1,10 @@
-import { colors, PillButton, spacing } from "@native/design";
+import { colors, FOOT, PillButton, spacing } from "@native/design";
 import { MessageCircle } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-// #10 and #65 draw the same floating pill: 12 above the bottom safe area, over a fade that lets the
-// content scroll under it without a hard edge.
-const ASK_GAP = 12;
+// #10 and #65 draw the same floating pill over a fade that lets the content scroll under it without a
+// hard edge.
 const FADE_HEIGHT = 32;
 export const ASK_LABEL = "Ask anything";
 
@@ -33,8 +31,8 @@ function BottomFade() {
 
 type Props = {
   readonly accessibilityLabel: string;
-  /** Above the bottom safe area. #10 draws 12; #65 draws 16. */
-  readonly bottomGap?: number;
+  /** From the screen's bottom edge (FOOT): #10 ends it 28 up, #65 42. */
+  readonly bottom?: number;
   /** From each screen edge. #10 draws 20; #65 draws 16. */
   readonly inset?: number;
   readonly onPress: () => void;
@@ -44,16 +42,15 @@ type Props = {
 /** The note page's and the person page's Ask pill, absolutely placed at the screen's foot. */
 export function AskPill({
   accessibilityLabel,
-  bottomGap = ASK_GAP,
+  bottom = FOOT.noteAsk,
   inset = spacing.lg,
   onPress,
   testID,
 }: Props) {
-  const insets = useSafeAreaInsets();
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.layer, { paddingBottom: insets.bottom + bottomGap }]}
+      style={[styles.layer, { paddingBottom: bottom }]}
     >
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <BottomFade />

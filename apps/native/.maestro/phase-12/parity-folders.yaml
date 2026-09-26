@@ -1,0 +1,79 @@
+# AC3 (docs/spec/phase-12.md §3.3, §8): with no folders, the drawer (#50), and Add to folder empty
+# (#17) and searched with no match (#18).
+appId: ${APP_ID}
+name: "Parity: folders drawer and Add to folder, empty"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+
+# #50
+- runFlow: ../subflows/open-folders.yaml
+- extendedWaitUntil:
+    visible:
+      id: folders-empty
+    timeout: 10000
+- assertVisible:
+    id: folders-drawer-scrim
+- assertVisible:
+    id: folders-empty-title
+    text: No folders yet
+- assertVisible:
+    id: folders-empty-body
+- assertVisible:
+    id: folders-create
+    text: Create new folder
+- takeScreenshot: parity-50-folders-drawer
+# The drawer covers the left 316pt of 402; the scrim's right-hand strip is outside it.
+- tapOn:
+    id: folders-drawer-scrim
+    point: "92%,50%"
+- extendedWaitUntil:
+    notVisible:
+      id: folders-drawer
+    timeout: 5000
+
+# #17
+- runFlow:
+    file: ../subflows/open-add-to-folder.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-empty
+    timeout: 10000
+- assertVisible:
+    id: add-to-folder-close
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: false
+- assertVisible:
+    id: add-to-folder-empty-create
+    text: Create folder
+- assertVisible:
+    id: add-to-folder-search
+- takeScreenshot: parity-17-add-to-folder
+
+# #18
+- tapOn:
+    id: add-to-folder-search-input
+- inputText: pro
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-no-results-text
+      text: "No results for “pro”"
+    timeout: 10000
+- assertVisible:
+    id: add-to-folder-no-results
+- extendedWaitUntil:
+    visible:
+      id: add-to-folder-keyboard-dismiss
+    timeout: 5000
+- assertVisible:
+    id: add-to-folder-submit
+    enabled: false
+- takeScreenshot: parity-18-add-to-folder-search

@@ -10,7 +10,7 @@ env:
     env:
       MIC: "${typeof MIC === 'undefined' ? 'allow' : MIC}"
 - runFlow: e2e-reset.yaml
-- extendedWaitUntil:
-    visible:
-      id: welcome-screen
-    timeout: 180000
+- runFlow:
+    file: wait-for-launch.yaml
+    env:
+      SCREEN_ID: welcome-screen

@@ -2,10 +2,9 @@
 # blank message keeps Send disabled; a sent report closes the sheet with a toast and reaches the
 # fake Email port's outbox; the next open starts empty; Close returns to Settings.
 #
-# Diagnostics is switched off before the message is typed rather than after (§8 has it after): with
-# the keyboard up, the diagnostics card sits under it and the form does not lift it clear, so a tap
-# lands on a key. The order changes nothing that is sent; the keyboard gap is a deferred review item
-# in docs/plan/BLOCKERS.md.
+# The message is typed first and Diagnostics switched off after, with the keyboard still up (§8's
+# order): the form is keyboard-aware since phase 12 (docs/spec/phase-12.md §6.2), so the card
+# scrolls clear of the keyboard and takes the tap.
 appId: ${APP_ID}
 name: Report a bug through the fake email port
 tags:
@@ -34,14 +33,6 @@ env:
 - takeScreenshot: phase-10-report-bug
 
 - tapOn:
-    id: report-bug-diagnostics
-- extendedWaitUntil:
-    visible:
-      id: report-bug-diagnostics
-      selected: false
-    timeout: 5000
-
-- tapOn:
     id: report-bug-message
 - inputText: "   "
 - assertVisible:
@@ -53,6 +44,19 @@ env:
     visible:
       id: report-bug-send
       enabled: true
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: report-bug-diagnostics
+    direction: DOWN
+    timeout: 10000
+    centerElement: true
+- tapOn:
+    id: report-bug-diagnostics
+- extendedWaitUntil:
+    visible:
+      id: report-bug-diagnostics
+      selected: false
     timeout: 5000
 - tapOn:
     id: report-bug-send

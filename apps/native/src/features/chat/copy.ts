@@ -18,6 +18,12 @@ export const CHAT_COPY = {
     thinking: "Thinking...",
     up: "Send positive feedback",
   },
+  // #23's two items, both disabled: photo attachments are out of scope (phases.md).
+  attachMenu: {
+    camera: "Take Photo",
+    comingSoon: "Coming soon",
+    library: "Choose from Photo Library",
+  },
   citation: {
     loadFailed: "Couldn’t load the note.",
     retry: "Retry",
@@ -64,7 +70,6 @@ export const CHAT_COPY = {
     retry: "Retry",
   },
   toasts: {
-    attachments: "Attachments aren’t available yet.",
     deleted: "Chat deleted",
     deleteFailed: "Couldn’t delete the chat. Try again.",
     dictation: "Dictation isn’t available yet.",

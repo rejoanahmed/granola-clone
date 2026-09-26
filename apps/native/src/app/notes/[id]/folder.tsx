@@ -1,6 +1,7 @@
 import {
   colors,
   IconButton,
+  OFFSETS,
   PillButton,
   SearchBar,
   spacing,
@@ -36,13 +37,15 @@ import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const NO_RESULTS_TOP = 150;
 const SEARCH_MAGNIFIER = 20;
 
 // Add to folder (#17, #18, docs/spec/phase-9.md §3.6): a single choice among the caller's folders,
 // searched on the client. Folders already holding the note show as added and cannot be chosen.
 export default function AddToFolderSheet() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { from, id } = useLocalSearchParams<{
+    from?: "recording";
+    id: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const toast = useToast();
@@ -94,7 +97,13 @@ export default function AddToFolderSheet() {
             folders.refetch().catch(() => undefined);
             toast.show({ message: FOLDERS_COPY.folderGoneToast });
           } else if (isGoneForEditing(error)) {
-            router.dismissTo("/");
+            // Over the live card, dismissing to home would unmount the recorder mid-capture; the
+            // card is where close and submit return (docs/spec/phase-12.md §6.1).
+            if (from === "recording") {
+              router.back();
+            } else {
+              router.dismissTo("/");
+            }
             toast.show({ message: GONE_FOR_EDITING });
           } else {
             toast.show({ message: FOLDERS_COPY.addFailed });
@@ -216,7 +225,7 @@ const styles = StyleSheet.create({
   centre: { alignItems: "center", flex: 1, justifyContent: "center" },
   flex: { flex: 1 },
   listContent: { paddingBottom: spacing.md, paddingTop: spacing.md },
-  noResults: { flex: 1, paddingTop: NO_RESULTS_TOP },
+  noResults: { flex: 1, paddingTop: OFFSETS.addToFolderNoResultsTop },
   retry: { marginTop: spacing.sm },
   sheet: { backgroundColor: colors.bg.app, flex: 1 },
 });

@@ -1,0 +1,146 @@
+# AC8 (docs/spec/phase-12.md §3.8, §8): Search empty (#60), a prefix matching both a guest and a note
+# (#61), cleared (#62), no results (#63), a body-only match (#64), and a person's page (#65). The
+# queries are phase 8's: `ra` (search-sections.yaml), `forty` (search-body-match.yaml), `priya`.
+appId: ${APP_ID}
+name: "Parity: search and person"
+tags:
+  - phase-12
+  - parity
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow: ../subflows/open-search.yaml
+
+# #60
+- assertVisible:
+    id: search-back
+- assertVisible:
+    id: search-empty-title
+    text: Search your notes
+- assertVisible:
+    id: search-empty-subtitle
+    text: Search by title, notes, or people.
+- assertVisible:
+    id: search-field
+- extendedWaitUntil:
+    visible:
+      id: search-keyboard-toggle
+    timeout: 5000
+- takeScreenshot: parity-60-search-empty
+
+# #61
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: ra
+- extendedWaitUntil:
+    visible:
+      id: search-person-0
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: search-section-meetings
+    timeout: 10000
+- assertVisible:
+    id: search-results
+# The section's id is on its container; the header text is a separate node, so the copy is read on
+# its own.
+- assertVisible:
+    id: search-section-people
+- assertVisible:
+    text: People
+- assertVisible:
+    id: search-section-meetings
+- assertVisible:
+    text: Previous meetings
+- assertVisible:
+    id: search-clear
+- takeScreenshot: parity-61-search-results
+
+# #62
+- tapOn:
+    id: search-clear
+- extendedWaitUntil:
+    visible:
+      id: search-empty
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: search-keyboard-toggle
+      text: Show keyboard
+    timeout: 5000
+- takeScreenshot: parity-62-search-cleared
+
+# #63
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: zzqx
+- extendedWaitUntil:
+    visible:
+      id: search-no-results-query
+      text: for “zzqx”
+    timeout: 15000
+- assertVisible:
+    id: search-no-results
+- assertVisible:
+    id: search-no-results-title
+    text: No results
+- takeScreenshot: parity-63-no-results
+
+# #64
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: forty
+- extendedWaitUntil:
+    visible:
+      id: search-note-not_e2e_launch
+    timeout: 15000
+- assertVisible:
+    id: search-section-meetings
+- assertNotVisible:
+    id: search-section-people
+- takeScreenshot: parity-64-body-match
+
+# #65
+- runFlow:
+    file: ../subflows/search-for.yaml
+    env:
+      QUERY: priya
+- extendedWaitUntil:
+    visible:
+      id: search-person-0
+      text: "Priya Raman, .*"
+    timeout: 15000
+- tapOn:
+    id: search-person-0
+- extendedWaitUntil:
+    visible:
+      id: person-screen
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: person-note-not_e2e_launch
+    timeout: 15000
+- assertVisible:
+    id: person-back
+- assertVisible:
+    id: person-avatar
+- assertVisible:
+    id: person-name
+    text: Priya Raman
+- assertVisible:
+    id: person-email
+- assertVisible:
+    id: person-domain
+- assertVisible:
+    id: person-list
+- assertVisible:
+    id: "person-day-.*"
+    index: 0
+- assertVisible:
+    id: person-ask-button
+- takeScreenshot: parity-65-person

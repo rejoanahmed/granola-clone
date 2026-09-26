@@ -5,12 +5,14 @@ import {
   SCOPED_CHIPS,
 } from "@gc/domain/Domain/Chat";
 import {
+  CHAT_COMPOSER_DOCK,
   colors,
   type Frame,
   radii,
   sizes,
   spacing,
   useToast,
+  useToastKeyboardDock,
 } from "@native/design";
 import { hasTag } from "@native/lib/api";
 import { useAuth } from "@native/lib/auth-provider";
@@ -21,6 +23,7 @@ import { ActivityIndicator, Keyboard, StyleSheet, View } from "react-native";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AttachMenu } from "./AttachMenu";
 import { handOverActivity } from "./activity";
 import { chatModelsQuery, chatThreadQuery, useSelectChatModel } from "./api";
 import { ChatEmpty, ChatProblem, ChatThreadView } from "./ChatBody";
@@ -67,6 +70,7 @@ export function ChatScreen({
 }: Props) {
   const router = useRouter();
   const toast = useToast();
+  useToastKeyboardDock(CHAT_COMPOSER_DOCK);
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
   const [adopted, setAdopted] = useState<{
@@ -78,6 +82,7 @@ export function ChatScreen({
   const chat = useChatStream(scope);
   const [draft, setDraft] = useState("");
   const [menu, setMenu] = useState<Frame | null>(null);
+  const [attach, setAttach] = useState<Frame | null>(null);
   const [opening, setOpening] = useState<{ id: string; title: string } | null>(
     threadParam ? { id: threadParam, title: threadTitle ?? "" } : null
   );
@@ -213,9 +218,7 @@ export function ChatScreen({
               autoFocus={threadParam === undefined}
               draft={draft}
               modelLabel={modelLabel}
-              onAttach={() =>
-                toast.show({ message: CHAT_COPY.toasts.attachments })
-              }
+              onAttach={setAttach}
               onChangeDraft={setDraft}
               onDictate={() =>
                 toast.show({ message: CHAT_COPY.toasts.dictation })
@@ -229,6 +232,7 @@ export function ChatScreen({
           </Animated.View>
         )}
       </View>
+      <AttachMenu anchor={attach} onClose={() => setAttach(null)} />
       <ModelMenu
         anchor={menu ? { align: "left", frame: menu, gap: MENU_GAP } : null}
         models={models.data?.models ?? []}

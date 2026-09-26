@@ -1,0 +1,23 @@
+# On the Get desktop sheet (docs/spec/phase-10.md §3.10, #51, #89): every control, with the copy that
+# names the product in its Notes form (docs/spec/phase-12.md §5).
+appId: ${APP_ID}
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- assertVisible:
+    id: desktop-hero
+- assertVisible:
+    id: desktop-title
+    text: Meeting notes on your computer
+- assertVisible:
+    id: desktop-body
+    text: Take notes on video calls with Notes for Mac or Windows\.
+- assertVisible:
+    id: desktop-share
+    text: Share link
+- assertVisible:
+    id: desktop-remind
+    text: Remind me later
+- assertVisible:
+    id: desktop-done
+    text: Done

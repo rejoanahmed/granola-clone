@@ -357,6 +357,10 @@
 - **The live recording card's Add to folder (#102) stays inert.** The note exists by then, so the
   same sheet could open over the card, but presenting a modal over the `fullScreenModal` recording
   route while audio is capturing needs its own device check. Deferred to phase 12's parity pass.
+  **Closed in phase 12 (K1, `fb4445e`).** The card is a `formSheet`, not a `fullScreenModal`. The
+  button pushes `/notes/[id]/folder` over it, and the device check passed: the card keeps its
+  accessibility tree, the timer keeps counting, and submit lands back on the card.
+  `phase-12/recording-add-to-folder.yaml` proves it end to end, down to the home folder filter.
 - **Recording from a folder view does not file the note.** A new note lands in My notes only;
   `RecordingsService.start` answers `folderIds: []`. Auto-filing is a guess about intent that
   discovery cannot settle.
@@ -364,6 +368,8 @@
   be added to `FolderList` without breaking clients.
 - **The drawer's home "push" is a dim, not a translate.** #50's shot shows home at its normal x,
   although the discovery README says "pushed". Recorded for the parity pass.
+  **Closed in phase 12 (K3): not a gap.** #50's shot shows home at its normal x behind a `#121212`
+  dim, which is what the clone does. The README's word is wrong (docs/parity/REPORT.md, #50).
 
 ## Phase 10 (settings, profile and upsells)
 
@@ -399,6 +405,10 @@
   toggles first (nothing sent differs) and says why. The fix is keyboard-aware insets on the support
   form's ScrollView (`SupportForm.tsx`), as Profile's `keyboardClearance` does; it is left for the
   parity pass because the order is cosmetic to what the report carries.
+  **Closed in phase 12 (K2, `a5c2fc4`).** `SupportForm`'s scroll view is now a
+  `KeyboardAwareScrollView` with a 16pt clearance, for Report a bug and Send feedback alike.
+  `phase-12/report-bug-keyboard.yaml` scrolls to the toggle with the keyboard up and flips it.
+  `phase-10/report-bug.yaml` types and then toggles again.
 
 ## Phase 11 (upcoming events)
 
@@ -434,3 +444,70 @@
   `taken` transition and the error mapping it reads are unit-tested.
 - **Two phase-11 flows have timing exposures** (local midnight; the card's 60 s refetch in
   `event-gone.yaml`). Documented in docs/TESTING.md §8 rather than engineered away.
+
+## Phase 12 (parity pass and CI)
+
+- **Local Bun is 1.3.14, the pin is bun@1.4.2.** `packageManager` pins `bun@1.4.2` and CI's
+  `setup-bun` reads it (`bun-version-file: package.json`); this machine runs 1.3.14. The pin is
+  not changed (AGENTS.md). `bun-v1.4.2` is a published release (2026-09-05, checked with
+  `gh api repos/oven-sh/bun/releases/tags/bun-v1.4.2`), so the install should succeed, but no
+  agent pushes, so a green CI run on 1.4.2 is unconfirmed until the user pushes. Stubbed: nothing;
+  local gates run on 1.3.14. Unblocked by the first green `CI / verify` run after a push.
+- **The parity report was a skeleton until the pass filled it.** **Closed:** the pass wrote every
+  row on 2026-09-25, so `check-parity-report.mjs` now means what §7.3 says. The heading list is the
+  spec's 63 numbers ("55" elsewhere counts captured screens).
+- **Parity should-grade gaps left for a polish pass.** `docs/parity/REPORT.md` grades differences
+  `should` and leaves them `deferred` to this entry. Among them: type a step off the README scale
+  (#13, #26, #50, #83, #102), the lifted-row and history-menu anchoring (#02, #74), keyboard state
+  after a thread opens or a chip row scrolls (#25, #71), the primer closing before the system
+  alert (#101) and #88's unlisted `#DCDED3` text grey. Every one is a 5–12pt drift, a glyph, a
+  material or a state behind the screen's own control; the gaps the rubric (§4.2) makes `must`
+  (#04's colour, #18's and #87's offsets, onboarding's clipped title) were taken out of this entry
+  on review and are fixed, regraded or deferred under their own entries. Each row names what
+  differs and by how much, so a later pass can take them one at a time. Stubbed: nothing.
+  Unblocked by a polish phase choosing which to take.
+- **The attendees detent has no automated proof.** P16-2 (#16's header 21pt low) was fixed in
+  `437887f` by moving the sheet's detent from 0.7 to 0.73, measured before and after with
+  `maestro hierarchy`. The detent is a fraction UIKit resolves at runtime against the sheet's
+  container, so no unit test can pin where the header lands, and Maestro has no bounds predicate.
+  AC17 asks for a proof of every `must` marked fixed, so the row is `deferred` here rather than
+  `fixed`. Stubbed: nothing; the fix is in and visible in the re-captured shot. Unblocked by a
+  bounds assertion (a Maestro script over `maestro hierarchy`, or an XCUITest).
+- **Onboarding's about step clips its title with the keyboard up.** Designed state D4 (a `must`
+  under §4.2: clipped text, on a core journey). Step 2 scrolls to its end when the keyboard
+  arrives (`StepScreen`'s `revealEndOnKeyboard`), so the rows under the focused field are not left
+  behind the pinned Continue pill; with the keyboard up the viewport is ~310pt against ~400pt of
+  content, so the scroll stops with the serif title's first line above the viewport's top edge.
+  Any partial scroll clips a line somewhere; the real fix is a keyboard-up layout for the step
+  (collapsing the lead paragraph, or scrolling only the focused row into view and moving Skip
+  beside Continue), which is a design change to a phase-3 screen. Stubbed: nothing; every field
+  and Continue stay reachable. Unblocked by a phase-3 design decision for the keyboard-up state.
+- **Maestro cannot assert a position or a colour.** It checks ids, text, enabled/selected state
+  and relative order (`above`/`below`). So the pass's geometry fixes (the bottom-anchored controls,
+  the chat title's room, #18's and #87's offsets, the toast's placement) are proven by unit tests
+  that pin each constant to the discovery rect it came from (`apps/native/src/design/foot.test.ts`,
+  `offsets.test.ts`, `toastLayout.test.ts`, `src/features/chat/navLayout.test.ts`), plus the
+  re-captured parity shot. Spec AC17 was amended on 2026-09-26 to say so. The toast fix also has a
+  relational flow (`phase-12/fix-modal-toast.yaml`, `above: chat-input-bar`, checked to fail on the
+  old placement). The detent is the one geometry fix with no test, and it is deferred above.
+
+### Deferred review items (phase 12)
+
+- **Rendered chat titles are not proven untruncated.** `navLayout.test.ts` proves the title box is
+  at least discovery's 245pt; it cannot measure "Launch planning review" or "Solo reflection
+  thoughts" at the real font, and Maestro reads a truncated label's full string. With messages
+  each side is still 96pt, so a long thread title (#25's) has ~170pt and does truncate, as it
+  should with one line. Unblocked by a rendered-width check (a snapshot or XCUITest).
+- **#44's chip scroll is captured, not asserted.** A partly off-screen chip counts as visible, so
+  `assertVisible: chat-chip-2` holds before the swipe too. Proving the row moved needs its scroll
+  offset exposed (for example as an accessibility value), which is a product change for a test.
+  The shot shows the scrolled row. Unblocked by exposing the offset or a bounds predicate.
+- **The root package is named `granola-clone`, and so is the README title.** Neither ships in the
+  app, and neither is in `check-branding`'s scope (§7.2 scopes it to shipped source). Renaming the
+  root package rewrites `bun.lock`'s workspace root, which the native rebuild rule counts as a
+  native input, for no user-visible change. Recorded rather than renamed; the repository name is
+  the workspace's, not the product's. Unblocked by a rename alongside the next lockfile change.
+- **The parity checker does not check that fixed shas exist.** `fixed (<sha>)` is now an
+  allowlisted shape (7–40 hex digits), but the script does not resolve it against `git`, because
+  CI's checkout is shallow and a squash merge rewrites every sha anyway. Unblocked by recording
+  the fix's flow or test name in the status instead of a sha, if that becomes the convention.

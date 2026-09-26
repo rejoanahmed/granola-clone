@@ -1,0 +1,52 @@
+# P19-3 (docs/parity/REPORT.md, #19/#23): a toast raised from the chat composer is drawn above the
+# keyboard and the composer docked on it. It used to sit at a fixed height, under the keyboard, so the
+# idle mic's "Dictation isn’t available yet." reached the hierarchy and never the screen. Visibility
+# alone cannot tell those apart, so the proof is relational: the toast must sit above the composer
+# card, which is docked on the keyboard. Drawn under the keyboard, it sat below the card and the
+# `above` selector fails. The offset itself is pinned by src/design/toastLayout.test.ts, and the
+# last step pins that the composer kept its keyboard.
+appId: ${APP_ID}
+name: A toast from the chat composer is visible above the keyboard
+tags:
+  - phase-12
+  - regression
+env:
+  APP_ID: com.rejoan.gcnotes
+---
+- runFlow: ../subflows/open-home.yaml
+- runFlow:
+    file: ../subflows/open-note-ask.yaml
+    env:
+      NOTE_ID: not_e2e_launch
+# A tap alone leaves the software keyboard down on the simulator (the field is already focused, so
+# the tap opens the AutoFill callout instead), and with it down this flow would test the keyboard-down
+# placement only. Typing raises it; the keyboard's own globe key is the proof that it is up.
+- tapOn:
+    id: chat-input
+- inputText: x
+- eraseText: 2
+- extendedWaitUntil:
+    visible:
+      text: Next keyboard
+    timeout: 5000
+- tapOn:
+    id: chat-send
+- extendedWaitUntil:
+    visible:
+      id: toast-message
+      text: Dictation isn’t available yet\.
+    timeout: 5000
+- assertVisible:
+    id: toast-message
+    above:
+      id: chat-input-bar
+- takeScreenshot: phase-12-fix-modal-toast
+# The keyboard is still up: its key is still there, and typing still reaches the field.
+- assertVisible:
+    text: Next keyboard
+- inputText: Still typing
+- extendedWaitUntil:
+    visible:
+      id: chat-input
+      text: Still typing
+    timeout: 5000
