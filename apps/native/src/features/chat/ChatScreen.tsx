@@ -5,12 +5,14 @@ import {
   SCOPED_CHIPS,
 } from "@gc/domain/Domain/Chat";
 import {
+  CHAT_COMPOSER_DOCK,
   colors,
   type Frame,
   radii,
   sizes,
   spacing,
   useToast,
+  useToastKeyboardDock,
 } from "@native/design";
 import { hasTag } from "@native/lib/api";
 import { useAuth } from "@native/lib/auth-provider";
@@ -68,6 +70,7 @@ export function ChatScreen({
 }: Props) {
   const router = useRouter();
   const toast = useToast();
+  useToastKeyboardDock(CHAT_COMPOSER_DOCK);
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
   const [adopted, setAdopted] = useState<{

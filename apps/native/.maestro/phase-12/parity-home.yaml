@@ -41,6 +41,7 @@ env:
     id: home-list
 - assertVisible:
     id: home-ask-button
+    text: Chat with Notes
 - assertVisible:
     id: home-new-note-button
 - takeScreenshot: parity-01-home

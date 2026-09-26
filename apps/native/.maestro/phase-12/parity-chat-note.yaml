@@ -78,13 +78,22 @@ env:
 - assertVisible:
     id: chat-model-balanced
 - takeScreenshot: parity-22-model-menu
-- runFlow:
-    file: ../subflows/dismiss-menu.yaml
-    env:
-      MENU: chat-model-menu
+# Not subflows/dismiss-menu.yaml: this card is tall enough to be clamped to the top safe area, so
+# its first row sits where that subflow taps. The card is left-aligned on the pill and spans ~17–79%
+# of the width, so the scrim is tapped to its right. The pill still reading Auto proves no row was hit.
+- tapOn:
+    id: action-menu-scrim
+    point: "92%,40%"
+- extendedWaitUntil:
+    notVisible:
+      id: chat-model-menu
+    timeout: 5000
+- assertVisible:
+    id: chat-model-button
+    text: .*Auto.*
 
 # #23: the paperclip opens #23's menu with both items disabled and "Coming soon" (§4.4 W8, designed;
-# the phase-7 toast drew behind the chat's modal, so the control was inert in practice).
+# the phase-7 toast drew under the keyboard, so the control was inert in practice).
 - tapOn:
     id: chat-attach
 - extendedWaitUntil:
@@ -132,6 +141,8 @@ env:
     id: chat-chip-0
 - assertVisible:
     id: chat-chip-1
+- assertVisible:
+    id: chat-chip-2
 - takeScreenshot: parity-43-solo-ask
 
 # #44: one swipe whether or not chip 2 already shows, since the shot is of the scrolled row.

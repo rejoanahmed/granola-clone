@@ -43,7 +43,9 @@ function Preview() {
           size={MARK}
           strokeWidth={ICON_STROKE}
         />
-        <Text variant="rowTitle">{COPY.start}</Text>
+        <Text testID="notifications-preview-start" variant="rowTitle">
+          {COPY.start}
+        </Text>
       </View>
     </View>
   );

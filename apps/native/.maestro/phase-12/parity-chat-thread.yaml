@@ -111,11 +111,14 @@ env:
       id: citation-sheet
     timeout: 10000
 
-# #29: the edit menu is UIKit's and is graded by eye (§4.4 W9).
+# #29: the edit menu is UIKit's (§4.4 W9). What the clone controls is that the message is
+# selectable, and UIKit only offers Copy on selectable text, so its callout is the proof.
 - longPressOn:
     id: chat-user-0
-- waitForAnimationToEnd:
-    timeout: 3000
+- extendedWaitUntil:
+    visible:
+      text: Copy
+    timeout: 5000
 - assertVisible:
     id: chat-user-0
 - takeScreenshot: parity-29-select

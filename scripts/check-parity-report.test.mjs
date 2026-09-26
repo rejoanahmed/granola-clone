@@ -157,6 +157,23 @@ describe("checkParityReport", () => {
     expect(errors).toHaveLength(1);
   });
 
+  it.each([
+    "Open",
+    "todo",
+    "wip",
+    "open (see P19)",
+    "deferred",
+    "fixed",
+    "fixed (not-a-sha)",
+  ])("fails on a must whose status is %p", (status) => {
+    const errors = checkParityReport(
+      report({ 90: [`| K2 | behaviour | reachable | x | must | ${status} |`] }),
+      BLOCKERS
+    );
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("K2");
+  });
+
   it("passes on a must fixed at a commit", () => {
     expect(
       checkParityReport(

@@ -456,18 +456,58 @@
 - **The parity report was a skeleton until the pass filled it.** **Closed:** the pass wrote every
   row on 2026-09-25, so `check-parity-report.mjs` now means what §7.3 says. The heading list is the
   spec's 63 numbers ("55" elsewhere counts captured screens).
-- **Parity should-grade gaps left for a polish pass.** `docs/parity/REPORT.md` grades 25 differences
+- **Parity should-grade gaps left for a polish pass.** `docs/parity/REPORT.md` grades differences
   `should` and leaves them `deferred` to this entry. Among them: type a step off the README scale
   (#13, #26, #50, #83, #102), the lifted-row and history-menu anchoring (#02, #74), keyboard state
   after a thread opens or a chip row scrolls (#25, #71), the primer closing before the system
-  alert (#101), #88's unlisted `#DCDED3` text grey and #04's `Continue anyway` colour and onboarding's about step scrolling its title away under the
-  keyboard. None is on a
-  core journey's control. Each row names what differs and by how much, so a later pass can take
-  them one at a time. Stubbed: nothing. Unblocked by a polish phase choosing which to take.
-- **Maestro cannot assert a position or a colour.** It checks ids, text and enabled/selected state.
-  So the pass's geometry fixes (the bottom-anchored controls, the chat title's room, the attendees
-  detent) are proven by unit tests that pin each constant to the discovery rect it came from
-  (`apps/native/src/design/foot.test.ts`, `src/features/chat/navLayout.test.ts`), plus the
-  re-captured parity shot. They are not proven by a Maestro assertion, which AC17 would otherwise
-  ask for. The detent has no test; it is a fraction UIKit resolves at runtime, and the report
-  records the `maestro hierarchy` frames measured before and after.
+  alert (#101) and #88's unlisted `#DCDED3` text grey. Every one is a 5–12pt drift, a glyph, a
+  material or a state behind the screen's own control; the gaps the rubric (§4.2) makes `must`
+  (#04's colour, #18's and #87's offsets, onboarding's clipped title) were taken out of this entry
+  on review and are fixed, regraded or deferred under their own entries. Each row names what
+  differs and by how much, so a later pass can take them one at a time. Stubbed: nothing.
+  Unblocked by a polish phase choosing which to take.
+- **The attendees detent has no automated proof.** P16-2 (#16's header 21pt low) was fixed in
+  `437887f` by moving the sheet's detent from 0.7 to 0.73, measured before and after with
+  `maestro hierarchy`. The detent is a fraction UIKit resolves at runtime against the sheet's
+  container, so no unit test can pin where the header lands, and Maestro has no bounds predicate.
+  AC17 asks for a proof of every `must` marked fixed, so the row is `deferred` here rather than
+  `fixed`. Stubbed: nothing; the fix is in and visible in the re-captured shot. Unblocked by a
+  bounds assertion (a Maestro script over `maestro hierarchy`, or an XCUITest).
+- **Onboarding's about step clips its title with the keyboard up.** Designed state D4 (a `must`
+  under §4.2: clipped text, on a core journey). Step 2 scrolls to its end when the keyboard
+  arrives (`StepScreen`'s `revealEndOnKeyboard`), so the rows under the focused field are not left
+  behind the pinned Continue pill; with the keyboard up the viewport is ~310pt against ~400pt of
+  content, so the scroll stops with the serif title's first line above the viewport's top edge.
+  Any partial scroll clips a line somewhere; the real fix is a keyboard-up layout for the step
+  (collapsing the lead paragraph, or scrolling only the focused row into view and moving Skip
+  beside Continue), which is a design change to a phase-3 screen. Stubbed: nothing; every field
+  and Continue stay reachable. Unblocked by a phase-3 design decision for the keyboard-up state.
+- **Maestro cannot assert a position or a colour.** It checks ids, text, enabled/selected state
+  and relative order (`above`/`below`). So the pass's geometry fixes (the bottom-anchored controls,
+  the chat title's room, #18's and #87's offsets, the toast's placement) are proven by unit tests
+  that pin each constant to the discovery rect it came from (`apps/native/src/design/foot.test.ts`,
+  `offsets.test.ts`, `toastLayout.test.ts`, `src/features/chat/navLayout.test.ts`), plus the
+  re-captured parity shot. Spec AC17 was amended on 2026-09-26 to say so. The toast fix also has a
+  relational flow (`phase-12/fix-modal-toast.yaml`, `above: chat-input-bar`, checked to fail on the
+  old placement). The detent is the one geometry fix with no test, and it is deferred above.
+
+### Deferred review items (phase 12)
+
+- **Rendered chat titles are not proven untruncated.** `navLayout.test.ts` proves the title box is
+  at least discovery's 245pt; it cannot measure "Launch planning review" or "Solo reflection
+  thoughts" at the real font, and Maestro reads a truncated label's full string. With messages
+  each side is still 96pt, so a long thread title (#25's) has ~170pt and does truncate, as it
+  should with one line. Unblocked by a rendered-width check (a snapshot or XCUITest).
+- **#44's chip scroll is captured, not asserted.** A partly off-screen chip counts as visible, so
+  `assertVisible: chat-chip-2` holds before the swipe too. Proving the row moved needs its scroll
+  offset exposed (for example as an accessibility value), which is a product change for a test.
+  The shot shows the scrolled row. Unblocked by exposing the offset or a bounds predicate.
+- **The root package is named `granola-clone`, and so is the README title.** Neither ships in the
+  app, and neither is in `check-branding`'s scope (§7.2 scopes it to shipped source). Renaming the
+  root package rewrites `bun.lock`'s workspace root, which the native rebuild rule counts as a
+  native input, for no user-visible change. Recorded rather than renamed; the repository name is
+  the workspace's, not the product's. Unblocked by a rename alongside the next lockfile change.
+- **The parity checker does not check that fixed shas exist.** `fixed (<sha>)` is now an
+  allowlisted shape (7–40 hex digits), but the script does not resolve it against `git`, because
+  CI's checkout is shallow and a squash merge rewrites every sha anyway. Unblocked by recording
+  the fix's flow or test name in the status instead of a sha, if that becomes the convention.

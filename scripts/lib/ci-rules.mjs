@@ -8,15 +8,46 @@ const stepsOf = (workflow) =>
 
 const named = (workflows) => Object.entries(workflows);
 
+// `on` may be a string (`on: push`), a list (`on: [push, pull_request]`) or a map of trigger → filter.
+const triggersOf = (on) => {
+  if (typeof on === "string") {
+    return { [on]: null };
+  }
+  if (Array.isArray(on)) {
+    return Object.fromEntries(on.map((event) => [event, null]));
+  }
+  return on ?? {};
+};
+
+// Any of these narrows a push trigger to some pushes, so CI would no longer run on every one.
+const NARROWING_PUSH_FILTERS = [
+  "branches-ignore",
+  "paths",
+  "paths-ignore",
+  "tags",
+  "tags-ignore",
+];
+
 export const pushOnEveryBranch = ({ ci }) => {
-  const on = ci?.on ?? {};
+  const on = triggersOf(ci?.on);
   const errors = [];
   if (Object.hasOwn(on, "push")) {
-    const branches = on.push?.branches;
-    if (branches !== undefined && !branches.includes("**")) {
+    const push = on.push ?? {};
+    const branches = push.branches;
+    if (
+      branches !== undefined &&
+      !(Array.isArray(branches) && branches.includes("**"))
+    ) {
       errors.push(
         `ci.yml's push trigger must cover every branch ("**"), not ${JSON.stringify(branches)}`
       );
+    }
+    for (const filter of NARROWING_PUSH_FILTERS) {
+      if (Object.hasOwn(push, filter)) {
+        errors.push(
+          `ci.yml's push trigger must not set ${filter}; CI runs on every push`
+        );
+      }
     }
   } else {
     errors.push("ci.yml must run on push");

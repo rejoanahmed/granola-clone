@@ -79,6 +79,32 @@ describe("checkCi", () => {
     expect(checkCi(workflows, pkg)).toEqual([]);
   });
 
+  it.each([
+    ["branches-ignore", ["wip/**"]],
+    ["paths", ["apps/**"]],
+    ["paths-ignore", ["docs/**"]],
+    ["tags", ["v*"]],
+  ])("fails when push narrows itself with %s", (filter, value) => {
+    const { workflows, pkg } = fixture();
+    workflows.ci.on = {
+      pull_request: { branches: ["main"] },
+      push: { branches: ["**"], [filter]: value },
+    };
+    expect(checkCi(workflows, pkg).join("\n")).toContain(filter);
+  });
+
+  it("passes on the list form of on", () => {
+    const { workflows, pkg } = fixture();
+    workflows.ci.on = ["push", "pull_request"];
+    expect(checkCi(workflows, pkg)).toEqual([]);
+  });
+
+  it("fails on the string form when it is pull_request alone", () => {
+    const { workflows, pkg } = fixture();
+    workflows.ci.on = "pull_request";
+    expect(checkCi(workflows, pkg)).toContain("ci.yml must run on push");
+  });
+
   it("fails when ci.yml has no pull_request trigger", () => {
     const { workflows, pkg } = fixture();
     workflows.ci.on = { push: { branches: ["**"] } };

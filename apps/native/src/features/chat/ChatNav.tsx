@@ -1,15 +1,9 @@
-import {
-  IconButton,
-  sizes,
-  spacing,
-  Text,
-  ToolbarCapsule,
-} from "@native/design";
+import { IconButton, sizes, Text, ToolbarCapsule } from "@native/design";
 import { ChevronLeft, History, SquarePen, X } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { CHAT_COPY } from "./copy";
-import { navSideWidth } from "./navLayout";
+import { NAV_ROW_PADDING, navSideWidth, TITLE_INSET } from "./navLayout";
 
 const TITLE_FADE_MS = 150;
 
@@ -96,8 +90,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     height: sizes.iconButton,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: NAV_ROW_PADDING,
   },
   title: { textAlign: "center" },
-  titleBox: { flex: 1, paddingHorizontal: spacing.xxs },
+  titleBox: { flex: 1, paddingHorizontal: TITLE_INSET },
 });

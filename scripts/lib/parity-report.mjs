@@ -10,9 +10,11 @@ export const PARITY_SCREENS = Object.freeze(
 
 export const REPORT_PATH = "docs/parity/REPORT.md";
 
-const OPEN_MUST_STATUSES = new Set(["open", "match", "—", "-", ""]);
-
+// An allowlist, not a denylist: "Open", "todo" or "wip" would slip past a list of open spellings.
+const FIXED = /^fixed \([0-9a-f]{7,40}\)$/;
 const DEFERRAL = /^deferred \(BLOCKERS: (.+)\)$/;
+
+const closesMust = (status) => FIXED.test(status) || DEFERRAL.test(status);
 
 const headedScreens = (report) =>
   new Set([...report.matchAll(/^## #(\d+)(?!\d)/gm)].map((match) => match[1]));
@@ -62,9 +64,9 @@ export const checkParityReport = (report, blockers) => {
     const id = cells[0];
     const grade = cells.at(-2);
     const status = cells.at(-1);
-    if (grade === "must" && OPEN_MUST_STATUSES.has(status)) {
+    if (grade === "must" && !closesMust(status)) {
       errors.push(
-        `${id}: a must row cannot be "${status}"; fix it or defer it to BLOCKERS.md`
+        `${id}: a must row must be "fixed (<sha>)" or "deferred (BLOCKERS: <title>)", not "${status}"`
       );
     }
     const deferral = DEFERRAL.exec(status);

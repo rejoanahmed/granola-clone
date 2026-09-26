@@ -58,17 +58,26 @@ env:
     notVisible:
       id: add-to-folder-sheet
     timeout: 10000
-# Back on the card, not on home or the note page, and still recording.
+# Back on the card, not on home or the note page, and still recording: not minimised to home's pill,
+# not paused, and the level meter still live.
 - assertVisible:
     id: recording-screen
 - assertNotVisible:
     id: home-screen
 - assertNotVisible:
+    id: home-recording-pill
+- assertNotVisible:
     id: note-screen
+- assertNotVisible:
+    id: recording-paused
+- assertVisible:
+    id: recording-meter
 - extendedWaitUntil:
     visible:
       id: recording-timer
     timeout: 5000
+# The timer is the recorder's own elapsed time, which excludes paused spans (FakeRecorder,
+# ExpoAudioRecorder), so its advancing proves capture continued rather than a wall clock ticking.
 # `mm:ss` is fixed-width below an hour, so a later time compares greater as a string.
 - extendedWaitUntil:
     notVisible:
@@ -98,6 +107,8 @@ env:
     visible:
       id: home-screen
     timeout: 10000
+# Home's folder filter asks the server for that folder's notes, so the row is the server's record
+# that the folder was applied, not a client-side flag.
 - runFlow:
     file: ../subflows/filter-by-folder.yaml
     env:

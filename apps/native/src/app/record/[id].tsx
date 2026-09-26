@@ -57,7 +57,6 @@ const TITLE_GAP = 24;
 const META_GAP = 12;
 const NOTES_GAP = 24;
 const BAR_INSET = 24;
-const BAR_BOTTOM = 24;
 const MINI_GAP = 8;
 const MINI_HEIGHT = 48;
 const META_HEIGHT = 36;
@@ -193,7 +192,7 @@ export default function RecordingScreen() {
     if (live.noteId) {
       flushNotes();
       router.push({
-        params: { id: live.noteId },
+        params: { from: "recording", id: live.noteId },
         pathname: "/notes/[id]/folder",
       });
     }
@@ -466,7 +465,7 @@ const styles = StyleSheet.create({
   notes: {
     ...typography.body,
     flex: 1,
-    marginBottom: 64 + BAR_BOTTOM + spacing.md,
+    marginBottom: 64 + FOOT.recordingBar + spacing.md,
     marginTop: NOTES_GAP,
     paddingHorizontal: spacing.xl,
     paddingTop: 0,

@@ -36,7 +36,15 @@ env:
     id: settings-section-support
 - takeScreenshot: parity-80-settings
 
-# #81
+# #81 (§5: the Support section's share row, on the way down, reads its Notes form)
+- scrollUntilVisible:
+    element:
+      id: settings-share-app
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: settings-share-app
+    text: Share Notes for iPhone
 - scrollUntilVisible:
     element:
       id: settings-version
@@ -46,6 +54,9 @@ env:
     id: settings-section-data
 - assertVisible:
     id: settings-use-my-data
+- assertVisible:
+    id: settings-data-body
+    text: .*improve the experience for Notes users
 - assertVisible:
     id: settings-data-learn-more
 - assertVisible:
@@ -157,6 +168,9 @@ env:
     id: notifications-upcoming-row
 - assertVisible:
     id: notifications-preview
+- assertVisible:
+    id: notifications-preview-start
+    text: Start Notes
 - takeScreenshot: parity-85-notifications
 - tapOn:
     id: notifications-back

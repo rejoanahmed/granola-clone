@@ -2,7 +2,9 @@ import { sizes, spacing } from "@native/design/tokens";
 
 // The New chat + history capsule's width (#25).
 const CAPSULE = 96;
-const TITLE_INSET = spacing.xxs;
+/** ChatNav's row padding and its title box's inset: its styles read these, so the test measures them. */
+export const NAV_ROW_PADDING = spacing.lg;
+export const TITLE_INSET = spacing.xxs;
 
 /**
  * Each side of the chat nav holds the widest control it can show, so the title stays centred. An
@@ -19,6 +21,6 @@ export const navTitleWidth = (
   hasMessages: boolean
 ): number =>
   screenWidth -
-  spacing.lg * 2 -
+  NAV_ROW_PADDING * 2 -
   navSideWidth(hasMessages) * 2 -
   TITLE_INSET * 2;

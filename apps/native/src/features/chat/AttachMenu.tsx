@@ -12,7 +12,7 @@ const noop = () => undefined;
 /**
  * #23's paperclip menu, drawn with both items disabled and a "Coming soon" caption (designed;
  * docs/spec/phase-12.md §4.4 W8). Photo attachments are out of scope, and a paperclip that only
- * toasted was inert in practice: the toast drew behind the chat's modal.
+ * toasted was inert in practice: the toast drew under the keyboard (docs/parity/REPORT.md, W8).
  */
 export function AttachMenu({
   anchor,
