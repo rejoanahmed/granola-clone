@@ -3,7 +3,8 @@
 - **Date:** 2026-09-25
 - **Graded at:** `437887f` (phase-12), then re-captured after the last fix. The fixes land in
   `fb4445e` (K1), `a5c2fc4` (K2), `917fe5a` (W8, chat titles), `437887f` (bottom-anchored controls,
-  the attendees detent) and `c099b11` (toasts above the keyboard).
+  the attendees detent) and `c099b11` (toasts above the keyboard). The review's fixes land in
+  `37711ec` (#18's and #87's offsets, the toast's scoped dock, #23 re-graded).
 - **Simulator:** iPhone 17 Pro, iOS 26.5 (23F77), UDID `351547D8-BD3B-4418-AB30-8568D8FFB8F3`.
 - **Capture:** `bun run parity` (`scripts/parity.sh`). It ran the ten `phase-12/parity-*.yaml`
   flows, and all ten passed. It left 63 of 63 shots in `artifacts/parity/2026-09-25/`.
@@ -20,9 +21,11 @@ it.
 
 **Maestro cannot assert position or colour.** It asserts ids, text and enabled/selected state, but
 it has no bounds or colour predicate. So a geometry `must` is proven by a unit test. The test pins
-the constant against the discovery rect it was measured from: `src/design/foot.test.ts` or
+the constant against the discovery rect it was measured from: `src/design/foot.test.ts`,
+`src/design/offsets.test.ts`, `src/design/toastLayout.test.ts` or
 `src/features/chat/navLayout.test.ts`. The fixed state also appears in the re-captured shot. This
-is how AC17 is read for geometry. The row names the test.
+is how AC17 reads for geometry since its 2026-09-26 amendment, and the row names the test. A
+position no test can pin (the attendees detent) is deferred, not fixed.
 
 Discovery strings that name the product are shown in their Notes form (§5).
 
@@ -56,7 +59,7 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | --- | --- | --- | --- | --- | --- |
 | P04-1 | structure | mark, serif title, body, two-row benefits card, light pill, text button | same | — | match |
 | P04-2 | copy | "It looks like you’ve connected a Gmail account…" | "Sign up with the email you use for work to see your meetings in Notes." The seed has no personal provider (phase-10 §3, designed) | wont | — |
-| P04-3 | colour | "Continue anyway" in `text.primary` | `text.secondary` | should | deferred (BLOCKERS: Parity should-grade gaps left for a polish pass) |
+| P04-3 | colour | "Continue anyway" grey (discovery's README: "(grey)"; the shot's text is dimmer than the pill's) | `text.secondary`, as phase-10 §3 designs it. First graded as a `text.primary` gap; re-read on review, it is the same token | — | match |
 | W1 | texture | grain over `#252525` | flat `#252525` | wont | — |
 | W4 | branding | the spiral logo | the clone's own mark | wont | — |
 
@@ -102,7 +105,7 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P16-1 | structure | Add pill, "Attendees", close circle, hairline rows | same | — | match |
-| P16-2 | geometry | Add at y 298: 251pt under the safe area | was 272 at the 0.7 detent, 21pt low. Now 0.73 puts it at 249 (measured with `maestro hierarchy`) | must | fixed (437887f) |
+| P16-2 | geometry | Add at y 298: 251pt under the safe area | was 272 at the 0.7 detent, 21pt low. `437887f` moved it to 0.73, which puts it at 249 (measured with `maestro hierarchy`). No test can pin a UIKit detent, so it has no AC17 proof | must | deferred (BLOCKERS: The attendees detent has no automated proof) |
 | W2 | avatar | photo | initials | wont | — |
 
 ## #17 add to folder, empty — parity-17-add-to-folder
@@ -116,15 +119,15 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P18-1 | copy | "No results for “pro”" | same | — | match |
-| P18-2 | geometry | icon and text ~70pt under the nav | ~100pt under it (centred in the space above the keyboard) | should | deferred (BLOCKERS: Parity should-grade gaps left for a polish pass) |
+| P18-2 | geometry | glyph 79pt under the nav's buttons (y 107 → 186) | was 150 under them (`maestro hierarchy`: nav bottom 122, block top 272), 71pt low; first graded `should` from the shot, a `must` by §4.2. Now 79: `OFFSETS.addToFolderNoResultsTop`, `offsets.test.ts` | must | fixed (37711ec) |
 
 ## #19 note ask — parity-19-note-ask
 
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P19-1 | structure | Back, centred title, history; three chips; composer with paperclip, Auto, mic | same | — | match |
-| P19-2 | copy | the title "Preservation effort planning" shown whole | "Launch plannin…": both sides reserved the 96pt New chat capsule, leaving 178pt. Now a side is 44pt until the thread has messages, which leaves 278pt (discovery 245). Pinned by `navLayout.test.ts` | must | fixed (917fe5a) |
-| P19-3 | behaviour | — (the mic dictates) | "Hold to dictate" answered with a toast drawn under the keyboard, so the tap showed nothing. With the keyboard up, toasts now sit above it and above the 96pt composer docked on it. A toast without an action takes no touch. Flow `phase-12/fix-modal-toast.yaml` | must | fixed (c099b11) |
+| P19-2 | copy | the title "Preservation effort planning" shown whole | "Launch plannin…": both sides reserved the 96pt New chat capsule, leaving 178pt. Now a side is 44pt until the thread has messages, which leaves 278pt (discovery 245). `navLayout.test.ts` pins the room, computed from the constants ChatNav's styles use; that the seeded titles render whole is shown by the re-captured #19 and #43 shots, not by an assertion (BLOCKERS, deferred review items) | must | fixed (917fe5a) |
+| P19-3 | behaviour | — (the mic dictates) | "Hold to dictate" answered with a toast drawn under the keyboard, so the tap showed nothing. With the keyboard up, toasts now sit above it and above the composer the chat docks on it (`useToastKeyboardDock`; screens that dock nothing get none). A toast without an action takes no touch. Flow `phase-12/fix-modal-toast.yaml` raises the keyboard, checks it is up, and asserts the toast `above: chat-input-bar`; run against the old placement it fails. The offset is pinned by `toastLayout.test.ts` | must | fixed (37711ec) |
 
 ## #20 note ask, typed — parity-20-note-ask-typed
 
@@ -143,14 +146,16 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P22-1 | structure | dark card above the pill, check column, one greyed model, "Auto (default)" last and checked | same | — | match |
+| P22-2 | behaviour | tapping outside closes the menu with no change | the capture's dismiss tapped the scrim at 50%,12%, where this tall card's first row sits, so it picked "Swift Thinking" and #23's shot showed that pill. The flow now taps beside the card and asserts the pill still reads Auto. A test fault, not an app one | — | match |
 | W5 | copy | vendor model names and logos | the fake list's neutral names and glyphs | wont | — |
 
 ## #23 attachment menu — parity-23-attach
 
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
-| W8 | structure | paperclip opens "Choose from Photo Library" / "Take Photo" | was a toast drawn under the keyboard, so the paperclip looked live and did nothing. Now it opens #23's menu inline above the composer, keyboard still up, both items disabled, with the caption "Coming soon" (designed). Asserted in `parity-chat-note.yaml` | must | fixed (917fe5a) |
+| W8 | structure | paperclip opens "Choose from Photo Library" / "Take Photo" | was a toast drawn under the keyboard, so the paperclip looked live and did nothing. Now it opens #23's menu inline above the composer, keyboard still up, both items disabled, with the caption "Coming soon" (designed). Asserted in `parity-chat-note.yaml`. Re-graded on review from a new capture: the earlier #23 shot's pill read "Swift Thinking" (P22-2); it reads Auto now | must | fixed (917fe5a) |
 | P23-1 | colour | items in `text.primary` | disabled at 40%, which is the point | wont | — |
+| P23-2 | geometry | the card overlaps the composer, covering the paperclip | the card ends 8 above the paperclip, ActionMenu's anchoring rule (phase-4 §2.2, as P12-2) | wont | — |
 
 ## #24 history — parity-24-history
 
@@ -192,7 +197,7 @@ Discovery strings that name the product are shown in their Notes form (§5).
 
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
-| W9 | behaviour | UIKit edit menu (Copy · Look Up · Translate ›) with the word selected | UIKit's callout with Copy: the text is selectable | wont | — |
+| W9 | behaviour | UIKit edit menu (Copy · Look Up · Translate ›) with the word selected | UIKit's callout with Copy: the text is selectable. The flow now waits for "Copy" after the long-press, which UIKit only offers on selectable text | wont | — |
 
 ## #30 new thread — parity-30-new-thread
 
@@ -231,13 +236,13 @@ Discovery strings that name the product are shown in their Notes form (§5).
 
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
-| P43-1 | copy | "Solo reflection thoughts" shown whole | "Solo reflection t…". Whole since P19-2's fix. Pinned by `navLayout.test.ts`, visible in the re-captured shot | must | fixed (917fe5a) |
+| P43-1 | copy | "Solo reflection thoughts" shown whole | "Solo reflection t…". Whole since P19-2's fix: the room is pinned by `navLayout.test.ts`, the whole title is visible in the re-captured shot (see P19-2 for what that does not prove). The flow now also asserts `chat-chip-2` (§3.5) | must | fixed (917fe5a) |
 
 ## #44 solo chips scrolled — parity-44-solo-chips-scrolled
 
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
-| P44-1 | behaviour | the chip row scrolls to "List Q&A" | same | — | match |
+| P44-1 | behaviour | the chip row scrolls to "List Q&A" | same, in the shot. The flow's `chat-chip-2` assertion holds before the swipe too, so the scroll is captured, not asserted (BLOCKERS, deferred review items) | — | match |
 
 ## #50 folders drawer — parity-50-folders-drawer
 
@@ -391,7 +396,7 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P87-1 | copy | "Phone Call Settings", "Make Calls From Notes", two benefit rows, "Get Started →" | same | — | match |
-| P87-2 | geometry | the centred block sits 35pt below the screen's centre | 20 below it | should | deferred (BLOCKERS: Parity should-grade gaps left for a polish pass) |
+| P87-2 | geometry | the centred block (ring top 314 to Get Started's bottom 683) sits 35.5pt below the screen's centre | was 19.5 below it (ring 263 to button 650), 16pt off: a `must` by §4.2, first graded `should`. Now 35.5: `OFFSETS.phoneCallsCentreShift`, `offsets.test.ts`, re-measured with `maestro hierarchy` | must | fixed (37711ec) |
 
 ## #88 watch — parity-88-watch
 
@@ -422,6 +427,7 @@ Discovery strings that name the product are shown in their Notes form (§5).
 | Id | Aspect | Discovery | Clone | Grade | Status |
 | --- | --- | --- | --- | --- | --- |
 | P100-1 | copy | waveform, serif "Enable your microphone to start transcribing", Continue, close | same | — | match |
+| W4 | branding | §4.4 lists the spiral here, but #100 shows none: its glyph is SF's plain `waveform` | a plain waveform glyph, no logo | wont | — |
 
 ## #101 mic alert — parity-101-mic-alert
 
@@ -489,32 +495,37 @@ Eighteen shots were read, each the newest copy the suite has taken: `phase-3-onb
 | D1 | type | serif display for page titles and empty-state headlines | serif on every designed headline: "What should we call you?", "No notes yet", "No notes in this folder", "This note isn’t available", "You’re all set, Rita", folder titles | — | match |
 | D2 | colour | `bg.app` / `bg.list` bands, `bg.sheet` sheets, lime FAB, magenta calendar bar, `destructive` delete pills | the same tokens; the events card's "Now" badge is `accent.olive.dark` with lime text | — | match |
 | D3 | type | row titles 17 semibold, secondary lines in `text.secondary` | same across the drawer, the folder list, the events card and the sheets | — | match |
-| D4 | behaviour | — | onboarding's "about" step, with the keyboard up, scrolls its serif title under the header, so only its last word shows | should | deferred (BLOCKERS: Parity should-grade gaps left for a polish pass) |
+| D4 | behaviour | — | onboarding's "about" step, with the keyboard up, scrolls its serif title under the header, so only its last word shows. Clipped text on a core journey is a `must` by §4.2 (first graded `should`) | must | deferred (BLOCKERS: Onboarding's about step clips its title with the keyboard up) |
 
 ## Summary
 
 | Grade | match | fixed | deferred | — (wont) | Rows |
 | --- | --- | --- | --- | --- | --- |
-| must | 0 | 16 | 0 | 0 | 16 |
-| should | 0 | 1 | 25 | 0 | 26 |
-| wont | 0 | 0 | 0 | 29 | 29 |
-| — (no gap) | 64 | 0 | 0 | 0 | 64 |
+| must | 0 | 17 | 2 | 0 | 19 |
+| should | 0 | 1 | 21 | 0 | 22 |
+| wont | 0 | 0 | 0 | 31 | 31 |
+| — (no gap) | 66 | 0 | 0 | 0 | 66 |
 
-The 16 `must` rows come from ten distinct gaps. Where one fix shows on several screens, it has a
-row under each of them:
+The 19 `must` rows come from thirteen distinct gaps. Where one fix shows on several screens, it has
+a row under each of them:
 
 1. **K1**: the live card's Add to folder was inert (#102). `recording-add-to-folder.yaml`.
 2. **K2**: Diagnostics was unreachable with the keyboard up (#90). `report-bug-keyboard.yaml`.
 3. **W8**: the paperclip looked live and did nothing visible (#23). The menu has disabled items and
    "Coming soon", asserted in `parity-chat-note.yaml`.
-4. **P19-3**: toasts drew under the keyboard. `fix-modal-toast.yaml`.
+4. **P19-3**: toasts drew under the keyboard. `fix-modal-toast.yaml` (relational) and
+   `toastLayout.test.ts`.
 5. **P19-2**: scoped chat titles were truncated (#19, #24, #43). `navLayout.test.ts`.
 6. **P10-2**: the note page's Ask pill sat 18pt high (#10, #11, #40). `foot.test.ts`.
 7. **P102-2**: the live card's bar sat 26pt high (#102, #104). `foot.test.ts`.
 8. **P50-2**: the drawer's Create row sat 38pt high (#50). `foot.test.ts`.
 9. **P51-2**: the Get desktop sheet's Done sat 18pt high (#51, #89). `foot.test.ts`.
-10. **P16-2**: the attendees sheet's header sat 21pt low (#16). Measured before and after with
-    `maestro hierarchy`.
+10. **P18-2**: Add to folder's no-results block sat 71pt low (#18). `offsets.test.ts`.
+11. **P87-2**: Phone calls' centred block sat 16pt high (#87). `offsets.test.ts`.
+12. **P16-2**: the attendees sheet's header sat 21pt low (#16). Fixed in `437887f`, but with no
+    proof AC17 accepts, so deferred: "The attendees detent has no automated proof".
+13. **D4**: onboarding's about step clips its title with the keyboard up. Deferred: "Onboarding's
+    about step clips its title with the keyboard up".
 
-No `must` is open. K1, K2 and K3 are closed in BLOCKERS.md. The 25 deferred `should` rows share
+No `must` is open. K1, K2 and K3 are closed in BLOCKERS.md. The 21 deferred `should` rows share
 one entry there, "Parity should-grade gaps left for a polish pass".
