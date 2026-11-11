@@ -243,11 +243,253 @@ Reverse cost: one helper per context. Evidence: `docs/spec/phase-4.md` §6.3;
 
 ---
 
+## D019 · Bring your own server: each user deploys the backend into their own Cloudflare account — **STANDING**
+
+The app goes public on the App Store, and its privacy promise is structural rather than a policy:
+**no recording, transcript or note is ever sent to or processed on a server the developer runs.**
+Each user deploys `apps/api` into *their own* Cloudflare account (Worker, D1, R2, Queues, Workers
+AI, AI Gateway), and the app is a client that is pointed at that server at first run.
+
+What it changes:
+
+- **First run is "connect your server".** The store build ships with no server address
+  (`config.prod.ts` `API_URL: ""`). Welcome shows the connect step (address + pairing token) until
+  a server is chosen; the chosen address and the server's self-description (`GET /server`,
+  `ServerInfo`) live in the Keychain (`apps/native/src/lib/server.ts`). The module-scope auth and
+  API clients are built from it, so choosing a server ends in an app reload rather than a rebuild
+  under a mounted tree. A setup link `gcnotes://connect?server=…&token=…` (and its QR code) fills
+  the step. `GET /server` answers `service: <brand slug>` so the app refuses a URL that is not one
+  of these servers.
+- **Self-hosting is one command.** `bun run selfhost` (`scripts/selfhost.sh`) creates the D1
+  database, R2 bucket and both queues if missing, applies migrations, deploys the `selfhost`
+  environment of `wrangler.jsonc` on a `workers.dev` hostname (no domain needed), generates and
+  stores `BETTER_AUTH_SECRET` and `OWNER_TOKEN`, and prints the address, the token, the setup link
+  and a QR code. Re-running it is the update path. `SELF-HOSTING.md` (repository root) is the guide for
+  non-experts.
+- **The developer's `production` environment is no longer a hosted service.** It is kept, with the
+  same owner configuration as `selfhost`, so `deploy:check` keeps proving that shape bundles. The
+  live reference server (the developer's own account, used for App Store review) is a `selfhost`
+  deployment like any user's.
+- **A "Deploy to Cloudflare" button is not offered yet.** It needs a public repository and a build
+  that resolves `workspace:*` packages under Workers Builds; the repo is private. The script is the
+  supported path until the repo is public and the button is proven.
+
+What it costs: every user needs a Cloudflare account (free tier is enough for light use; R2 asks
+for a payment method to enable), a computer with Bun once, and the patience of a five-minute setup.
+That is a real filter on who can use the app, and the reason App Review needs a working demo
+server and its credentials in the review notes (`docs/plan/RELEASE.md`).
+
+Reverse cost: high. A hosted mode would need multi-tenant auth, billing and a privacy policy that
+says the opposite. Evidence: `scripts/selfhost.sh`; `apps/api/wrangler.jsonc` (`env.selfhost`);
+`packages/server/src/Owners`; `apps/native/src/features/server`; `docs/spec/phase-13.md`.
+
+---
+
+## D020 · A self-hosted server has one owner, paired by a token; email OTP stays for development — **STANDING**
+
+Supersedes C2 (the email provider for sign-in OTPs) for the shipped product.
+
+A personal server has exactly one person who should ever read it. Email OTP would need every owner
+to bring a mail provider and a verified domain, and an OTP server that finds its URL lets any
+stranger sign up an account on it. So `AUTH_MODE=owner`:
+
+- **Pairing.** `POST /owner/session { token }` compares `OWNER_TOKEN` in constant time and, on a
+  match, upserts the one owner (`usr_owner`, a normal better-auth `user` row, so `GET /me`,
+  onboarding, ownership rules and account deletion are unchanged) and mints a session the same way
+  the E2E harness does: a `session` row and a cookie signed with better-auth's own `makeSignature`.
+  The app stores the returned `Set-Cookie` in the same SecureStore jar a code sign-in writes.
+  A second phone pairs into the same account; the name onboarding set is kept.
+- **No other way in.** In owner mode `/api/auth/(email-otp|sign-in|sign-up|callback|link-social)`
+  answers 404 before better-auth sees it; session reads, sign-out and user updates stay. The
+  pairing route shares the auth routes' per-address rate limit, and the token (24+ characters,
+  generated at 32 bytes of entropy by the script) makes guessing pointless.
+- **Mail is off.** `EMAIL_MODE=off` fails every send with `EmailUnavailable`; support forms fall
+  back to the phone's mail app, addressed to the app's support address (`LINKS.supportEmail`),
+  so a report reaches the developer only when the user sends it themselves.
+- **Email OTP is kept** as `AUTH_MODE=email-otp` (the default), for local development, Maestro and
+  the E2E gate, with the fake outbox as before. A live client exists (`EMAIL_MODE=resend`,
+  `RESEND_API_KEY`, `EMAIL_FROM`) for an owner who wants several people on one server.
+  `AppConfig` refuses `email-otp` + `off` in production (nobody could sign in) and still refuses
+  the fake there.
+
+What it costs: the token is a long-lived bearer credential. Rotation is
+`bun run selfhost -- --rotate-token`, which invalidates future pairings but not sessions already
+minted (they expire in 30 days or on sign-out); a "revoke all sessions" control is not built.
+No Apple Sign-In is needed for this path (C1): there is no third-party login to mirror.
+
+Evidence: `packages/server/src/Owners/*`, `Owners.test.ts`; `apps/api/src/owner-pairing.test.ts`
+(pairs, then `GET /me` with the cookie, and proves sign-up is 404); `apps/api/src/middleware.ts`
+(`ownerOnlySignIn`).
+
+---
+
+## D021 · Transcription: Workers AI Whisper by default, ElevenLabs Scribe v3 for Bengali, run as a queued job — **STANDING**
+
+Replaces the blocker "No live transcription client".
+
+**The default is `@cf/openai/whisper-large-v3-turbo` on Workers AI** (`TRANSCRIPTION_MODE=workers-ai`),
+because it runs in the owner's own account with no second vendor or key. Measured on 2026-11-11
+through a local `wrangler dev` against the real model: it takes the app's 64 kbps mono m4a as is
+(no transcoding), transcribed 30 minutes in one call in ~80 s, and English is clean. **Bengali is
+rough**: on a real 85 s Bengali news clip it produced phonetic spelling with roughly half the words
+wrong, and with `language` left to auto-detection it wrote the Bengali speech in **Gujarati
+script** (reproduced on the deployed server). With `condition_on_previous_text: true` it fell into
+a repeated-syllable loop for the last third; with it off, VAD on and `language: "bn"`, it reached
+the end. So the client sends `condition_on_previous_text: false`, `vad_filter: true`, and the
+`TRANSCRIPTION_LANGUAGE` hint (`bn` for a Bengali owner). Whisper does not diarise: every segment
+is Speaker A. Published figures agree: Whisper large-v3 FLEURS bn WER 89.4% (vendor table), ~71–77%
+on other Bengali sets (Dolphin, arXiv 2503.20212).
+
+**The quality option is ElevenLabs Scribe v3** (`TRANSCRIPTION_MODE=elevenlabs`, the owner's
+`ELEVENLABS_API_KEY`). Of the vendors checked it has the best published Bengali evidence (Scribe v1
+FLEURS bn 8.1% WER; v2 rates Bengali in its ">5–10% WER" tier; v3 improves on every language
+tested), it transcribes code-switched speech as spoken when given `secondary_language_codes=en`
+(Bengali with English terms stays Bengali with English terms instead of being translated or
+transliterated), it diarises up to 32 speakers, accepts m4a, and accepts files far beyond this
+app's 100 MB cap. $0.20 per audio hour. The client streams the R2 object into a hand-built
+multipart body so the 128 MB isolate never holds a recording.
+
+Rejected, with reasons:
+- **Deepgram Nova-3** — on Workers AI it diarises and takes a stream, but `language: "bn"` is
+  refused (`AiError 8007`, tested); Deepgram's own API lists bn without published accuracy, and
+  its `multi` code-switching mode excludes Bengali.
+- **Google Chirp 3** — bn-BD is preview, no diarisation for Bengali, and the setup (GCP project,
+  service account, JWT signing from a Worker, a GCS bucket) is the opposite of "paste a key".
+- **Gemini audio** — strong on code-switching and cheap, but diarisation and timestamps are prompt
+  conventions, not model output; a good second vendor later.
+- **OpenAI** (`gpt-transcribe`, the 4o family, whisper-1) — 25 MB per file means chunking, Bengali
+  is not called out, and the diarising model is deprecated.
+
+**Shape.** Both engines are synchronous HTTP calls that take minutes for an hour of audio, and the
+port's first caller is the upload request. So a live transcriber is the `QueuedTranscription` port:
+`submit` writes a ticket beside the audio and enqueues a job (`<slug>-transcription-*` queue);
+the queue consumer (15-minute wall clock) runs the engine and writes the answer to
+`transcripts/<jobId>.json` in the owner's bucket; the existing cron sweep's `poll` reads it back and
+settles the row. The job id derives from the idempotency key, so a replayed upload buys no second
+vendor call; a job silent past 20 minutes is re-sent, and after three sends the recording fails as
+`transcription_timeout`. No webhook route exists, so the owner configures nothing at the vendor.
+
+Verified end to end on the deployed reference server (2026-11-11): pair → record → upload → queue
+→ Whisper → sweep → notes, 42 s of English in ~3.5 minutes (two of them the cron interval).
+Not verified: ElevenLabs against the real API (no key); recordings over ~60 MB on Workers AI (the
+audio is base64-encoded in memory, so a 100 MB file may exceed the isolate — BLOCKERS.md).
+
+---
+
+## D022 · Notes and Ask: one LLM client over three transports, keys the owner's — **STANDING**
+
+Replaces the blocker "No live LLM client" (notes and chat). `LLM_MODE`:
+
+- `workers-ai` — in the owner's account, no key (the default; model in D025);
+- `anthropic` — Claude with the owner's key (D024);
+- `openai` — any OpenAI-compatible `/chat/completions` endpoint with the owner's key: OpenAI,
+  Gemini's compatibility endpoint, OpenRouter, Groq, a local server (`LLM_BASE_URL`, `LLM_MODEL`).
+
+One `makeLlmClient(transport)` builds the prompts (`Integrations/Llm/Prompts.ts`) and owns the
+contract, so every transport answers the same question: the note prompt asks for the phase-6 JSON
+(`{"title", "notes_markdown"}`) in the phase-4 markdown subset and states the language rule
+(write in the meeting's language; for mixed Bengali/English, Bengali script with English terms as
+spoken); the chat prompt hands over the numbered notes and requires `[k]` citations. Transcripts
+over 120k characters are cut in the middle with a marker, never silently. The phase-6 parser runs
+unchanged on every answer; each transport maps its finish reason onto `truncated` and its errors
+onto the `Llm*` classes, so the generation queue's retry rules apply as written.
+
+Verified: the parser accepts every transport's recorded answer (tests); Workers AI live on the
+reference server; Claude and OpenAI through recorded HTTP only (no keys were available).
+
+---
+
+## D023 · The product's name, slug, scheme and bundle id are one object — **STANDING**
+
+The app cannot ship as "granola-clone" or as "Notes" (the system app's name), and the final name is
+the owner's choice. `packages/domain/src/Brand.ts` is the only place it is written: `app.config.ts`
+(display name, slug, scheme, bundle id, the microphone prompt), the native auth scheme and storage
+prefix, the server's `NATIVE_SCHEME` default (the wrangler vars no longer set it), `GET /`'s
+service name and `GET /server`'s `service`. Renaming is editing that object, then
+`scripts/rename-brand.sh <old-slug> <new-slug> <old-bundle-id> <new-bundle-id>` for the places that
+cannot import TypeScript (Maestro `appId`s, wrangler resource names, the selfhost script).
+**It must happen before the first App Store upload:** a new bundle id is a new app, and an
+installed app keeps its old scheme. Candidate names, with conflict checks, are in
+`docs/plan/RELEASE.md`.
+
+---
+
+## D024 · Every AI call goes through AI Gateway in the owner's account, logs off; Claude is the paid default — **STANDING**
+
+- **Gateway.** Workers AI calls pass `{ gateway: { id, collectLog, skipCache | cacheTtl } }` to
+  the binding; outside vendors (Anthropic, OpenAI, ElevenLabs) are called at
+  `https://gateway.ai.cloudflare.com/v1/<account>/<gateway>/<provider>` with `cf-aig-collect-log`
+  and `cf-aig-skip-cache`/`cf-aig-cache-ttl` headers (`Runtime/AiGateway.ts`). The owner gets one
+  place to see usage, set rate limits, add caching or fallbacks, and cap spend, in their own
+  account.
+- **Logs off by default, per request.** The gateway's log store would otherwise keep every prompt
+  (a transcript) and answer (a note). `collectLog: false` / `cf-aig-collect-log: false` is sent on
+  every call, so it holds whatever the gateway's own default is. `AI_GATEWAY_LOGS=on`
+  (`bun run selfhost -- --gateway-logs on`) keeps them, for debugging.
+- **Caching off by default** (`AI_GATEWAY_CACHE_TTL=0` → skip-cache): every note is a unique
+  request, and a cached answer is one more copy of a transcript. Rate limiting is a gateway
+  setting in the dashboard and needs no code.
+- **The gateway is `default`**, which Cloudflare creates on first use (tested: a named gateway that
+  does not exist answers `2001: Please configure AI Gateway`; `default` works on a fresh account).
+  The setup script cannot create a named one: wrangler's OAuth token has no AI Gateway scope
+  (tested, `10000 Authentication error`). An owner who wants a named gateway creates it in the
+  dashboard and sets `--gateway <id>`. `AI_GATEWAY_ID=off` calls providers directly. An outside
+  vendor needs `CF_ACCOUNT_ID` to build the URL (the script sets it); without it that vendor is
+  called directly rather than failing.
+- **Claude.** `LLM_MODE=anthropic` uses the official `@anthropic-ai/sdk` (1.3.0, exact), built in
+  `container.ts` with the gateway's `anthropic` route as `baseURL` and the policy headers as
+  `defaultHeaders`. Default model **`claude-haiku-5-5`** ($0.10/$0.50 per MTok: a one-hour meeting's
+  note costs well under a cent); **`claude-sonnet-5-5`** is the quality option (`--llm-model`).
+  Notes use a JSON-schema structured output (`output_config.format`), so the answer is exactly the
+  phase-6 object; chat streams at `effort: low` (latency-sensitive, grounded in the given notes).
+  `max_tokens` budgets were raised (notes 16k, chat 4k) because adaptive thinking spends from them.
+  A refusal is `LlmRejected`. The SDK brings `@opentelemetry/api` in transitively; nothing in this
+  repo imports it, so the "no `@opentelemetry/*`" rule below is about our code, not the bundle.
+
+Unverified: ElevenLabs' 100 MB uploads through the gateway (its request-size limit for that
+provider is not documented where checked); Claude against the real API (no key).
+
+---
+
+## D025 · The zero-key LLM is `@cf/google/gemma-4-26b-a4b-it` — **STANDING**
+
+The first choice, `@cf/google/gemma-3-12b-it`, had been removed from the Workers AI catalogue by
+2026-11-11, which is why the first live note on the reference server failed `llm_unavailable`.
+Many other entries carry a deprecation date of 2026-11-20 and were excluded. Six current models were
+run side by side through the real prompt and the real parser on a mixed Bengali/English meeting and
+an English one:
+
+| Model | Mixed bn/en notes | English | JSON parsed | Time |
+| --- | --- | --- | --- | --- |
+| `@cf/google/gemma-4-26b-a4b-it` | natural code-switched Bengali, every action on the right person, all four topics | complete | both | ~45 s |
+| `@cf/openai/gpt-oss-120b` | English, and put Karim's task on Rita | complete | both | 6–10 s |
+| `@cf/meta/llama-4-scout-17b-16e-instruct` | good Bengali, topics merged | — | bn only | 2–5 s |
+| `@cf/aisingapore/gemma-sea-lion-v4-27b-it` | mixed, one decision mislabelled | complete | both | 3–4 s |
+| `@cf/mistralai/mistral-small-3.1-24b-instruct` | English | — | bn only | 3 s |
+| `@cf/qwen/qwen3.8-27b` | answered reasoning, no content | complete | en only | 17–76 s |
+
+Gemma 4 26B (MoE, 4B active, 256k context) is the only one that was right on both counts that
+matter, faithfulness and language, so it is the default; its latency sits inside a queued job and
+`LLM_TIMEOUT_MS` (120 s). Chat inherits it and is slow to first token; an owner who minds sets
+`LLM_MODEL=@cf/aisingapore/gemma-sea-lion-v4-27b-it` or brings a Claude key. The catalogue moves
+monthly: re-run the trial (the script is described in phase-13.md §7.3) when the default is
+deprecated.
+
+---
+
+## D026 · Calendar is `off` on a self-hosted server — **STANDING**
+
+`CALENDAR_MODE=off` returns no meetings and finds no event, so the home card shows its empty state
+and notes start by hand. It is the only production calendar mode until the OAuth phase; the blocker
+"No live calendar client" stays open, but production no longer fails to start for it.
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.
 
-### C1 · Whether `apps/native` ships Apple Sign-In — **OPEN — CHOOSE**
+### C1 · Whether `apps/native` ships Apple Sign-In — **OPEN — CHOOSE** (moot for owner servers, D020)
 
 It is an iPhone app that offers Google sign-in, so App Store review will likely require it. If it
 ships, the `verifyIdToken` + `appBundleIdentifier` handling must be written with **the rule that
@@ -258,7 +500,7 @@ authentication bypass.
 If it does not, `welcome.tsx` ships email OTP (and Google where configured), and Apple is a
 documented gap.
 
-### C2 · The email provider for sign-in OTPs — **OPEN — CHOOSE**
+### C2 · The email provider for sign-in OTPs — **SUPERSEDED by D020** (owner pairing; `resend` for multi-person servers)
 
 The OTP is logged in development only (`apps/api/src/middleware.ts`), so email sign-in does not work
 in production until a provider is wired in. It goes behind a port with a fake, per
@@ -274,8 +516,8 @@ So that "it's missing" and "it was cut" are distinguishable.
 calendar) are specified separately and not built yet; the only endpoint is `GET /me`, kept so the
 module pattern stays demonstrated and tested.
 
-**Infrastructure:** no KV, Durable Objects, Queues, R2 or Workers AI bindings yet — each arrives
-with the feature that needs it, in every `env` block. No cron (a `scheduled` handler arrives with
+**Infrastructure:** no KV or Durable Objects. Queues, R2, Workers AI and AI Gateway arrived with
+recording, notes and self-hosting (phases 5, 6, 13), and are in every `env` block that needs them. No cron (a `scheduled` handler arrives with
 the first recurring job, R8). No web app (the product is iPhone only). No Effect, `@effect/*` or
 `@opentelemetry/*` (tracing is `traced()` over `cloudflare:workers`; a real OTel backend is
 `architecture/README.md` §8.7). No analytics or error reporting. No design system.
