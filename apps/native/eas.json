@@ -91,7 +91,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "BXW3A78H2C"
+        "appleTeamId": "BXW3A78H2C",
+        "ascAppId": "6833328794"
       }
     },
     "production": {
@@ -100,7 +101,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "BXW3A78H2C"
+        "appleTeamId": "BXW3A78H2C",
+        "ascAppId": "6833328794"
       }
     }
   }
