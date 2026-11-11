@@ -7,7 +7,7 @@
 #         NOTE_ID: not_e2e_launch
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: open-note.yaml

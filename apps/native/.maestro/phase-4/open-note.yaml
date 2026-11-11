@@ -9,7 +9,7 @@ tags:
   - phase-5
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -132,4 +132,4 @@ env:
     text: "Not much to transcribe here\\..*"
 - assertVisible:
     id: note-block-1
-    text: "Notes works best.*"
+    text: "Kothanote works best.*"

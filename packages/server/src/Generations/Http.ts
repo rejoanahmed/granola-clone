@@ -1,5 +1,5 @@
-import { retryNoteGenerationRoute } from "@gc/domain/Notes/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { retryNoteGenerationRoute } from "@kn/domain/Notes/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

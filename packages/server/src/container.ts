@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { OTP_EXPIRES_IN_SECONDS } from "@gc/auth/otp";
-import { BRAND } from "@gc/domain/Brand";
-import { SERVER_API_VERSION, type ServerInfo } from "@gc/domain/Domain/Server";
+import { OTP_EXPIRES_IN_SECONDS } from "@kn/auth/otp";
+import { BRAND } from "@kn/domain/Brand";
+import { SERVER_API_VERSION, type ServerInfo } from "@kn/domain/Domain/Server";
 import {
   type AuthEmailsService,
   makeAuthEmailsService,

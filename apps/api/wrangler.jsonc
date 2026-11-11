@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "gcnotes-api",
+  "name": "kothanote-api",
   "main": "src/worker.ts",
   "compatibility_date": "2025-04-24",
   // better-auth and its drizzle adapter reach for `node:crypto` and `node:buffer`. Without this
@@ -55,7 +55,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "gcnotes-db-dev",
+      "database_name": "kothanote-db-dev",
       // Zeroes on purpose and permanently: `wrangler dev --local` never reads this id, and no
       // deploy ever uses this block. The deployed environments carry named placeholders instead.
       "database_id": "00000000-0000-0000-0000-000000000000",
@@ -81,7 +81,7 @@
   "r2_buckets": [
     {
       "binding": "AUDIO",
-      "bucket_name": "gcnotes-audio-dev"
+      "bucket_name": "kothanote-audio-dev"
     }
   ],
 
@@ -91,10 +91,10 @@
   // not inherited, so each `env` block repeats this, and its queue is created by the user first
   // (docs/plan/BLOCKERS.md).
   "queues": {
-    "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-local" }],
+    "producers": [{ "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-local" }],
     "consumers": [
       {
-        "queue": "gcnotes-generation-local",
+        "queue": "kothanote-generation-local",
         "max_batch_size": 1,
         "max_batch_timeout": 1,
         "max_retries": 5
@@ -150,14 +150,14 @@
     "dev": {
       // The promotion gate: merge to main deploys here, the E2E suite runs against this Worker,
       // and only a green run deploys production. Its data is disposable by design.
-      "name": "gcnotes-api-dev",
+      "name": "kothanote-api-dev",
       // No workers.dev: a second public hostname for the same Worker is a second surface to
       // secure, and it bypasses anything bound to the custom domain.
       "workers_dev": false,
-      "routes": [{ "pattern": "api-dev.gcnotes.example.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api-dev.kothanote.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api-dev.gcnotes.example.com",
-        "BETTER_AUTH_URL": "https://api-dev.gcnotes.example.com",
+        "API_URL": "https://api-dev.kothanote.example.com",
+        "BETTER_AUTH_URL": "https://api-dev.kothanote.example.com",
         // The fake, so the E2E gate stages meetings rather than depending on a real calendar.
         "CALENDAR_MODE": "fake",
         // The reason this environment exists: reset, seed and sign-in for the suite that gates
@@ -183,7 +183,7 @@
           "binding": "DB",
           // Same name as the local database, different place: local is a miniflare file, this is
           // remote D1. `bun run migrate:dev` is the only thing that writes to the remote one.
-          "database_name": "gcnotes-db-dev",
+          "database_name": "kothanote-db-dev",
           "database_id": "DEV_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
@@ -201,14 +201,14 @@
       "r2_buckets": [
         {
           "binding": "AUDIO",
-          "bucket_name": "gcnotes-audio-dev"
+          "bucket_name": "kothanote-audio-dev"
         }
       ],
       "queues": {
-        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-dev" }],
+        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-dev" }],
         "consumers": [
           {
-            "queue": "gcnotes-generation-dev",
+            "queue": "kothanote-generation-dev",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 5
@@ -235,12 +235,12 @@
       }
     },
     "production": {
-      "name": "gcnotes-api-prod",
+      "name": "kothanote-api-prod",
       "workers_dev": false,
-      "routes": [{ "pattern": "api.gcnotes.example.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api.kothanote.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api.gcnotes.example.com",
-        "BETTER_AUTH_URL": "https://api.gcnotes.example.com",
+        "API_URL": "https://api.kothanote.example.com",
+        "BETTER_AUTH_URL": "https://api.kothanote.example.com",
         // Production is an owner server (D019, D020): the same configuration scripts/selfhost.sh
         // deploys to a user's own account, kept here so `deploy:check` keeps proving it bundles.
         // OWNER_TOKEN is a dashboard secret on this Worker. No calendar client exists yet.
@@ -264,7 +264,7 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "gcnotes-db-prod",
+          "database_name": "kothanote-db-prod",
           "database_id": "PROD_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
@@ -280,23 +280,23 @@
       "r2_buckets": [
         {
           "binding": "AUDIO",
-          "bucket_name": "gcnotes-audio-prod"
+          "bucket_name": "kothanote-audio-prod"
         }
       ],
       "queues": {
         "producers": [
-          { "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-prod" },
-          { "binding": "TRANSCRIPTION_QUEUE", "queue": "gcnotes-transcription-prod" }
+          { "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-prod" },
+          { "binding": "TRANSCRIPTION_QUEUE", "queue": "kothanote-transcription-prod" }
         ],
         "consumers": [
           {
-            "queue": "gcnotes-generation-prod",
+            "queue": "kothanote-generation-prod",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 5
           },
           {
-            "queue": "gcnotes-transcription-prod",
+            "queue": "kothanote-transcription-prod",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 3
@@ -329,7 +329,7 @@
     // domain is needed. The script creates every resource named here, substitutes the D1 id, and
     // rewrites the provider vars from its flags; nothing in this block points at anyone's data.
     "selfhost": {
-      "name": "gcnotes-server",
+      "name": "kothanote-server",
       "workers_dev": true,
       "preview_urls": false,
       "vars": {
@@ -352,26 +352,26 @@
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "gcnotes-db",
+          "database_name": "kothanote-db",
           "database_id": "SELFHOST_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
       ],
-      "r2_buckets": [{ "binding": "AUDIO", "bucket_name": "gcnotes-audio" }],
+      "r2_buckets": [{ "binding": "AUDIO", "bucket_name": "kothanote-audio" }],
       "queues": {
         "producers": [
-          { "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-selfhost" },
-          { "binding": "TRANSCRIPTION_QUEUE", "queue": "gcnotes-transcription-selfhost" }
+          { "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-selfhost" },
+          { "binding": "TRANSCRIPTION_QUEUE", "queue": "kothanote-transcription-selfhost" }
         ],
         "consumers": [
           {
-            "queue": "gcnotes-generation-selfhost",
+            "queue": "kothanote-generation-selfhost",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 5
           },
           {
-            "queue": "gcnotes-transcription-selfhost",
+            "queue": "kothanote-transcription-selfhost",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 3

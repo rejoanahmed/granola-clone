@@ -39,7 +39,7 @@ export type NoteGeneration = z.infer<typeof NoteGeneration>;
 // Product copy, appended by the server and never written by the LLM, so an over-eager model cannot
 // reword it and a test can compare it exactly.
 export const LOW_CONTENT_TIP =
-  "_Notes works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._";
+  "_Kothanote works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._";
 
 export const LOW_CONTENT_MAX_WORDS = 12;
 

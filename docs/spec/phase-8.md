@@ -10,7 +10,7 @@ grouped by day like home, and an **Ask anything** pill. The pill opens the perso
 phase 7 built (#66).
 
 **A person is not a row.** People are derived from `note_attendees` over the caller's own live
-notes. `personKeyOf` (phase 7, `@gc/domain/Domain/Person`) is the only identity, so search, the
+notes. `personKeyOf` (phase 7, `@kn/domain/Domain/Person`) is the only identity, so search, the
 person page and person-scoped Ask always agree on who is the same person. Every query filters on
 `notes.owner_id = caller and notes.trashed_at is null` in SQL. So another user's notes and
 attendees, and trashed notes, can never reach a result, and neither can someone who attended only
@@ -331,7 +331,7 @@ export const NoteListQuery = PageQuery.extend({ person: PersonKey.optional() });
   most recent meeting desc, then name ascending (case-insensitive), then key, with
   `limit SEARCH_PEOPLE_LIMIT`. The grouping may be done in SQL or over the matched rows in the
   repository. Either way the repository returns domain `PersonSummary`s (R2).
-- **The person match** (`attendeeMatches`, today private to `ChatsRepo`) moves to `@gc/db` as
+- **The person match** (`attendeeMatches`, today private to `ChatsRepo`) moves to `@kn/db` as
   `personMatches(key, { email, name })`. `ChatsRepo`, `NotesRepo` (the `person` filter) and
   `PeopleRepo` all import that one fragment, because repositories may not import each other and
   three copies would drift. An `email:` key matches the effective email, lower-cased and trimmed.
@@ -382,7 +382,7 @@ through the fixtures:
    `started_at desc` order. `an` → `[launch, standup, solo]`.
 4. **People by email.** `example.com` → `[Priya Raman, Sam Okafor]`. Both last met at launch, so the
    order falls to name.
-5. **Self.** `e2e` → one person, with key `email:e2e-person@gcnotes.test`, name "E2E Person" (read
+5. **Self.** `e2e` → one person, with key `email:e2e-person@kothanote.test`, name "E2E Person" (read
    from `user`) and `isMe: true`. After renaming the user through `ProfilesService.update`, the same
    search returns the new name.
 6. **Trash.** `archived` → nothing. A guest who attended only a trashed note is not returned as a
@@ -405,7 +405,7 @@ through the fixtures:
 
 13. `email:priya@example.com` → `{ name: "Priya Raman", email: "priya@example.com", domain:
     "example.com", isMe: false }`.
-14. The self key → `isMe: true`, with the domain `gcnotes.test`.
+14. The self key → `isMe: true`, with the domain `kothanote.test`.
 15. A `name:` key → `email: null`, `domain: null`.
 16. Each of these raises `PersonNotFound`: an unknown key, a key found only among `other`'s
     attendees, and a key whose only note is trashed.
@@ -421,7 +421,7 @@ through the fixtures:
     page.
 
 `Chats/Chats.test.ts`: the existing person-scope cases still pass after `attendeeMatches` moves to
-`@gc/db` (a regression, with no new case).
+`@kn/db` (a regression, with no new case).
 
 The HTTP suites cover wire shape, not rules:
 
@@ -457,7 +457,7 @@ New Maestro pieces:
 | AC4 | **Given** search is open, **when** they type "ra", **then** `search-section-people` shows `search-person-0-name` "Priya Raman" and `search-person-0-email` "priya@example.com", with no `search-person-1`; and `search-section-meetings` shows `search-note-not_e2e_launch` above `search-note-not_e2e_solo` (asserted with `below`/`above` relations). **When** they tap `search-clear`, **then** `search-empty` is visible, `search-clear` is gone, and `search-keyboard-toggle` reads "Show keyboard". | `apps/native/.maestro/phase-8/search-sections.yaml` |
 | AC5 | **Given** search is open, **when** they type "zzqx", **then** `search-no-results-title` reads "No results" and `search-no-results-query` reads "for “zzqx”", with no `search-results`. **When** they replace the query with "archived" (a trashed note's title), **then** `search-no-results-query` reads "for “archived”". **When** they replace it with "other" (another user's note title), **then** it reads "for “other”". | `apps/native/.maestro/phase-8/search-no-results.yaml` |
 | AC6 | **Given** search is open, **when** they type "priya" and tap `search-person-0`, **then** `person-screen` shows `person-name` "Priya Raman", `person-email` containing "priya@example.com", `person-domain` containing "example.com", `person-day-2026-09-12` reading "Sat 12 Sep", and `person-note-not_e2e_launch-title` "Launch planning review", with no `person-note-not_e2e_standup`. **When** they tap `person-note-not_e2e_launch`, **then** `note-title` reads "Launch planning review". **When** they go back, **then** `person-screen` is visible. **When** they tap `person-back`, **then** `search-screen` is visible with "priya" still in `search-input`. | `apps/native/.maestro/phase-8/search-person.yaml` |
-| AC7 | **Given** search is open, **when** they type "e2e", **then** `search-person-0-name` reads "E2E Person" and there is no `search-section-meetings`. **When** they tap it, **then** `person-day-2026-09-12` holds `person-note-not_e2e_launch` above `person-note-not_e2e_standup`, and `person-day-2026-08-05` ("Wed 5 Aug") holds `person-note-not_e2e_solo`. There is no `person-note-not_e2e_archived` and no `person-note-not_e2e_other`. `person-domain` contains "gcnotes.test". | `apps/native/.maestro/phase-8/person-self.yaml` |
+| AC7 | **Given** search is open, **when** they type "e2e", **then** `search-person-0-name` reads "E2E Person" and there is no `search-section-meetings`. **When** they tap it, **then** `person-day-2026-09-12` holds `person-note-not_e2e_launch` above `person-note-not_e2e_standup`, and `person-day-2026-08-05` ("Wed 5 Aug") holds `person-note-not_e2e_solo`. There is no `person-note-not_e2e_archived` and no `person-note-not_e2e_other`. `person-domain` contains "kothanote.test". | `apps/native/.maestro/phase-8/person-self.yaml` |
 | AC8 | **Given** Priya's person page (as in AC6), **when** they tap `person-ask-button`, **then** `chat-screen` shows `chat-back`; `chat-title` reads "Priya Raman"; and `chat-chip-0`..`2` read "List action items", "Write follow-up email", "List Q&A". **When** they tap `chat-back`, **then** `person-screen` is visible. | `apps/native/.maestro/phase-8/person-ask.yaml` |
 | AC9 | **Given** `not_e2e_launch` is open, **when** they tap `note-meta-pill` and then `attendees-row-att_e2e_launch_2` (Sam Okafor), **then** the sheet closes and `person-screen` shows `person-name` "Sam Okafor" and `person-note-not_e2e_launch`. **When** they tap `person-back`, **then** `note-screen` is visible. | `apps/native/.maestro/phase-8/attendee-person.yaml` |
 
@@ -535,7 +535,7 @@ These belong to the same scripted-response harness seam that `BLOCKERS.md` defer
 2. `packages/db`: export `personMatches(key, { email, name })` (moved from `ChatsRepo`'s
    `attendeeMatches`) from a small module such as `src/person-match.ts`. No schema change, no
    migration, no `RESET_ORDER` change.
-3. `packages/server/src/Chats/ChatsRepo.ts`: import `personMatches` from `@gc/db` and delete the
+3. `packages/server/src/Chats/ChatsRepo.ts`: import `personMatches` from `@kn/db` and delete the
    private copy. The existing chat tests must stay green.
 4. `packages/server/src/Notes/`:
    - `NotesRepo.listLive` takes an optional `person` and adds the `exists` predicate;

@@ -4,11 +4,11 @@ import type { ConfigContext, ExpoConfig } from "expo/config";
 // step — the line people forget when they add their first one.
 // https://docs.expo.dev/config-plugins/plugins/#add-typescript-support-and-convert-to-dynamic-app-config
 import "tsx/cjs";
-// Relative, not `@gc/domain/Brand`: this file runs under node at build time, where the workspace's
+// Relative, not `@kn/domain/Brand`: this file runs under node at build time, where the workspace's
 // TypeScript path aliases do not resolve. The one rename point (D023).
 import { BRAND } from "../../packages/domain/src/Brand";
 
-// The dynamic half; `app.json` holds the static config, most importantly the `gcnotes` URL
+// The dynamic half; `app.json` holds the static config, most importantly the `kothanote` URL
 // scheme. That scheme is load-bearing twice: better-auth's expo plugin signs the session cookie to
 // an origin derived from it (sent as `expo-origin` by `src/lib/api.ts`), and it is the OAuth return
 // trip back into the app. Change it in one place only and every authenticated request

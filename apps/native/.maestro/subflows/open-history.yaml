@@ -2,7 +2,7 @@
 # first page to answer: the rows are what every caller asserts on.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - tapOn:
     id: chat-history-button

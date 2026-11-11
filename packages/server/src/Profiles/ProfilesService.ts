@@ -1,10 +1,10 @@
-import { hasChanges } from "@gc/domain/Domain/Patch";
+import { hasChanges } from "@kn/domain/Domain/Patch";
 import type {
   DeletionPreview,
   Profile,
   ProfilePatch,
-} from "@gc/domain/Domain/Profile";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+} from "@kn/domain/Domain/Profile";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { Authorized } from "../Auth/Policy";
 import type { NotesRepo } from "../Notes/NotesRepo";

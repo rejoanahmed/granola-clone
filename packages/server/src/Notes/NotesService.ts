@@ -1,4 +1,4 @@
-import { FolderId } from "@gc/domain/Domain/Folder";
+import { FolderId } from "@kn/domain/Domain/Folder";
 import {
   AttendeeId,
   type AttendeeInput,
@@ -8,12 +8,12 @@ import {
   NoteId,
   type NotePatch,
   type NoteSummary,
-} from "@gc/domain/Domain/Note";
-import type { Page, PageQuery } from "@gc/domain/Domain/Page";
-import type { PersonKey } from "@gc/domain/Domain/Person";
-import { ValidationFailed } from "@gc/domain/Errors";
-import { FolderNotFound } from "@gc/domain/Folders/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
+} from "@kn/domain/Domain/Note";
+import type { Page, PageQuery } from "@kn/domain/Domain/Page";
+import type { PersonKey } from "@kn/domain/Domain/Person";
+import { ValidationFailed } from "@kn/domain/Errors";
+import { FolderNotFound } from "@kn/domain/Folders/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import type { FoldersRepo } from "../Folders/FoldersRepo";

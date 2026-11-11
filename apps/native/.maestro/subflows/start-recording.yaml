@@ -2,7 +2,7 @@
 # §3.4, §3.11). The caller asserts what the card shows.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

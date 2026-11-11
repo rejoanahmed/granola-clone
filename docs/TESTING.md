@@ -95,7 +95,7 @@ once per rule. A rule tested through the router is a rule whose failure message 
 code instead of a domain error.
 
 **2 · The seam is still `deps`, and the service still knows nothing about a database.**
-`makeProfilesService` takes a repo; `ProfilesService.ts` imports no `@gc/db`; nothing in the service
+`makeProfilesService` takes a repo; `ProfilesService.ts` imports no `@kn/db`; nothing in the service
 can tell whether the repo it was handed reads SQLite or a `Map`. What D016 changed is what sits
 *behind* the repo, not whether the seam exists — and `scripts/check-architecture.mjs` still fails
 the build if a query moves up into a service.
@@ -380,7 +380,7 @@ These must exist. The names are the specification; the phrasing in the test file
 
 - `GET /search` parses as `SearchResults`, is 401 without a session, and 422 on a missing, blank
   or 101-character `q`
-- a person reads their name, email, domain and `isMe`; the self key has `isMe` and `gcnotes.test`; a
+- a person reads their name, email, domain and `isMe`; the self key has `isMe` and `kothanote.test`; a
   `name:` key has a null email and domain; an unknown key, a key only `other`'s notes hold and a key
   only on a trashed note are each `PersonNotFound`
 - `GET /people/{personKey}` through a URL-encoded key parses as `Person`, is 401, 404 with the
@@ -393,7 +393,7 @@ These must exist. The names are the specification; the phrasing in the test file
 - `list` with Priya's key is launch alone, with the self key launch, standup, solo and never
   archived; `limit 1` walks the filtered list with a null cursor on the last page
 - an unknown person and another user's guest are empty pages; `?person=` with a malformed key is 422
-- the chat person-scope cases stay green after the match moves to `personMatches` in `@gc/db`
+- the chat person-scope cases stay green after the match moves to `personMatches` in `@kn/db`
 
 ### `Folders/Folders.test.ts` (phase 9)
 
@@ -450,8 +450,8 @@ These must exist. The names are the specification; the phrasing in the test file
 ### `Support/Support.test.ts`, `Support/Support.http.test.ts`, `Domain/Support.test.ts` (phase 10)
 
 - a bug report is one `bug-report` message to `support@notes.example`, subject
-  `Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test`, the trimmed message, the
-  diagnostics line (`included` / `not included`) and `From: E2E Person e2e-person@gcnotes.test`,
+  `Bug report from Notes 1.0.0 (1) | e2e-person@kothanote.test`, the trimmed message, the
+  diagnostics line (`included` / `not included`) and `From: E2E Person e2e-person@kothanote.test`,
   with a `sup_` receipt id equal to `payload.receiptId`
 - feedback's subject is `Feedback on Notes 1.0.0 (1) | …` and its body ends `Sincerely,\nE2E Person`;
   the desktop reminder goes to the caller with `payload.link` the desktop URL
@@ -470,7 +470,7 @@ These must exist. The names are the specification; the phrasing in the test file
   in-progress, later-today and tomorrow, and drops ended-at-T, starts-at-until and `endAt ≤ startAt`
 - 25 events come back as the first 20 by `(startAt, endAt, id)`
 - a blank title is `null`, 600 characters are cut to 500, `#db35f2` is `#DB35F2` and `magenta` the
-  default, a nameless and addressless attendee is dropped, `E2E-Person@GCNotes.test` is `isMe`
+  default, a nameless and addressless attendee is dropped, `E2E-Person@Kothanote.test` is `isMe`
 - attendees are read as the create reads them: a whitespace email or name is null, two name-only
   "Dana" entries and two spellings of one address are one guest, at most 50 guests are kept, and
   the owner's entry is kept (as `isMe`) even when it comes after the fiftieth guest
@@ -657,7 +657,7 @@ just deployed, and production is deployed only if it exits 0
 (`architecture/DEPLOYMENT.md` §2, `DECISIONS.md` D017).
 
 ```bash
-API_URL=https://api-dev.gcnotes.example.com E2E_SECRET=… bun run e2e     # from the repo root
+API_URL=https://api-dev.kothanote.example.com E2E_SECRET=… bun run e2e     # from the repo root
 ```
 
 `E2E_DEADLINE_MS` (default 9 minutes, under the release model's 10) and `E2E_REQUEST_TIMEOUT_MS`
@@ -764,7 +764,7 @@ exactly:
 
 ```bash
 maestro --device 351547D8-BD3B-4418-AB30-8568D8FFB8F3 test \
-  -e APP_ID=com.rejoan.gcnotes --include-tags smoke apps/native/.maestro
+  -e APP_ID=com.rovierr.kothanote --include-tags smoke apps/native/.maestro
 ```
 
 Never run a flow against a physical device by accident: every flow starts with `clearState`, so
@@ -883,7 +883,7 @@ reaches home through `open-home.yaml` / `open-home-as.yaml`, which use `subflows
 
 The app (`apps/native/src/lib/auth-client.ts`, development builds only — the branch sits under
 `__DEV__`) reads the argument through React Native's `Settings`, which on iOS is the
-NSUserDefaults argument domain, and stores it with `storeSessionCookie` from `@gc/auth/client-native`
+NSUserDefaults argument domain, and stores it with `storeSessionCookie` from `@kn/auth/client-native`
 — better-auth's own `getSetCookie` into the same SecureStore jar under the same key that a typed code
 fills. That happens at module scope, before the first render, so the first `get-session` already
 carries it, the server verifies it against the session row, and the gate sends the account where its
@@ -900,7 +900,7 @@ mint a session for, which is why sign-up stays on the typed path anyway.
 A Debug build is an expo-dev-client: no JavaScript inside, so a clean launch shows the dev launcher
 instead of the app. `launch-app.yaml` passes `--initialUrl http://localhost:8081`, which the
 launcher reads at startup and loads directly. The obvious alternative — `openLink` to
-`gcnotes://expo-development-client/?url=…` — raises iOS's "Open in Notes?" confirmation, and that
+`kothanote://expo-development-client/?url=…` — raises iOS's "Open in Notes?" confirmation, and that
 sheet **survives an app relaunch**, so one failed run leaves it covering the next. It also passes
 three dev-menu user defaults (`-EXDevMenuIsOnboardingFinished YES`, `-EXDevMenuShowsAtLaunch NO`,
 `-EXDevMenuShowFloatingActionButton NO`), without which the menu's first-run sheet and then the menu

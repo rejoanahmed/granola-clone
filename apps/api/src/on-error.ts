@@ -1,6 +1,6 @@
-import { isAppError } from "@gc/domain/Errors";
-import type { AppEnv } from "@gc/server";
-import { logEvent } from "@gc/server/Runtime/Logger";
+import { isAppError } from "@kn/domain/Errors";
+import type { AppEnv } from "@kn/server";
+import { logEvent } from "@kn/server/Runtime/Logger";
 import type { ErrorHandler } from "hono";
 
 // The one and only place a thrown value becomes a status code (R7); the status travels with the

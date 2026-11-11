@@ -1,8 +1,8 @@
 import type {
   GenerationStatus,
   NoteGeneration,
-} from "@gc/domain/Domain/Generation";
-import type { RecordingStatus } from "@gc/domain/Domain/Recording";
+} from "@kn/domain/Domain/Generation";
+import type { RecordingStatus } from "@kn/domain/Domain/Recording";
 import { NOTE_STATUS_COPY } from "./copy";
 
 export type UploadState = "uploading" | "failed";

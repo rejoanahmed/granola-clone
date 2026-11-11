@@ -3,7 +3,7 @@
 # Six skips of 10 s each; the first also passes the 10 s End threshold.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - repeat:
     times: 6

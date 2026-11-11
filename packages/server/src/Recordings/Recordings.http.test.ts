@@ -1,6 +1,6 @@
-import { isAppError } from "@gc/domain/Errors";
-import * as RecErrors from "@gc/domain/Recordings/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { isAppError } from "@kn/domain/Errors";
+import * as RecErrors from "@kn/domain/Recordings/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -396,13 +396,13 @@ describe("POST /recordings with a calendar event, phase 11", () => {
   type ErrorClass = new (details: object) => Error;
 
   const calendarError = async (name: string): Promise<ErrorClass> => {
-    const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
+    const errors = (await import("@kn/domain/Calendar/Errors")) as Record<
       string,
       ErrorClass | undefined
     >;
     const found = errors[name];
     if (found === undefined) {
-      throw new Error(`no ${name} in @gc/domain/Calendar/Errors`);
+      throw new Error(`no ${name} in @kn/domain/Calendar/Errors`);
     }
     return found;
   };

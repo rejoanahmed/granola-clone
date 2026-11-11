@@ -4,7 +4,7 @@ import {
   LlmRejected,
   LlmTimeout,
   LlmUnavailable,
-} from "@gc/domain/Llm/Errors";
+} from "@kn/domain/Llm/Errors";
 import type { LlmTransport } from "./LlmClient";
 import type { ChatMessage } from "./Prompts";
 

@@ -1,8 +1,8 @@
-import { ApiError } from "@gc/apiclient";
+import { ApiError } from "@kn/apiclient";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@native/lib/api", async () => {
-  const real = await import("@gc/apiclient");
+  const real = await import("@kn/apiclient");
   return {
     calendarEventNoteId: real.calendarEventNoteId,
     isCalendarEventNotFound: real.isCalendarEventNotFound,
@@ -58,7 +58,7 @@ describe("meetingAttendeeNames", () => {
           attendees: [
             attendee("Priya Raman", "priya@example.com"),
             attendee("Sam Okafor", "sam@example.com"),
-            attendee("E2E Person", "e2e-person@gcnotes.test", true),
+            attendee("E2E Person", "e2e-person@kothanote.test", true),
           ],
         },
         "E2E Person"

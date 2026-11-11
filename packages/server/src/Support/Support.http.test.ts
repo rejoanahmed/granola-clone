@@ -1,7 +1,7 @@
-import * as Shapes from "@gc/domain/Domain/Support";
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as Shapes from "@kn/domain/Domain/Support";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -70,7 +70,7 @@ const receiptShape = (): Schema => {
   const found = (Shapes as unknown as Record<string, Schema | undefined>)
     .SupportReceipt;
   if (found === undefined) {
-    throw new Error("no SupportReceipt in @gc/domain/Domain/Support");
+    throw new Error("no SupportReceipt in @kn/domain/Domain/Support");
   }
   return found;
 };

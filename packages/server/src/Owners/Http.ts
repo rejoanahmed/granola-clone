@@ -1,5 +1,5 @@
-import { getServerInfoRoute, pairOwnerRoute } from "@gc/domain/Owner/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { getServerInfoRoute, pairOwnerRoute } from "@kn/domain/Owner/Contract";
 import type { AppEnv } from "../AppEnv";
 
 export const ownersRouter = new OpenAPIHono<AppEnv>()

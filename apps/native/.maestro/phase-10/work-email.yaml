@@ -11,7 +11,7 @@ tags:
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 # Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
@@ -32,7 +32,7 @@ env:
     text: Much better with your work email
 - assertVisible:
     id: work-email-body
-    text: Sign up with the email you use for work to see your meetings in Notes\.
+    text: Sign up with the email you use for work to see your meetings in Kothanote\.
 - assertVisible:
     id: work-email-benefits
 - assertVisible:

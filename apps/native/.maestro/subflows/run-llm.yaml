@@ -7,7 +7,7 @@
 #         TIMES: "3"
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-llm-run.js

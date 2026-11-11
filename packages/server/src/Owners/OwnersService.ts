@@ -1,9 +1,9 @@
-import { UserId } from "@gc/domain/Domain/Ids";
-import type { OwnerSession, ServerInfo } from "@gc/domain/Domain/Server";
+import { UserId } from "@kn/domain/Domain/Ids";
+import type { OwnerSession, ServerInfo } from "@kn/domain/Domain/Server";
 import {
   OwnerPairingDisabled,
   OwnerTokenInvalid,
-} from "@gc/domain/Owner/Errors";
+} from "@kn/domain/Owner/Errors";
 import { secretMatches, sessionCookieFor } from "../Auth/SessionCookie";
 import type { Clock } from "../Runtime/Clock";
 import type { Ids } from "../Runtime/Ids";

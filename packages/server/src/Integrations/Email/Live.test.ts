@@ -1,4 +1,4 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
 import { describe, expect, it } from "vitest";
 import { makeEmailOff } from "./EmailOff";
 import { makeResendClient, RESEND_URL } from "./ResendClient";

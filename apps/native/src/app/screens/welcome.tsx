@@ -1,4 +1,4 @@
-import { OTP_LENGTH } from "@gc/auth/otp";
+import { OTP_LENGTH } from "@kn/auth/otp";
 import { colors, PillButton, spacing, Text, TextField } from "@native/design";
 import {
   type WelcomeError,
@@ -174,7 +174,7 @@ function EmailWelcome() {
                 testID="welcome-title"
                 variant="display"
               >
-                Welcome to Notes
+                Welcome to Kothanote
               </Text>
               <Text
                 style={[styles.center, styles.lead]}

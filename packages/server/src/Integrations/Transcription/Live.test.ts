@@ -1,10 +1,10 @@
-import type { Segment } from "@gc/domain/Domain/Recording";
+import type { Segment } from "@kn/domain/Domain/Recording";
 import {
   TranscriptionRateLimited,
   TranscriptionRejected,
   TranscriptionTimeout,
   TranscriptionUnavailable,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import { describe, expect, it } from "vitest";
 import { vendorRoute, workersAiOptions } from "../../Runtime/AiGateway";
 import type { StoredAudio } from "../../Runtime/TranscriptionJobs";

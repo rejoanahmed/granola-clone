@@ -223,11 +223,11 @@ for (const file of serverFiles.filter((f) => f.endsWith("Service.ts"))) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// 4. R2 — @gc/db appears only where SQL does. This is the half of §1's table that makes the
+// 4. R2 — @kn/db appears only where SQL does. This is the half of §1's table that makes the
 //    business logic database-free; Biome enforces it for services, this enforces it everywhere.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 const DB_RULE =
-  "@gc/db is imported by <Plural>Repo.ts and Runtime/Drizzle.ts only (R2).";
+  "@kn/db is imported by <Plural>Repo.ts and Runtime/Drizzle.ts only (R2).";
 const DB_EXEMPT = (path) =>
   path.startsWith("packages/db/") ||
   path === "packages/auth/src/index.ts" ||
@@ -245,8 +245,8 @@ for (const file of dbFiles) {
   const code = blankNonCode(readFileSync(file, "utf8"));
   for (const imported of importsOf(code)) {
     if (
-      imported.specifier === "@gc/db" ||
-      imported.specifier.startsWith("@gc/db/")
+      imported.specifier === "@kn/db" ||
+      imported.specifier.startsWith("@kn/db/")
     ) {
       report(file, imported.line, DB_RULE, `imports "${imported.specifier}"`);
     }
@@ -274,5 +274,5 @@ if (violations.length > 0) {
 
 process.stdout.write(
   `check-architecture: ${serverFiles.length} file(s) in packages/server/src, ${dbFiles.length} in packages+apps. ` +
-    "env scope, repo value imports, readonly Deps, @gc/db scope — all clean.\n"
+    "env scope, repo value imports, readonly Deps, @kn/db scope — all clean.\n"
 );

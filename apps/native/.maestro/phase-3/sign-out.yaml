@@ -7,13 +7,13 @@ tags:
   - phase-3
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/start-clean.yaml
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 - extendedWaitUntil:
     visible:
       id: home-screen

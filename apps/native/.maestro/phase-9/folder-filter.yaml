@@ -8,7 +8,7 @@ tags:
   - phase-9
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 # The events card is hidden in a release build since phase 13 (D027), so the list is the settle.

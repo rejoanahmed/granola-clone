@@ -7,7 +7,7 @@
 # launcher rather than the app. Two launch arguments, both read by expo-dev-client itself, get past
 # it — and past the dev menu — without touching a screen that is not ours:
 #   --initialUrl                   the dev launcher loads this Metro URL straight away. A deep link
-#                                  (`gcnotes://expo-development-client/?url=…`) does the same but
+#                                  (`kothanote://expo-development-client/?url=…`) does the same but
 #                                  raises iOS's "Open in Notes?" sheet, which has no testID.
 #   -EXDevMenu…                    user defaults, set for this launch only: without them the dev
 #                                  menu's first-run sheet, then the menu itself, then its floating
@@ -28,7 +28,7 @@
 # project already holding :8081) was silently ignored and the app loaded the wrong bundle.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - launchApp:
     clearState: true

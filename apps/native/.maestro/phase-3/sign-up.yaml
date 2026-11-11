@@ -7,13 +7,13 @@ tags:
   - phase-3
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/start-clean.yaml
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      EMAIL: e2e-newcomer@gcnotes.test
+      EMAIL: e2e-newcomer@kothanote.test
 
 # Step 1: name. An OTP sign-up has no name, so the field is empty and Continue is off. Emptiness
 # is asserted through Continue rather than the field's text: iOS reports an empty field's

@@ -1,5 +1,5 @@
-import type { Env } from "@gc/server";
-import { makeTestD1 } from "@gc/server/Testing";
+import type { Env } from "@kn/server";
+import { makeTestD1 } from "@kn/server/Testing";
 import { describe, expect, it } from "vitest";
 import { app } from "./app";
 
@@ -44,7 +44,7 @@ describe("a self-hosted owner server", () => {
       auth: "owner",
       email: false,
       llm: "fake",
-      service: "gcnotes",
+      service: "kothanote",
       transcription: "fake",
       transcriptionLanguage: "auto",
       version: 1,

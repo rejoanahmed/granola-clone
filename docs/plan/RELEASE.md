@@ -12,7 +12,7 @@ Connect, Apple's developer program or any vendor account. Those need the owner's
 ```bash
 # 1. edit packages/domain/src/Brand.ts: displayName, slug, scheme, bundleId
 # 2. rewrite the copies that cannot import it (Maestro appIds, wrangler names, selfhost.sh):
-scripts/rename-brand.sh gcnotes <new-slug> com.rejoan.gcnotes com.rejoanahmed.<new-slug> "<Display Name>"
+scripts/rename-brand.sh kothanote <new-slug> com.rovierr.kothanote com.rejoanahmed.<new-slug> "<Display Name>"
 bun run check && bun run test
 ```
 
@@ -92,7 +92,7 @@ exists. A GitHub-rendered `SELF-HOSTING.md` is enough.
 - **Privacy policy URL** (required). The draft is `docs/legal/PRIVACY.md`, and every server serves
   it at `/privacy` (D029). Fill in its `TODO(Rex)` lines, run `bun scripts/render-privacy.ts`, and
   redeploy (`bun run selfhost`). Until a domain exists, the listing's URL is
-  `https://gcnotes-server.bold-breeze-539b.workers.dev/privacy`.
+  `https://kothanote-server.bold-breeze-539b.workers.dev/privacy`.
 - **Support URL** and a real support address: set `LINKS.help` and `LINKS.supportEmail`.
 - Replace every `notes.example` link in `features/settings/links.ts`.
 
@@ -127,7 +127,7 @@ This app stores meetings only on a server the user deploys to their own Cloudfla
 (see the "How do I set up a server?" link on the first screen). For review, please connect to
 our demo server:
 
-  Server URL:     https://gcnotes-server.bold-breeze-539b.workers.dev
+  Server URL:     https://kothanote-server.bold-breeze-539b.workers.dev
   Pairing token:  <from apps/api/.selfhost.env on the owner's machine: bun run selfhost -- --show>
 
 Steps: open the app → enter both → Connect → finish the two onboarding questions → tap the

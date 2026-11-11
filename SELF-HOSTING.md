@@ -44,7 +44,7 @@ At the end it prints something like this:
 
 ```
 Your server is ready.
-  Server URL:     https://gcnotes-server.your-name.workers.dev
+  Server URL:     https://kothanote-server.your-name.workers.dev
   Pairing token:  9s7G…
 ```
 
@@ -104,8 +104,8 @@ bun run selfhost -- --llm openai --llm-base-url https://generativelanguage.googl
 
 ## Privacy settings
 
-- **Where your data is.** Audio and transcripts are in your R2 bucket (`gcnotes-audio`). Notes and
-  your account are in your D1 database (`gcnotes-db`). Both are in your Cloudflare account, and
+- **Where your data is.** Audio and transcripts are in your R2 bucket (`kothanote-audio`). Notes and
+  your account are in your D1 database (`kothanote-db`). Both are in your Cloudflare account, and
   you can see them in the dashboard.
 - **AI Gateway.** Every AI request passes through Cloudflare **AI Gateway** in your own account
   (the gateway named `default`). It shows you usage and cost, and lets you add rate limits.
@@ -149,12 +149,12 @@ your usage. Outside vendors bill you directly.
 - **The app says it can't reach the server**: a new `workers.dev` address can take a minute to
   start answering. Check that `curl <your server URL>/server` prints `"auth":"owner"`.
 - **A recording stays on "Transcribing"**: transcripts are collected every two minutes, and a long
-  meeting takes a few minutes to transcribe. Run `bunx wrangler tail gcnotes-server` in `apps/api`
+  meeting takes a few minutes to transcribe. Run `bunx wrangler tail kothanote-server` in `apps/api`
   to watch the server's log.
 - Running the setup again is always safe. It only creates what is missing.
 
 ## Removing your server
 
-In the Cloudflare dashboard, delete the Worker `gcnotes-server`, the D1 database `gcnotes-db`, the
-R2 bucket `gcnotes-audio` (empty it first), and the two `gcnotes-*-selfhost` queues. That deletes
+In the Cloudflare dashboard, delete the Worker `kothanote-server`, the D1 database `kothanote-db`, the
+R2 bucket `kothanote-audio` (empty it first), and the two `kothanote-*-selfhost` queues. That deletes
 your recordings and notes. There is no other copy.

@@ -16,7 +16,7 @@ import {
   sql,
   transcriptSegments,
   user,
-} from "@gc/db";
+} from "@kn/db";
 import {
   ActivityStep,
   CHAT_PREVIEW_MAX,
@@ -32,10 +32,10 @@ import {
   ChatThreadId,
   type ChatThreadSummary,
   Citation,
-} from "@gc/domain/Domain/Chat";
-import { NoteId, UserId } from "@gc/domain/Domain/Ids";
-import { PersonKey } from "@gc/domain/Domain/Person";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/domain/Domain/Chat";
+import { NoteId, UserId } from "@kn/domain/Domain/Ids";
+import { PersonKey } from "@kn/domain/Domain/Person";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import { z } from "zod";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { ChatsPosition } from "./Cursor";

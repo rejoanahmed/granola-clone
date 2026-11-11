@@ -3,7 +3,7 @@ import {
   type ChatScopeInput,
   GLOBAL_CHIPS,
   SCOPED_CHIPS,
-} from "@gc/domain/Domain/Chat";
+} from "@kn/domain/Domain/Chat";
 import {
   CHAT_COMPOSER_DOCK,
   colors,

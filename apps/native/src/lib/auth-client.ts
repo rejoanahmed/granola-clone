@@ -2,8 +2,8 @@ import {
   createNativeAuthClient,
   nativeCookieHeader,
   storeSessionCookie,
-} from "@gc/auth/client-native";
-import { BRAND } from "@gc/domain/Brand";
+} from "@kn/auth/client-native";
+import { BRAND } from "@kn/domain/Brand";
 import { launchSessionCookie } from "@native/lib/e2e-session";
 import { SERVER_URL } from "@native/lib/server";
 import * as SecureStore from "expo-secure-store";

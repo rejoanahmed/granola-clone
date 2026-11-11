@@ -3,7 +3,7 @@
 # name every earlier flow already calls. MIC passes through (phase 5; see launch-app.yaml).
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: open-home-as.yaml

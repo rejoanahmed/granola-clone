@@ -1,6 +1,6 @@
-import { SearchResults } from "@gc/domain/Domain/Search";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { SearchResults } from "@kn/domain/Domain/Search";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

@@ -1,4 +1,4 @@
-import { CalendarUnavailable } from "@gc/domain/Calendar/Errors";
+import { CalendarUnavailable } from "@kn/domain/Calendar/Errors";
 import type { FakeCalendarRepo } from "./FakeCalendarRepo";
 import type { CalendarMode, CalendarPort } from "./Port";
 

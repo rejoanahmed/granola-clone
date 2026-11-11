@@ -37,7 +37,7 @@ export const SUPPORT_CONFIG: Record<SupportVariant, SupportConfig> = {
 };
 
 export const DIAGNOSTICS_COPY = {
-  hint: "Shares up to 7 days of logs with the Notes team to help us debug faster. This doesn’t include your transcript or notes.",
+  hint: "Shares up to 7 days of logs with the Kothanote team to help us debug faster. This doesn’t include your transcript or notes.",
   label: "Include recent app diagnostics",
   section: "Diagnostics",
 } as const;

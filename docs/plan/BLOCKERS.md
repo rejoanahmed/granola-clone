@@ -35,8 +35,8 @@
   **Closed in phase 13 (D021).** `workers-ai` (Whisper large-v3 turbo, in the owner's account) and
   `elevenlabs` (Scribe v3, the owner's key) run behind a queued port; no webhook was needed.
 - **The R2 buckets must exist before a deploy (phase 5).** `wrangler.jsonc` binds `AUDIO` to
-  `gcnotes-audio-dev` and `gcnotes-audio-prod`. They are created by the user
-  (`bunx wrangler r2 bucket create gcnotes-audio-dev`, and the same for prod), not by an agent or
+  `kothanote-audio-dev` and `kothanote-audio-prod`. They are created by the user
+  (`bunx wrangler r2 bucket create kothanote-audio-dev`, and the same for prod), not by an agent or
   by `deploy.sh`. `bun run deploy:check` resolves the binding but does not prove the bucket exists;
   a missing one fails the real deploy. Stubbed: `wrangler dev --local` simulates the bucket, and the
   audio store fails only the calls that need it when the binding is absent.
@@ -75,7 +75,7 @@
 
 ## Phase 4 native notes
 
-- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@gcnotes.test` under a
+- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@kothanote.test` under a
   better-auth id (phase 4) — fixed in review.** `E2eRepo.stageUsers` now deletes a same-email row
   under any other id before inserting the fixed one, so `onConflictDoNothing()` can no longer
   swallow the email conflict. Pinned by "seeds over an address better-auth already signed up under
@@ -200,10 +200,10 @@
   not note quality, which needs the live client and a hand check.
   **Closed in phase 13 (D022, D024, D025).** Workers AI (Gemma 4 26B), Claude and any
   OpenAI-compatible endpoint, notes and chat. Note quality was hand-checked on Workers AI only.
-- **The generation queues must exist before a deploy.** `gcnotes-generation-dev` and
-  `gcnotes-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
+- **The generation queues must exist before a deploy.** `kothanote-generation-dev` and
+  `kothanote-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
   agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy. The
-  top-level `gcnotes-generation-local` is simulated by `wrangler dev` and never created.
+  top-level `kothanote-generation-local` is simulated by `wrangler dev` and never created.
 
 ## Deferred review items (phase 6)
 
@@ -282,7 +282,7 @@
 ## Deferred review items (phase 7)
 
 - **SQL case folding is ASCII only.** `personKeyOf` lowercases with JavaScript's full Unicode
-  `toLowerCase`, while the attendee match (`personMatches` in `@gc/db` since phase 8) and retrieval's LIKE prefilter
+  `toLowerCase`, while the attendee match (`personMatches` in `@kn/db` since phase 8) and retrieval's LIKE prefilter
   (`mentionsAny`, `containing`) compare against SQLite's `lower()`, which folds only A–Z. A `name:`
   key for an attendee with no address and a non-ASCII capital ("Élodie") is not found, so person
   Ask answers `PersonNotFound`, and a non-ASCII question term misses a note that capitalises it.
@@ -344,14 +344,14 @@
   settled query on screen for Maestro needs an element that is either visible (a design deviation)
   or a hidden accessibility node (noise for VoiceOver). In practice XCUITest types a word well
   inside the 250 ms debounce, so one request is sent. Recorded, not built.
-- **`personMatches` in `@gc/db` is not `personKeyOf`.** SQL `lower()` folds only A–Z and the
+- **`personMatches` in `@kn/db` is not `personKeyOf`.** SQL `lower()` folds only A–Z and the
   whitespace collapse folds only tab, LF, CR and space, so a `name:` key for "Élodie" (or a name
   holding a non-breaking space) opens a person page that says "isn't in your notes anymore", and
   `/notes?person=` is empty. Search's People section already matches in JavaScript. Fixing the other
   three callers (people, the notes filter, chat scope) means selecting the owner's attendee rows,
   comparing `personKeyOf(row) === key`, and passing the note ids back as one bound
   `json_each(?)` parameter, because D1 caps bound parameters at 100. That reshapes three repos and
-  the notes keyset query, and it moves `personKeyOf` below `@gc/db`. It is not a local fix. Deferred
+  the notes keyset query, and it moves `personKeyOf` below `@kn/db`. It is not a local fix. Deferred
   with the phase-7 entry on person keys.
 - **People and Search tests seed through the E2E harness via `buildContainer`.** `Notes.test.ts`'s
   person cases now seed through `NotesService.create`. A shared fixture helper for the others would
@@ -447,7 +447,7 @@
   nesting), but the only database under test is `makeTestD1`'s better-sqlite3 shim. A miniflare-backed
   test would pin what real D1 throws; deferred as a new test harness rather than a fix. If D1 ever
   words the constraint differently, the race answers 500 instead of 409.
-- **`makeCalendarApi` stays in the `@gc/apiclient` barrel.** The two tag constants are now
+- **`makeCalendarApi` stays in the `@kn/apiclient` barrel.** The two tag constants are now
   module-private, but every sibling (`makeChatsApi`, `makeNotesApi`, …) is exported the same way
   for a client that wants one context's calls alone, so removing only this one would be the odd one
   out.
@@ -559,5 +559,5 @@
 - **Pairing tokens do not revoke sessions.** Rotating `OWNER_TOKEN` stops new pairings; existing
   sessions live until sign-out or 30 days. Unblocked by a "sign out all devices" route that deletes
   the owner's sessions.
-- **`dev` and `production` still need hand-made resources and a real domain** (`gcnotes.example.com`
+- **`dev` and `production` still need hand-made resources and a real domain** (`kothanote.example.com`
   placeholders, Flagship ids). The reference server uses `selfhost`, which needs neither.

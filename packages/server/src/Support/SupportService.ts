@@ -1,11 +1,11 @@
-import type { Profile } from "@gc/domain/Domain/Profile";
+import type { Profile } from "@kn/domain/Domain/Profile";
 import {
   type BugReportCreate,
   type FeedbackCreate,
   SUPPORT_ADDRESS,
   type SupportReceipt,
-} from "@gc/domain/Domain/Support";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+} from "@kn/domain/Domain/Support";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { EmailMessage, EmailPort } from "../Integrations/Email/Port";
 import type { ProfilesRepo } from "../Profiles/ProfilesRepo";
@@ -43,7 +43,7 @@ export const renderBugReport = (
     from: sender.email,
     includeDiagnostics: String(input.includeDiagnostics),
   },
-  subject: `Bug report from Notes ${input.appVersion} | ${sender.email}`,
+  subject: `Bug report from Kothanote ${input.appVersion} | ${sender.email}`,
   to: SUPPORT_ADDRESS,
 });
 
@@ -54,15 +54,15 @@ export const renderFeedback = (
   body: `${input.message.trim()}\n\nSincerely,\n${sender.name}`,
   kind: "feedback",
   payload: { appVersion: input.appVersion, from: sender.email },
-  subject: `Feedback on Notes ${input.appVersion} | ${sender.email}`,
+  subject: `Feedback on Kothanote ${input.appVersion} | ${sender.email}`,
   to: SUPPORT_ADDRESS,
 });
 
 export const renderDesktopReminder = (sender: Sender): EmailMessage => ({
-  body: `Here’s the link you asked for. Open it on your computer to download Notes: ${DESKTOP_LINK}`,
+  body: `Here’s the link you asked for. Open it on your computer to download Kothanote: ${DESKTOP_LINK}`,
   kind: "desktop-reminder",
   payload: { link: DESKTOP_LINK },
-  subject: "Get Notes for Mac or Windows",
+  subject: "Get Kothanote for Mac or Windows",
   to: sender.email,
 });
 

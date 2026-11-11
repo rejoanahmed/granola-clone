@@ -1,5 +1,5 @@
 // Mocks for the native modules that have no JS implementation in a node process, loaded before
-// any gcnotes module. They live here, not in individual tests, because the failure they prevent is
+// any kothanote module. They live here, not in individual tests, because the failure they prevent is
 // an import-time crash: `src/lib/auth-client.ts` constructs the auth client at module scope, so any
 // test transitively importing a screen dies on SecureStore before its first assertion.
 // `react-native` is extended rather than replaced, so everything unlisted keeps real behaviour.
@@ -35,7 +35,7 @@ jest.mock("expo-secure-store", () => ({
 /** `createURL` is what `expoOrigin()` calls; it needs the native linking constants. */
 jest.mock("expo-linking", () => ({
   addEventListener: jest.fn(() => ({ remove: jest.fn() })),
-  createURL: (path: string) => `gcnotes://${path}`,
+  createURL: (path: string) => `kothanote://${path}`,
   useURL: () => null,
 }));
 

@@ -1,3 +1,4 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   createRecordingRoute,
   discardRecordingRoute,
@@ -6,8 +7,7 @@ import {
   patchRecordingRoute,
   retryRecordingRoute,
   uploadRecordingAudioRoute,
-} from "@gc/domain/Recordings/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Recordings/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

@@ -1,4 +1,4 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
 import type { EmailPort } from "./Port";
 
 // What a self-hosted owner server sends: nothing (D020). It signs its one person in with a paired

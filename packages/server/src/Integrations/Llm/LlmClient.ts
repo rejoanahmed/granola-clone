@@ -1,10 +1,10 @@
-import { CHAT_TITLE_MAX } from "@gc/domain/Domain/Chat";
+import { CHAT_TITLE_MAX } from "@kn/domain/Domain/Chat";
 import {
   LlmRateLimited,
   LlmRejected,
   LlmTimeout,
   LlmUnavailable,
-} from "@gc/domain/Llm/Errors";
+} from "@kn/domain/Llm/Errors";
 import type { WorkersAiRunOptions } from "../../Runtime/AiGateway";
 import type { AiBinding } from "../../Runtime/WorkersAi";
 import type { LlmPort } from "./Port";

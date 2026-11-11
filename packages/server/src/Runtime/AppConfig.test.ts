@@ -13,7 +13,7 @@ const base = {
   BETTER_AUTH_SECRET: "test-secret-not-used-by-these-routes",
   BETTER_AUTH_URL: "http://localhost:3001",
   DB: {} as D1Database,
-  NATIVE_SCHEME: "gcnotes",
+  NATIVE_SCHEME: "kothanote",
   NODE_ENV: "test",
 } satisfies Env;
 
@@ -210,7 +210,7 @@ describe("a self-hosted owner server", () => {
       calendar: { mode: "off" },
       email: { mode: "off" },
       llm: { mode: "workers-ai", model: null },
-      nativeScheme: "gcnotes",
+      nativeScheme: "kothanote",
       transcription: { language: "auto", mode: "workers-ai" },
     });
   });

@@ -4,7 +4,7 @@ import type {
   deleteFolderRoute,
   listFoldersRoute,
   removeFolderNoteRoute,
-} from "@gc/domain/Folders/Contract";
+} from "@kn/domain/Folders/Contract";
 import type { Endpoint } from "./client";
 
 // `import type` only, as in `notes.ts`. A note's folders are read from its detail (`folderIds`) and

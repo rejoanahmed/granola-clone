@@ -1,7 +1,7 @@
-import { CalendarEventId } from "@gc/domain/Domain/Calendar";
-import { UserId } from "@gc/domain/Domain/Ids";
-import type { UserType } from "@gc/domain/Domain/Profile";
-import { Timestamp } from "@gc/domain/Domain/Time";
+import { CalendarEventId } from "@kn/domain/Domain/Calendar";
+import { UserId } from "@kn/domain/Domain/Ids";
+import type { UserType } from "@kn/domain/Domain/Profile";
+import { Timestamp } from "@kn/domain/Domain/Time";
 import { z } from "zod";
 
 // Fixed ids and addresses, never generated: reset-then-seed must produce the same world on every
@@ -10,17 +10,17 @@ import { z } from "zod";
 // can see the empty list. The ids are branded, so a seeded person is an `Actor` as they stand.
 export const E2E_USERS = {
   empty: {
-    email: "e2e-empty@gcnotes.test",
+    email: "e2e-empty@kothanote.test",
     id: UserId.parse("usr_e2e_empty"),
     name: "E2E Empty",
   },
   other: {
-    email: "e2e-other@gcnotes.test",
+    email: "e2e-other@kothanote.test",
     id: UserId.parse("usr_e2e_other"),
     name: "E2E Other",
   },
   person: {
-    email: "e2e-person@gcnotes.test",
+    email: "e2e-person@kothanote.test",
     id: UserId.parse("usr_e2e_person"),
     name: "E2E Person",
   },
@@ -29,7 +29,7 @@ export const E2E_USERS = {
 // A third address that is NEVER seeded and is forgotten by every reset, so the sign-up flow always
 // meets an address with no account. Kept out of `E2E_USERS` because it has no fixed id: better-auth
 // mints one on the first verified code, which is the behaviour under test.
-export const E2E_NEWCOMER = { email: "e2e-newcomer@gcnotes.test" } as const;
+export const E2E_NEWCOMER = { email: "e2e-newcomer@kothanote.test" } as const;
 
 // What a seeded person's profile holds. Both are onboarded, so a seeded sign-in goes straight home
 // rather than through the first-run screens; `person` also carries work details for a flow to read.
@@ -37,7 +37,7 @@ export const E2E_PROFILES = {
   empty: {},
   other: {},
   person: {
-    companyName: "Notes E2E",
+    companyName: "Kothanote E2E",
     jobTitle: "Engineer",
     userType: "startup_generalist",
   },
@@ -115,7 +115,7 @@ const LAUNCH_BODY = `### Launch checklist
   Check every email in the sequence in iOS Mail and Gmail before the cohort is invited.`;
 
 const SOLO_BODY =
-  "Not much to transcribe here. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups.\n\n_Notes works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._";
+  "Not much to transcribe here. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups.\n\n_Kothanote works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._";
 
 // `person` sees launch and standup on Sat 12 Sep, then solo on Wed 5 Aug. The archived note is
 // trashed and `other`'s note belongs to somebody else, so neither may ever appear on that list.

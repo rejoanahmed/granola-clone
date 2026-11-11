@@ -3,7 +3,7 @@ import {
   LlmRejected,
   LlmTimeout,
   LlmUnavailable,
-} from "@gc/domain/Llm/Errors";
+} from "@kn/domain/Llm/Errors";
 import { describe, expect, it } from "vitest";
 import { parseGeneratedNote } from "../../Generations/Output";
 import { workersAiOptions } from "../../Runtime/AiGateway";

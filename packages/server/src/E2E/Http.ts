@@ -1,4 +1,4 @@
-import { Unauthorized } from "@gc/domain/Errors";
+import { Unauthorized } from "@kn/domain/Errors";
 import { Hono } from "hono";
 import type { AppEnv } from "../AppEnv";
 import type { E2eService } from "./E2eService";

@@ -23,7 +23,7 @@ export function BootError() {
           style={styles.center}
           variant="display"
         >
-          Couldn’t reach Notes
+          Couldn’t reach Kothanote
         </Text>
         <Text style={[styles.center, styles.lead]} variant="secondary">
           Check your connection and try again.

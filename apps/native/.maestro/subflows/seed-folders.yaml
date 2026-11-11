@@ -4,7 +4,7 @@
 # fetches on open, so nothing on screen needs refreshing. Fails the flow on anything but a 200.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-folders.js

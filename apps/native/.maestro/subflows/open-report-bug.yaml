@@ -2,7 +2,7 @@
 # its message field and its diagnostics toggle, which starts on.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: open-settings-row.yaml

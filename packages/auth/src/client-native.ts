@@ -30,7 +30,7 @@ let jarStorage: ExpoClientStorage | null = null;
 
 /**
  * No browser cookie jar here: `expoClient` keeps the session token in SecureStore, so every native
- * request carries the `Cookie` header itself and `@gc/apiclient` runs with `credentials: "omit"`.
+ * request carries the `Cookie` header itself and `@kn/apiclient` runs with `credentials: "omit"`.
  */
 export const createNativeAuthClient = (config: NativeAuthClientConfig) => {
   jarStorage = config.storage;

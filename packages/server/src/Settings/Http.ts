@@ -1,8 +1,8 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   getSettingsRoute,
   patchSettingsRoute,
-} from "@gc/domain/Settings/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Settings/Contract";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";

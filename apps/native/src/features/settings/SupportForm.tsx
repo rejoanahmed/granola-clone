@@ -1,4 +1,4 @@
-import { SUPPORT_MESSAGE_MAX } from "@gc/domain/Domain/Support";
+import { SUPPORT_MESSAGE_MAX } from "@kn/domain/Domain/Support";
 import {
   colors,
   MAX_FONT_SCALE,

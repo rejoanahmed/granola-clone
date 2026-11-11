@@ -1,4 +1,4 @@
-import { NOTE_TITLE_MAX } from "@gc/domain/Domain/Note";
+import { NOTE_TITLE_MAX } from "@kn/domain/Domain/Note";
 import {
   colors,
   PillButton,

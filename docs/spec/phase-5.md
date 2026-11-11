@@ -495,7 +495,7 @@ They belong to the same scripted-response harness seam that `BLOCKERS.md` alread
 ## 10. Blockers to record
 
 - **No live transcription client.** `TRANSCRIPTION_MODE=live` is refused until a vendor is chosen and `TranscriptionClient.ts` and its webhook route exist. Production fails at startup for this reason as well as `EMAIL_MODE`'s. The stub: the fake runs everywhere else.
-- **R2 buckets must exist before a deploy.** `gcnotes-audio-dev` and `gcnotes-audio-prod` are created by the user (`wrangler r2 bucket create`), not by an agent. `deploy:check` does not prove they exist.
+- **R2 buckets must exist before a deploy.** `kothanote-audio-dev` and `kothanote-audio-prod` are created by the user (`wrangler r2 bucket create`), not by an agent. `deploy:check` does not prove they exist.
 - **Audio objects outlive a deleted user.** The D1 cascade removes the rows, and nothing deletes the R2 objects. The fix is a purge that runs with the phase-4 trash purge, whenever that lands.
 - **An abandoned upload stays `uploading` on the server** if the device never comes back. The sweep does not expire such rows yet.
 

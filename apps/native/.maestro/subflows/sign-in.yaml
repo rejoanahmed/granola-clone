@@ -5,10 +5,10 @@
 #   - runFlow:
 #       file: ../subflows/sign-in.yaml
 #       env:
-#         EMAIL: e2e-person@gcnotes.test
+#         EMAIL: e2e-person@kothanote.test
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

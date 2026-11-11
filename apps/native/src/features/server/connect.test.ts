@@ -16,7 +16,7 @@ const INFO = {
   auth: "owner",
   email: false,
   llm: "workers-ai",
-  service: "gcnotes",
+  service: "kothanote",
   transcription: "workers-ai",
   transcriptionLanguage: "auto",
   version: 1,

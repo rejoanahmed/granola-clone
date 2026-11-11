@@ -91,10 +91,12 @@ describe("parseNoteMarkdown", () => {
   });
 
   it("keeps a whole-paragraph italic as one span (#40)", () => {
-    const blocks = parseNoteMarkdown("Not much here.\n\n_Notes works best._");
+    const blocks = parseNoteMarkdown(
+      "Not much here.\n\n_Kothanote works best._"
+    );
     expect(blocks).toHaveLength(2);
     expect(blocks[1]?.spans).toEqual([
-      { bold: false, italic: true, text: "Notes works best." },
+      { bold: false, italic: true, text: "Kothanote works best." },
     ]);
   });
 

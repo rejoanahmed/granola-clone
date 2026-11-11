@@ -1,5 +1,5 @@
-import { and, desc, emailOutbox, eq, sql } from "@gc/db";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import { and, desc, emailOutbox, eq, sql } from "@kn/db";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 // The row as this repo writes it, declared here rather than borrowed from the email port: a repo

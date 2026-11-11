@@ -1,8 +1,8 @@
-import type { ServerInfo } from "@gc/domain/Domain/Server";
+import type { ServerInfo } from "@kn/domain/Domain/Server";
 import {
   OwnerPairingDisabled,
   OwnerTokenInvalid,
-} from "@gc/domain/Owner/Errors";
+} from "@kn/domain/Owner/Errors";
 import { beforeEach, describe, expect, it } from "vitest";
 import { makeDrizzle } from "../Runtime/Drizzle";
 import { makeUnitOfWork } from "../Runtime/UnitOfWork";
@@ -23,7 +23,7 @@ const INFO: ServerInfo = {
   auth: "owner",
   email: false,
   llm: "workers-ai",
-  service: "gcnotes",
+  service: "kothanote",
   transcription: "workers-ai",
   transcriptionLanguage: "bn",
   version: 1,

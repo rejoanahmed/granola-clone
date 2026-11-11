@@ -1,9 +1,9 @@
-import type { Utterance } from "@gc/domain/Domain/Recording";
+import type { Utterance } from "@kn/domain/Domain/Recording";
 import {
   LlmRateLimited,
   LlmTimeout,
   LlmUnavailable,
-} from "@gc/domain/Llm/Errors";
+} from "@kn/domain/Llm/Errors";
 import { answerTextOf, deltasOf, titleOf } from "./ChatAnswer";
 import type {
   ChatAnswerRequest,

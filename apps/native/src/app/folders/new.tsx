@@ -1,4 +1,4 @@
-import { FOLDER_NAME_MAX } from "@gc/domain/Domain/Folder";
+import { FOLDER_NAME_MAX } from "@kn/domain/Domain/Folder";
 import {
   colors,
   PillButton,

@@ -85,7 +85,7 @@ export type WorkerSettings = {
   readonly LLM_MODE?: "fake" | "workers-ai" | "openai" | "anthropic";
   /** The model id: required by `openai`, optional for `workers-ai` (a default is chosen). */
   readonly LLM_MODEL?: string;
-  /** Defaults to the brand's scheme (`@gc/domain/Brand`). */
+  /** Defaults to the brand's scheme (`@kn/domain/Brand`). */
   readonly NATIVE_SCHEME?: string;
   readonly NODE_ENV: "development" | "production" | "test";
   /** The owner's address in `AUTH_MODE=owner`; a placeholder when unset. */

@@ -3,7 +3,7 @@ import {
   LlmRateLimited,
   LlmRejected,
   LlmUnavailable,
-} from "@gc/domain/Llm/Errors";
+} from "@kn/domain/Llm/Errors";
 import { describe, expect, it } from "vitest";
 import { parseGeneratedNote } from "../../Generations/Output";
 import { vendorRoute } from "../../Runtime/AiGateway";

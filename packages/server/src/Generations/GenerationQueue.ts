@@ -1,4 +1,4 @@
-import type { GenerationId } from "@gc/domain/Domain/Generation";
+import type { GenerationId } from "@kn/domain/Domain/Generation";
 
 export type GenerationJob = { readonly generationId: GenerationId };
 

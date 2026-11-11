@@ -1,4 +1,4 @@
-import { BRAND } from "@gc/domain/Brand";
+import { BRAND } from "@kn/domain/Brand";
 import { z } from "zod";
 import { type Env, settingsOf } from "./WorkerEnv";
 

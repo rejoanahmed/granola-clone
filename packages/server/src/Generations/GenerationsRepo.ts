@@ -13,20 +13,20 @@ import {
   sql,
   transcriptSegments,
   user,
-} from "@gc/db";
+} from "@kn/db";
 import {
   GenerationFailure,
   GenerationId,
   GenerationStatus,
-} from "@gc/domain/Domain/Generation";
-import { NoteId, UserId } from "@gc/domain/Domain/Ids";
-import { DEFAULT_NOTE_TITLE } from "@gc/domain/Domain/Note";
+} from "@kn/domain/Domain/Generation";
+import { NoteId, UserId } from "@kn/domain/Domain/Ids";
+import { DEFAULT_NOTE_TITLE } from "@kn/domain/Domain/Note";
 import {
   RecordingId,
   type Segment,
   SpeakerLetter,
-} from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage, StatementRef } from "../Runtime/UnitOfWork";

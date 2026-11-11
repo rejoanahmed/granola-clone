@@ -2,7 +2,7 @@ import type {
   createBugReportRoute,
   createDesktopReminderRoute,
   createFeedbackRoute,
-} from "@gc/domain/Support/Contract";
+} from "@kn/domain/Support/Contract";
 import type { Endpoint } from "./client";
 
 // `import type` only, as in `profiles.ts`. None of these has anything to read back, so none

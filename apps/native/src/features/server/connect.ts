@@ -1,9 +1,9 @@
-import { BRAND } from "@gc/domain/Brand";
+import { BRAND } from "@kn/domain/Brand";
 import {
   type OwnerSession,
   SERVER_API_VERSION,
   ServerInfo,
-} from "@gc/domain/Domain/Server";
+} from "@kn/domain/Domain/Server";
 
 // The first-run "connect your server" step (D019), as pure functions over an injected `fetch`, so
 // the rules are unit-tested on node and the screen only renders their answers.

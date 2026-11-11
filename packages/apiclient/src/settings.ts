@@ -1,7 +1,7 @@
 import type {
   getSettingsRoute,
   patchSettingsRoute,
-} from "@gc/domain/Settings/Contract";
+} from "@kn/domain/Settings/Contract";
 import type { Endpoint } from "./client";
 
 // `import type` only, as in `profiles.ts`.

@@ -1,11 +1,11 @@
-# `@gc/db`
+# `@kn/db`
 
 Drizzle schema + D1 migrations. Schema: `src/schema/`. Migrations: `d1-migrations/`.
 
 | Name | What |
 |------|------|
-| `gcnotes-db-dev` | Remote + local Wrangler DB |
-| `gcnotes-db-prod` | Prod only (`--env production`) |
+| `kothanote-db-dev` | Remote + local Wrangler DB |
+| `kothanote-db-prod` | Prod only (`--env production`) |
 | Local files | `apps/api/.wrangler/state/v3/d1/` |
 
 The schema is better-auth's four tables — `user`, `session`, `account`, `verification` — plus the
@@ -19,16 +19,16 @@ file under `src/schema/`, or the next regeneration silently deletes it.
 
 ## What this package exports
 
-`@gc/db` is consumed **only** by `packages/server/src/**/*Repo.ts`,
+`@kn/db` is consumed **only** by `packages/server/src/**/*Repo.ts`,
 `packages/server/src/Runtime/Drizzle.ts`, `packages/auth/src/index.ts`, and this package's own
 seed. Nothing else, ever — `biome.jsonc` fails the build if a service or a handler imports it, and
 `scripts/check-architecture.mjs` fails it for anything else.
 
 | From | What |
 |------|------|
-| `@gc/db` | `createDb(d1)`, `type DB`, `RESET_ORDER`, every table, every row type, and the curated `drizzle-orm` re-exports |
-| `@gc/db/schema` | the same tables and row types, without the drizzle re-exports |
-| `@gc/db/schema/auth` | `user`, `session`, `account`, `verification` only |
+| `@kn/db` | `createDb(d1)`, `type DB`, `RESET_ORDER`, every table, every row type, and the curated `drizzle-orm` re-exports |
+| `@kn/db/schema` | the same tables and row types, without the drizzle re-exports |
+| `@kn/db/schema/auth` | `user`, `session`, `account`, `verification` only |
 
 When a domain table lands, its row types come in up to three shapes, next to the table that
 defines them:
@@ -94,5 +94,5 @@ one to a live table means the table rebuild (`CREATE TABLE …_new` / `INSERT �
 
 ```bash
 cd apps/api
-bunx wrangler d1 execute gcnotes-db-dev --local --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+bunx wrangler d1 execute kothanote-db-dev --local --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
 ```

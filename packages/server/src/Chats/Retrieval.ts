@@ -1,5 +1,5 @@
-import type { NoteId } from "@gc/domain/Domain/Note";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import type { NoteId } from "@kn/domain/Domain/Note";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 
 // Keyword scoring over rows SQL has already filtered to the caller's live notes in scope
 // (docs/spec/phase-7.md §6.4 step 3). Pure, so the rule is unit-tested without a database; the

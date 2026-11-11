@@ -5,8 +5,8 @@ import {
   ChatModelUnavailable,
   ChatNotFound,
   FeedbackNotAllowed,
-} from "@gc/domain/Chats/Errors";
-import type { ChatEvent } from "@gc/domain/Chats/Events";
+} from "@kn/domain/Chats/Errors";
+import type { ChatEvent } from "@kn/domain/Chats/Events";
 import {
   type ActivityStep,
   CHAT_TITLE_MAX,
@@ -23,11 +23,11 @@ import {
   type ChatThreadSummary,
   type Citation,
   DEFAULT_CHAT_MODEL,
-} from "@gc/domain/Domain/Chat";
-import type { Page } from "@gc/domain/Domain/Page";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
-import { PersonNotFound } from "@gc/domain/People/Errors";
+} from "@kn/domain/Domain/Chat";
+import type { Page } from "@kn/domain/Domain/Page";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
+import { NoteNotFound } from "@kn/domain/Notes/Errors";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import {

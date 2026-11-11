@@ -1,20 +1,20 @@
 import {
   CalendarEventHasNote,
   CalendarEventNotFound,
-} from "@gc/domain/Calendar/Errors";
+} from "@kn/domain/Calendar/Errors";
 import {
   type CalendarEventId,
   meetingAttendeesOf,
-} from "@gc/domain/Domain/Calendar";
-import { GenerationId } from "@gc/domain/Domain/Generation";
-import type { UserId } from "@gc/domain/Domain/Ids";
+} from "@kn/domain/Domain/Calendar";
+import { GenerationId } from "@kn/domain/Domain/Generation";
+import type { UserId } from "@kn/domain/Domain/Ids";
 import {
   AttendeeId,
   DEFAULT_NOTE_TITLE,
   meetingTitleOf,
   type Note,
   NoteId,
-} from "@gc/domain/Domain/Note";
+} from "@kn/domain/Domain/Note";
 import {
   AUDIO_MAX_BYTES,
   groupUtterances,
@@ -24,10 +24,10 @@ import {
   RecordingId,
   type Segment,
   type Transcript,
-} from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
-import type { RecordingCreated } from "@gc/domain/Recordings/Contract";
+} from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
+import { NoteNotFound } from "@kn/domain/Notes/Errors";
+import type { RecordingCreated } from "@kn/domain/Recordings/Contract";
 import {
   AudioLengthMismatch,
   AudioLengthRequired,
@@ -39,12 +39,12 @@ import {
   RecordingNotUploading,
   TranscriptNotFound,
   UnsupportedAudioType,
-} from "@gc/domain/Recordings/Errors";
+} from "@kn/domain/Recordings/Errors";
 import {
   TranscriptionRateLimited,
   TranscriptionRejected,
   TranscriptionTimeout,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure, type Policy } from "../Auth/Policy";
 import type { GenerationQueue } from "../Generations/GenerationQueue";

@@ -373,7 +373,7 @@ vendors, and a real name on a fake would claim an integration that does not exis
 - **Attendees sheet** (#16): each `attendees-row-<attendeeId>` becomes pressable (pressed fill
   `#333333`). A tap dismisses the sheet and pushes
   `app/ask/person/<personKey>?name=<display name>`. The key is `personKeyOf(attendee)` from
-  `@gc/domain/Domain/Person` (§6.2). This is a **designed interim entry**: phase 8 repoints the row
+  `@kn/domain/Domain/Person` (§6.2). This is a **designed interim entry**: phase 8 repoints the row
   to the person page (#65) and puts person Ask behind that page's pill, as #66 shows. The comment
   in `attendees.tsx` saying rows are not pressable is updated.
 
@@ -790,7 +790,7 @@ notes. Streams are collected with a helper `collect(iterable)`.
    The activity has no `search` step.
 5. **Person scope.** Asking about `email:priya@example.com` cites only notes with Priya as an
    attendee (launch). A person key matching no attendee raises `PersonNotFound` before any write.
-   The caller's own key (`email:e2e-person@gcnotes.test`) covers all their notes.
+   The caller's own key (`email:e2e-person@kothanote.test`) covers all their notes.
 6. **Retrieval never crosses users** (the phase exit criterion):
    - `other`'s note contains the unique word "zebracorn". `person` asking "zebracorn" gets no
      citation for it (the fallback cites only `person`'s notes), and the fake's

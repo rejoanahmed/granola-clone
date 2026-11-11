@@ -6,7 +6,7 @@ tags:
   - phase-8
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 # A row is one accessibility element labelled "{title}, {day}" or "{name}, {email}" (§3.1), so the
 # flow reads the row's label: iOS hides an accessible row's children from XCUITest.
@@ -52,5 +52,5 @@ env:
     id: person-note-not_e2e_other
 - assertVisible:
     id: person-domain
-    text: .*gcnotes\.test.*
+    text: .*kothanote\.test.*
 - takeScreenshot: phase-8-person

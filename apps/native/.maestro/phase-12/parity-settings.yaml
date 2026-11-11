@@ -11,7 +11,7 @@ tags:
   - parity
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow: ../subflows/open-settings.yaml
@@ -21,7 +21,7 @@ env:
     id: settings-back
 - assertVisible:
     id: settings-desktop-banner
-    text: Get Notes for Mac or Windows
+    text: Get Kothanote for Mac or Windows
 - assertVisible:
     id: settings-section-account
 - assertVisible:
@@ -47,7 +47,7 @@ env:
     timeout: 20000
 - assertVisible:
     id: settings-share-app
-    text: Share Notes for iPhone
+    text: Share Kothanote for iPhone
 - scrollUntilVisible:
     element:
       id: settings-version
@@ -59,7 +59,7 @@ env:
     id: settings-use-my-data
 - assertVisible:
     id: settings-data-body
-    text: .*improve the experience for Notes users
+    text: .*improve the experience for Kothanote users
 - assertVisible:
     id: settings-data-learn-more
 - assertVisible:
@@ -87,7 +87,7 @@ env:
     text: Your profile
 - assertVisible:
     id: profile-lead
-    text: Notes works best when it knows a little about you\..*Notes\.
+    text: Kothanote works best when it knows a little about you\..*Kothanote\.
 - assertVisible:
     id: profile-avatar
 - assertVisible:
@@ -173,7 +173,7 @@ env:
     id: notifications-preview
 - assertVisible:
     id: notifications-preview-start
-    text: Start Notes
+    text: Start Kothanote
 - takeScreenshot: parity-85-notifications
 - tapOn:
     id: notifications-back
@@ -224,7 +224,7 @@ env:
     timeout: 10000
 - assertVisible:
     id: phone-calls-title
-    text: Make Calls From Notes
+    text: Make Calls From Kothanote
 - assertVisible:
     id: phone-calls-get-started
 - takeScreenshot: parity-87-phone-calls
@@ -255,7 +255,7 @@ env:
     id: watch-status
 - assertVisible:
     id: watch-info
-    text: .*to use Notes from your wrist\.
+    text: .*to use Kothanote from your wrist\.
 - takeScreenshot: parity-88-watch
 - tapOn:
     id: watch-back
@@ -290,7 +290,7 @@ env:
     id: report-bug-diagnostics-row
 # The row's subtitle is its own node (§5's #90 string, in its Notes form).
 - assertVisible:
-    text: Shares up to 7 days of logs with the Notes team.*
+    text: Shares up to 7 days of logs with the Kothanote team.*
 - assertVisible:
     id: report-bug-diagnostics
 - takeScreenshot: parity-90-report-bug

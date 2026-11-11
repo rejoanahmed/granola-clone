@@ -21,8 +21,8 @@ import {
   transcriptSegments,
   user,
   verification,
-} from "@gc/db";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/db";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { E2eProfileDetails, E2eUser } from "./Fixtures";
@@ -129,7 +129,7 @@ export type E2eChatRow = {
 const SEGMENT_COLUMNS = 7;
 
 // better-auth's email-otp types, each of which keys a pending code by `${type}-otp-${email}`.
-// Restated rather than imported: a repo may not import `@gc/auth`.
+// Restated rather than imported: a repo may not import `@kn/auth`.
 const OTP_TYPES = [
   "change-email",
   "email-verification",

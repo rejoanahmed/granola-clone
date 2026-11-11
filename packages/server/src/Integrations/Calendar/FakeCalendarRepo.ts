@@ -1,7 +1,7 @@
-import { and, eq, fakeCalendarEvents, gt, lt } from "@gc/db";
-import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
-import type { UserId } from "@gc/domain/Domain/Ids";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import { and, eq, fakeCalendarEvents, gt, lt } from "@kn/db";
+import type { CalendarEventId } from "@kn/domain/Domain/Calendar";
+import type { UserId } from "@kn/domain/Domain/Ids";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../../Runtime/Drizzle";
 import type { Stage } from "../../Runtime/UnitOfWork";
 import type { CalendarEventRecord } from "./Port";

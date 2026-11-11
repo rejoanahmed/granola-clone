@@ -13,7 +13,7 @@ tags:
   - parity
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: ../subflows/open-home.yaml
@@ -50,7 +50,7 @@ env:
     id: mic-primer-continue
 - extendedWaitUntil:
     visible:
-      text: Notes needs microphone access to transcribe your meeting
+      text: Kothanote needs microphone access to transcribe your meeting
     timeout: 15000
 - assertVisible:
     text: Allow
@@ -162,5 +162,5 @@ env:
     id: note-body
 - assertVisible:
     id: "note-block-\\d+"
-    text: Notes works best with real conversations.*
+    text: Kothanote works best with real conversations.*
 - takeScreenshot: parity-107-finished

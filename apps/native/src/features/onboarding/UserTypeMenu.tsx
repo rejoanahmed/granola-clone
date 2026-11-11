@@ -1,4 +1,4 @@
-import type { UserType } from "@gc/domain/Domain/Profile";
+import type { UserType } from "@kn/domain/Domain/Profile";
 import {
   colors,
   ICON_STROKE,

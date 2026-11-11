@@ -3,7 +3,7 @@
  * browser — because what it exists to prove is that a DEPLOY works: bindings resolved, secrets
  * present, migrations applied, D1 reachable. A browser suite answers a different question.
  *
- *   API_URL=https://api-dev.gcnotes.example.com E2E_SECRET=… bun run src/run.ts
+ *   API_URL=https://api-dev.kothanote.example.com E2E_SECRET=… bun run src/run.ts
  *
  * Exit 0 promotes. Anything else must block production.
  */
@@ -57,7 +57,7 @@ const main = async (): Promise<number> => {
   const client = makeClient(env);
   const harness = makeHarness(client, env);
 
-  out(`gcnotes E2E — ${env.apiUrl}`);
+  out(`kothanote E2E — ${env.apiUrl}`);
 
   const awake = await client.awaken();
   out(
@@ -121,7 +121,7 @@ main()
     process.exit(code);
   })
   .catch((error: unknown) => {
-    process.stderr.write("\ngcnotes E2E could not start.\n");
+    process.stderr.write("\nkothanote E2E could not start.\n");
     report(error);
     process.exit(1);
   });

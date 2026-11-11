@@ -28,7 +28,7 @@ const envOver = (d1: TestD1) =>
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   }) satisfies Env;
 
@@ -60,7 +60,7 @@ describe("the E2E harness", () => {
     const sessions = makeSessions({
       db: makeDrizzle(d1),
       email: { sendOtpEmail: () => Promise.resolve() },
-      nativeScheme: "gcnotes",
+      nativeScheme: "kothanote",
       secret: AUTH_SECRET,
       trustedOrigins: ["http://localhost:3001"],
     });
@@ -77,7 +77,7 @@ describe("the E2E harness", () => {
     const local = await harness.signIn("person", "http://localhost:3001");
     const deployed = await harness.signIn(
       "person",
-      "https://api-dev.gcnotes.example.com"
+      "https://api-dev.kothanote.example.com"
     );
 
     expect(local.cookie.name).toBe("better-auth.session_token");
@@ -178,7 +178,7 @@ describe("the E2E harness, phase 4", () => {
     await fresh();
     const empty = E2E_USERS.empty;
     expect(empty).toEqual({
-      email: "e2e-empty@gcnotes.test",
+      email: "e2e-empty@kothanote.test",
       id: "usr_e2e_empty",
       name: "E2E Empty",
     });
@@ -1100,7 +1100,7 @@ describe("the E2E harness, phase 10", () => {
       "out_2",
       "bug-report",
       AT + 1000,
-      "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
     );
     await outbox("out_3", "feedback", AT + 2000);
     await outbox("out_4", "otp", AT + 3000);
@@ -1108,14 +1108,15 @@ describe("the E2E harness, phase 10", () => {
     const { items } = await support()("bug-report");
 
     expect(items.map((item) => item.subject)).toEqual([
-      "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test",
       "Subject out_1",
     ]);
     expect(items[0]).toEqual({
       body: "Body out_2",
       createdAt: AT + 1000,
       payload: { receiptId: "sup_out_2" },
-      subject: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      subject:
+        "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test",
       to: "support@notes.example",
     });
     expect((await support()("feedback")).items).toHaveLength(1);

@@ -1,4 +1,4 @@
-import { CHAT_MESSAGE_MAX, type ChatScopeKind } from "@gc/domain/Domain/Chat";
+import { CHAT_MESSAGE_MAX, type ChatScopeKind } from "@kn/domain/Domain/Chat";
 import Config from "@native/config";
 import {
   colors,

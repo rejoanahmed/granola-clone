@@ -12,10 +12,10 @@ import {
   recordings,
   sql,
   transcriptSegments,
-} from "@gc/db";
-import type { GenerationId } from "@gc/domain/Domain/Generation";
-import { NoteId, UserId } from "@gc/domain/Domain/Ids";
-import type { AttendeeId } from "@gc/domain/Domain/Note";
+} from "@kn/db";
+import type { GenerationId } from "@kn/domain/Domain/Generation";
+import { NoteId, UserId } from "@kn/domain/Domain/Ids";
+import type { AttendeeId } from "@kn/domain/Domain/Note";
 import {
   type Recording,
   RecordingFailure,
@@ -23,8 +23,8 @@ import {
   RecordingStatus,
   type Segment,
   SpeakerLetter,
-} from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { SQLiteUpdateSetSource } from "drizzle-orm/sqlite-core";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage, StatementRef } from "../Runtime/UnitOfWork";

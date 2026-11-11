@@ -1,4 +1,4 @@
-import type { UserId } from "@gc/domain/Domain/Ids";
+import type { UserId } from "@kn/domain/Domain/Ids";
 import { make } from "../Auth/Policy";
 
 export const READ_CALENDAR = "calendar.read";

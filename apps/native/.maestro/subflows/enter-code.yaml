@@ -2,7 +2,7 @@
 # it. The sixth digit submits (phase-3.md §2.2), so there is deliberately no tap on Verify.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/read-otp.js

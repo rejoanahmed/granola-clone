@@ -63,7 +63,11 @@ export default function WorkEmailSheet() {
   return (
     <View style={styles.sheet} testID="work-email-sheet">
       <View style={styles.content}>
-        <View accessibilityLabel="Notes" accessible testID="work-email-mark">
+        <View
+          accessibilityLabel="Kothanote"
+          accessible
+          testID="work-email-mark"
+        >
           <NotebookPen
             color={colors.text.primary}
             size={MARK}

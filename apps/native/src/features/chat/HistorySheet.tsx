@@ -1,4 +1,4 @@
-import type { ChatThreadSummary } from "@gc/domain/Domain/Chat";
+import type { ChatThreadSummary } from "@kn/domain/Domain/Chat";
 import {
   ActionMenu,
   colors,

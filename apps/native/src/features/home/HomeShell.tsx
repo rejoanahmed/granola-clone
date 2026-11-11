@@ -246,7 +246,7 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
         style={[styles.bar, { bottom: insets.bottom + BAR_GAP }]}
       >
         <PillButton
-          accessibilityLabel="Chat with Notes"
+          accessibilityLabel="Chat with Kothanote"
           filledIcon
           icon={MessageCircle}
           label="Ask anything"

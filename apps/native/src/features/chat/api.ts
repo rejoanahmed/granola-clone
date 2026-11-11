@@ -1,4 +1,4 @@
-import type { ChatEvent } from "@gc/domain/Chats/Events";
+import type { ChatEvent } from "@kn/domain/Chats/Events";
 import type {
   ChatCreate,
   ChatFeedback,
@@ -6,7 +6,7 @@ import type {
   ChatModels,
   ChatThread,
   ChatThreadSummary,
-} from "@gc/domain/Domain/Chat";
+} from "@kn/domain/Domain/Chat";
 import { useToast } from "@native/design";
 import {
   API_URL,

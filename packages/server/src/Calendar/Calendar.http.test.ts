@@ -1,7 +1,7 @@
-import * as CalErrors from "@gc/domain/Calendar/Errors";
-import * as Shapes from "@gc/domain/Domain/Calendar";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as CalErrors from "@kn/domain/Calendar/Errors";
+import * as Shapes from "@kn/domain/Domain/Calendar";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -29,7 +29,7 @@ const PAGE = {
   items: [
     {
       attendees: [
-        { email: "e2e-person@gcnotes.test", isMe: true, name: "E2E Person" },
+        { email: "e2e-person@kothanote.test", isMe: true, name: "E2E Person" },
         { email: "priya@example.com", isMe: false, name: "Priya Raman" },
       ],
       color: "#DB35F2",
@@ -54,7 +54,7 @@ const PAGE = {
 const errorClass = (name: string): ErrorClass => {
   const found = (CalErrors as Record<string, ErrorClass | undefined>)[name];
   if (found === undefined) {
-    throw new Error(`no ${name} in @gc/domain/Calendar/Errors`);
+    throw new Error(`no ${name} in @kn/domain/Calendar/Errors`);
   }
   return found;
 };
@@ -62,7 +62,7 @@ const errorClass = (name: string): ErrorClass => {
 const schema = (name: string): Schema => {
   const found = (Shapes as unknown as Record<string, Schema | undefined>)[name];
   if (found === undefined) {
-    throw new Error(`no ${name} in @gc/domain/Domain/Calendar`);
+    throw new Error(`no ${name} in @kn/domain/Domain/Calendar`);
   }
   return found;
 };

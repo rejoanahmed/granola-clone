@@ -4,7 +4,7 @@ import type {
   getDeletionPreviewRoute,
   getMeRoute,
   patchMeRoute,
-} from "@gc/domain/Profile/Contract";
+} from "@kn/domain/Profile/Contract";
 import type { Endpoint } from "./client";
 
 // Every import here is `import type`, route constants included: a value import would pull `zod` and

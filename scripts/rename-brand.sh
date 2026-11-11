@@ -2,7 +2,7 @@
 # Rename the product (D023), after editing packages/domain/src/Brand.ts.
 #
 #   scripts/rename-brand.sh <old-slug> <new-slug> <old-bundle-id> <new-bundle-id> ["New Display Name"]
-#   scripts/rename-brand.sh gcnotes kothanote com.rejoan.gcnotes com.rejoanahmed.kothanote "Kothanote"
+#   scripts/rename-brand.sh kothanote kothanote com.rovierr.kothanote com.rejoanahmed.kothanote "Kothanote"
 #
 # Brand.ts is what the code reads. This script rewrites the copies that cannot import it: Maestro's
 # `appId`s, app.json's static fields, the wrangler resource names (`<slug>-server`, `<slug>-db`, …)

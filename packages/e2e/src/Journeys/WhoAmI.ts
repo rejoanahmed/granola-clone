@@ -1,4 +1,4 @@
-import { Profile } from "@gc/domain/Domain/Profile";
+import { Profile } from "@kn/domain/Domain/Profile";
 import { decode, expectStatus, tagOf, where } from "../Client";
 import { checkEqual } from "../Failure";
 import type { World } from "../World";

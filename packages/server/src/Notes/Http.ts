@@ -1,3 +1,4 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   createNoteRoute,
   getNoteRoute,
@@ -6,8 +7,7 @@ import {
   patchNoteRoute,
   restoreNoteRoute,
   trashNoteRoute,
-} from "@gc/domain/Notes/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Notes/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

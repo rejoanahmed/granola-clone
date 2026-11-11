@@ -36,7 +36,7 @@ bun run db:seed
 | `http://localhost:3001/api/auth/*` | better-auth. Rate-limited per IP: `AUTH_RATE_LIMIT`/minute, default 20, 600 locally |
 | `http://localhost:3001/e2e/otp?email=…` | the latest sign-in code sent to an address (harness only, `x-e2e-secret`) |
 
-Email goes through the `Email` port (`@gc/server/Integrations/Email`), and `EMAIL_MODE=fake` — the
+Email goes through the `Email` port (`@kn/server/Integrations/Email`), and `EMAIL_MODE=fake` — the
 only mode that exists — writes every message to the `email_outbox` table instead of sending it.
 Read a sign-in code from there, or from `GET /e2e/otp`; no log line carries one. `AppConfig`
 refuses the fake under `NODE_ENV=production` and refuses `live` until a client exists, so
@@ -45,7 +45,7 @@ cost money or need an account (transcription, LLM, calendar) are picked by envir
 
 ## Bindings
 
-Declared in `wrangler.jsonc`, typed by `Env` in `@gc/server/Runtime/WorkerEnv` — hand-written, so
+Declared in `wrangler.jsonc`, typed by `Env` in `@kn/server/Runtime/WorkerEnv` — hand-written, so
 a renamed binding is a type error rather than a regenerated file nobody reads.
 
 | Binding | Kind | Used by | Why it exists |
@@ -67,8 +67,8 @@ Three environments, two of which are real:
 | | Where | Worker | Config |
 | --- | --- | --- | --- |
 | local | your machine | — | the top level of `wrangler.jsonc`, ids permanently zero |
-| dev | Cloudflare | `gcnotes-api-dev` | `env.dev` — E2E harness armed, OTP in the logs |
-| production | Cloudflare | `gcnotes-api-prod` | `env.production` — no harness |
+| dev | Cloudflare | `kothanote-api-dev` | `env.dev` — E2E harness armed, OTP in the logs |
+| production | Cloudflare | `kothanote-api-prod` | `env.production` — no harness |
 
 ```bash
 bun run deploy:check   # dry-run BOTH deployed environments; uploads nothing

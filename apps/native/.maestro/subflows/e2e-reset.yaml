@@ -3,7 +3,7 @@
 # is not a 200 — a flow that ran against yesterday's data would pass or fail for the wrong reason.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-reset.js

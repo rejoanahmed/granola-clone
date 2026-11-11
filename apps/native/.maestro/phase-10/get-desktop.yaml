@@ -11,7 +11,7 @@ tags:
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - tapOn:
@@ -27,7 +27,7 @@ env:
     text: Meeting notes on your computer
 - assertVisible:
     id: desktop-body
-    text: Take notes on video calls with Notes for Mac or Windows\.
+    text: Take notes on video calls with Kothanote for Mac or Windows\.
 - assertVisible:
     id: desktop-share
     text: Share link
@@ -62,10 +62,10 @@ env:
 - extendedWaitUntil:
     visible:
       id: toast-message
-      text: We’ll email you a link to get Notes on your computer\.
+      text: We’ll email you a link to get Kothanote on your computer\.
     timeout: 10000
 - runScript:
     file: ../scripts/e2e-support.js
     env:
       KIND: desktop-reminder
-      EXPECT_SUBJECT: Get Notes for Mac or Windows
+      EXPECT_SUBJECT: Get Kothanote for Mac or Windows

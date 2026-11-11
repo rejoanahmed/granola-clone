@@ -4,7 +4,7 @@ export const MIC_COPY = {
   close: "Close",
   continue: "Continue",
   deniedBody:
-    "Turn on the microphone for Notes in Settings to start transcribing.",
+    "Turn on the microphone for Kothanote in Settings to start transcribing.",
   deniedTitle: "Microphone access is off",
   openSettings: "Open Settings",
   primerTitle: "Enable your microphone to start transcribing",

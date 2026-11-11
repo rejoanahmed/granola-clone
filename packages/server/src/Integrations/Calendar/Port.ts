@@ -1,6 +1,6 @@
-import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
-import type { UserId } from "@gc/domain/Domain/Ids";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import type { CalendarEventId } from "@kn/domain/Domain/Calendar";
+import type { UserId } from "@kn/domain/Domain/Ids";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 
 // What reading a calendar means to this API, shaped by its two consumers (`CalendarService` and
 // `RecordingsService.create`) rather than by any vendor. Nothing here is validated: a provider's

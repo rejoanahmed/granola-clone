@@ -1,19 +1,19 @@
-import type * as Server from "@gc/server";
-import type { Env } from "@gc/server";
-import { makeTestD1 } from "@gc/server/Testing";
+import type * as Server from "@kn/server";
+import type { Env } from "@kn/server";
+import { makeTestD1 } from "@kn/server/Testing";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { app } from "./app";
 
 // Its own file because the mock below replaces `buildContainer` for the whole module graph, and
 // `middleware.ts` keeps its better-auth instance for the isolate. Every container this file builds
 // sends through an email fake scripted to be down.
-vi.mock("@gc/server", async (importOriginal) => {
+vi.mock("@kn/server", async (importOriginal) => {
   const original = await importOriginal<typeof Server>();
   const { makeEmailFake } = await import(
-    "@gc/server/Integrations/Email/EmailFake"
+    "@kn/server/Integrations/Email/EmailFake"
   );
   const { makeAuthEmailsService } = await import(
-    "@gc/server/AuthEmails/AuthEmailsService"
+    "@kn/server/AuthEmails/AuthEmailsService"
   );
   const email = makeEmailFake({ sink: () => Promise.resolve() });
   email.failWith("unavailable");
@@ -38,7 +38,7 @@ const env = {
   BETTER_AUTH_URL: API,
   DB: d1,
   EMAIL_MODE: "fake",
-  NATIVE_SCHEME: "gcnotes",
+  NATIVE_SCHEME: "kothanote",
   NODE_ENV: "test",
 } satisfies Env;
 
@@ -50,7 +50,7 @@ describe("a sign-in code the email provider refused", () => {
     const response = await app.request(
       "/api/auth/email-otp/send-verification-otp",
       {
-        body: JSON.stringify({ email: "down@gcnotes.test", type: "sign-in" }),
+        body: JSON.stringify({ email: "down@kothanote.test", type: "sign-in" }),
         headers: { "content-type": "application/json", origin: API },
         method: "POST",
       },

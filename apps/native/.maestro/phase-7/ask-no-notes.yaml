@@ -7,7 +7,7 @@ tags:
   - phase-7
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: ../subflows/open-home-as.yaml

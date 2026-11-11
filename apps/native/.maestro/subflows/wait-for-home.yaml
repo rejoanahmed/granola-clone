@@ -3,7 +3,7 @@
 # first launch does; the list then settles before anything is tapped.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: wait-for-launch.yaml

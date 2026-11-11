@@ -105,8 +105,8 @@ When `ServerInfo.email` is false, Report a bug and Send feedback open the phone'
 ## 4. Deployment
 
 `env.selfhost` in `wrangler.jsonc`: `workers_dev: true`, owner auth, `off` mail and calendar,
-Workers AI for both providers, the `ai` binding, D1 `gcnotes-db`, R2 `gcnotes-audio`, queues
-`gcnotes-{generation,transcription}-selfhost`, the cron. `scripts/selfhost.sh` is idempotent.
+Workers AI for both providers, the `ai` binding, D1 `kothanote-db`, R2 `kothanote-audio`, queues
+`kothanote-{generation,transcription}-selfhost`, the cron. `scripts/selfhost.sh` is idempotent.
 `deploy.sh check` now dry-runs `selfhost` too. `production` carries the same owner configuration.
 
 ## 5. Copy

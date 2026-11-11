@@ -1,4 +1,4 @@
-import { CHAT_QUERY_MAX } from "@gc/domain/Domain/Chat";
+import { CHAT_QUERY_MAX } from "@kn/domain/Domain/Chat";
 import {
   colors,
   ICON_STROKE,

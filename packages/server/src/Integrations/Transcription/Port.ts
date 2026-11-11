@@ -1,4 +1,4 @@
-import type { Segment } from "@gc/domain/Domain/Recording";
+import type { Segment } from "@kn/domain/Domain/Recording";
 
 // A pointer to stored audio, never the bytes: a real vendor fetches the object itself (a signed
 // URL minted from the key), so the Worker never holds a recording in memory to hand it over.
@@ -10,7 +10,7 @@ export type TranscriptionAnswer =
 
 export type TranscriptionMode = "auto" | "fail" | "hold" | "silent";
 
-// Failures are thrown as the classes in `@gc/domain/Transcription/Errors` (R7); the service maps
+// Failures are thrown as the classes in `@kn/domain/Transcription/Errors` (R7); the service maps
 // each onto a `RecordingFailure`.
 export type TranscriptionPort = {
   poll: (jobId: string) => Promise<TranscriptionAnswer>;

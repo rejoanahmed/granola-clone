@@ -40,16 +40,16 @@ physical device.
 ## The three-package shape
 
 ```
-packages/domain   @gc/domain   DECLARES the contract. Schemas, route definitions, error classes.
+packages/domain   @kn/domain   DECLARES the contract. Schemas, route definitions, error classes.
                                No I/O, no Drizzle, no Workers globals. The clients import it too.
-packages/server   @gc/server   IMPLEMENTS it. Services, repositories, policies, handlers, Runtime,
+packages/server   @kn/server   IMPLEMENTS it. Services, repositories, policies, handlers, Runtime,
                                provider ports and their fakes.
 apps/api          api          MOUNTS it. The Worker: fetch, and a cron when one exists.
-apps/native       native       The iPhone app (Expo). Imports @gc/domain, @gc/apiclient, @gc/auth.
+apps/native       native       The iPhone app (Expo). Imports @kn/domain, @kn/apiclient, @kn/auth.
 ```
 
 The arrow only points left. `packages/domain` must never import `packages/server`; `apps/native`
-must never import either `@gc/server` or `@gc/db`.
+must never import either `@kn/server` or `@kn/db`.
 
 ## The import rules — this is the architecture
 
@@ -57,13 +57,13 @@ must never import either `@gc/server` or `@gc/db`.
 | --- | --- | --- |
 | `packages/domain/src/Domain/*.ts` | `zod`, other `Domain/*` | anything in `packages/server` |
 | `packages/domain/src/<Ctx>/Contract.ts` | `Domain/*`, `@hono/zod-openapi` | anything in `packages/server` |
-| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@gc/db`, `drizzle-orm`, `@gc/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
-| `packages/server/src/<Plural>/Policy.ts` | `@gc/domain/*`, `../Auth/Policy` | `@gc/db`, `drizzle-orm`, `hono` |
-| `packages/server/src/<Plural>/<Plural>Service.ts` | `@gc/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos are fine) | `@gc/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
-| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@gc/domain/<Ctx>/Contract`, `../AppEnv`, `../Auth/Actor` | `@gc/db`, any `*Repo`, any other context |
+| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@kn/db`, `drizzle-orm`, `@kn/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
+| `packages/server/src/<Plural>/Policy.ts` | `@kn/domain/*`, `../Auth/Policy` | `@kn/db`, `drizzle-orm`, `hono` |
+| `packages/server/src/<Plural>/<Plural>Service.ts` | `@kn/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos are fine) | `@kn/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
+| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@kn/domain/<Ctx>/Contract`, `../AppEnv`, `../Auth/Actor` | `@kn/db`, any `*Repo`, any other context |
 | `packages/server/src/container.ts` | everything | — |
 
-Two of those carry the design: **`@gc/db` appears only in `*Repo.ts`, and `hono` never appears in
+Two of those carry the design: **`@kn/db` appears only in `*Repo.ts`, and `hono` never appears in
 a service.** Biome's `noRestrictedImports` enforces the paths;
 [`scripts/check-architecture.mjs`](scripts/check-architecture.mjs) enforces the four things a lint
 rule cannot see:
@@ -72,7 +72,7 @@ rule cannot see:
 2. A `*Repo` imported as a **value** by anything but `container.ts` and a `*.test.ts`.
    `import type { ProfilesRepo }` is legal everywhere; that is how a service names its repo.
 3. A `*Deps` field that is not `readonly`.
-4. `@gc/db` outside `*Repo.ts` and `Runtime/Drizzle.ts`.
+4. `@kn/db` outside `*Repo.ts` and `Runtime/Drizzle.ts`.
 
 ## The rules, short form
 

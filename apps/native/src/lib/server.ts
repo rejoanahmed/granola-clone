@@ -1,5 +1,5 @@
-import { BRAND } from "@gc/domain/Brand";
-import type { ServerInfo } from "@gc/domain/Domain/Server";
+import { BRAND } from "@kn/domain/Brand";
+import type { ServerInfo } from "@kn/domain/Domain/Server";
 import Config from "@native/config";
 import * as SecureStore from "expo-secure-store";
 import * as Updates from "expo-updates";

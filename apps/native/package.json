@@ -17,9 +17,9 @@
   "dependencies": {
     "@babel/core": "7.29.0",
     "@expo/vector-icons": "15.1.1",
-    "@gc/apiclient": "workspace:*",
-    "@gc/auth": "workspace:*",
-    "@gc/domain": "workspace:*",
+    "@kn/apiclient": "workspace:*",
+    "@kn/auth": "workspace:*",
+    "@kn/domain": "workspace:*",
     "@tanstack/react-query": "5.103.2",
     "babel-preset-expo": "57.0.12",
     "expo": "~57.0.24",

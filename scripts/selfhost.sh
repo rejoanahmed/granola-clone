@@ -29,10 +29,10 @@ API="$ROOT/apps/api"
 STATE="$API/.selfhost.env"
 cd "$API"
 
-WORKER="gcnotes-server"
-DB_NAME="gcnotes-db"
-BUCKET="gcnotes-audio"
-QUEUES=("gcnotes-generation-selfhost" "gcnotes-transcription-selfhost")
+WORKER="kothanote-server"
+DB_NAME="kothanote-db"
+BUCKET="kothanote-audio"
+QUEUES=("kothanote-generation-selfhost" "kothanote-transcription-selfhost")
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 die() {
@@ -99,7 +99,7 @@ pairing_link() {
   local enc_url enc_token
   enc_url="$(bun -e 'console.log(encodeURIComponent(process.argv[1]))' "$SERVER_URL")"
   enc_token="$(bun -e 'console.log(encodeURIComponent(process.argv[1]))' "$OWNER_TOKEN")"
-  echo "gcnotes://connect?server=${enc_url}&token=${enc_token}"
+  echo "kothanote://connect?server=${enc_url}&token=${enc_token}"
 }
 
 show() {

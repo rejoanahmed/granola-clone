@@ -1,6 +1,6 @@
-import * as ChatErrors from "@gc/domain/Chats/Errors";
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
-import { PersonNotFound } from "@gc/domain/People/Errors";
+import * as ChatErrors from "@kn/domain/Chats/Errors";
+import { NoteNotFound } from "@kn/domain/Notes/Errors";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -43,9 +43,9 @@ const NO_NOTES_LINE = "I couldn’t find anything in your notes about that.";
 const PRICING_ANSWER =
   "Here’s what I found in your notes:\n\n- **Launch planning review** — Pricing page copy still needs legal review [1]";
 const FALLBACK_IDS = ["not_e2e_launch", "not_e2e_standup", "not_e2e_solo"];
-const PERSON_KEY_SELF = "email:e2e-person@gcnotes.test";
+const PERSON_KEY_SELF = "email:e2e-person@kothanote.test";
 const PERSON_KEY_PRIYA = "email:priya@example.com";
-const PERSON_KEY_OTHER_ONLY = "email:e2e-other@gcnotes.test";
+const PERSON_KEY_OTHER_ONLY = "email:e2e-other@kothanote.test";
 const THREAD_ID = /^cht_[A-Za-z0-9_-]{8,}$/;
 const MESSAGE_ID = /^msg_[A-Za-z0-9_-]{8,}$/;
 const CHECK_FAILED = /CHECK constraint failed/;
@@ -213,7 +213,7 @@ const envOver = (db: TestD1) =>
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   }) satisfies Env;
 

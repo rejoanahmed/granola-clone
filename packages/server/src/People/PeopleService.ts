@@ -3,8 +3,8 @@ import {
   type Person,
   type PersonKey,
   personKeyOf,
-} from "@gc/domain/Domain/Person";
-import { PersonNotFound } from "@gc/domain/People/Errors";
+} from "@kn/domain/Domain/Person";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure } from "../Auth/Policy";
 import type { PeopleRepo, PersonRecord } from "./PeopleRepo";

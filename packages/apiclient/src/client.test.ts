@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { Profile } from "@gc/domain/Domain/Profile";
+import type { Profile } from "@kn/domain/Domain/Profile";
 import { z } from "zod";
 import { makeApiClient, makeEndpoint } from "./client";
 import {
@@ -201,7 +201,7 @@ describe("makeEndpoint", () => {
   });
 
   it("returns the raw Response for a redirect route and follows no redirect", async () => {
-    const redirect = Response.redirect("gcnotes://signed-in", 302);
+    const redirect = Response.redirect("kothanote://signed-in", 302);
     const { calls, stub } = recording(redirect);
     const back = makeEndpoint({ baseUrl: BASE_URL, fetch: stub })<
       typeof redirectRoute
@@ -211,7 +211,7 @@ describe("makeEndpoint", () => {
 
     expect(only(calls).init.redirect).toBe("manual");
     expect(response.status).toBe(302);
-    expect(response.headers.get("Location")).toBe("gcnotes://signed-in");
+    expect(response.headers.get("Location")).toBe("kothanote://signed-in");
   });
 
   it("forwards an AbortSignal so a dropped screen cancels its request", async () => {
@@ -252,12 +252,12 @@ describe("makeApiClient", () => {
     const app = makeApiClient({
       baseUrl: BASE_URL,
       credentials: "omit",
-      expoOrigin: () => "gcnotes://",
+      expoOrigin: () => "kothanote://",
       fetch: native.stub,
     });
     await app.getMe();
     expect(only(native.calls).init.credentials).toBe("omit");
-    expect(headerOf(only(native.calls), "expo-origin")).toBe("gcnotes://");
+    expect(headerOf(only(native.calls), "expo-origin")).toBe("kothanote://");
   });
 
   it("trims a trailing slash off the base URL", async () => {

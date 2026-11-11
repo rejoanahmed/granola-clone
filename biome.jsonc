@@ -45,7 +45,7 @@
       "performance": {
         "noAwaitInLoops": "warn",
         // The barrels in this repo are deliberate and few: the schema barrel, the Testing barrel,
-        // and @gc/apiclient's index. Everything else imports by path.
+        // and @kn/apiclient's index. Everything else imports by path.
         "noBarrelFile": "off",
         // An inline `onPress`/`onSubmit` closure is ordinary React, and hoisting every one of them
         // into a `useCallback` to satisfy this rule costs more than the re-render it saves on a
@@ -146,7 +146,7 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "@gc/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
+                  "@kn/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
                   "drizzle-orm": "Services never touch the database. Put the query in <Plural>Repo.ts.",
                   "hono": "Services are framework-free. Take the value as a parameter."
                 }
@@ -165,7 +165,7 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "@gc/db": "Handlers read c.var.svc, never the database."
+                  "@kn/db": "Handlers read c.var.svc, never the database."
                 }
               }
             }

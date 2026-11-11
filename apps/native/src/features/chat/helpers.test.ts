@@ -1,4 +1,4 @@
-import { GLOBAL_PLACEHOLDERS } from "@gc/domain/Domain/Chat";
+import { GLOBAL_PLACEHOLDERS } from "@kn/domain/Domain/Chat";
 import { describe, expect, it } from "vitest";
 import { activityA11y, activityPhase } from "./activity";
 import { previewState } from "./citationState";

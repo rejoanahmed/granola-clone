@@ -18,8 +18,8 @@ import { makeSearchApi } from "./search";
 import { makeSettingsApi } from "./settings";
 import { makeSupportApi } from "./support";
 
-// Types are derived from the contract constants in `@gc/domain`, not from `hc<AppType>`: the
-// router type belongs to `apps/api`, so using it would drag `@gc/server`, `@gc/db` and
+// Types are derived from the contract constants in `@kn/domain`, not from `hc<AppType>`: the
+// router type belongs to `apps/api`, so using it would drag `@kn/server`, `@kn/db` and
 // `drizzle-orm` into the type graph of both client bundles.
 
 /** `Record<never, never>` rather than `{}` — the same type, without the lint. */

@@ -1,4 +1,4 @@
-import type { ChatEvent } from "@gc/domain/Chats/Events";
+import type { ChatEvent } from "@kn/domain/Chats/Events";
 
 // What the SSE handlers write into: Hono's `SSEStreamingApi` has this shape, and so does a test's
 // sink, so neither the service nor this file knows about Hono.

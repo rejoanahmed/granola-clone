@@ -1,11 +1,11 @@
-import type { ChatEvent } from "@gc/domain/Chats/Events";
+import type { ChatEvent } from "@kn/domain/Chats/Events";
 import type {
   ChatFeedback,
   ChatMessage,
   ChatScopeInput,
   ChatThread,
   ChatThreadSummary,
-} from "@gc/domain/Domain/Chat";
+} from "@kn/domain/Domain/Chat";
 import { useToast } from "@native/design";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";

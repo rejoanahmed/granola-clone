@@ -2,7 +2,7 @@ import type {
   ChatModel,
   ChatModelFamily,
   ChatModelId,
-} from "@gc/domain/Domain/Chat";
+} from "@kn/domain/Domain/Chat";
 import { ActionMenu, type MenuAnchor } from "@native/design";
 import {
   BookOpen,

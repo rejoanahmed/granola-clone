@@ -385,15 +385,15 @@ With the harness armed, `readMode` reads `e2e_switches.llm`, and otherwise it is
 `{ send(job: { generationId: GenerationId }): Promise<void> }`. The Cloudflare implementation is in
 `Runtime/CloudflareGenerationQueue.ts` over the `GENERATION_QUEUE` producer binding, and the
 memory implementation is in `Testing/`. `apps/api/src/worker.ts` gains a `queue` handler. It builds
-the container, dispatches on `batch.queue` starting with `gcnotes-generation`, calls
+the container, dispatches on `batch.queue` starting with `kothanote-generation`, calls
 `generations.run` per message, and maps `done`/`skipped` → `ack()` and `retry` →
 `retry({ delaySeconds })`. An unrecognised queue name is logged and `retryAll()`'d, never acked.
 `wrangler.jsonc` gains, at the top level **and in every `env` block** (queues are not inherited):
 
 ```jsonc
 "queues": {
-  "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-<local|dev|prod>" }],
-  "consumers": [{ "queue": "gcnotes-generation-<local|dev|prod>", "max_batch_size": 1,
+  "producers": [{ "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-<local|dev|prod>" }],
+  "consumers": [{ "queue": "kothanote-generation-<local|dev|prod>", "max_batch_size": 1,
                   "max_batch_timeout": 1, "max_retries": 5 }]
 }
 ```
@@ -524,7 +524,7 @@ They belong to the same scripted-response seam that `BLOCKERS.md` defers for pha
 ## 10. Blockers to record
 
 - **No live LLM client.** `LLM_MODE=live` is refused until a vendor is chosen and `LlmClient.ts` exists (a prompt builder, the JSON contract of §6.5, `LLM_TIMEOUT_MS`, and a finish-reason mapping onto `truncated`). Production sets `live` and so fails at startup, alongside `EMAIL_MODE` and `TRANSCRIPTION_MODE`. The stub: `LlmFake` runs everywhere else.
-- **The generation queues must exist before a deploy.** `gcnotes-generation-dev` and `gcnotes-generation-prod` are created by the user (`bunx wrangler queues create …`), not by an agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy.
+- **The generation queues must exist before a deploy.** `kothanote-generation-dev` and `kothanote-generation-prod` are created by the user (`bunx wrangler queues create …`), not by an agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy.
 - **The fake's notes are not the product.** They prove the pipeline, the parser and the rendering. They do not prove note quality, which needs the live client and a hand check (a `docs/DECISIONS.md` verification, as D010–D012).
 
 ---

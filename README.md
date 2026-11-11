@@ -32,7 +32,7 @@ container.ts           the composition root. The only reader of Env.    packages
 worker.ts              fetch (and later scheduled), both on that root.   apps/api
 ```
 
-Two rules carry the design: **`@gc/db` appears only in `*Repo.ts`, and `hono` never appears in a
+Two rules carry the design: **`@kn/db` appears only in `*Repo.ts`, and `hono` never appears in a
 service.** `bun run check` fails if either breaks — Biome covers the import paths,
 [`scripts/check-architecture.mjs`](scripts/check-architecture.mjs) covers the placement.
 
@@ -44,13 +44,13 @@ apps/
   native/              Expo app for iPhone — sign-in (email OTP) and a home screen           Metro
     .maestro/          UI flows on the iOS simulator
 packages/
-  domain/    @gc/domain     schemas, route contracts, error classes. Isomorphic; the app imports it.
-  server/    @gc/server     services, repositories, policies, handlers, Runtime, provider ports
-  db/        @gc/db         drizzle schema + D1 migrations + the deterministic seed
-  auth/      @gc/auth       better-auth instance and its native client
-  apiclient/ @gc/apiclient  the typed client derived from the contract
-  e2e/       @gc/e2e        the promotion gate: HTTP journeys against deployed dev
-  config/    @gc/config     the tsconfig presets every package extends
+  domain/    @kn/domain     schemas, route contracts, error classes. Isomorphic; the app imports it.
+  server/    @kn/server     services, repositories, policies, handlers, Runtime, provider ports
+  db/        @kn/db         drizzle schema + D1 migrations + the deterministic seed
+  auth/      @kn/auth       better-auth instance and its native client
+  apiclient/ @kn/apiclient  the typed client derived from the contract
+  e2e/       @kn/e2e        the promotion gate: HTTP journeys against deployed dev
+  config/    @kn/config     the tsconfig presets every package extends
 docs/
   architecture/        README (the spec), D1-NOTES, DEPLOYMENT, PROVIDER-FAKES
   DECISIONS.md         numbered rulings; ambiguity is resolved here, not re-litigated in code
@@ -86,7 +86,7 @@ provider is wired yet.
 | `bun run check` | lint (ultracite/Biome) + syncpack + `check-architecture.mjs` + types |
 | `bun run fix` | auto-fix the lint and version drift |
 | `bun run test` | every package's suite |
-| `bun run db:generate` / `db:migrate` / `db:seed` / `db:studio` | drizzle-kit, via `@gc/db` |
+| `bun run db:generate` / `db:migrate` / `db:seed` / `db:studio` | drizzle-kit, via `@kn/db` |
 | `bun run auth:generate-schema` | regenerate `packages/db/src/schema/auth.ts` — never hand-edit it |
 | `bun run e2e:ios` / `maestro:smoke` | the iOS simulator build and its Maestro smoke flow |
 
@@ -102,7 +102,7 @@ One branch. Feature branch → PR → CI → merge to `main`, and the merge depl
 (D1 migrations first, then the Worker), the E2E suite against dev as the promotion gate, then
 production. Unfinished work ships dark behind a Cloudflare Flagship flag. D1 has no rollback, so
 every migration is expand/contract. [docs/architecture/DEPLOYMENT.md](docs/architecture/DEPLOYMENT.md)
-is the full account. The hostnames in `wrangler.jsonc` are `*.gcnotes.example.com` placeholders
+is the full account. The hostnames in `wrangler.jsonc` are `*.kothanote.example.com` placeholders
 until a real domain exists.
 
 `bun run deploy:check` (a dry run of both environments) is the only deploy command an agent may
@@ -131,7 +131,7 @@ is **Notes** (a meeting's written notes):
 10. `packages/server/src/Notes/Notes.test.ts` — the service against the **real** repository over
     `makeTestD1()` and a `fixedClock` (D016) — plus a thin `Notes.http.test.ts`.
 
-Then `bun run check`. If step 5's import of `@gc/db` leaked into step 8, or the repo is constructed
+Then `bun run check`. If step 5's import of `@kn/db` leaked into step 8, or the repo is constructed
 anywhere but `container.ts`, the check says so with a file and a line.
 
 ## Reference

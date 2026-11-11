@@ -1,4 +1,4 @@
-import type { ActivityStep } from "@gc/domain/Domain/Chat";
+import type { ActivityStep } from "@kn/domain/Domain/Chat";
 import {
   colors,
   ICON_STROKE,

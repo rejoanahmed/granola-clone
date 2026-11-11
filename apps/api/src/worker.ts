@@ -1,7 +1,7 @@
-import { buildContainer, type Env } from "@gc/server";
-import { GENERATION_RETRY_DELAY_S } from "@gc/server/Generations/GenerationsService";
-import type { TranscriptionJob } from "@gc/server/Integrations/Transcription/QueuedTranscription";
-import { logEvent } from "@gc/server/Runtime/Logger";
+import { buildContainer, type Env } from "@kn/server";
+import { GENERATION_RETRY_DELAY_S } from "@kn/server/Generations/GenerationsService";
+import type { TranscriptionJob } from "@kn/server/Integrations/Transcription/QueuedTranscription";
+import { logEvent } from "@kn/server/Runtime/Logger";
 import { app } from "./app";
 
 // Each environment's queues are `<slug>-generation-<env>` and `<slug>-transcription-<env>` (a

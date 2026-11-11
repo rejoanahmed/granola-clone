@@ -11,7 +11,7 @@ tags:
   - parity
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - extendedWaitUntil:
@@ -44,7 +44,7 @@ env:
     id: home-list
 - assertVisible:
     id: home-ask-button
-    text: Chat with Notes
+    text: Chat with Kothanote
 - assertVisible:
     id: home-new-note-button
 - takeScreenshot: parity-01-home
@@ -102,7 +102,7 @@ env:
     id: work-email-title
 - assertVisible:
     id: work-email-body
-    text: .*your meetings in Notes\.
+    text: .*your meetings in Kothanote\.
 - assertVisible:
     id: work-email-benefits
 - assertVisible:

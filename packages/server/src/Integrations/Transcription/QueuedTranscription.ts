@@ -1,11 +1,11 @@
-import type { Segment } from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import type { Segment } from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import {
   TranscriptionRateLimited,
   TranscriptionRejected,
   TranscriptionTimeout,
   TranscriptionUnavailable,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import type { Clock } from "../../Runtime/Clock";
 import type { TranscriptionAnswer, TranscriptionPort } from "./Port";
 
@@ -50,7 +50,7 @@ export type TranscriptionJobQueue = {
   send: (job: TranscriptionJob) => Promise<void>;
 };
 
-/** One vendor: audio in, segments out. Throws the `@gc/domain/Transcription/Errors` classes. */
+/** One vendor: audio in, segments out. Throws the `@kn/domain/Transcription/Errors` classes. */
 export type TranscriptionEngine = {
   transcribe: (job: TranscriptionJob) => Promise<readonly Segment[]>;
 };

@@ -2,7 +2,7 @@
 # no loading state of its own (§3.1), so the screen root is enough to act on.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

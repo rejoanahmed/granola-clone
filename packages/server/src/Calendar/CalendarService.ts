@@ -9,8 +9,8 @@ import {
   type UpcomingEvent,
   type UpcomingEventsPage,
   type UpcomingEventsQuery,
-} from "@gc/domain/Domain/Calendar";
-import { ValidationFailed } from "@gc/domain/Errors";
+} from "@kn/domain/Domain/Calendar";
+import { ValidationFailed } from "@kn/domain/Errors";
 import type { Actor } from "../Auth/Actor";
 import type {
   CalendarEventRecord,

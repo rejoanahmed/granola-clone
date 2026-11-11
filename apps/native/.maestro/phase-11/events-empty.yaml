@@ -9,7 +9,7 @@ tags:
   - phase-11
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 # The base seed stages no events (§6.5), so nothing is staged here.
 - runFlow: ../subflows/open-home.yaml

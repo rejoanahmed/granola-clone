@@ -10,23 +10,23 @@
     "deploy:prod": "bash scripts/deploy.sh production",
     "dev": "bash scripts/dev.sh",
     "dev:raw": "bunx wrangler dev src/worker.ts --local --port 3001 --ip 0.0.0.0",
-    "local:db:apply": "bunx wrangler d1 migrations apply gcnotes-db-dev --local",
+    "local:db:apply": "bunx wrangler d1 migrations apply kothanote-db-dev --local",
     "migrate:dev": "bash scripts/deploy.sh dev --migrations-only",
     "migrate:prod": "bash scripts/deploy.sh production --migrations-only",
     "test": "vitest run",
     "type-check": "tsc -b"
   },
   "dependencies": {
-    "@gc/domain": "workspace:*",
-    "@gc/server": "workspace:*",
     "@hono/zod-openapi": "1.6.3",
+    "@kn/domain": "workspace:*",
+    "@kn/server": "workspace:*",
     "@scalar/hono-api-reference": "0.12.4",
     "hono": "4.13.8",
     "hono-rate-limiter": "0.5.4"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
-    "@gc/config": "workspace:*",
+    "@kn/config": "workspace:*",
     "@types/node": "26.6.2",
     "typescript": "7.0.2",
     "vitest": "5.0.1",

@@ -1,5 +1,5 @@
-import { NoteId } from "@gc/domain/Domain/Note";
-import { Timestamp } from "@gc/domain/Domain/Time";
+import { NoteId } from "@kn/domain/Domain/Note";
+import { Timestamp } from "@kn/domain/Domain/Time";
 import { z } from "zod";
 
 // The keyset the list query seeks on: the last row of the page just served. `id` is compared, never

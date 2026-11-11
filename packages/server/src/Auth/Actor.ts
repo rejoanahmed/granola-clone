@@ -1,5 +1,5 @@
-import { UserId } from "@gc/domain/Domain/Ids";
-import { Unauthorized } from "@gc/domain/Errors";
+import { UserId } from "@kn/domain/Domain/Ids";
+import { Unauthorized } from "@kn/domain/Errors";
 import { z } from "zod";
 
 // Deliberately not better-auth's session type: a policy that took `Session` would drag the auth

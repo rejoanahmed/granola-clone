@@ -1,6 +1,6 @@
-import { eq, session, user } from "@gc/db";
-import type { UserId } from "@gc/domain/Domain/Ids";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import { eq, session, user } from "@kn/db";
+import type { UserId } from "@kn/domain/Domain/Ids";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 

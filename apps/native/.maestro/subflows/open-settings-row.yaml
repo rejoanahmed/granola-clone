@@ -7,7 +7,7 @@
 #         ROW: settings-report-bug
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: open-settings.yaml
 - scrollUntilVisible:

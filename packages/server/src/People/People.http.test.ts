@@ -1,7 +1,7 @@
-import { Person } from "@gc/domain/Domain/Person";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-import { PersonNotFound } from "@gc/domain/People/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Person } from "@kn/domain/Domain/Person";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

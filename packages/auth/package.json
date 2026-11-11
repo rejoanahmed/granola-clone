@@ -1,5 +1,5 @@
 {
-  "name": "@gc/auth",
+  "name": "@kn/auth",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,12 +14,12 @@
   "dependencies": {
     "@better-auth/core": "1.7.5",
     "@better-auth/expo": "1.7.5",
-    "@gc/db": "workspace:*",
+    "@kn/db": "workspace:*",
     "better-auth": "1.7.5",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@gc/config": "workspace:*"
+    "@kn/config": "workspace:*"
   },
   "peerDependencies": {
     "react": "19.2.3",

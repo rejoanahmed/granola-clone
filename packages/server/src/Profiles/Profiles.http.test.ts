@@ -1,7 +1,7 @@
-import * as ProfileShapes from "@gc/domain/Domain/Profile";
-import { Profile } from "@gc/domain/Domain/Profile";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as ProfileShapes from "@kn/domain/Domain/Profile";
+import { Profile } from "@kn/domain/Domain/Profile";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -193,7 +193,7 @@ const deletionPreviewShape = (): Schema => {
   const found = (ProfileShapes as unknown as Record<string, Schema | undefined>)
     .DeletionPreview;
   if (found === undefined) {
-    throw new Error("no DeletionPreview in @gc/domain/Domain/Profile");
+    throw new Error("no DeletionPreview in @kn/domain/Domain/Profile");
   }
   return found;
 };

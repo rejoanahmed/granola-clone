@@ -19,8 +19,8 @@ export type IdentityDeps = {
 
 // Two people rather than one, so the first ownership rule written has somebody to be refused.
 const PEOPLE = [
-  { email: "demo@gcnotes.dev", name: "Demo User" },
-  { email: "other@gcnotes.dev", name: "Other User" },
+  { email: "demo@kothanote.dev", name: "Demo User" },
+  { email: "other@kothanote.dev", name: "Other User" },
 ] as const;
 
 export function buildIdentity(deps: IdentityDeps): readonly SeededUser[] {

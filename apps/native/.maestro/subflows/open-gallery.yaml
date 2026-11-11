@@ -1,7 +1,7 @@
 # Clean launch, then the development-only "Component gallery" link on welcome.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: launch-app.yaml
 - runFlow:

@@ -1,7 +1,7 @@
 # From home, push Search (docs/spec/phase-8.md §8) and wait for its empty state and its input.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

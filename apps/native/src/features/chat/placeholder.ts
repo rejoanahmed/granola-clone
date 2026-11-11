@@ -2,7 +2,7 @@ import {
   type ChatScopeKind,
   GLOBAL_PLACEHOLDERS,
   SCOPED_PLACEHOLDER,
-} from "@gc/domain/Domain/Chat";
+} from "@kn/domain/Domain/Chat";
 
 export const PLACEHOLDER_INTERVAL_MS = 4000;
 

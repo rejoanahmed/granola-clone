@@ -12,7 +12,7 @@
 #         MENU: note-menu
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - tapOn:
     id: action-menu-scrim

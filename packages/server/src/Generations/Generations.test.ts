@@ -1,7 +1,7 @@
-import * as Gen from "@gc/domain/Domain/Generation";
-import * as GenErrors from "@gc/domain/Generations/Errors";
-import * as LlmErrors from "@gc/domain/Llm/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
+import * as Gen from "@kn/domain/Domain/Generation";
+import * as GenErrors from "@kn/domain/Generations/Errors";
+import * as LlmErrors from "@kn/domain/Llm/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { makeFoldersRepo } from "../Folders/FoldersRepo";

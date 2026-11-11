@@ -1,4 +1,4 @@
-import type { AudioContentType } from "@gc/domain/Domain/Recording";
+import type { AudioContentType } from "@kn/domain/Domain/Recording";
 import type {
   createRecordingRoute,
   discardRecordingRoute,
@@ -7,7 +7,7 @@ import type {
   patchRecordingRoute,
   retryRecordingRoute,
   uploadRecordingAudioRoute,
-} from "@gc/domain/Recordings/Contract";
+} from "@kn/domain/Recordings/Contract";
 import type { Endpoint, RequestOptions } from "./client";
 
 export type UploadAudioInput = {

@@ -1,5 +1,5 @@
-import { searchRoute } from "@gc/domain/Search/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { searchRoute } from "@kn/domain/Search/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

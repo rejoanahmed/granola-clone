@@ -1,10 +1,10 @@
-import type { Segment } from "@gc/domain/Domain/Recording";
+import type { Segment } from "@kn/domain/Domain/Recording";
 import {
   TranscriptionRateLimited,
   TranscriptionRejected,
   TranscriptionTimeout,
   TranscriptionUnavailable,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import type { AudioReader } from "../../Runtime/TranscriptionJobs";
 import type { TranscriptionEngine } from "./QueuedTranscription";
 

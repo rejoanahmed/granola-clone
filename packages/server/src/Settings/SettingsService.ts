@@ -1,10 +1,10 @@
-import { hasChanges } from "@gc/domain/Domain/Patch";
+import { hasChanges } from "@kn/domain/Domain/Patch";
 import {
   SETTINGS_DEFAULTS,
   type UserSettings,
   type UserSettingsPatch,
-} from "@gc/domain/Domain/Settings";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+} from "@kn/domain/Domain/Settings";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import type { Actor } from "../Auth/Actor";
 import type { Clock } from "../Runtime/Clock";
 import { canEditSettings, canReadSettings } from "./Policy";

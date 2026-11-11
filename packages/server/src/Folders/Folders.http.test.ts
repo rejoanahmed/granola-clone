@@ -1,8 +1,8 @@
-import * as Shapes from "@gc/domain/Domain/Folder";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-import * as FolderErrors from "@gc/domain/Folders/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as Shapes from "@kn/domain/Domain/Folder";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
+import * as FolderErrors from "@kn/domain/Folders/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -35,7 +35,7 @@ type Answers = Partial<Record<string, (...args: unknown[]) => unknown>>;
 const errorOf = (tag: string): ErrorClass => {
   const found = (FolderErrors as Record<string, ErrorClass | undefined>)[tag];
   if (found === undefined) {
-    throw new Error(`no ${tag} in @gc/domain/Folders/Errors`);
+    throw new Error(`no ${tag} in @kn/domain/Folders/Errors`);
   }
   return found;
 };
@@ -43,7 +43,7 @@ const errorOf = (tag: string): ErrorClass => {
 const schemaOf = (name: string): Schema => {
   const found = (Shapes as unknown as Record<string, Schema | undefined>)[name];
   if (found === undefined) {
-    throw new Error(`no ${name} in @gc/domain/Domain/Folder`);
+    throw new Error(`no ${name} in @kn/domain/Domain/Folder`);
   }
   return found;
 };

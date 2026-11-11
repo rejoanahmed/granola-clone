@@ -42,7 +42,7 @@ const clock = (ms) => {
 
 const PRIYA = { email: "priya@example.com", name: "Priya Raman" };
 const SAM = { email: "sam@example.com", name: "Sam Okafor" };
-const ME = { email: "e2e-person@gcnotes.test", name: "E2E Person" };
+const ME = { email: "e2e-person@kothanote.test", name: "E2E Person" };
 
 const nowStart = nowMs - 15 * MINUTE;
 const nowEnd = nowMs + 45 * MINUTE;

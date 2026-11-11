@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Notes",
-    "slug": "gcnotes",
+    "name": "Kothanote",
+    "slug": "kothanote",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -10,7 +10,7 @@
     "runtimeVersion": {
       "policy": "fingerprint"
     },
-    "scheme": "gcnotes",
+    "scheme": "kothanote",
     "experiments": {
       "tsconfigPaths": true,
       "typedRoutes": true
@@ -29,7 +29,7 @@
         "expo-audio",
         {
           "enableBackgroundRecording": true,
-          "microphonePermission": "Notes needs microphone access to transcribe your meeting"
+          "microphonePermission": "Kothanote needs microphone access to transcribe your meeting"
         }
       ],
       "expo-secure-store",
@@ -45,7 +45,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "buildNumber": "1",
-      "bundleIdentifier": "com.rejoan.gcnotes",
+      "bundleIdentifier": "com.rovierr.kothanote",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false

@@ -6,7 +6,7 @@ import {
   makeQueryApi,
   queryDefaults,
   queryKeys,
-} from "@gc/apiclient";
+} from "@kn/apiclient";
 import { useToast } from "@native/design";
 import { mailtoUrl } from "@native/features/server/mailto";
 import { LINKS } from "@native/features/settings/links";
@@ -26,7 +26,7 @@ export {
   askChat,
   EXPO_ORIGIN_HEADER,
   hasTag,
-} from "@gc/apiclient";
+} from "@kn/apiclient";
 
 // The chosen server (D019). Empty until one is chosen; nothing signed out calls the API.
 export const API_URL = SERVER_URL ?? "";
@@ -112,15 +112,15 @@ export function useCompleteOnboarding() {
   });
 }
 
-// Re-exported rather than imported by screens, so `@gc/apiclient` has exactly one call site.
+// Re-exported rather than imported by screens, so `@kn/apiclient` has exactly one call site.
 export {
   invalidate,
   invalidationKeys,
   type QueryInvalidator,
   type QueryKey,
-} from "@gc/apiclient";
+} from "@kn/apiclient";
 
-// Re-exported so a screen never hand-writes a cache key and drifts from `@gc/apiclient`.
+// Re-exported so a screen never hand-writes a cache key and drifts from `@kn/apiclient`.
 export const keys = queryKeys;
 
 export const STALE_TIME_MS = queryDefaults.staleTimeMs;
@@ -532,7 +532,7 @@ export function useDesktopReminder() {
 export {
   calendarEventNoteId,
   isCalendarEventNotFound,
-} from "@gc/apiclient";
+} from "@kn/apiclient";
 
 export type UpcomingEventsPage = Awaited<
   ReturnType<typeof client.listUpcomingEvents>

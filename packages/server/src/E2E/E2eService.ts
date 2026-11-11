@@ -1,5 +1,5 @@
-import { folderNameKey } from "@gc/domain/Domain/Folder";
-import { ValidationFailed } from "@gc/domain/Errors";
+import { folderNameKey } from "@kn/domain/Domain/Folder";
+import { ValidationFailed } from "@kn/domain/Errors";
 import { z } from "zod";
 import { secretMatches, sessionCookieFor } from "../Auth/SessionCookie";
 import type {

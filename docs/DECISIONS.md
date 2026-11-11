@@ -110,7 +110,7 @@ globals from scope (module imports like `node:fs` still resolve — globals do n
 `bun run check-types` would fail on the package.
 
 `"node"` is added rather than the seed being excluded, because a seed that is not type-checked is a
-seed that rots. `skipLibCheck: true` from `@gc/config/base.json` suppresses the duplicate-global
+seed that rots. `skipLibCheck: true` from `@kn/config/base.json` suppresses the duplicate-global
 noise between `@types/node` and `@cloudflare/workers-types`.
 
 The Worker itself never loads these types: `apps/api` and `packages/server` set
@@ -150,7 +150,7 @@ foreign keys live only in the DDL, and no object in TypeScript can raise them. T
 repo was cut from ran on hand-written doubles first and deleted 952 lines of them for this reason.
 
 What did **not** change is the seam. R3's seam is the injected `deps`, not the fake behind it:
-services still take a repo, still import no `@gc/db`, and still cannot tell what the repo they were
+services still take a repo, still import no `@kn/db`, and still cannot tell what the repo they were
 handed talks to. Time (`Testing/Clock.ts`), ids (`Testing/Ids.ts`), actors (`Testing/Actors.ts`)
 and outside providers (`Integrations/*/…Fake.ts`, `architecture/PROVIDER-FAKES.md`) are still
 faked, because those are injected dependencies rather than database simulations. The rule the whole
@@ -257,7 +257,7 @@ What it changes:
   a server is chosen; the chosen address and the server's self-description (`GET /server`,
   `ServerInfo`) live in the Keychain (`apps/native/src/lib/server.ts`). The module-scope auth and
   API clients are built from it, so choosing a server ends in an app reload rather than a rebuild
-  under a mounted tree. A setup link `gcnotes://connect?server=…&token=…` (and its QR code) fills
+  under a mounted tree. A setup link `kothanote://connect?server=…&token=…` (and its QR code) fills
   the step. `GET /server` answers `service: <brand slug>` so the app refuses a URL that is not one
   of these servers.
 - **Self-hosting is one command.** `bun run selfhost` (`scripts/selfhost.sh`) creates the D1
@@ -550,7 +550,7 @@ the app's colours). A test fails if the embedded copy and the file differ. Chose
 Pages because the repository is private, which puts Pages behind a paid plan, and because a page
 on every server means the app can open **the user's own server's** copy (Settings → Privacy
 policy). The App Store listing's privacy URL is the reference server's,
-`https://gcnotes-server.bold-breeze-539b.workers.dev/privacy`, until a real domain exists. The
+`https://kothanote-server.bold-breeze-539b.workers.dev/privacy`, until a real domain exists. The
 policy is written against the code: what each optional vendor receives is taken from the request
 builders (`Prompts.ts`, `ElevenLabsScribe.ts`, `ResendClient.ts`), not from boilerplate. It also
 states the current gap that deleting an account leaves the audio in R2. `TODO(Rex)` marks what

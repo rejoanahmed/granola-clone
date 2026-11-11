@@ -1,9 +1,9 @@
-import type { Segment } from "@gc/domain/Domain/Recording";
+import type { Segment } from "@kn/domain/Domain/Recording";
 import {
   TranscriptionRateLimited,
   TranscriptionRejected,
   TranscriptionUnavailable,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import type { WorkersAiRunOptions } from "../../Runtime/AiGateway";
 import type { AudioReader } from "../../Runtime/TranscriptionJobs";
 import type { AiBinding } from "../../Runtime/WorkersAi";

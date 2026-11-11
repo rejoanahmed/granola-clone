@@ -7,7 +7,7 @@ tags:
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -48,5 +48,5 @@ env:
     file: ../scripts/e2e-support.js
     env:
       KIND: feedback
-      EXPECT_SUBJECT: "Feedback on Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      EXPECT_SUBJECT: "Feedback on Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
       EXPECT_BODY: Love the search

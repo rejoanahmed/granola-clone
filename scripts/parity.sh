@@ -16,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UDID="${IOS_SIMULATOR_UDID:-351547D8-BD3B-4418-AB30-8568D8FFB8F3}"
 MAESTRO="${MAESTRO:-$(command -v maestro || echo "$HOME/.maestro/bin/maestro")}"
-APP_ID="${APP_ID:-com.rejoan.gcnotes}"
+APP_ID="${APP_ID:-com.rovierr.kothanote}"
 API_URL="${API_URL:-http://localhost:3001}"
 DEV_SERVER_URL="${DEV_SERVER_URL:-http://localhost:8081}"
 FLOWS="$ROOT/apps/native/.maestro"

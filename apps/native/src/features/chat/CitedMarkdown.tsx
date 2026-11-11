@@ -1,4 +1,4 @@
-import type { Citation } from "@gc/domain/Domain/Chat";
+import type { Citation } from "@kn/domain/Domain/Chat";
 import {
   type Markers,
   NoteMarkdown,

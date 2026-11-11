@@ -17,13 +17,13 @@ afterEach(() => {
 });
 
 const outboxRow = (id: string, payload: string, createdAt = AT) => ({
-  body: "Your Notes code is 123456.",
+  body: "Your Kothanote code is 123456.",
   created_at: createdAt,
   id,
   kind: "otp",
   payload,
   recipient: TO,
-  subject: "Your Notes sign-in code",
+  subject: "Your Kothanote sign-in code",
 });
 
 describe("OutboxRepo.latestOtpFor", () => {

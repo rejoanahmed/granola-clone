@@ -1,6 +1,6 @@
-import type { ChatModelId, ChatScopeKind } from "@gc/domain/Domain/Chat";
-import type { Utterance } from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+import type { ChatModelId, ChatScopeKind } from "@kn/domain/Domain/Chat";
+import type { Utterance } from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 
 export type LlmMode = "auto" | "fail" | "hold" | "malformed" | "truncated";
 
@@ -27,7 +27,7 @@ export type NoteRequest = {
 // the parser can refuse half an object before reading it.
 export type NoteAnswer = { readonly raw: string; readonly truncated: boolean };
 
-// Failures are thrown as the classes in `@gc/domain/Llm/Errors` (R7); the generations service maps
+// Failures are thrown as the classes in `@kn/domain/Llm/Errors` (R7); the generations service maps
 // each onto a queue decision and, in the end, a `GenerationFailure`. Each consumer names only its
 // half, so a note-generation test need not stub chat and the reverse.
 export type NoteLlmPort = {
@@ -68,7 +68,7 @@ export type ChatAnswerRequest = {
   readonly timeoutMs: number;
 };
 
-// Deltas are words with their trailing space; failures are thrown as the `@gc/domain/Llm/Errors`
+// Deltas are words with their trailing space; failures are thrown as the `@kn/domain/Llm/Errors`
 // classes, before or between deltas. The chat path never retries on its own.
 export type ChatLlmPort = {
   streamAnswer: (request: ChatAnswerRequest) => AsyncIterable<string>;

@@ -1,11 +1,11 @@
-import { eq, profiles, sql, user } from "@gc/db";
-import { UserId } from "@gc/domain/Domain/Ids";
+import { eq, profiles, sql, user } from "@kn/db";
+import { UserId } from "@kn/domain/Domain/Ids";
 import {
   type Profile,
   type ProfilePatch,
   UserType,
-} from "@gc/domain/Domain/Profile";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/domain/Domain/Profile";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import { unlessUserGone } from "../Runtime/ForeignKey";
 

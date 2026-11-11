@@ -23,7 +23,7 @@ fi
 
 if [[ ! -d "$API/.wrangler/state/v3/d1" ]]; then
   echo "No local D1 state yet — applying migrations." >&2
-  (cd "$API" && bunx wrangler d1 migrations apply gcnotes-db-dev --local)
+  (cd "$API" && bunx wrangler d1 migrations apply kothanote-db-dev --local)
 fi
 
 # --ip 0.0.0.0 is what lets a phone on the same network reach the dev server.

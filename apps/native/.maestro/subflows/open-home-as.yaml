@@ -10,7 +10,7 @@
 #         MIC: deny            # optional; the microphone permission, see launch-app.yaml
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: sign-in-fast.yaml

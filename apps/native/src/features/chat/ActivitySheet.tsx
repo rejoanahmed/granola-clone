@@ -1,4 +1,4 @@
-import type { ActivityNote, ActivityStep } from "@gc/domain/Domain/Chat";
+import type { ActivityNote, ActivityStep } from "@kn/domain/Domain/Chat";
 import {
   colors,
   ICON_STROKE,

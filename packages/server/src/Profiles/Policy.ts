@@ -1,4 +1,4 @@
-import type { Profile } from "@gc/domain/Domain/Profile";
+import type { Profile } from "@kn/domain/Domain/Profile";
 import { make } from "../Auth/Policy";
 
 export const READ_PROFILE = "profiles.read";

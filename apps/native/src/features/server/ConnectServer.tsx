@@ -1,5 +1,5 @@
-import { storeSessionCookie } from "@gc/auth/client-native";
-import { BRAND } from "@gc/domain/Brand";
+import { storeSessionCookie } from "@kn/auth/client-native";
+import { BRAND } from "@kn/domain/Brand";
 import { colors, PillButton, spacing, Text, TextField } from "@native/design";
 import { PinnedFooter } from "@native/features/auth/PinnedFooter";
 import { TextButton } from "@native/features/auth/TextButton";

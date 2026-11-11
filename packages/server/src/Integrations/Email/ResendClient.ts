@@ -1,4 +1,4 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
 import type { EmailPort } from "./Port";
 
 // The live email client, for an owner who wants multi-person sign-in by code (AUTH_MODE=email-otp)
