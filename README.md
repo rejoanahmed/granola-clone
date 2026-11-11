@@ -5,6 +5,12 @@ and AI-written notes, tied to your calendar. **None of that is built yet.** This
 the bootstrap stage — what exists is the architecture the features will be built on, sign-in, the
 gate, CI, and one example module (`GET /me`) that demonstrates the module pattern end to end.
 
+**It ships as bring-your-own-server** (D019): every user deploys this backend into their own
+Cloudflare account with `bun run selfhost` and pairs the iPhone app with it, so no recording ever
+reaches a server the developer runs. [SELF-HOSTING.md](SELF-HOSTING.md) is the user's guide;
+[docs/plan/RELEASE.md](docs/plan/RELEASE.md) is the path to the App Store. The name is not chosen
+yet: it is one object, `packages/domain/src/Brand.ts` (D023).
+
 The architecture is modular Hono on Cloudflare Workers with no effect system, described in
 [docs/architecture/README.md](docs/architecture/README.md). It was cut from an event-ticketing
 template; the ticketing domain is gone, the shape is kept.

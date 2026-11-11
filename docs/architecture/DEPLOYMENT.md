@@ -378,3 +378,17 @@ in place.
    or a module-level throw is not flaggable, and the E2E gate is what catches it.
 5. **During an incident: did you run the command before opening the PR?** Tier 1, then tier 2, then
    the revert. Never the revert first. (§3.)
+
+---
+
+## 9 · Self-hosted servers (phase 13, D019)
+
+The product a user installs talks to **their own** server, not to `dev` or `production`. That
+server is the `selfhost` environment of `apps/api/wrangler.jsonc`, deployed into the user's account
+by `bun run selfhost` (`scripts/selfhost.sh`): it creates D1, R2 and both queues when they are
+missing, applies migrations, deploys on `workers.dev`, and stores `BETTER_AUTH_SECRET` and
+`OWNER_TOKEN` with `wrangler secret bulk`. Re-running it is the update path, and the
+expand/contract rules of §4 hold for it: every user's server migrates forward on their next run,
+possibly several releases at once. `deploy:check` dry-runs `selfhost` beside `dev` and
+`production`. The developer's reference server (App Review's demo) is a `selfhost` deployment on
+their personal account. The pipeline in §2 does not deploy it.

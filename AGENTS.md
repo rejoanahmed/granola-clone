@@ -7,7 +7,10 @@ file and that one disagree, that one wins and this one is a bug.
 **What this is:** the backend and iPhone app for **Notes**, a meeting-notes app. It is at the
 bootstrap stage — the architecture, auth, the gate and one example module (`GET /me`) exist; the
 product features do not yet. Never use the name or branding of any existing notes product in
-code, copy or assets; the app is called Notes.
+code, copy or assets; the app is called Notes until the owner picks a name, which lives only in
+`packages/domain/src/Brand.ts` (D023). Since phase 13 the product is **bring-your-own-server**
+(D019): each user runs this backend in their own Cloudflare account (`bun run selfhost`), signs in by
+pairing (D020), and AI calls go through their AI Gateway with logs off (D024).
 
 ## The gate
 

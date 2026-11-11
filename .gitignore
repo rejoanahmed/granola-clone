@@ -26,6 +26,11 @@ out/
 # in git points every clone at one person's data.
 .deploy.env
 .wrangler.deploy.jsonc
+# scripts/selfhost.sh: your server's remembered settings and its pairing token (a password), the
+# config it generates, and the secrets file it hands to `wrangler secret bulk` and deletes.
+.selfhost.env
+.wrangler.selfhost.jsonc
+.selfhost.secrets.json
 
 # parity capture output (scripts/parity.sh); regenerated, never committed
 artifacts/

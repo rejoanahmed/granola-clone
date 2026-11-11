@@ -62,7 +62,8 @@ if [[ "$MODE" == "check" ]]; then
   # gate worth running on every PR. It checks both environments because the two `env` blocks
   # share nothing — wrangler inherits no bindings into them, so production can be broken while
   # dev is green.
-  for target in dev production; do
+  # `selfhost` is what scripts/selfhost.sh deploys into a user's own account (D019).
+  for target in dev production selfhost; do
     echo "── dry run: $target ────────────────────────────────────────────"
     bunx wrangler deploy --dry-run --minify --env "$target"
   done

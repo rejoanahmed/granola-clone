@@ -33,6 +33,7 @@
     "migrate:prod": "turbo -F api migrate:prod",
     "parity": "bash scripts/parity.sh",
     "prepare": "husky",
+    "selfhost": "bash scripts/selfhost.sh",
     "syncpack:fix": "syncpack fix && syncpack format",
     "syncpack:lint": "syncpack lint",
     "test": "turbo test && bun test scripts",
