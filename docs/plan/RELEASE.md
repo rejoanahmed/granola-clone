@@ -10,15 +10,9 @@ The rename is done. What follows is the record of how it was chosen.
 
 ### How it was chosen
 
-"granola-clone" cannot ship, and "Notes" is the system app's name. The name is one object,
-`packages/domain/src/Brand.ts` (D023). After choosing:
-
-```bash
-# 1. edit packages/domain/src/Brand.ts: displayName, slug, scheme, bundleId
-# 2. rewrite the copies that cannot import it (Maestro appIds, wrangler names, selfhost.sh):
-scripts/rename-brand.sh kothanote <new-slug> com.rovierr.kothanote com.rejoanahmed.<new-slug> "<Display Name>"
-bun run check && bun run test
-```
+The working names could not ship: the repository's (then `granola-clone`) and "Notes", the
+system app's name. The name is one object, `packages/domain/src/Brand.ts` (D023), which was edited
+once the owner chose.
 
 Candidates were checked on 2026-11-11. **These are preliminary checks, not legal clearance.**
 Domains were checked through RDAP (Google Registry for `.app`, Verisign for `.com`; a 404 means
@@ -62,30 +56,13 @@ was registered in the end: the site is https://rovierr.com/kothanote and the add
 kothanote@rovierr.com (D035). Before submitting, also search App Store Connect's name field,
 which rejects a name another developer already holds.
 
-## 2. Make the server code public: done (2026-11-11). Rename the repository next.
+## 2. Make the server code public: done (2026-11-11)
 
-The repository is public. Its name still carries the reference product's name, and the landing
-page and `SELF-HOSTING.md` already link to `rejoanahmed/kothanote`. Rename it once, then redeploy
-the site so its links resolve:
-
-```bash
-gh repo rename kothanote --repo rejoanahmed/granola-clone   # GitHub redirects the old URL
-git remote set-url origin https://github.com/rejoanahmed/kothanote.git
-bun run deploy:web   # serves https://rovierr.com/kothanote (D035)
-```
-
-
-`SELF-HOSTING.md` tells users to `git clone` this repository, and it is private. Self-hosting is
-impossible for anyone else until either:
-
-- this repository is made public (it contains no secrets: ids are substituted at deploy, and
-  `.selfhost.env` is gitignored), or
-- the server half (`apps/api`, `packages/*`, `scripts/selfhost.sh`) is published as its own public
-  repo, with `SELF-HOSTING.md` pointing there.
-
-A public repo is also what a "Deploy to Cloudflare" button needs (D019). The guide's URL and the
-app's `LINKS.selfHosting` (`apps/native/src/features/settings/links.ts`) must point at a page that
-exists. A GitHub-rendered `SELF-HOSTING.md` is enough.
+The repository is public as `rejoanahmed/kothanote` (renamed from `granola-clone` on 2026-11-11,
+D036; GitHub redirects the old URL). `SELF-HOSTING.md` tells users to `git clone` it, the landing
+page links to it, and the app's `LINKS.selfHosting` points at `rovierr.com/kothanote/self-hosting`,
+which redirects to the GitHub-rendered guide. A "Deploy to Cloudflare" button (D019) would also
+need it public, which it now is.
 
 ## 3. EAS, Apple and Google (owner only)
 
@@ -132,7 +109,7 @@ Android is configured but not built or tested (see §9). When you want it:
   it at `/privacy` (D029). Fill in its `TODO(Rex)` lines, run `bun scripts/render-privacy.ts`, and
   redeploy (`bun run selfhost`). The listing's URL is `https://rovierr.com/kothanote/privacy`.
 - **Support URL**: `https://rovierr.com/kothanote/#support`; the address is kothanote@rovierr.com.
-  `LINKS` in `features/settings/links.ts` points at the site (D035): no `notes.example` is left.
+  `LINKS` in `features/settings/links.ts` points at the site (D035).
 
 ## 5. Build and submit
 

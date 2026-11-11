@@ -19,7 +19,7 @@ In:
 - `wrangler.jsonc` `env.selfhost`, `scripts/selfhost.sh` (`bun run selfhost`), `SELF-HOSTING.md`.
 - Native: the connect step on welcome, the `connect` deep link, the chosen server in the Keychain,
   the support forms' mail-app fallback on a mail-less server.
-- `packages/domain/src/Brand.ts`, the one rename point (D023), and `scripts/rename-brand.sh`.
+- `packages/domain/src/Brand.ts`, the one rename point (D023), and `scripts/rename-brand.sh` (retired in D036: the name is final).
 - A live reference server on the owner's personal account, which also serves App Review.
 
 Out: choosing the name, the visual theme, an app icon, App Store Connect, vendor accounts (all the

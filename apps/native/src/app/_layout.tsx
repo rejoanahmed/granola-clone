@@ -24,7 +24,7 @@ import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
-// #16's header sits 251pt under the status bar (Add at y 298, 47pt safe area). At 0.7 the clone's sat
+// #16's header sits 251pt under the status bar (Add at y 298, 47pt safe area). At 0.7 the app's sat
 // 272pt under it, 21pt low (docs/parity/REPORT.md, P16-2); 0.73 puts it at ~248.
 const ATTENDEES_DETENT = 0.73;
 // #24, #26 and #28 all put the grabber a little over half-way down (y 942 of 2000).

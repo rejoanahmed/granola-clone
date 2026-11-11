@@ -380,7 +380,7 @@
 - **The drawer's home "push" is a dim, not a translate.** #50's shot shows home at its normal x,
   although the discovery README says "pushed". Recorded for the parity pass.
   **Closed in phase 12 (K3): not a gap.** #50's shot shows home at its normal x behind a `#121212`
-  dim, which is what the clone does. The README's word is wrong (docs/parity/REPORT.md, #50).
+  dim, which is what the app does. The README's word is wrong (docs/parity/REPORT.md, #50).
 
 ## Phase 10 (settings, profile and upsells)
 
@@ -388,7 +388,7 @@
   channel, and push is out of scope. Auto-send dictation needs dictation, which phase 7 left out.
   Use my data has no training pipeline behind a fake LLM. All three are stored in `user_settings`
   and read back, so the phase that gives them meaning only reads them and migrates nothing.
-- **No avatar photos.** #82 shows a photo; the clone draws an initial. Uploading needs image
+- **No avatar photos.** #82 shows a photo; the app draws an initial. Uploading needs image
   storage, and an R2 bucket for avatars is a later decision.
 - **Send feedback is an in-app form, not `mailto:`.** Discovery's hand-off to Mail cannot run on the
   simulator and would bypass the fake `Email` port. The form keeps the discovered subject line.
@@ -399,9 +399,9 @@
   `rovierr.com/kothanote` and kothanote@rovierr.com. There is no desktop or iPhone download page
   yet, so those two links open the front page.
 - **"Remind me later" is an email, not a calendar or notification reminder.** Discovery never
-  tapped it, and the fake email port is the clone's only outbound channel.
+  tapped it, and the fake email port is the app's only outbound channel.
 - **"Sign up with work email" signs out.** Discovery never tapped it. Signing out is the only route
-  in the clone to an account under another address, and it asks no confirmation (phase 3's rule).
+  in the app to an account under another address, and it asks no confirmation (phase 3's rule).
 - **Account deletion leaves the fake outbox rows and the R2 audio behind.** The audio half is the
   phase-5 blocker "Audio objects outlive a deleted user"; the outbox exists only in the fake, but
   its rows hold the user's address and message bodies. `DELETE /me`'s OpenAPI description says so
@@ -515,11 +515,9 @@
   `assertVisible: chat-chip-2` holds before the swipe too. Proving the row moved needs its scroll
   offset exposed (for example as an accessibility value), which is a product change for a test.
   The shot shows the scrolled row. Unblocked by exposing the offset or a bounds predicate.
-- **The root package is named `granola-clone`, and so is the README title.** Neither ships in the
-  app, and neither is in `check-branding`'s scope (§7.2 scopes it to shipped source). Renaming the
-  root package rewrites `bun.lock`'s workspace root, which the native rebuild rule counts as a
-  native input, for no user-visible change. Recorded rather than renamed; the repository name is
-  the workspace's, not the product's. Unblocked by a rename alongside the next lockfile change.
+- **Resolved (2026-11-11): the root package and README carried the working name.** The root
+  package is `kothanote` (D030) and the repository is `rejoanahmed/kothanote` (formerly
+  granola-clone).
 - **The parity checker does not check that fixed shas exist.** `fixed (<sha>)` is now an
   allowlisted shape (7–40 hex digits), but the script does not resolve it against `git`, because
   CI's checkout is shallow and a squash merge rewrites every sha anyway. Unblocked by recording
@@ -527,8 +525,8 @@
 
 ## Phase 13 (bring your own server)
 
-- **The repository is private, so nobody else can self-host yet.** `SELF-HOSTING.md` clones it.
-  Stubbed: nothing. Unblocked by making it (or a server-only copy) public; `docs/plan/RELEASE.md` §2.
+- **Resolved (2026-11-11): the repository is public** as `rejoanahmed/kothanote`, so anyone can
+  follow `SELF-HOSTING.md`.
 - **The connect screen has never run on a device or simulator.** This phase was built on Linux:
   `connect.ts` is unit-tested, the screen type-checks, and pairing was proven over HTTP against the
   deployed server, but no iOS build exercised `ConnectServer`, the Keychain write, the reload, or
@@ -550,8 +548,8 @@
   the body below the recording, set `--gateway off` for that owner. Unblocked by one 60+ MB test.
 - **Bengali on the free transcriber is poor.** Published and measured (D021). The setup guide says
   so and points to ElevenLabs; the app does not.
-- **No app icon.** `app.json` has no `icon`. It waits on the name. The placeholder settings pages
-  that sat beside it in this entry are hidden since D027.
+- **Resolved: the app icon exists** (D032; `bun run brand` regenerates it). The placeholder
+  settings pages that sat beside it in this entry are hidden since D027.
 - **Hidden-feature flows are not run by default** (D027). The `unfinished`-tagged flows need a bundle
   started with `EXPO_PUBLIC_SHOW_UNFINISHED=true`, and none of the edited or retagged flows were
   run here (no simulator). Unblocked by one full local Maestro run, in each mode.

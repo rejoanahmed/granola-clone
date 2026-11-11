@@ -57,7 +57,7 @@ describe("findBrandingLeaks", () => {
 
   it("ignores docs, which describe the discovery source by name", () => {
     expect(
-      scan({ "docs/plan/phases.md": "55 captured screens of Granola iOS\n" })
+      scan({ "docs/spec/phase-2.md": "55 captured screens of Granola iOS\n" })
     ).toEqual([]);
   });
 

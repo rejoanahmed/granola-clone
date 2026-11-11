@@ -71,7 +71,7 @@ const SPEC_SCREENS = [
 ];
 
 const HEADER =
-  "| Id | Aspect | Discovery | Clone | Grade | Status |\n| --- | --- | --- | --- | --- | --- |";
+  "| Id | Aspect | Discovery | App | Grade | Status |\n| --- | --- | --- | --- | --- | --- |";
 
 const section = (nn, rows) =>
   [`## #${nn} screen — parity-${nn}-screen`, "", HEADER, ...rows, ""].join(

@@ -28,16 +28,16 @@ language of #01 and #85, marked *(designed)*:
 - the live card started from a meeting;
 - the "event gone" and "already has notes" outcomes.
 
-**References and ids.** `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come from
+**References and ids.** `#NN` is `<discovery>/screens/NN-*/`. Tokens come from
 the discovery README and `apps/native/src/design/tokens.ts`. Layout numbers are iOS points measured on
-the 428pt discovery device. The clone runs at 402pt, so horizontal measurements are insets from an
+the 428pt discovery device. The app runs at 402pt, so horizontal measurements are insets from an
 edge.
 
 **Branding.** No string here names the product except the phase-10 preview's "Start Notes", which
 does not change. Discovery's calendar glyph, the spiral and the lock-screen chrome are not copied;
 the glyphs are lucide.
 
-**Real calendars are out of scope.** Google OAuth is a later, key-dependent phase (phases.md). This
+**Real calendars are out of scope.** Google OAuth is a later, key-dependent phase (the phase plan, retired in D036). This
 phase adds the port that phase will implement, and records the missing client as a blocker (§10).
 
 ---
@@ -46,7 +46,7 @@ phase adds the port that phase will implement, and records the missing client as
 
 | In | Out (and where it goes) |
 | --- | --- |
-| The `Calendar` port, `CalendarFake` and its store `fake_calendar_events`, and `CALENDAR_MODE` (`fake`; `live` refused until a client exists) | A live Google / Microsoft client and OAuth (phases.md, Out of scope; §10 blocker) |
+| The `Calendar` port, `CalendarFake` and its store `fake_calendar_events`, and `CALENDAR_MODE` (`fake`; `live` refused until a client exists) | A live Google / Microsoft client and OAuth (the phase plan, retired in D036, Out of scope; §10 blocker) |
 | `GET /calendar/events?until=`: the caller's meetings that have not ended and start before `until`, each with `noteId` when the caller has a live note for it | Calendar sync, webhooks and push. The fake is read on every request, so there is nothing to sync |
 | The home events card in four states: loading *(designed)*, error *(designed)*, empty (#01, unchanged) and populated *(designed)* | Lock-screen notifications for upcoming meetings. The phase-10 toggle is stored and still controls nothing (§10) |
 | Tapping a meeting starts a recording linked to it: `POST /recordings { calendarEventId }` creates the note with the meeting's title and attendees | A "prepare notes before the meeting" note with no recording. In this app a new note is always a recording (phase 5) |

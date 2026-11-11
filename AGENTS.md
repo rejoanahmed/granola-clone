@@ -1,16 +1,16 @@
-# Working in granola-clone
+# Working in Kothanote
 
 Read this before writing anything. [README.md](README.md) is the tour; this file is the contract.
 The authority above both is [docs/architecture/README.md](docs/architecture/README.md) — if this
 file and that one disagree, that one wins and this one is a bug.
 
-**What this is:** the backend and iPhone app for **Notes**, a meeting-notes app. It is at the
-bootstrap stage — the architecture, auth, the gate and one example module (`GET /me`) exist; the
-product features do not yet. Never use the name or branding of any existing notes product in
-code, copy or assets; the app is called Notes until the owner picks a name, which lives only in
-`packages/domain/src/Brand.ts` (D023). Since phase 13 the product is **bring-your-own-server**
-(D019): each user runs this backend in their own Cloudflare account (`bun run selfhost`), signs in by
-pairing (D020), and AI calls go through their AI Gateway with logs off (D024).
+**What this is:** the backend, iPhone app and site for **Kothanote**, a private meeting-notes app
+and a Rovierr product (https://rovierr.com/kothanote). Recording, transcripts, AI notes, Ask,
+search, people, folders and the calendar card are built. The product is **bring-your-own-server**
+(D019): each user runs this backend in their own Cloudflare account (`bun run selfhost`), signs in
+by pairing (D020), and AI calls go through their AI Gateway with logs off (D024). The name and
+bundle ids live only in `packages/domain/src/Brand.ts` (D023, D030); never use the name or
+branding of any other notes product in code, copy or assets (`scripts/check-branding.mjs`).
 
 ## The gate
 

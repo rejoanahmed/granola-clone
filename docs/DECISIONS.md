@@ -401,13 +401,14 @@ reference server; Claude and OpenAI through recorded HTTP only (no keys were ava
 
 ## D023 · The product's name, slug, scheme and bundle id are one object — **STANDING**
 
-The app cannot ship as "granola-clone" or as "Notes" (the system app's name), and the final name is
-the owner's choice. `packages/domain/src/Brand.ts` is the only place it is written: `app.config.ts`
+The app could not ship under its working names (the repository, then `granola-clone`, or "Notes",
+the system app's name), and the final name was the owner's choice. `packages/domain/src/Brand.ts` is the only place it is written: `app.config.ts`
 (display name, slug, scheme, bundle id, the microphone prompt), the native auth scheme and storage
 prefix, the server's `NATIVE_SCHEME` default (the wrangler vars no longer set it), `GET /`'s
-service name and `GET /server`'s `service`. Renaming is editing that object, then
+service name and `GET /server`'s `service`. Renaming was editing that object, then
 `scripts/rename-brand.sh <old-slug> <new-slug> <old-bundle-id> <new-bundle-id>` for the places that
-cannot import TypeScript (Maestro `appId`s, wrangler resource names, the selfhost script).
+cannot import TypeScript (Maestro `appId`s, wrangler resource names, the selfhost script). The
+script was retired in D036 once the name was final.
 **It must happen before the first App Store upload:** a new bundle id is a new app, and an
 installed app keeps its old scheme. Candidate names, with conflict checks, are in
 `docs/plan/RELEASE.md`.
@@ -567,9 +568,9 @@ and scheme `kothanote`, iOS bundle id `com.rovierr.kothanote` and Android applic
 `com.<brand>.app` on Android), and domain `kothanote.app`. The rename also covered the workspace
 scope (`@gc/*` → `@kn/*`), the root package, the wrangler and self-host resource names
 (`kothanote-*`), every Maestro `appId`, and every product-name string in copy, tests and flows.
-"notes" as a common noun is unchanged. The GitHub repository is still `granola-clone`; renaming it is
-the owner's call. GitHub redirects the old URL, and `apps/web/src/site.ts` holds the one link to
-update. The reference server moved from `gcnotes-server` to `kothanote-server` (fresh D1, same
+"notes" as a common noun is unchanged. The GitHub repository was then still
+`granola-clone`; it was renamed to `rejoanahmed/kothanote` on 2026-11-11 (D036), and GitHub
+redirects the old URL. The reference server moved from `gcnotes-server` to `kothanote-server` (fresh D1, same
 pairing token). The `gcnotes-*` resources on the account are now unused.
 
 ---
@@ -706,6 +707,25 @@ an address this site owns.
 The old `kothanote-web.bold-breeze-539b.workers.dev` stays on and 301s every page to the same path
 under rovierr.com/kothanote (`src/server.ts`), as `www.rovierr.com` folds into the apex. Android's
 `com.kothanote.app` package id is an identifier, not a domain, and is unchanged.
+
+## D036 · The working name is gone: the repository, folder and docs say Kothanote — **STANDING**
+
+On 2026-11-11 the owner asked for the last of the working name to go. The GitHub repository is
+`rejoanahmed/kothanote` (formerly `granola-clone`), the owner's checkout is
+`~/Projects/rovierr/kothanote`, and the README and AGENTS.md describe Kothanote, a Rovierr product.
+Retired with it:
+
+- `docs/plan/phases.md`, the autonomous loop's phase table. Every phase it listed is done; the phase
+  specs (`docs/spec/phase-*.md`) remain as the record of what each phase built, and their mentions
+  of "the phase plan" point at this entry.
+- `scripts/rename-brand.sh`. The name is final and the store records exist (D030, D034), so a
+  scripted rename is no longer a supported operation.
+
+The specs and the parity report call the reference app whose screens were captured "the reference
+app" and its capture folder `<discovery>/` (kept outside the repo, never committed). "Notes" in the
+phase specs is the app's working name at the time. The one deliberate occurrence of the reference
+app's name left in tracked files is `scripts/check-branding.mjs`'s guard and its tests, which must
+name what they forbid.
 
 ---
 

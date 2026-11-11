@@ -1,6 +1,6 @@
 # Phase 2: Design system and app shell
 
-Status: spec. Source: `~/personal/granola-clone-discovery/` (`README.md` tokens, `COPY.md`,
+Status: spec. Source: `<discovery>/` (`README.md` tokens, `COPY.md`,
 `FEATURES.md`, `NAVIGATION.md`, `screens/01-home`, `04`, `16`, `51`, `70`). Screens are cited as
 `#NN`. The product is **Notes**: wherever discovery copy names the other product, this spec says
 "Notes" instead, and no logo, asset or font from it is used.
@@ -265,7 +265,7 @@ Verbatim from `COPY.md`, with the product name replaced:
 | A11y: Phone button | Phone |
 | A11y: Search button | Search |
 | A11y: Avatar | Settings |
-| A11y: Ask pill | Chat with Notes (discovery: "Chat with Granola") |
+| A11y: Ask pill | Chat with Notes (discovery: "Chat with" and the reference app's name) |
 | A11y: FAB | New note |
 | A11y: Events card | No upcoming events, Sign up with your work email. |
 | Gallery (our own) | Gallery · Colours · Type · Buttons · Surfaces · Sheets · Open sheet · Get Started |
@@ -369,7 +369,7 @@ returns `"/"`.
 asserts every hex in section 2.1. The review step greps `apps/native/src` outside `design/tokens.ts`
 for `#[0-9A-Fa-f]{3,8}` and expects none.
 
-**Exit** (from phases.md): `phase-2/home-shell.yaml` passes, `phase-2/gallery.yaml` passes, the
+**Exit** (from the phase plan, retired in D036): `phase-2/home-shell.yaml` passes, `phase-2/gallery.yaml` passes, the
 rest of `--include-tags=phase-2,smoke` passes on the iPhone 17 Pro simulator, and the
 cache-busted `bun run check` and `bun run test` are green.
 
