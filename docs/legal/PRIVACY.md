@@ -2,7 +2,7 @@
 
 Effective date: TODO(Rex): the date the app is first published
 
-This policy covers the iPhone app TODO(Rex): app name (the "app") and the server software it
+This policy covers the iPhone app Kothanote (the "app") and the server software it
 connects to, both published by TODO(Rex): your legal name or company ("we", "us").
 
 ## The short version

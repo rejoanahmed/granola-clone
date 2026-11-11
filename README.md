@@ -41,7 +41,8 @@ service.** `bun run check` fails if either breaks — Biome covers the import pa
 ```
 apps/
   api/                 the Worker: fetch, OpenAPI doc at /api/doc, Scalar at /api/reference   :3001
-  native/              Expo app for iPhone — sign-in (email OTP) and a home screen           Metro
+  native/              Expo app for iPhone (Kothanote) — connect, record, notes, Ask           Metro
+  web/                 the landing page and /privacy: TanStack Start on a Worker (D033)       :3043
     .maestro/          UI flows on the iOS simulator
 packages/
   domain/    @kn/domain     schemas, route contracts, error classes. Isomorphic; the app imports it.
@@ -49,6 +50,8 @@ packages/
   db/        @kn/db         drizzle schema + D1 migrations + the deterministic seed
   auth/      @kn/auth       better-auth instance and its native client
   apiclient/ @kn/apiclient  the typed client derived from the contract
+  tokens/    @kn/tokens     the palette: native reads it, apps/web reads its generated CSS (D031)
+  shared/    @kn/shared     code two apps share: the privacy policy and its renderer
   e2e/       @kn/e2e        the promotion gate: HTTP journeys against deployed dev
   config/    @kn/config     the tsconfig presets every package extends
 docs/

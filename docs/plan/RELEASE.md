@@ -4,7 +4,11 @@ What stands between this branch and a public App Store listing, in order. The co
 `docs/spec/phase-13.md`; this file is the owner's checklist. Nothing here has been done to App Store
 Connect, Apple's developer program or any vendor account. Those need the owner's own logins.
 
-## 1. Choose the name (blocks everything below)
+## 1. The name: Kothanote (chosen, D030)
+
+The rename is done. What follows is the record of how it was chosen.
+
+### How it was chosen
 
 "granola-clone" cannot ship, and "Notes" is the system app's name. The name is one object,
 `packages/domain/src/Brand.ts` (D023). After choosing:
@@ -57,7 +61,18 @@ Bengali or English (Lekha, Khata, Shuno, Kotha, Smriti, Lipi…) are taken in bo
 domain the day the name is chosen. Before submitting, also search App Store Connect's name field,
 which rejects a name another developer already holds.
 
-## 2. Make the server code public
+## 2. Make the server code public: done (2026-11-11). Rename the repository next.
+
+The repository is public. Its name still carries the reference product's name, and the landing
+page and `SELF-HOSTING.md` already link to `rejoanahmed/kothanote`. Rename it once, then redeploy
+the site so its links resolve:
+
+```bash
+gh repo rename kothanote --repo rejoanahmed/granola-clone   # GitHub redirects the old URL
+git remote set-url origin https://github.com/rejoanahmed/kothanote.git
+bun run deploy:web   # KOTHANOTE_SITE_URL=https://kothanote-web.bold-breeze-539b.workers.dev until the domain is live
+```
+
 
 `SELF-HOSTING.md` tells users to `git clone` this repository, and it is private. Self-hosting is
 impossible for anyone else until either:
@@ -71,21 +86,44 @@ A public repo is also what a "Deploy to Cloudflare" button needs (D019). The gui
 app's `LINKS.selfHosting` (`apps/native/src/features/settings/links.ts`) must point at a page that
 exists. A GitHub-rendered `SELF-HOSTING.md` is enough.
 
-## 3. Apple and Expo accounts (owner only)
+## 3. EAS, Apple and Google (owner only)
 
-1. **Apple Developer Program**: enrol at <https://developer.apple.com/programs/enroll/> ($99/year;
-   an individual in Bangladesh can enrol, and identity verification can take days).
-2. **Expo account**: `bunx eas-cli login` (create one at <https://expo.dev/signup> if needed), then
-   from `apps/native`: `bunx eas-cli init` to link the project. It writes `extra.eas.projectId`;
-   commit it.
-3. **App Store Connect app record**: <https://appstoreconnect.apple.com> → Apps → **+** → New App:
-   platform iOS, the chosen name, primary language English, bundle id = `BRAND.bundleId` (register
-   it under Certificates, IDs & Profiles first, or let `eas build` create it), SKU = the slug.
+EAS mirrors Chapterly's setup, on the same owner (`rovierr`) and Apple team (`BXW3A78H2C`, D034).
+Run these from `apps/native`, in order:
+
+1. `bunx eas-cli init`. This creates the EAS project under `rovierr` and writes the id into
+   **`apps/native/app.json` → `expo.extra.eas.projectId`**. If eas-cli says it cannot edit the
+   dynamic config, paste the printed id there yourself. Commit it.
+2. `bunx eas-cli update:configure`. This adds `expo.updates.url` (`https://u.expo.dev/<projectId>`)
+   to the same file. The channels already match the build profiles. Commit.
+3. `bunx eas-cli build -p ios --profile production`. When asked, **reuse** the team's existing
+   distribution certificate (Chapterly's). Let EAS register the App ID and create a new
+   provisioning profile for `com.rovierr.kothanote`: profiles are always per bundle id.
+4. Create the App Store Connect record (Apps → + → New App, bundle id `com.rovierr.kothanote`).
+   Then put its numeric Apple ID into `eas.json` → `submit.{internal,production}.ios.ascAppId`, as
+   Chapterly has `6826753742`.
+5. `bunx eas-cli submit -p ios --latest --profile production`. Pick the account's existing **App
+   Store Connect API key** when asked; it is the one Chapterly submits with.
+
+Android is configured but not built or tested (see §9). When you want it:
+
+- Create the app in Play Console (`com.kothanote.app`). The first AAB must be uploaded by hand
+  there: Google's API cannot create the first release.
+- `bunx eas-cli build -p android --profile production`. With no choice made, EAS **generates a new
+  upload keystore for this app**. That is the recommended path, since a keystore is per app on Play.
+- To deliberately use Chapterly's keystore instead (not recommended): in Chapterly's project run
+  `bunx eas-cli credentials -p android` → `production` → *Keystore: Manage everything needed to build
+  your project* → *Download existing keystore*. Then in `apps/native` here run the same menu →
+  *Set up a new keystore* → *I want to upload my own file*, and give it that `.jks` with its
+  passwords.
+- Submit: `bunx eas-cli credentials -p android` → `production` → *Google Service Account* →
+  *Manage your Google Service Account Key for Play Store Submissions* → *Use an existing Google
+  Service Account Key* → pick Chapterly's. Then, in Play Console → Users and permissions, give that
+  service account access to Kothanote. Then `bunx eas-cli submit -p android --latest`.
 
 ## 4. Assets the app still lacks
 
-- **App icon** (1024×1024 PNG, no transparency). There is none. Add `"icon": "./assets/icon.png"`
-  to `app.json`. It needs the name first.
+- **App icon**: done (D032), `bun run brand` regenerates it.
 - **Screenshots**: 6.9" (1320×2868 or 1290×2796) at least, 3 to 10 of them. Take them from a dev
   build connected to the reference server: home with notes, a note with AI notes, the transcript
   sheet, Ask with citations, the connect screen.
@@ -142,3 +180,20 @@ the AI notes about a minute later.
   `bun run selfhost -- --rotate-token`.
 - The Workers AI catalogue changes monthly. When the default model (D025) is deprecated, re-run
   the trial and move the default.
+
+## 9. Android: what it would still need
+
+The config is ready; the app is not. Before a Play release:
+- **Background recording.** iOS records with the screen off via `enableBackgroundRecording`. On
+  Android this needs a foreground service with a persistent notification
+  (`FOREGROUND_SERVICE_MICROPHONE`), which expo-audio's plugin adds only when configured and which
+  has not been tried.
+- **The recorder, the upload queue and resume-on-launch** have only ever run on iOS.
+- **UI built on iOS-only presentation.** Form sheets with detents (`formSheet`,
+  `sheetAllowedDetents`), the native page-sheet chat and the keyboard-docked composer assume
+  UIKit. On Android each screen needs checking and some need another presentation.
+- **Tests.** Every Maestro flow targets the iOS simulator by UDID. An emulator lane is needed.
+- **Store.** A Play listing, the Data safety form (the same facts as the privacy policy), a
+  feature graphic, Android screenshots, and the first manual upload.
+- **Deep links.** The `kothanote://connect` setup link works through the scheme. App Links over
+  `https://kothanote.app` would need `assetlinks.json` on the site.

@@ -140,8 +140,9 @@ gets a deterministic fake, selected by environment in `container.ts` — the rul
 - **`packages/db/src/schema/auth.ts` is generated.** Run `bun run auth:generate-schema`; never hand-edit it.
 - **`betterAuth` is imported from `better-auth/minimal`**, never the barrel — the barrel drags
   kysely into the Worker bundle with no error and about 648 KiB of dead weight.
-- **The app is iPhone-only.** `apps/native/app.json` declares `platforms: ["ios"]` and no tablet
-  support. Maestro selects by `testID`, so every screen root and every control a flow touches gets
+- **The app is iPhone-first.** `apps/native/app.json` declares `ios` and `android` (D034, so
+  EAS's Android config is ready) and no tablet support; nothing Android-specific is built or
+  tested yet. Maestro selects by `testID`, so every screen root and every control a flow touches gets
   one (`<screen>-<thing>`, e.g. `welcome-email`).
 
 ## Testing

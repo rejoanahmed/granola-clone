@@ -72,3 +72,12 @@ apps/native/ios/
 apps/native/android/
 apps/native/expo-env.d.ts
 *.aab
+
+# apps/web (TanStack Start on Workers, as the publisher's other app): build output and the
+# generated route tree's cache
+apps/web/.tanstack
+apps/web/.nitro
+apps/web/.output
+apps/web/dist-ssr
+.expo/
+*.tsbuildinfo

@@ -19,7 +19,7 @@ Open **Terminal** and paste these two lines, one at a time:
 
 ```bash
 curl -fsSL https://bun.sh/install | bash
-git clone https://github.com/rejoanahmed/granola-clone.git && cd granola-clone && bun install
+git clone https://github.com/rejoanahmed/kothanote.git && cd kothanote && bun install
 ```
 
 The first line installs [Bun](https://bun.sh), which runs the setup. The second downloads the

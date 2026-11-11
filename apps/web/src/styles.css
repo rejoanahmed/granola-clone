@@ -1,0 +1,69 @@
+/* The landing page's stylesheet: Tailwind, then the palette from @kn/tokens (one source with the
+   iPhone app, D031), then the few base styles Tailwind cannot say. */
+@import "tailwindcss";
+@import "@kn/tokens/tokens.css";
+
+@theme {
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans:
+    ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans Bengali", sans-serif;
+}
+
+html {
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+}
+
+/* The privacy policy, rendered from Markdown (D029). */
+.legal h1 {
+  font-family: var(--font-serif);
+  font-size: 2.6rem;
+  line-height: 1.1;
+}
+.legal h2 {
+  margin-top: 2.4rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.legal h3 {
+  margin-top: 1.6rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.legal p,
+.legal li {
+  margin-top: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+}
+.legal ul {
+  padding-left: 1.2rem;
+  list-style: disc;
+}
+.legal a {
+  color: var(--color-accent-lime);
+  text-decoration: underline;
+}
+.legal strong {
+  color: var(--color-text-primary);
+}
+.legal table {
+  width: 100%;
+  margin-top: 1.2rem;
+  font-size: 0.92rem;
+  border-collapse: collapse;
+}
+.legal th,
+.legal td {
+  padding: 0.6rem;
+  vertical-align: top;
+  text-align: left;
+  border: 1px solid var(--color-border-hairline);
+}
+.legal th {
+  color: var(--color-text-secondary);
+}

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@kn/config/react-library.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "*.ts"],
+  "compilerOptions": {
+    // An app emits nothing: Vite owns the output, `tsc -b` only checks.
+    "noEmit": true,
+    "moduleDetection": "force",
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@web/*": ["./src/*"]
+    }
+  }
+}

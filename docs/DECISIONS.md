@@ -558,6 +558,121 @@ only the publisher can fill in.
 
 ---
 
+## D030 · The name is Kothanote — **STANDING**
+
+Chosen by the owner on 2026-11-11 from the candidates in `docs/plan/RELEASE.md`: Bangla *kotha*
+(talk, words) and note. `packages/domain/src/Brand.ts` now says display name **Kothanote**, slug
+and scheme `kothanote`, iOS bundle id `com.rovierr.kothanote` and Android application id
+`com.kothanote.app` (the publisher's pattern for its other app: `com.rovierr.<slug>` on iOS and
+`com.<brand>.app` on Android), and domain `kothanote.app`. The rename also covered the workspace
+scope (`@gc/*` → `@kn/*`), the root package, the wrangler and self-host resource names
+(`kothanote-*`), every Maestro `appId`, and every product-name string in copy, tests and flows.
+"notes" as a common noun is unchanged. The GitHub repository is still `granola-clone`; renaming it is
+the owner's call. GitHub redirects the old URL, and `apps/web/src/site.ts` holds the one link to
+update. The reference server moved from `gcnotes-server` to `kothanote-server` (fresh D1, same
+pairing token). The `gcnotes-*` resources on the account are now unused.
+
+---
+
+## D031 · The monorepo follows the publisher's other app (Chapterly), except where it would not fit — **STANDING**
+
+The owner's other shipping app is the reference for layout and release conventions. Read-only, in
+`/home/rex/Projects/rovierr/chapterly/chapterly`. Both repositories grew from the same template, so
+`apps/api`, `apps/native`, `packages/{domain,server,db,auth,apiclient,e2e,config}`, turbo,
+syncpack, ultracite, husky, the module pattern and the gate were already the same shape.
+
+**Adopted:**
+- `apps/web`, a TanStack Start app on a Worker, built by Vite with `@cloudflare/vite-plugin` and
+  deployed by `wrangler deploy`, exactly as Chapterly's web is. Same plugin order, same
+  `tsconfigPaths`/`@web/*` alias, same port, same exact versions (D033).
+- `packages/tokens`: the palette moved out of `apps/native/src/design/tokens.ts` (which now
+  re-exports it) into one package that the app, the landing (via a generated `tokens.css` of Tailwind
+  theme variables) and the brand script all read. `emit-css.ts --check` joins `bun run check`, as in
+  Chapterly.
+- `packages/shared` for code two apps share. Today that is the privacy-policy renderer and its
+  source, read by the API and the landing.
+- `scripts/brand-mark.ts` + `scripts/brand-assets.ts` (`bun run brand`): one mark drawn as code, every
+  icon and the social card generated from it, outputs committed (D032).
+- `mise.toml` pinning Bun 1.4.2; `.easignore` (EAS uploads from the repo root, so it restates the
+  ignores and drops docs and `.git`).
+- The EAS setup, profile for profile (D034), and `EXPO_PUBLIC_APP_ENV`'s three values
+  `local | dev | prod`.
+
+**Deliberately not adopted:**
+- **`bunfig.toml`'s hoisted linker.** Chapterly adopted it for an Expo SDK 58 peer-duplication bug.
+  This app is on SDK 57, and Metro could not be verified on this Linux machine. Revisit with the
+  SDK 58 upgrade.
+- Firebase/Crashlytics and its config plugins. There is no crash reporting, by the privacy promise
+  (D019).
+- i18n (`packages/localization`), the UI kits (`ui`, `console-ui`, …), the lesson, studio and bank
+  packages, `tools/`, `business/`, the device-lab scripts, `deploy-direct.yml`, and
+  `check-testids.mjs`/`check-workflows.mjs`. Either the product has nothing they serve, or this
+  repo already has an equivalent gate (`check-ci.mjs`).
+- `store-assets/` and `bun run store`. They wait on real App Store screenshots.
+- The package scope: Chapterly's `@bo/*` is its own. This repo uses `@kn/*`.
+
+---
+
+## D032 · The icon: a speech bubble holding a waveform over a line — **STANDING**
+
+Original (no letterform, nothing traced), in the D028 palette: a mint bubble (`accent.lime`) on the
+deep-teal tile (`accent.oliveDark`), with five dark bars and one teal line. What was said, becoming
+a note. Checked rendered at 1024, 60, 40 and 29 px: at 29 only the bubble and the bars survive,
+which is enough. The source is `scripts/brand-mark.ts`. `bun run brand` writes:
+`apps/native/assets/images/{icon,icon-dark,icon-tinted,splash-icon,adaptive-foreground,adaptive-background,adaptive-monochrome}.png`
+and `icon.svg`, plus `apps/web/public/{icon.svg,favicon.ico,apple-touch-icon.png,icon-192.png,icon-512.png,icon-maskable-512.png,og.png,site.webmanifest}`.
+The tinted and monochrome variants cut the bars out of the bubble. Android's adaptive and maskable
+icons keep the mark inside the 66% safe zone. `app.json` wires them the way Chapterly does
+(`icon`, the splash plugin's `image`), plus iOS 18's `ios.icon.{light,dark,tinted}` and Android's
+`adaptiveIcon`, which Chapterly does not use. It rasterises with `rsvg-convert` rather than
+Chapterly's headless Chrome, because this repo has no kit app to borrow a browser from.
+
+---
+
+## D033 · The landing page — **STANDING**
+
+`apps/web`, deployed to the owner's personal account as `kothanote-web`
+(`https://kothanote-web.bold-breeze-539b.workers.dev`), with `/` and `/privacy` (the D029 source,
+through `@kn/shared`). The section order and rhythm follow a common product-page pattern,
+studied from heypocket.com for structure only: hero with a device picture, three promises, a feature
+grid, how it works, a closer look, privacy, open source, FAQ, support. Every word, the CSS-drawn
+phone, the icon and the social card are original. No text, image, logo or code was taken. Copy is
+held to the code's facts: speaker labels only with ElevenLabs, Bengali rough on the free default,
+one owner per server, iPhone first. `TODO(Rex)` marks the support address and the App Store link
+(`apps/web/src/site.ts`). The domain is not attached: `kothanote.app` was not registered at the
+registry when checked (RDAP 404) and is not a zone on the account. Once it is, add the custom-domain
+route in `apps/web/wrangler.jsonc` and redeploy (`docs/plan/RELEASE.md`).
+
+---
+
+## D034 · EAS is configured exactly as Chapterly's, on the same owner and Apple team — **STANDING**
+
+- `apps/native/eas.json` mirrors Chapterly's. The profiles are `development` (simulator,
+  `EXPO_PUBLIC_APP_ENV=local`), `development-device`, `preview` (internal, `dev`), `production`
+  (`bun 1.4.2`, `environment: production`, auto-increment, channel `production`), and `apk-prod`,
+  `apk-dev` and `apk-local`. Submit profiles are `internal` and `production` (Android tracks
+  `internal`/`production`, `releaseStatus: completed`). `appVersionSource: remote`.
+- `app.json`: `owner: "rovierr"` (Chapterly's EAS owner; `eas-cli whoami` lists it),
+  `runtimeVersion: { policy: "appVersion" }` as Chapterly. Platforms are `ios` and `android`, with
+  an Android block (application id, `softwareKeyboardLayoutMode: resize`, adaptive icon,
+  `RECORD_AUDIO`, expo-audio's `recordAudioAndroid`). The app stays iPhone-first: `supportsTablet:
+  false`, and no Android-specific work was done.
+- Apple team **BXW3A78H2C**: Chapterly's, read from its latest EAS iOS build log, because no config
+  file in that repo names it. It is set as `submit.*.ios.appleTeamId`. `ascAppId` is left out until
+  the App Store Connect record exists (Chapterly's is a number only that record gives).
+- Credentials are EAS-managed and remote: the default when `credentialsSource` is unset, which is
+  what Chapterly does. On the first build, EAS offers the `rovierr` account's existing iOS
+  distribution certificate (one per team, shared across apps). It creates the App ID and a new
+  provisioning profile for `com.rovierr.kothanote`, because profiles are per bundle id. On the
+  first submit it offers the account's stored App Store Connect API key and Google Play
+  service-account key. The Android upload keystore is generated per app on the first Android build
+  unless the owner deliberately chooses Chapterly's (`docs/plan/RELEASE.md` §3 has the prompts).
+  Nothing was generated, uploaded or deleted from here.
+- `extra.eas.projectId` and `updates.url` are absent until `eas init`. See RELEASE.md §3 for where
+  they land.
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.
