@@ -4,6 +4,12 @@
 export type Recorder = {
   /** Recorded time, paused time excluded. */
   readonly elapsedMs: () => number;
+  /**
+   * Whether audio is reaching the file right now. False while paused, and also while the system
+   * holds the microphone (a call, Siri) — the store tells the two apart by whether it asked for a
+   * pause (D037).
+   */
+  readonly isCapturing: () => boolean;
   /** The input level, 0 (silence) to 1, for the meter. */
   readonly level: () => number;
   readonly pause: () => void;
@@ -18,6 +24,11 @@ export type Recorder = {
   readonly skipAhead?: (ms: number) => void;
   /** Stops for good and answers the file's URI. */
   readonly stop: () => Promise<string>;
+  /**
+   * The file the recorder is writing, once started; null for the fake, which has none. The store
+   * journals it so a relaunch after a kill can find it (D037).
+   */
+  readonly uri: () => string | null;
 };
 
 export type RecorderFactory = () => Recorder;

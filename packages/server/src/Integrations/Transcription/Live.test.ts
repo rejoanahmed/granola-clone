@@ -479,6 +479,19 @@ describe("ElevenLabs Scribe", () => {
     expect(length).toBe(head.length + 10 + tail.length);
   });
 
+  it("names the file part after the container it carries", () => {
+    const filename = (contentType: string) =>
+      /filename="([^"]+)"/.exec(
+        new TextDecoder().decode(
+          multipartOf({ boundary: "B", contentType, fields: [], size: 1 }).head
+        )
+      )?.[1];
+
+    expect(filename("audio/aac")).toBe("recording.aac");
+    expect(filename("audio/mp4")).toBe("recording.m4a");
+    expect(filename("audio/x-m4a")).toBe("recording.m4a");
+  });
+
   it("posts the audio with the key and maps the answer; a 401 is a refusal, a 429 a rate limit", async () => {
     const seen: { body: string; headers: Headers; url: string }[] = [];
     const answers = [

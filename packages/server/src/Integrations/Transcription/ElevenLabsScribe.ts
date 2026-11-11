@@ -151,6 +151,13 @@ export const scribeFields = (language: string): [string, string][] => {
   return fields;
 };
 
+// The part's filename is a hint some decoders sniff by, so it names the container the bytes are
+// in: the app records ADTS AAC since D037, and older or other clients send MPEG-4.
+const FILENAME_BY_TYPE: Record<string, string> = {
+  "audio/aac": "recording.aac",
+  "audio/wav": "recording.wav",
+};
+
 export const multipartOf = (input: {
   readonly boundary: string;
   readonly contentType: string;
@@ -168,7 +175,7 @@ export const multipartOf = (input: {
     )
     .join("");
   const head = enc.encode(
-    `${parts}--${input.boundary}\r\nContent-Disposition: form-data; name="file"; filename="recording.m4a"\r\nContent-Type: ${input.contentType}\r\n\r\n`
+    `${parts}--${input.boundary}\r\nContent-Disposition: form-data; name="file"; filename="${FILENAME_BY_TYPE[input.contentType] ?? "recording.m4a"}"\r\nContent-Type: ${input.contentType}\r\n\r\n`
   );
   const tail = enc.encode(`\r\n--${input.boundary}--\r\n`);
   return { head, length: head.length + input.size + tail.length, tail };

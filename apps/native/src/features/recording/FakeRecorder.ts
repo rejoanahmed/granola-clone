@@ -24,6 +24,7 @@ export function makeFakeRecorder(now: Clock = Date.now): Recorder {
 
   return {
     elapsedMs,
+    isCapturing: () => since !== null,
     level: () =>
       since === null
         ? 0
@@ -64,5 +65,6 @@ export function makeFakeRecorder(now: Clock = Date.now): Recorder {
       new File(asset.localUri).copySync(target);
       return target.uri;
     },
+    uri: () => null,
   };
 }

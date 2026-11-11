@@ -10,13 +10,29 @@ import {
 import type { QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { AppState } from "react-native";
-import { deleteLooseFile, keepRecordingFile } from "./files";
+import {
+  clearLiveJournal,
+  deleteLooseFile,
+  fileNameOfUri,
+  keepRecordingFile,
+  writeLiveJournal,
+} from "./files";
 import {
   meetingAttendeeNames,
   meetingLiveTitle,
   type StartFailure,
   startFailureOf,
 } from "./fromMeeting";
+import type {
+  ActivityAction,
+  ActivityState,
+} from "./liveActivity/activityProps";
+import {
+  endOrphanedActivities,
+  endRecordingActivity,
+  onActivityAction,
+  showRecordingActivity,
+} from "./liveActivity/liveActivity";
 import type { Recorder } from "./Recorder";
 import { createRecorder } from "./selectRecorder";
 import { enqueueUpload } from "./uploadQueue";
@@ -33,6 +49,11 @@ export type LiveRecording = {
   readonly attendeeNames: readonly string[] | null;
   readonly elapsedMs: number;
   readonly failure: StartFailure["kind"] | null;
+  /**
+   * The system took the microphone (a call, Siri) without the user pausing (D037). The recorder
+   * resumes on its own when iOS says it may; otherwise on the next return to the app.
+   */
+  readonly interrupted: boolean;
   readonly level: number;
   readonly noteId: string | null;
   readonly notes: string;
@@ -81,7 +102,46 @@ const subscribe = (listener: () => void) => {
 /** Given once by the root layout: the store refreshes the list as the note comes and goes. */
 export function connectLiveRecording(client: QueryClient): void {
   queryClient = client;
+  if (!live) {
+    endOrphanedActivities();
+  }
+  onActivityAction(handleActivityAction);
 }
+
+const activityStateOf = (current: LiveRecording): ActivityState => {
+  if (current.paused) {
+    return "paused";
+  }
+  return current.interrupted ? "interrupted" : "recording";
+};
+
+const syncActivity = () => {
+  if (live?.phase === "live") {
+    showRecordingActivity({
+      elapsedMs: recorder ? recorder.elapsedMs() : live.elapsedMs,
+      sessionId: live.sessionId,
+      state: activityStateOf(live),
+      title: live.title,
+    });
+  }
+};
+
+// The recorder and the store can disagree in two ways, both the system's doing: an interruption
+// paused the recorder behind the store's back, or its end resumed one the user had paused
+// (expo-audio resumes every recorder it finds stopped). The store's `paused` is the user's word,
+// so the second is undone, and the first is shown as interrupted until capture comes back.
+const reconcile = (own: Recorder, current: LiveRecording) => {
+  const capturing = own.isCapturing();
+  if (current.paused) {
+    if (capturing) {
+      own.pause();
+    }
+    return;
+  }
+  if (capturing === current.interrupted) {
+    update({ interrupted: !capturing });
+  }
+};
 
 const refreshCalendar = () =>
   queryClient
@@ -104,7 +164,9 @@ const startTicker = () => {
   stopTicker();
   ticker = setInterval(() => {
     if (recorder && live?.phase === "live") {
+      reconcile(recorder, live);
       update({ elapsedMs: recorder.elapsedMs(), level: recorder.level() });
+      syncActivity();
     }
   }, TICK_MS);
 };
@@ -119,6 +181,10 @@ const clearAutosave = () => {
 const reset = () => {
   stopTicker();
   clearAutosave();
+  endRecordingActivity();
+  if (live?.recordingId) {
+    clearLiveJournal(live.recordingId);
+  }
   recorder?.release();
   recorder = null;
   created = null;
@@ -148,8 +214,22 @@ async function saveNotes(): Promise<void> {
   }
 }
 
+// Back in the app after an interruption iOS did not end with "you may resume" (a call that was
+// answered, usually): the user is looking at the app, so the microphone is ours to take again.
+const resumeAfterInterruption = () => {
+  if (recorder && live?.phase === "live" && live.interrupted && !live.paused) {
+    try {
+      recorder.resume();
+    } catch {
+      // Still held by the system; the ticker keeps showing it as interrupted.
+    }
+  }
+};
+
 AppState.addEventListener("change", (state) => {
-  if (state !== "active") {
+  if (state === "active") {
+    resumeAfterInterruption();
+  } else {
     saveNotes().catch(() => undefined);
   }
 });
@@ -181,6 +261,18 @@ async function launch(
       return;
     }
     update({ ...ids, phase: "live" });
+    // From here a kill leaves a journal and a decodable file behind, and the next launch uploads
+    // what was captured (D037).
+    const uri = own.uri();
+    if (uri) {
+      writeLiveJournal({
+        fileName: fileNameOfUri(uri),
+        noteId: ids.noteId,
+        recordingId: ids.recordingId,
+        startedAt: live.startedAt,
+      });
+    }
+    syncActivity();
     startTicker();
     refreshList();
     refreshCalendar();
@@ -229,6 +321,7 @@ export function startRecording(meeting?: {
       : null,
     elapsedMs: 0,
     failure: null,
+    interrupted: false,
     level: 0,
     noteId: null,
     notes: "",
@@ -266,7 +359,30 @@ export function togglePause(): void {
   } else {
     recorder.pause();
   }
-  update({ elapsedMs: recorder.elapsedMs(), level: 0, paused: !live.paused });
+  update({
+    elapsedMs: recorder.elapsedMs(),
+    interrupted: false,
+    level: 0,
+    paused: !live.paused,
+  });
+  syncActivity();
+}
+
+function handleActivityAction(action: ActivityAction): void {
+  if (live?.phase !== "live") {
+    return;
+  }
+  if (action === "stop") {
+    endRecording().catch(() => undefined);
+  } else if (action === "pause" && !live.paused) {
+    togglePause();
+  } else if (action === "resume") {
+    if (live.paused) {
+      togglePause();
+    } else {
+      resumeAfterInterruption();
+    }
+  }
 }
 
 /** Whether the recorder can skip ahead: true only for the fake recorder of a test build. */
@@ -358,11 +474,22 @@ export function discardRecording(): Promise<DiscardResult> {
   return work;
 }
 
+let ending: Promise<string | null> | null = null;
+
 /**
- * End (§3.8): the recorder stops, the notes are saved, the file moves where a relaunch can find it,
- * and the upload queue takes over End and the audio. Answers the note id for the page it becomes.
+ * End (§3.8), from the card or the lock screen's Stop (D037): the recorder stops, the file moves
+ * where a relaunch can find it, the notes are saved, and the upload queue takes over End and the
+ * audio. Answers the note id for the page it becomes.
  */
-export async function endRecording(): Promise<string | null> {
+export function endRecording(): Promise<string | null> {
+  // The card's End and the lock screen's Stop can race; both get the one answer.
+  ending ??= finishRecording().finally(() => {
+    ending = null;
+  });
+  return ending;
+}
+
+async function finishRecording(): Promise<string | null> {
   const own = recorder;
   if (!(own && live)) {
     return null;
@@ -373,19 +500,22 @@ export async function endRecording(): Promise<string | null> {
   if (!ids) {
     return null;
   }
-  await saveNotes();
+  // The microphone first, the notes after: a Stop from the lock screen means stop now, and the
+  // notes' save is a network call that may take its time.
   let uri: string;
   try {
     uri = await own.stop();
   } finally {
     own.release();
+    // Released: nothing (a Pause tap, the return-to-app resume) may reach it while the notes save.
+    recorder = null;
   }
-  keepRecordingFile(uri, { durationMs, ...ids });
-  recorder = null;
+  const job = keepRecordingFile(uri, { durationMs, ...ids });
+  await saveNotes();
   reset();
   // Queued before anything refetches: the note page must find the upload already under way, or
   // a status still reading `recording` would draw the interrupted row for a moment.
-  enqueueUpload({ durationMs, ...ids });
+  enqueueUpload(job);
   if (queryClient) {
     invalidate(
       queryClient,
