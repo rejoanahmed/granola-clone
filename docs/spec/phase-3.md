@@ -1,6 +1,6 @@
 # Phase 3: Auth and onboarding
 
-Status: spec. Source: `~/personal/granola-clone-discovery/` (`README.md` tokens, `COPY.md`,
+Status: spec. Source: `<discovery>/` (`README.md` tokens, `COPY.md`,
 `DATA-MODEL.md`, `NOT-EXERCISED.md`, `screens/04`, `80`, `81`, `82`, `83`, `84`). Screens are cited
 as `#NN`. The product is **Notes**. Wherever discovery copy names the other product, this spec says
 "Notes" instead, and no logo, asset or font from it is used.
@@ -668,7 +668,7 @@ New subflows and scripts:
 - When they tap it
 - Then it counts down again, and the newest outbox code signs in to `home-screen`.
 
-**Exit** (from phases.md): sign-up, sign-in, sign-out and relaunch-signed-in pass. `sign-out.yaml`
+**Exit** (from the phase plan, retired in D036): sign-up, sign-in, sign-out and relaunch-signed-in pass. `sign-out.yaml`
 leaves `home-screen` through `home-settings-button`, not through `clearKeychain`. The whole
 `--include-tags=phase-2,phase-3,smoke` suite passes on the iPhone 17 Pro simulator. The
 cache-busted `bun run check` and `bun run test` are green. The "No sign-out in the app" entry is

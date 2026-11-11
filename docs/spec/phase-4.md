@@ -1,6 +1,6 @@
 # Phase 4: Notes: list, detail, edit, trash
 
-Status: spec. Source: `~/personal/granola-clone-discovery/` (`README.md` tokens and ids, `COPY.md`,
+Status: spec. Source: `<discovery>/` (`README.md` tokens and ids, `COPY.md`,
 `FEATURES.md`, `NAVIGATION.md`, `DATA-MODEL.md`, `NOT-EXERCISED.md`, `screens/01`, `02`, `03`, `10`,
 `11`, `12`, `16`, `31`, `40`, `41`). Screens are cited as `#NN`. The product is **Notes**. Wherever
 discovery copy names the other product, this spec says "Notes" instead. No logo, asset, font or
@@ -875,7 +875,7 @@ passes. `phase-2/home-shell.yaml` still finds `home-list` (now populated for `pe
 **AC10. Non-flow checks.** §7's tests pass. Ownership is proven at the API level, not by the UI:
 tests 4–6, 23 and 29.
 
-**Exit** (from phases.md): flows for opening a note (AC2), editing and saving the body (AC3),
+**Exit** (from the phase plan, retired in D036): flows for opening a note (AC2), editing and saving the body (AC3),
 renaming (AC5), trashing by swipe (AC6) and by menu (AC7), and the empty list (AC8) pass on the
 iPhone 17 Pro simulator. The API tests prove another user's note is unreachable. The cache-busted
 `bun run check` and `bun run test` are green.

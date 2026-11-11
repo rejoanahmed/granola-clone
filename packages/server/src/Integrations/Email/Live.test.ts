@@ -39,14 +39,14 @@ describe("the Resend client", () => {
         });
         return Promise.resolve(Response.json({ id: "x" }));
       },
-      from: "Notes <notes@example.test>",
+      from: "Kothanote <kothanote@example.test>",
     });
 
     await email.send(MESSAGE);
 
     expect(seen[0]).toMatchObject({
       body: {
-        from: "Notes <notes@example.test>",
+        from: "Kothanote <kothanote@example.test>",
         subject: MESSAGE.subject,
         text: MESSAGE.body,
         to: [MESSAGE.to],

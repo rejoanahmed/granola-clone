@@ -111,7 +111,7 @@ env:
       id: citation-sheet
     timeout: 10000
 
-# #29: the edit menu is UIKit's (§4.4 W9). What the clone controls is that the message is
+# #29: the edit menu is UIKit's (§4.4 W9). What the app controls is that the message is
 # selectable, and UIKit only offers Copy on selectable text, so its callout is the proof.
 - longPressOn:
     id: chat-user-0

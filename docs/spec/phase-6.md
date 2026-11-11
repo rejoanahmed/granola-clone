@@ -17,9 +17,9 @@ Discovery covers the generating row (#106), a finished short note (#107), a long
 failure, its retry, a transcript of silence and a rename during generation were **never seen**.
 This spec designs them in the same visual language and marks each one *(designed)*.
 
-Screens: `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come from the discovery
+Screens: `#NN` is `<discovery>/screens/NN-*/`. Tokens come from the discovery
 README and the phase-2 `design/tokens.ts`. Layout numbers are iOS points on the 428pt discovery
-device. The clone runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
+device. The app runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
 gutter.
 
 ---
@@ -125,7 +125,7 @@ row-level "generating" affordance exists (#01 never showed one).
 
 ## 4. Copy
 
-Every string is verbatim from COPY.md, with Granola replaced by Notes, or marked *(designed)*.
+Every string is verbatim from COPY.md, with the reference app's name replaced by Notes, or marked *(designed)*.
 
 | Where | String |
 | --- | --- |

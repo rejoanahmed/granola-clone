@@ -8,7 +8,7 @@ import {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
-// #50: the drawer is 336/428 of the width (316pt on the 402pt clone).
+// #50: the drawer is 336/428 of the width (316pt on the 402pt app).
 const WIDTH_FRACTION = 336 / 428;
 const SLIDE_MS = 250;
 // §3.1 Gestures: a release past 40% of the width, or a flick, settles the drawer that way.

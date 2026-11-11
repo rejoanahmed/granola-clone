@@ -11,7 +11,7 @@ post-End page (#100–#107), plus the transcript sheet (#13, #14, #42). Pause, M
 paperclip, the denied-permission state, every failure and a multi-speaker transcript were **never
 seen**. This spec designs them in the same visual language and marks each one *(designed)*.
 
-Screens: `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens are from the discovery
+Screens: `#NN` is `<discovery>/screens/NN-*/`. Tokens are from the discovery
 README and the phase-2 `design/tokens.ts`.
 
 ---
@@ -50,7 +50,7 @@ home (+ FAB)
 
 ## 3. Screens and states
 
-The layout numbers below are iOS points on the 428pt discovery device. The clone runs at 402pt,
+The layout numbers below are iOS points on the 428pt discovery device. The app runs at 402pt,
 so horizontal measurements are relative to the 20pt phase-2 gutter, not absolute.
 
 ### 3.1 Mic primer card (#100) — `mic-primer-card`

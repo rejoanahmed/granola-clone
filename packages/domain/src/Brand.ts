@@ -1,13 +1,11 @@
-// The one place the product's public identity lives (D023). The app is going public under a name
-// that is not chosen yet, so everything a rename touches reads from here: the display name on the
-// home screen, the Expo slug, the URL scheme better-auth signs its native origin with, the iOS
-// bundle id, the Worker name a self-hoster deploys, and the health route's `service`.
+// The one place the product's public identity lives (D023): the display name on the home screen,
+// the Expo slug, the URL scheme better-auth signs its native origin with, the bundle ids, the Worker
+// name a self-hoster deploys, and the health route's `service`.
 //
-// Renaming is editing this object. Two things it cannot reach, by design:
-// - `apps/native/.maestro/**` names `appId` literally (Maestro reads YAML, not TypeScript), and
-//   `scripts/rename-brand.sh` rewrites those after the edit;
-// - an installed app keeps its old scheme and bundle id: a new bundle id is a new App Store app.
-//   So the rename must land before the first public build, not after.
+// The name is final (Kothanote, D030) and the store records exist, so this object is no longer a
+// rename point. Two copies cannot read it and repeat its values literally: the Maestro flows'
+// `appId` (YAML) and the wrangler/selfhost resource names. An installed app keeps its bundle id and
+// scheme, so changing either now means a new App Store app.
 //
 // Plain data, no imports: `apps/native/app.config.ts` loads this file through `tsx` at build time,
 // where no workspace alias resolves.

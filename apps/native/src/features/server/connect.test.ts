@@ -39,13 +39,15 @@ describe("normalizeServerUrl", () => {
     expect(
       normalizeServerUrl(" my-server.acct.workers.dev/server/ ", strict)
     ).toBe("https://my-server.acct.workers.dev");
-    expect(normalizeServerUrl("https://notes.example.com/?x=1", strict)).toBe(
-      "https://notes.example.com"
-    );
+    expect(
+      normalizeServerUrl("https://my-server.example.com/?x=1", strict)
+    ).toBe("https://my-server.example.com");
   });
 
   it("refuses plain http, except a local address in a development build", () => {
-    expect(normalizeServerUrl("http://notes.example.com", strict)).toBeNull();
+    expect(
+      normalizeServerUrl("http://my-server.example.com", strict)
+    ).toBeNull();
     expect(normalizeServerUrl("http://192.168.1.20:3001", strict)).toBeNull();
     expect(normalizeServerUrl("http://192.168.1.20:3001", dev)).toBe(
       "http://192.168.1.20:3001"
@@ -58,7 +60,9 @@ describe("normalizeServerUrl", () => {
   it("refuses what is not an address at all", () => {
     expect(normalizeServerUrl("", strict)).toBeNull();
     expect(normalizeServerUrl("hello", strict)).toBeNull();
-    expect(normalizeServerUrl("ftp://notes.example.com", strict)).toBeNull();
+    expect(
+      normalizeServerUrl("ftp://my-server.example.com", strict)
+    ).toBeNull();
   });
 });
 

@@ -19,11 +19,11 @@ Discovery **never sent a message**, so it saw an existing thread (#25) but no lo
 error or empty-history states. It also never saw a pinned row or the result of a history search.
 This spec designs those states in the same visual language and marks each one *(designed)*.
 
-Screens: `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come from the discovery
+Screens: `#NN` is `<discovery>/screens/NN-*/`. Tokens come from the discovery
 README and `apps/native/src/design/tokens.ts`. Layout numbers are iOS points on the 428pt discovery
-device. The clone runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
+device. The app runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
 gutter. The discovery device reads its accessibility ids as `chatInputBar`, `chatSendButton` and
-so on. The clone uses its own `chat-*` ids (§5), because every flow here selects by `testID` in
+so on. The app uses its own `chat-*` ids (§5), because every flow here selects by `testID` in
 `<screen>-<thing>` form.
 
 ---
@@ -362,7 +362,7 @@ drawn inline"). Each item `chat-model-<modelId>` is 50pt (two-line labels wrap t
 The selection is **per user**, so it holds across threads, scopes and relaunches. Every message
 sent afterwards records it.
 
-The fake list (§6.6) uses neutral names, never a real vendor's model names. The clone has no
+The fake list (§6.6) uses neutral names, never a real vendor's model names. The app has no
 vendors, and a real name on a fake would claim an integration that does not exist.
 
 ### 3.7 Entry points (changes to earlier screens)
@@ -381,7 +381,7 @@ vendors, and a real name on a fake would claim an integration that does not exis
 
 ## 4. Copy
 
-Every string is verbatim from COPY.md, with Granola replaced by Notes, or marked *(designed)*.
+Every string is verbatim from COPY.md, with the reference app's name replaced by Notes, or marked *(designed)*.
 
 | Where | String |
 | --- | --- |

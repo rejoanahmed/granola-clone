@@ -1,5 +1,9 @@
 # Phase 10 — Settings, profile and upsells
 
+> **Superseded addresses.** The `notes.example` links and `support@notes.example` below were
+> phase-10 placeholders. Since D035 they are https://rovierr.com/kothanote and
+> kothanote@rovierr.com (`BRAND.siteUrl`, `BRAND.supportEmail`, `features/settings/links.ts`).
+
 Phase 3 left **Settings** as a stub: a Back button, a **Sign out** card and the version footer. This
 phase builds the whole of #80–#81 around it:
 
@@ -34,13 +38,13 @@ behaviour yet, because what they would control is faked or out of scope (§10).
 This spec designs each of them in the language of the nearest captured screen, and marks each one
 *(designed)*.
 
-**References and ids.** `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come
+**References and ids.** `#NN` is `<discovery>/screens/NN-*/`. Tokens come
 from the discovery README and `apps/native/src/design/tokens.ts`. Layout numbers are iOS points
-measured on the 428pt discovery device. The clone runs at 402pt, so horizontal measurements are
+measured on the 428pt discovery device. The app runs at 402pt, so horizontal measurements are
 insets from an edge. Discovery's own ids (`settingsProfileButton`, `bugReportSubmitButton`, …) are
-mapped to the clone's `<screen>-<thing>` ids in §5.
+mapped to the app's `<screen>-<thing>` ids in §5.
 
-**Branding.** Every string that names the product says **Notes** (§4). The Granola spiral (#04, #85)
+**Branding.** Every string that names the product says **Notes** (§4). The reference app's logo (#04, #85)
 is replaced by the Notes mark. The Notes mark is the lucide `NotebookPen` glyph at stroke 1.75 in
 `text.primary`, the same glyph the drawer's My notes tile uses, and it is never a spiral.
 
@@ -50,15 +54,15 @@ is replaced by the Notes mark. The Notes mark is the lucide `NotebookPen` glyph 
 
 | In | Out (and where it goes) |
 | --- | --- |
-| The settings list (#80, #81): the banner, four sections, Sign out, the version footer | Real subscriptions and payments (phases.md, Out of scope). The Subscription row is disabled with its **Coming soon** badge, as #80 draws it (§3.1) |
-| Profile (#82, #83, #84): name, job title, company name, user type, company description and LinkedIn username, each saved on edit; an initial avatar; Delete Account | Avatar photo upload. Discovery shows a photo, but the clone has no image storage, so the avatar is always an initial (§10) |
+| The settings list (#80, #81): the banner, four sections, Sign out, the version footer | Real subscriptions and payments (the phase plan, retired in D036, Out of scope). The Subscription row is disabled with its **Coming soon** badge, as #80 draws it (§3.1) |
+| Profile (#82, #83, #84): name, job title, company name, user type, company description and LinkedIn username, each saved on edit; an initial avatar; Delete Account | Avatar photo upload. Discovery shows a photo, but the app has no image storage, so the avatar is always an initial (§10) |
 | Delete account: a preview of how many notes would be lost, a confirmation sheet *(designed)*, then deletion and a return to welcome | Changing the account's email address (phase 3's `ProfilePatch` refuses it) |
 | Notifications (#85): the **Upcoming meetings** toggle, stored, and the static lock-screen preview card | Sending any notification. Upcoming meetings arrive with phase 11's fake calendar, and push is out of scope (§10) |
 | Chat (#86): the **Auto-send chat dictation** toggle, stored | Dictation itself (phase 7, Out of scope). The toggle has nothing to control yet (§10) |
 | Data & sharing (#81): the **Use my data** toggle, stored; Learn more and Privacy policy open in the in-app browser | Any model training. The LLM is a fake |
 | Report a bug (#90) and Send feedback, both an in-app form *(designed for feedback)*, sent through the fake `Email` port | The `mailto:` hand-off discovery saw for Send feedback. The simulator has no Mail app, and the rule is that email is a fake (§3.9) |
 | Help center (in-app browser), Share Notes for iPhone (the iOS share sheet), Recover Corrupted Notes (a toast, *designed*) | Real help content. The URLs are placeholders under `notes.example` (§10) |
-| Phone calls (#87) and Watch (#88) as static pages; **Get Started** answers with a coming-soon toast | Phone-call recording and Apple Watch (phases.md, Out of scope) |
+| Phone calls (#87) and Watch (#88) as static pages; **Get Started** answers with a coming-soon toast | Phone-call recording and Apple Watch (the phase plan, retired in D036, Out of scope) |
 | Get desktop (#51, #89): the sheet from home and from settings. **Share link** opens the iOS share sheet; **Remind me later** emails the caller a link through the fake `Email` port *(designed)* | A desktop app |
 | The work-email upsell (#04) from home's events card. **Sign up with work email** signs out to welcome *(designed)*; **Continue anyway** closes it *(designed)* | Calendar connection (phase 11 fakes one; real OAuth is later) |
 | API: `GET`/`PATCH /me/settings`, `GET /me/deletion-preview`, `DELETE /me`, `POST /support/bug-reports`, `POST /support/feedback`, `POST /me/desktop-reminder`, and the harness route `GET /e2e/support` | A bug report's diagnostics bundle. There are no client logs to ship, so the flag is carried as a fact in the message (§6.3) |
@@ -210,7 +214,7 @@ The header holds Back only (`profile-back`), with no title. The content (`profil
 - 12pt below, `profile-lead` in `body` 17/22 `text.primary`: **"Notes works best when it knows a
   little about you. Make sure this is correct to get the most out of Notes."**
 - 32pt below, the **avatar** `profile-avatar`: a 124pt circle, centred, measured off #82.
-  - *(designed)* The clone has no photos. The fill is `bg.tileRaised`, and the content is the
+  - *(designed)* The app has no photos. The fill is `bg.tileRaised`, and the content is the
     first letter of the name, upper-cased: serif `display` at 56pt, `text.primary`, centred.
   - It uses the same `initial()` helper as home's avatar (`features/home/initial.ts`). With no
     name it falls back to the email's first letter.
@@ -253,7 +257,7 @@ The header holds Back only (`profile-back`), with no title. The content (`profil
 - 12pt below, `profile-delete-note` in `secondary` 15/20 `text.secondary`, inset 28 on both
   sides: **"Deleting your account will permanently remove all your data, including data created
   in the desktop app. We’ll first check how many notes you’d lose."** (COPY.md has straight
-  apostrophes here. They are typeset curly, as everywhere else in the clone.)
+  apostrophes here. They are typeset curly, as everywhere else in the app.)
 
 **Data.** The profile is `useAuth().me`, the phase-3 `GET /me` query. No new query is needed. The
 fields are initialised from it once, on mount.
@@ -441,7 +445,7 @@ this sheet empty. The draft is lost.
 ### 3.9 Send feedback (`feedback-sheet`) *(designed)* — `app/settings/feedback.tsx`
 
 Discovery's Send feedback handed off to the Mail app with a prefilled compose (COPY.md). The
-clone cannot do that: the simulator has no Mail app, and every email provider must be a fake. So
+app cannot do that: the simulator has no Mail app, and every email provider must be a fake. So
 it is the bug form's sibling, `features/settings/SupportForm.tsx`, one component with two configs:
 
 - the title **"Send feedback"**; Close is `feedback-close` and Send is `feedback-send`;
@@ -537,7 +541,7 @@ Pinned to the bottom, above the safe area:
 - `work-email-sign-up`: a light `PillButton` `lg`, inset 24, 56pt tall, with a leading `Mail`
   glyph and **"Sign up with work email"**. *(designed)* A tap closes the sheet and runs
   `useSignOut()`, landing on `welcome-screen` with an empty email field. That is the only way the
-  clone can start an account under another address. No confirmation is shown, which is phase 3's
+  app can start an account under another address. No confirmation is shown, which is phase 3's
   rule for sign-out.
 - 20pt below, `work-email-continue`: phase 3's `TextButton`, reading **"Continue anyway"** in
   `rowTitle` `text.secondary`. *(designed)* A tap closes the sheet. Nothing is persisted, and the
@@ -964,7 +968,7 @@ These belong to the same scripted-failure harness seam that `BLOCKERS.md` defers
 
   All three are stored and read back, so the later phase only reads them. It does not have to
   migrate them.
-- **No avatar photos.** #82 shows a photo, and the clone draws an initial. Uploading needs image
+- **No avatar photos.** #82 shows a photo, and the app draws an initial. Uploading needs image
   storage, and an R2 bucket for avatars is a later decision.
 - **Send feedback is an in-app form, not `mailto:`.** Discovery's hand-off to Mail cannot run on the
   simulator, and it would bypass the fake `Email` port. The form keeps the discovered subject line.
@@ -974,9 +978,9 @@ These belong to the same scripted-failure harness seam that `BLOCKERS.md` defers
 - **Placeholder links.** `notes.example/*` does not resolve. The help, data and privacy content is
   not part of the app, and the URLs are one constant object to change.
 - **"Remind me later" is an email, not a calendar or notification reminder.** Discovery never
-  tapped it. The clone's only outbound channel is the fake email port.
+  tapped it. The app's only outbound channel is the fake email port.
 - **"Sign up with work email" signs out.** Discovery never tapped it. Signing out is the only
-  route in the clone to an account under another address. It asks no confirmation, which follows
+  route in the app to an account under another address. It asks no confirmation, which follows
   phase 3's sign-out rule.
 - **Account deletion leaves the fake outbox rows and the R2 audio behind.** The audio half is the
   existing phase-5 blocker. The outbox exists only in the fake.

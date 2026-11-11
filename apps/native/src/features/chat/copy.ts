@@ -18,7 +18,7 @@ export const CHAT_COPY = {
     thinking: "Thinking...",
     up: "Send positive feedback",
   },
-  // #23's two items, both disabled: photo attachments are out of scope (phases.md).
+  // #23's two items, both disabled: photo attachments are out of scope (the phase plan, D036).
   attachMenu: {
     camera: "Take Photo",
     comingSoon: "Coming soon",

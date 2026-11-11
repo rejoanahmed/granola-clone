@@ -21,11 +21,11 @@ and its composer. It never saw search loading, a search error, a person page loa
 a person with no email, or a search with many results. This spec designs those in the same visual
 language and marks each one *(designed)*.
 
-Screens: `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come from the discovery
+Screens: `#NN` is `<discovery>/screens/NN-*/`. Tokens come from the discovery
 README and `apps/native/src/design/tokens.ts`. Layout numbers are iOS points on the 428pt discovery
-device. The clone runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
+device. The app runs at 402pt, so horizontal measurements are relative to the 20pt phase-2
 gutter. Discovery exposes `searchTextField`, `searchPersonRow`, `searchResultRow` and so on. The
-clone uses its own `search-*` and `person-*` ids (§5), in the `<screen>-<thing>` form every flow
+app uses its own `search-*` and `person-*` ids (§5), in the `<screen>-<thing>` form every flow
 selects by.
 
 ---
@@ -202,7 +202,7 @@ loading.
 
 ### 3.3 The avatar *(designed)*
 
-Discovery shows photos. The clone has no avatars, so every person gets an initial: a circle filled
+Discovery shows photos. The app has no avatars, so every person gets an initial: a circle filled
 `bg.tileRaised` `#333333`, with the first letter of the name, or of the email when there is no name,
 upper-cased, in `text.primary`. It is 20/25 semibold at 46pt and 26/32 semibold at 62pt.
 `initialFor` in `features/home/initial.ts` already computes the letter, and the attendees sheet
@@ -222,7 +222,7 @@ all three.
 ## 4. Copy
 
 Every string is verbatim from COPY.md, or marked *(designed)*. No string on these screens names the
-product, so nothing needed "Granola" replaced with "Notes".
+product, so nothing needed the reference app's name replaced with "Notes".
 
 | Where | String |
 | --- | --- |

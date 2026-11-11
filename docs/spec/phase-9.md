@@ -21,11 +21,11 @@ create-folder UI, a filtered home, or removing or deleting anything. This spec d
 language of the empty states, the home list (#01) and the rename sheet (phase 4), and marks each
 one *(designed)*.
 
-Screens: `#NN` is `~/personal/granola-clone-discovery/screens/NN-*/`. Tokens come from the discovery
+Screens: `#NN` is `<discovery>/screens/NN-*/`. Tokens come from the discovery
 README and `apps/native/src/design/tokens.ts`. Layout numbers are iOS points on the 428pt discovery
-device. The clone runs at 402pt, so horizontal measurements are given relative to an edge or as a
+device. The app runs at 402pt, so horizontal measurements are given relative to an edge or as a
 fraction of the width. Discovery exposes `homeFoldersSidebar`, `homeFoldersSidebarCreate`,
-`addToFolderSubmitButton` and so on. The clone uses its own `folders-*`, `folder-*` and
+`addToFolderSubmitButton` and so on. The app uses its own `folders-*`, `folder-*` and
 `add-to-folder-*` ids (§5), in the `<screen>-<thing>` form that every flow selects by.
 
 ---
@@ -34,7 +34,7 @@ fraction of the width. Discovery exposes `homeFoldersSidebar`, `homeFoldersSideb
 
 | In | Out (and where it goes) |
 | --- | --- |
-| The folders drawer (#50): opened by `home-folders-button` or a left-edge swipe, closed by the scrim, a left swipe or picking a row | Folder sync from the desktop app. #50's copy says folders "appear here after they are synced". The copy is kept verbatim (§4), but there is no desktop app (phases.md, Out of scope) |
+| The folders drawer (#50): opened by `home-folders-button` or a left-edge swipe, closed by the scrim, a left swipe or picking a row | Folder sync from the desktop app. #50's copy says folders "appear here after they are synced". The copy is kept verbatim (§4), but there is no desktop app (the phase plan, retired in D036, Out of scope) |
 | The drawer's empty state (#50), and its populated state *(designed)*: a **My notes** row, then the folders with note counts, and **Create new folder** pinned at the bottom | Renaming a folder. There is no entry point in discovery, so it is recorded (§10) |
 | Create a folder: a small sheet *(designed)* reached from the drawer and from the Add to folder sheet | Nested folders, folder icons or colours, sharing a folder |
 | The Add to folder sheet (#17, #18): a searchable single-choice list, **Create folder**, and a disabled submit until a choice is made | Adding to folders from the live recording card (#102). `recording-add-to-folder` stays inert (§10) |
@@ -76,14 +76,14 @@ the bottom bar, and below any presented sheet (#50).
 
 **Geometry** (#50):
 
-- **Width.** The drawer is 336/428 of the screen width: 316pt on the 402pt clone. It is full
+- **Width.** The drawer is 336/428 of the screen width: 316pt on the 402pt app. It is full
   height, from the top of the screen to the bottom, with the status bar drawn over it.
 - **Fill and shape.** The fill is `bg.app` `#262626`. The top-right and bottom-right corners take
   `radii.sheet` (40). The left edge is square.
 - **Scrim.** The home screen stays in place under a full-screen scrim `folders-drawer-scrim`
   (fill `bg.scrim`, a11y **"Dismiss folders"**, role button). #50 reads the dimmed home as about
   `#121212`. Discovery says the home is "pushed", but the shot shows it at its normal x, so the
-  clone dims it and does not move it.
+  app dims it and does not move it.
 - **Motion.** The drawer opens with a 250 ms slide in from `-width`, and the scrim fades from 0 to
   1 at the same time. Closing reverses it.
 - **Gestures.**
@@ -382,8 +382,8 @@ that is in folders, so the page shows none.
 ## 4. Copy
 
 Every string is verbatim from COPY.md, or marked *(designed)*. **No string in this phase names the
-product**, so nothing needed "Granola" replaced with "Notes". #50's sync sentence is kept word for
-word, although nothing in the clone syncs (§1).
+product**, so nothing needed the reference app's name replaced with "Notes". #50's sync sentence is kept word for
+word, although nothing in the app syncs (§1).
 
 | Where | String |
 | --- | --- |
