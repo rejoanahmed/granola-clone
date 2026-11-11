@@ -18,6 +18,7 @@ env:
   APP_ID: com.rejoan.gcnotes
 ---
 - runFlow: ../subflows/open-home.yaml
-- tapOn:
+# The inert Phone button is hidden in a release build since phase 13 (D027).
+- assertNotVisible:
     id: home-phone-button
 - runFlow: ../subflows/assert-home-unobstructed.yaml

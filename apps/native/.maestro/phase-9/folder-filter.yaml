@@ -11,10 +11,10 @@ env:
   APP_ID: com.rejoan.gcnotes
 ---
 - runFlow: ../subflows/open-home.yaml
-# Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
+# The events card is hidden in a release build since phase 13 (D027), so the list is the settle.
 - extendedWaitUntil:
     visible:
-      id: home-events-card
+      id: home-list
     timeout: 10000
 - runFlow: ../subflows/seed-folders.yaml
 - runFlow: ../subflows/open-folders.yaml
@@ -87,7 +87,7 @@ env:
     timeout: 10000
 - extendedWaitUntil:
     visible:
-      id: home-events-card
+      id: home-list
     timeout: 10000
 - extendedWaitUntil:
     visible:

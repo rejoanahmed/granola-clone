@@ -1,8 +1,11 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC9 (docs/spec/phase-12.md §3.10, §5, §8): the Get desktop sheet from home's button (#51) and from
 # the settings banner (#89), the same ids and the same Notes copy from both.
 appId: ${APP_ID}
 name: "Parity: the Get desktop sheet, from both entries"
 tags:
+  - unfinished
   - phase-12
   - parity
   - regression

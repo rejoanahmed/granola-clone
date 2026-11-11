@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC1, exit criterion (docs/spec/phase-11.md §8, §3.1, #85, #01): with §6.5's standard schedule
 # staged, home's card lists person's first three upcoming meetings in the server's order — the one
 # in progress with its Now badge, then tomorrow's two — and "+1 more" for the fourth. The ended
@@ -5,9 +7,9 @@
 appId: ${APP_ID}
 name: The events card lists seeded meetings
 tags:
+  - unfinished
   - phase-11
   - regression
-  - smoke
 env:
   APP_ID: com.rejoan.gcnotes
 ---

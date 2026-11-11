@@ -30,12 +30,21 @@ function resolveRecorder(): RecorderKind {
   return tier.RECORDER;
 }
 
+// Entry points to features that do not exist yet (a desktop app, phone calls, Watch, a
+// subscription, attachments, a calendar connection, dictation) are hidden unless a build asks for
+// them (D027): App Review rejects dead ends and placeholders, and the code stays for the phase that
+// finishes each one. `EXPO_PUBLIC_SHOW_UNFINISHED=true` brings them back for development and for
+// the Maestro flows tagged `unfinished`.
+const showUnfinished =
+  process.env.EXPO_PUBLIC_SHOW_UNFINISHED?.trim().toLowerCase() === "true";
+
 const Config = {
   ...BaseConfig,
   ...tier,
   API_URL: apiOverride || tier.API_URL,
   APP_ENV: appEnv,
   RECORDER: resolveRecorder(),
+  SHOW_UNFINISHED: showUnfinished,
 } as const;
 
 export default Config;

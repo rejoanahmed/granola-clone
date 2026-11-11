@@ -46,5 +46,10 @@ args=(--device "$UDID" test -e "APP_ID=$APP_ID" -e "API_URL=$API_URL" -e "DEV_SE
 if [[ -n "$TAG" ]]; then
   args+=(--include-tags "$TAG")
 fi
+# Flows tagged `unfinished` drive entry points a release build hides (D027). They need a bundle
+# started with EXPO_PUBLIC_SHOW_UNFINISHED=true, and say so with the same variable here.
+if [[ "${EXPO_PUBLIC_SHOW_UNFINISHED:-}" != "true" ]]; then
+  args+=(--exclude-tags unfinished)
+fi
 
 exec "$MAESTRO" "${args[@]}" "$ROOT/apps/native/.maestro"

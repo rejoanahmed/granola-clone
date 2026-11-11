@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC5 (docs/spec/phase-12.md §3.5, §8): the note-scoped composer (#19) with the send button labelled
 # for dictation, relabelled Send while typed (#20) and back once cleared (#21); the model menu (#22);
 # the paperclip's outcome (#23); the solo note's composer and its scrolled chips (#43, #44); and the
@@ -5,6 +7,7 @@
 appId: ${APP_ID}
 name: "Parity: note- and person-scoped composer"
 tags:
+  - unfinished
   - phase-12
   - parity
   - regression

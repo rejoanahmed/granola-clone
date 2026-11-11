@@ -50,11 +50,7 @@ env:
     id: home-empty
 # The phase-2 band is still above the list.
 # Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
-- extendedWaitUntil:
-    visible:
-      id: home-events-card
-    timeout: 10000
-- assertVisible:
+- assertNotVisible:
     id: home-events-card
 - assertVisible:
     id: home-list

@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC4, the phase-10 exit (docs/spec/phase-10.md §8, #85): the Upcoming meetings toggle is on by
 # default, turns off, stays off across a relaunch because it is stored server-side, and turns back
 # on. Each tap is waited out until the toggle is enabled again (§3: disabled while its own request
@@ -5,9 +7,9 @@
 appId: ${APP_ID}
 name: A notifications toggle persists across a relaunch
 tags:
+  - unfinished
   - phase-10
   - regression
-  - smoke
 env:
   APP_ID: com.rejoan.gcnotes
 ---

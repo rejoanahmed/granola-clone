@@ -49,9 +49,11 @@ env:
 - assertVisible:
     id: chat-chip-3
     text: What are the top customer issues\?
+# Without dictation (D027) the empty composer's button is Send, inert until there is a draft.
 - assertVisible:
     id: chat-send
-    text: Hold to dictate
+    text: Send
+    enabled: false
 - takeScreenshot: phase-7-global-empty
 
 - runFlow:

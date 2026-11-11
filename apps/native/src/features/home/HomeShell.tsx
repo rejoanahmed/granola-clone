@@ -1,3 +1,4 @@
+import Config from "@native/config";
 import {
   ActionMenu,
   colors,
@@ -166,21 +167,27 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
                   onPress={drawer.open}
                   testID="home-folders-button"
                 />
-                <PillButton
-                  icon={Laptop}
-                  label="Get desktop"
-                  onPress={() => router.push("/desktop")}
-                  testID="home-get-desktop-button"
-                  tone="dark"
-                />
+                {/* There is no desktop app (D027). */}
+                {Config.SHOW_UNFINISHED ? (
+                  <PillButton
+                    icon={Laptop}
+                    label="Get desktop"
+                    onPress={() => router.push("/desktop")}
+                    testID="home-get-desktop-button"
+                    tone="dark"
+                  />
+                ) : null}
               </View>
               <ToolbarCapsule>
-                <IconButton
-                  accessibilityLabel="Phone"
-                  bare
-                  icon={Phone}
-                  testID="home-phone-button"
-                />
+                {/* Phone calls are not built: the button had no action (D027). */}
+                {Config.SHOW_UNFINISHED ? (
+                  <IconButton
+                    accessibilityLabel="Phone"
+                    bare
+                    icon={Phone}
+                    testID="home-phone-button"
+                  />
+                ) : null}
                 <IconButton
                   accessibilityLabel="Search"
                   bare
@@ -214,7 +221,9 @@ export function HomeShell({ name }: { readonly name?: string | null }) {
             </Text>
 
             {/* The calendar is not about a folder, so a folder view has no card (§3.2). */}
-            {folder ? null : (
+            {/* No calendar can be connected yet (CALENDAR_MODE=off, D026), so the card would only
+                ever show its empty state and a work-email upsell (D027). */}
+            {folder || !Config.SHOW_UNFINISHED ? null : (
               <UpcomingEventsCard onEvent={openEvent} style={styles.card} />
             )}
           </SafeAreaView>

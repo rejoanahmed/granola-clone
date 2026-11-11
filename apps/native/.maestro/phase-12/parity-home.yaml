@@ -1,9 +1,12 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC1 (docs/spec/phase-12.md §3.1, §8): home (#01), its row menu (#02), the row's swipe (#03) and the
 # work-email sheet (#04), each asserted by testID immediately before its parity screenshot. The shots
 # are what `bun run parity` collects for docs/parity/REPORT.md.
 appId: ${APP_ID}
 name: "Parity: home, row menu, swipe, work-email sheet"
 tags:
+  - unfinished
   - phase-12
   - parity
   - regression

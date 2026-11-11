@@ -1,3 +1,4 @@
+import Config from "@native/config";
 import {
   ActionMenu,
   colors,
@@ -282,13 +283,16 @@ export default function RecordingScreen() {
         />
         <View collapsable={false} ref={more}>
           <ToolbarCapsule>
-            <IconButton
-              accessibilityLabel={RECORDING_COPY.addAttachment}
-              bare
-              disabled
-              icon={Paperclip}
-              testID="recording-attach"
-            />
+            {/* Always disabled: attachments are not built (D027). */}
+            {Config.SHOW_UNFINISHED ? (
+              <IconButton
+                accessibilityLabel={RECORDING_COPY.addAttachment}
+                bare
+                disabled
+                icon={Paperclip}
+                testID="recording-attach"
+              />
+            ) : null}
             <IconButton
               accessibilityLabel={RECORDING_COPY.more}
               bare

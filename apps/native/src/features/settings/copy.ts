@@ -57,7 +57,7 @@ export const SETTINGS_COPY = {
     choose: "Choose",
     deleteAccount: "Delete Account",
     deleteNote:
-      "Deleting your account will permanently remove all your data, including data created in the desktop app. We’ll first check how many notes you’d lose.",
+      "Deleting your account permanently removes your notes, recordings’ transcripts and settings from your server. We’ll first check how many notes you’d lose.",
     lead: "Notes works best when it knows a little about you. Make sure this is correct to get the most out of Notes.",
     linkedinError: "Use 3–100 letters, numbers or hyphens.",
     linkedinPrefix: "linkedin.com/in/",

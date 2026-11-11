@@ -14,9 +14,10 @@ env:
     id: home-screen
 - assertVisible:
     id: home-folders-button
-- assertVisible:
+# Hidden in a release build since phase 13 (D027): there is no desktop app and no phone calling.
+- assertNotVisible:
     id: home-get-desktop-button
-- assertVisible:
+- assertNotVisible:
     id: home-phone-button
 - assertVisible:
     id: home-search-button
@@ -30,11 +31,7 @@ env:
     text: E
 # AC2
 # Since phase 11 the empty card appears only once the calendar has answered (phase-11.md §8).
-- extendedWaitUntil:
-    visible:
-      id: home-events-card
-    timeout: 10000
-- assertVisible:
+- assertNotVisible:
     id: home-events-card
 - assertVisible:
     id: home-list

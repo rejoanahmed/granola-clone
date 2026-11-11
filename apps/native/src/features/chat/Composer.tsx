@@ -1,4 +1,5 @@
 import { CHAT_MESSAGE_MAX, type ChatScopeKind } from "@gc/domain/Domain/Chat";
+import Config from "@native/config";
 import {
   colors,
   type Frame,
@@ -115,27 +116,33 @@ export function Composer({
         />
       </View>
       <View style={styles.controls}>
-        <Pressable
-          accessibilityLabel={CHAT_COPY.composer.attach}
-          accessibilityRole="button"
-          onPress={() =>
-            clip.current?.measureInWindow((x, y, width, height) =>
-              onAttach({ height, width, x, y })
-            )
-          }
-          ref={clip}
-          style={({ pressed }) => [
-            styles.clip,
-            pressed ? styles.pressed : null,
-          ]}
-          testID="chat-attach"
-        >
-          <Paperclip
-            color={colors.text.secondary}
-            size={CLIP}
-            strokeWidth={ICON_STROKE}
-          />
-        </Pressable>
+        {/* Both attachment kinds are "Coming soon" (D027): the paperclip is hidden and its room
+            kept, so the model picker stays where it was. */}
+        {Config.SHOW_UNFINISHED ? (
+          <Pressable
+            accessibilityLabel={CHAT_COPY.composer.attach}
+            accessibilityRole="button"
+            onPress={() =>
+              clip.current?.measureInWindow((x, y, width, height) =>
+                onAttach({ height, width, x, y })
+              )
+            }
+            ref={clip}
+            style={({ pressed }) => [
+              styles.clip,
+              pressed ? styles.pressed : null,
+            ]}
+            testID="chat-attach"
+          >
+            <Paperclip
+              color={colors.text.secondary}
+              size={CLIP}
+              strokeWidth={ICON_STROKE}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.clip} />
+        )}
         <Pressable
           accessibilityLabel={CHAT_COPY.composer.model(modelLabel)}
           accessibilityRole="button"
@@ -161,11 +168,15 @@ export function Composer({
           />
         </Pressable>
         <View style={styles.spacer} />
+        {/* Without dictation (D027) an empty composer shows Send, inert, rather than a mic whose
+            only answer is "Dictation isn't available yet". */}
         <SendButton
-          disabled={sendDisabled}
+          disabled={sendDisabled || !(hasDraft || Config.SHOW_UNFINISHED)}
           onPress={hasDraft ? submit : onDictate}
           size={CONTROL}
-          state={hasDraft || streaming ? "active" : "idle"}
+          state={
+            hasDraft || streaming || !Config.SHOW_UNFINISHED ? "active" : "idle"
+          }
           testID="chat-send"
         />
       </View>

@@ -1,9 +1,12 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC9 (docs/spec/phase-12.md §3.9, §5, §8): Settings top and bottom (#80, #81), Profile top, bottom and
 # its user-type menu (#82–#84), Notifications (#85), Chat (#86), Phone calls (#87), Watch (#88) and
 # Report a bug (#90), with the product-naming strings in their Notes form.
 appId: ${APP_ID}
 name: "Parity: settings, profile and their pages"
 tags:
+  - unfinished
   - phase-12
   - parity
   - regression
