@@ -60,10 +60,13 @@ export const authRateLimit = createMiddleware<AppEnv>(async (c, next) => {
 // and one better-auth will sign for are the same question, and answering it twice is how "signs in,
 // then loops back to sign-in" happens. There is no web app, so the list is the API itself (the
 // docs page) and the native scheme.
-const allowedOrigins = (env: Env): readonly string[] => [
-  env.API_URL,
-  `${env.NATIVE_SCHEME}://`,
-];
+const allowedOrigins = (env: Env): readonly string[] => {
+  const config = parseConfig(env);
+  return [
+    ...(config.apiUrl === null ? [] : [config.apiUrl]),
+    `${config.nativeScheme}://`,
+  ];
+};
 
 const CORS_MAX_AGE_SECONDS = 600;
 
@@ -144,7 +147,7 @@ const sessionsFor = (env: Env): Sessions => {
             clientSecret: env.GOOGLE_CLIENT_SECRET,
           }
         : undefined,
-    nativeScheme: env.NATIVE_SCHEME,
+    nativeScheme: parseConfig(env).nativeScheme,
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: allowedOrigins(env),
   });
@@ -164,6 +167,29 @@ export const currentActor = createMiddleware<AppEnv>(async (c, next) => {
       ? await sessionsFor(c.env).resolveActor(c.req.raw)
       : null
   );
+  await next();
+});
+
+// The better-auth routes that create a session or an account. On an owner server (D020) the one
+// way in is pairing, so these answer the app's 404 rather than reaching better-auth at all: a
+// self-hosted server must never let a stranger who finds its URL sign themselves up. Session reads,
+// sign-out and user updates stay, because the paired owner's app uses them.
+const SIGN_IN_PATHS =
+  /^\/api\/auth\/(email-otp|sign-in|sign-up|callback|link-social)\b/;
+
+export const ownerOnlySignIn = createMiddleware<AppEnv>(async (c, next) => {
+  if (
+    parseConfig(c.env).auth.mode === "owner" &&
+    SIGN_IN_PATHS.test(c.req.path)
+  ) {
+    return c.json(
+      {
+        _tag: "NotFound",
+        message: "This server pairs its owner instead of signing people in",
+      },
+      404
+    );
+  }
   await next();
 });
 

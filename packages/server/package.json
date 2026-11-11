@@ -13,6 +13,7 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.3.0",
     "@gc/auth": "workspace:*",
     "@gc/db": "workspace:*",
     "@gc/domain": "workspace:*",

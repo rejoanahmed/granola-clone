@@ -10,6 +10,11 @@ export const API_REFERENCE_PATH = "/api/reference";
 // Order here is Scalar's sidebar order. A name that does not match one in a `Contract.ts`
 // silently creates a second, empty group, so these are copied from the contracts.
 const TAGS = [
+  {
+    description:
+      "This server itself: what it is and how to sign in to it, and pairing the owner's phone on a self-hosted server (D019, D020).",
+    name: "Server",
+  },
   { description: "The signed-in person.", name: "Profile" },
   {
     description:

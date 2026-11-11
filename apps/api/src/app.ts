@@ -1,3 +1,4 @@
+import { BRAND } from "@gc/domain/Brand";
 import { ValidationFailed } from "@gc/domain/Errors";
 import type { AppEnv } from "@gc/server";
 import { calendarRouter } from "@gc/server/Calendar/Http";
@@ -6,6 +7,7 @@ import { e2eRouter } from "@gc/server/E2E/Http";
 import { foldersRouter } from "@gc/server/Folders/Http";
 import { generationsRouter } from "@gc/server/Generations/Http";
 import { notesRouter } from "@gc/server/Notes/Http";
+import { ownersRouter } from "@gc/server/Owners/Http";
 import { peopleRouter } from "@gc/server/People/Http";
 import { profilesRouter } from "@gc/server/Profiles/Http";
 import { recordingsRouter } from "@gc/server/Recordings/Http";
@@ -18,6 +20,7 @@ import {
   betterAuthHandler,
   corsPolicy,
   currentActor,
+  ownerOnlySignIn,
   requestContext,
 } from "./middleware";
 import { onError } from "./on-error";
@@ -43,12 +46,16 @@ app.use("*", requestContext);
 app.use("*", currentActor);
 
 app.use("/api/auth/*", authRateLimit);
+app.use("/api/auth/*", ownerOnlySignIn);
+// The pairing token is a password: guesses spend the same per-address budget as sign-in codes.
+app.use("/owner/*", authRateLimit);
 
 // Liveness, not readiness: reading D1 here would take the Worker out of rotation for a slow query.
-app.get("/", (c) => c.json({ ok: true, service: "gcnotes-api" }));
+app.get("/", (c) => c.json({ ok: true, service: `${BRAND.slug}-api` }));
 
 // Mounted at `/` because the paths in each `Contract.ts` are already absolute; a prefix here would
 // desynchronise the served path from the documented one and from the derived client.
+app.route("/", ownersRouter);
 app.route("/", profilesRouter);
 app.route("/", notesRouter);
 app.route("/", recordingsRouter);

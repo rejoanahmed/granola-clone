@@ -69,6 +69,9 @@ describe("the worker's HTTP assembly", () => {
         "/notes/{id}",
         "/notes/{id}/trash",
         "/notes/{id}/restore",
+        // Self-hosting (docs/spec/phase-13.md §6.1).
+        "/server",
+        "/owner/session",
         // Phase 5 (docs/spec/phase-5.md §6.1).
         "/notes/{id}/transcript",
         // Phase 6 (docs/spec/phase-6.md §6.1).
@@ -105,6 +108,7 @@ describe("the worker's HTTP assembly", () => {
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
+      "Server",
       "Profile",
       "Notes",
       "Recordings",
@@ -658,7 +662,11 @@ describe("wrangler.jsonc, the generation queue", () => {
   ];
 
   it("has the environments this test walks", () => {
-    expect(Object.keys(config.env).sort()).toEqual(["dev", "production"]);
+    expect(Object.keys(config.env).sort()).toEqual([
+      "dev",
+      "production",
+      "selfhost",
+    ]);
   });
 
   it.each(environments)(
@@ -681,10 +689,25 @@ describe("wrangler.jsonc, the generation queue", () => {
     expect(block.vars?.LLM_MODE).toEqual(expect.any(String));
   });
 
-  it("says the mode out loud per environment: fake locally and on dev, live in production", () => {
+  // Phase 13 (D022): a deployed owner server names its live provider; `live` is no longer a mode.
+  it("says the mode out loud per environment: fake locally and on dev, a named provider on owner servers", () => {
     expect(config.vars?.LLM_MODE).toBe("fake");
     expect(config.env.dev?.vars?.LLM_MODE).toBe("fake");
-    expect(config.env.production?.vars?.LLM_MODE).toBe("live");
+    expect(config.env.production?.vars?.LLM_MODE).toBe("workers-ai");
+    expect(config.env.selfhost?.vars?.LLM_MODE).toBe("workers-ai");
+  });
+
+  it("routes both live owner environments' transcription through a queue of its own", () => {
+    for (const name of ["production", "selfhost"] as const) {
+      const block = config.env[name];
+      const producer = block?.queues?.producers?.find(
+        (entry) => entry.binding === "TRANSCRIPTION_QUEUE"
+      );
+      expect(producer?.queue).toContain("-transcription-");
+      expect(
+        block?.queues?.consumers?.some((c) => c.queue === producer?.queue)
+      ).toBe(true);
+    }
   });
 
   it("gives every environment a queue of its own", () => {
