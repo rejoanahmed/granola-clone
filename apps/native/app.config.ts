@@ -34,6 +34,10 @@ const withBrandedPlugins = (
 
 export default ({ config }: ConfigContext): Partial<ExpoConfig> => ({
   ...config,
+  android: {
+    ...config.android,
+    package: BRAND.androidPackage,
+  },
   ios: {
     ...config.ios,
     bundleIdentifier: BRAND.bundleId,

@@ -6,9 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "platforms": ["ios"],
+    "platforms": ["ios", "android"],
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "scheme": "kothanote",
     "experiments": {
@@ -29,7 +29,8 @@
         "expo-audio",
         {
           "enableBackgroundRecording": true,
-          "microphonePermission": "Kothanote needs microphone access to transcribe your meeting"
+          "microphonePermission": "Kothanote needs microphone access to transcribe your meeting",
+          "recordAudioAndroid": true
         }
       ],
       "expo-secure-store",
@@ -37,6 +38,8 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120,
           "backgroundColor": "#24262A",
           "resizeMode": "contain"
         }
@@ -49,12 +52,29 @@
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
       }
     },
     "extra": {
       "router": {
         "origin": false
       }
+    },
+    "owner": "rovierr",
+    "icon": "./assets/images/icon.png",
+    "android": {
+      "package": "com.kothanote.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-foreground.png",
+        "backgroundImage": "./assets/images/adaptive-background.png",
+        "monochromeImage": "./assets/images/adaptive-monochrome.png"
+      },
+      "permissions": ["android.permission.RECORD_AUDIO"]
     }
   }
 }
