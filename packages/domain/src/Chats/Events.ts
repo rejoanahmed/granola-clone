@@ -8,7 +8,7 @@ import {
   Citation,
 } from "../Domain/Chat";
 
-// Plain `zod`: `@gc/apiclient` parses the stream with these and must not pull Hono into the app.
+// Plain `zod`: `@kn/apiclient` parses the stream with these and must not pull Hono into the app.
 // A stream is `turn` (not on retry), `activity`, `citations`, any number of `token`, then exactly
 // one `done` or `error`.
 

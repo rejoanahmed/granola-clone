@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "gcnotes-api",
+  "name": "kothanote-api",
   "main": "src/worker.ts",
   "compatibility_date": "2025-04-24",
   // better-auth and its drizzle adapter reach for `node:crypto` and `node:buffer`. Without this
@@ -45,7 +45,7 @@
     // The deterministic fake note writer (packages/server/src/Integrations/Llm). No vendor has been
     // chosen, so `live` refuses to start (docs/plan/BLOCKERS.md).
     "LLM_MODE": "fake",
-    "NATIVE_SCHEME": "gcnotes",
+    // NATIVE_SCHEME is not set: it defaults to the brand's scheme (packages/domain/src/Brand.ts, D023).
     "NODE_ENV": "development",
     // The deterministic fake transcriber (packages/server/src/Integrations/Transcription). No vendor
     // has been chosen, so `live` refuses to start (docs/plan/BLOCKERS.md).
@@ -55,7 +55,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "gcnotes-db-dev",
+      "database_name": "kothanote-db-dev",
       // Zeroes on purpose and permanently: `wrangler dev --local` never reads this id, and no
       // deploy ever uses this block. The deployed environments carry named placeholders instead.
       "database_id": "00000000-0000-0000-0000-000000000000",
@@ -81,7 +81,7 @@
   "r2_buckets": [
     {
       "binding": "AUDIO",
-      "bucket_name": "gcnotes-audio-dev"
+      "bucket_name": "kothanote-audio-dev"
     }
   ],
 
@@ -91,10 +91,10 @@
   // not inherited, so each `env` block repeats this, and its queue is created by the user first
   // (docs/plan/BLOCKERS.md).
   "queues": {
-    "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-local" }],
+    "producers": [{ "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-local" }],
     "consumers": [
       {
-        "queue": "gcnotes-generation-local",
+        "queue": "kothanote-generation-local",
         "max_batch_size": 1,
         "max_batch_timeout": 1,
         "max_retries": 5
@@ -150,14 +150,14 @@
     "dev": {
       // The promotion gate: merge to main deploys here, the E2E suite runs against this Worker,
       // and only a green run deploys production. Its data is disposable by design.
-      "name": "gcnotes-api-dev",
+      "name": "kothanote-api-dev",
       // No workers.dev: a second public hostname for the same Worker is a second surface to
       // secure, and it bypasses anything bound to the custom domain.
       "workers_dev": false,
-      "routes": [{ "pattern": "api-dev.gcnotes.example.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api-dev.kothanote.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api-dev.gcnotes.example.com",
-        "BETTER_AUTH_URL": "https://api-dev.gcnotes.example.com",
+        "API_URL": "https://api-dev.kothanote.example.com",
+        "BETTER_AUTH_URL": "https://api-dev.kothanote.example.com",
         // The fake, so the E2E gate stages meetings rather than depending on a real calendar.
         "CALENDAR_MODE": "fake",
         // The reason this environment exists: reset, seed and sign-in for the suite that gates
@@ -171,7 +171,6 @@
         "FLAGS_MODE": "live",
         // The fake, for the same reason as TRANSCRIPTION_MODE below.
         "LLM_MODE": "fake",
-        "NATIVE_SCHEME": "gcnotes",
         // `development` on a deployed Worker is deliberate: `AppConfig` refuses EMAIL_MODE=fake
         // under `production`, because the fake writes plaintext codes to D1, and the fake is the
         // only way anything, E2E included, can sign in here until a live email client exists.
@@ -184,7 +183,7 @@
           "binding": "DB",
           // Same name as the local database, different place: local is a miniflare file, this is
           // remote D1. `bun run migrate:dev` is the only thing that writes to the remote one.
-          "database_name": "gcnotes-db-dev",
+          "database_name": "kothanote-db-dev",
           "database_id": "DEV_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
@@ -202,14 +201,14 @@
       "r2_buckets": [
         {
           "binding": "AUDIO",
-          "bucket_name": "gcnotes-audio-dev"
+          "bucket_name": "kothanote-audio-dev"
         }
       ],
       "queues": {
-        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-dev" }],
+        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-dev" }],
         "consumers": [
           {
-            "queue": "gcnotes-generation-dev",
+            "queue": "kothanote-generation-dev",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 5
@@ -236,35 +235,36 @@
       }
     },
     "production": {
-      "name": "gcnotes-api-prod",
+      "name": "kothanote-api-prod",
       "workers_dev": false,
-      "routes": [{ "pattern": "api.gcnotes.example.com", "custom_domain": true }],
+      "routes": [{ "pattern": "api.kothanote.example.com", "custom_domain": true }],
       "vars": {
-        "API_URL": "https://api.gcnotes.example.com",
-        "BETTER_AUTH_URL": "https://api.gcnotes.example.com",
-        // Live, said out loud, and refused at startup until a client exists, as TRANSCRIPTION_MODE.
-        "CALENDAR_MODE": "live",
+        "API_URL": "https://api.kothanote.example.com",
+        "BETTER_AUTH_URL": "https://api.kothanote.example.com",
+        // Production is an owner server (D019, D020): the same configuration scripts/selfhost.sh
+        // deploys to a user's own account, kept here so `deploy:check` keeps proving it bundles.
+        // OWNER_TOKEN is a dashboard secret on this Worker. No calendar client exists yet.
+        "AUTH_MODE": "owner",
+        "CALENDAR_MODE": "off",
         // E2E_HARNESS is deliberately ABSENT and must stay so: wrangler does not inherit the top
         // level into an env block. Note `keep_vars: true` — a var set on this Worker once is NOT
         // pruned by removing it here, which is exactly why `parseConfig` refuses to start
         // production with the harness armed instead of trusting this omission.
-        // EMAIL_MODE is deliberately ABSENT: its default is the fake, which `AppConfig` refuses
-        // under NODE_ENV=production, and `live` has no client yet. So this Worker fails at startup
-        // until one exists (docs/plan/BLOCKERS.md, "No live email client") — which is also the
-        // truth today: nothing can send a sign-in code in production.
+        // An owner server signs nobody in by email, so it needs no mail (D020).
+        "EMAIL_MODE": "off",
         "FLAGS_MODE": "live",
-        // Live, said out loud, and refused at startup until a client exists, as TRANSCRIPTION_MODE.
-        "LLM_MODE": "live",
-        "NATIVE_SCHEME": "gcnotes",
+        // Both providers in this account's Workers AI (D021, D022); an owner who brings a key
+        // switches either with a var and a secret.
+        "LLM_MODE": "workers-ai",
         "NODE_ENV": "production",
-        // Live, said out loud as PROVIDER-FAKES.md asks. It has no client yet, so `AppConfig`
-        // refuses to start — the same honest failure as EMAIL_MODE's (docs/plan/BLOCKERS.md).
-        "TRANSCRIPTION_MODE": "live"
+        "TRANSCRIPTION_LANGUAGE": "auto",
+        "TRANSCRIPTION_MODE": "workers-ai"
       },
+      "ai": { "binding": "AI" },
       "d1_databases": [
         {
           "binding": "DB",
-          "database_name": "gcnotes-db-prod",
+          "database_name": "kothanote-db-prod",
           "database_id": "PROD_D1_DATABASE_ID",
           "migrations_dir": "../../packages/db/d1-migrations"
         }
@@ -280,17 +280,101 @@
       "r2_buckets": [
         {
           "binding": "AUDIO",
-          "bucket_name": "gcnotes-audio-prod"
+          "bucket_name": "kothanote-audio-prod"
         }
       ],
       "queues": {
-        "producers": [{ "binding": "GENERATION_QUEUE", "queue": "gcnotes-generation-prod" }],
+        "producers": [
+          { "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-prod" },
+          { "binding": "TRANSCRIPTION_QUEUE", "queue": "kothanote-transcription-prod" }
+        ],
         "consumers": [
           {
-            "queue": "gcnotes-generation-prod",
+            "queue": "kothanote-generation-prod",
             "max_batch_size": 1,
             "max_batch_timeout": 1,
             "max_retries": 5
+          },
+          {
+            "queue": "kothanote-transcription-prod",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 3
+          }
+        ]
+      },
+      "triggers": {
+        "crons": ["*/2 * * * *"]
+      },
+      "observability": {
+        "enabled": false,
+        "head_sampling_rate": 1,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "invocation_logs": true,
+          "persist": true
+        },
+        "traces": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "persist": true
+        }
+      }
+    },
+
+    // ── A user's own server (D019). ─────────────────────────────────────────────────────────────
+    // What `scripts/selfhost.sh` deploys into the account wrangler is logged in to: one owner
+    // paired by token, no mail, Workers AI for both providers, and a workers.dev hostname so no
+    // domain is needed. The script creates every resource named here, substitutes the D1 id, and
+    // rewrites the provider vars from its flags; nothing in this block points at anyone's data.
+    "selfhost": {
+      "name": "kothanote-server",
+      "workers_dev": true,
+      "preview_urls": false,
+      "vars": {
+        // Every AI call goes through AI Gateway in this account (D024): `default` is created by
+        // Cloudflare on first use. Logs stay off; scripts/selfhost.sh --gateway-logs on keeps them.
+        "AI_GATEWAY_ID": "default",
+        "AI_GATEWAY_LOGS": "off",
+        "AUTH_MODE": "owner",
+        "CALENDAR_MODE": "off",
+        "EMAIL_MODE": "off",
+        // No Flagship app on a user's account: the fake with nothing on is the shipped behaviour.
+        "FLAGS_MODE": "fake",
+        "FLAGS_ON": "",
+        "LLM_MODE": "workers-ai",
+        "NODE_ENV": "production",
+        "TRANSCRIPTION_LANGUAGE": "auto",
+        "TRANSCRIPTION_MODE": "workers-ai"
+      },
+      "ai": { "binding": "AI" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "kothanote-db",
+          "database_id": "SELFHOST_D1_DATABASE_ID",
+          "migrations_dir": "../../packages/db/d1-migrations"
+        }
+      ],
+      "r2_buckets": [{ "binding": "AUDIO", "bucket_name": "kothanote-audio" }],
+      "queues": {
+        "producers": [
+          { "binding": "GENERATION_QUEUE", "queue": "kothanote-generation-selfhost" },
+          { "binding": "TRANSCRIPTION_QUEUE", "queue": "kothanote-transcription-selfhost" }
+        ],
+        "consumers": [
+          {
+            "queue": "kothanote-generation-selfhost",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 5
+          },
+          {
+            "queue": "kothanote-transcription-selfhost",
+            "max_batch_size": 1,
+            "max_batch_timeout": 1,
+            "max_retries": 3
           }
         ]
       },

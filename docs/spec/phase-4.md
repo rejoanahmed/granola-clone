@@ -594,7 +594,7 @@ TanStack.
 
 ### 6.6 E2E harness
 
-- `E2E_USERS` gains **`empty: { email: "e2e-empty@gcnotes.test", id: "usr_e2e_empty", name: "E2E
+- `E2E_USERS` gains **`empty: { email: "e2e-empty@kothanote.test", id: "usr_e2e_empty", name: "E2E
   Empty" }`**, seeded and onboarded like the others, with **no notes**. The empty-list flow signs in
   as it. Every existing loop over `E2E_USERS` (seed, `signIn`, `isE2eRole`) picks it up.
   `E2E_PROFILES.empty = {}`.
@@ -862,7 +862,7 @@ asserted with the regex `Sat 12 Sep( 2026)?`, so the suite survives New Year.
 - Then `home-note-not_e2e_solo` is still not visible.
 
 **AC8. The empty list.** `phase-4/empty-list.yaml`
-- Given `e2e-empty@gcnotes.test` signed in (seeded with no notes)
+- Given `e2e-empty@kothanote.test` signed in (seeded with no notes)
 - Then `home-screen`, `home-empty` and `home-empty-title` ("No notes yet") are visible, along with
   the phase-2 header band (`home-events-card`) and the floating bar (`home-ask-button`,
   `home-new-note-button`)
@@ -938,7 +938,7 @@ iPhone 17 Pro simulator. The API tests prove another user's note is unreachable.
    gallery (`gallery-action-menu`, `gallery-toast`). Mount `ToastProvider` in `app/_layout.tsx`.
 3. `src/lib/api.ts`: `notesInfiniteQuery`, `noteQuery(id)` seeded from the list cache, and the
    mutations `useUpdateNote`, `useTrashNote` (optimistic, with the Undo toast and rollback, §2.3),
-   `useRestoreNote`, all over `@gc/apiclient` keys.
+   `useRestoreNote`, all over `@kn/apiclient` keys.
 4. `src/features/notes/`: `markdown.ts` plus `NoteMarkdown.tsx` (§2.5), `format.ts`, `group.ts`,
    `share.ts` (`noteShareText`), and tests 30–33.
 5. `src/features/home/`: `NoteList.tsx` (the `SectionList`, headers, rows, refresh, next page,

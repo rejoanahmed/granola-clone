@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC4 (docs/spec/phase-12.md §3.4, §8): the microphone primer (#100) and the system alert with the
 # Notes purpose string (#101), the live card (#102), typing (#103), More (#104), then End through
 # "Uploading transcript..." (#105) and "Generating notes..." (#106) to the finished short note (#107).
@@ -6,11 +8,12 @@
 appId: ${APP_ID}
 name: "Parity: primer, alert, live card, post-record"
 tags:
+  - unfinished
   - phase-12
   - parity
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: ../subflows/open-home.yaml
@@ -47,7 +50,7 @@ env:
     id: mic-primer-continue
 - extendedWaitUntil:
     visible:
-      text: Notes needs microphone access to transcribe your meeting
+      text: Kothanote needs microphone access to transcribe your meeting
     timeout: 15000
 - assertVisible:
     text: Allow
@@ -159,5 +162,5 @@ env:
     id: note-body
 - assertVisible:
     id: "note-block-\\d+"
-    text: Notes works best with real conversations.*
+    text: Kothanote works best with real conversations.*
 - takeScreenshot: parity-107-finished

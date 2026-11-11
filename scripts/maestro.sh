@@ -15,7 +15,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UDID="${IOS_SIMULATOR_UDID:-351547D8-BD3B-4418-AB30-8568D8FFB8F3}"
 MAESTRO="${MAESTRO:-$(command -v maestro || echo "$HOME/.maestro/bin/maestro")}"
-APP_ID="${APP_ID:-com.rejoan.gcnotes}"
+APP_ID="${APP_ID:-com.rovierr.kothanote}"
 # The API the phase-3 flows reset, seed and read sign-in codes from, and the Metro the dev client
 # loads. Both overridable for the port workaround in docs/plan/BLOCKERS.md.
 API_URL="${API_URL:-http://localhost:3001}"
@@ -45,6 +45,11 @@ fi
 args=(--device "$UDID" test -e "APP_ID=$APP_ID" -e "API_URL=$API_URL" -e "DEV_SERVER_URL=$DEV_SERVER_URL" -e "E2E_SECRET=$E2E_SECRET")
 if [[ -n "$TAG" ]]; then
   args+=(--include-tags "$TAG")
+fi
+# Flows tagged `unfinished` drive entry points a release build hides (D027). They need a bundle
+# started with EXPO_PUBLIC_SHOW_UNFINISHED=true, and say so with the same variable here.
+if [[ "${EXPO_PUBLIC_SHOW_UNFINISHED:-}" != "true" ]]; then
+  args+=(--exclude-tags unfinished)
 fi
 
 exec "$MAESTRO" "${args[@]}" "$ROOT/apps/native/.maestro"

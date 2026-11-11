@@ -4,47 +4,103 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "dev": {
+    "development": {
       "extends": "production",
+      "environment": "development",
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "dev",
+      "channel": "development",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "dev"
+        "EXPO_PUBLIC_APP_ENV": "local"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug"
       },
       "ios": {
         "buildConfiguration": "Debug",
         "simulator": true
       }
     },
-    "dev-device": {
-      "extends": "dev",
-      "distribution": "internal",
-      "channel": "dev-device",
-      "env": {
-        "EXPO_PUBLIC_APP_ENV": "dev"
-      },
+    "development-device": {
+      "extends": "development",
+      "channel": "development-device",
       "ios": {
         "buildConfiguration": "Debug",
         "simulator": false
       }
     },
-    "internal": {
+    "preview": {
       "extends": "production",
-      "autoIncrement": true,
+      "environment": "preview",
+      "autoIncrement": false,
       "distribution": "internal",
-      "channel": "internal",
+      "channel": "preview",
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
-        "EXPO_PUBLIC_APP_ENV": "prod"
+        "EXPO_PUBLIC_APP_ENV": "dev"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
+      "bun": "1.4.2",
+      "environment": "production",
       "autoIncrement": true,
       "channel": "production",
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true",
         "EXPO_PUBLIC_APP_ENV": "prod"
+      }
+    },
+    "apk-prod": {
+      "extends": "production",
+      "distribution": "internal",
+      "env": {
+        "KOTHANOTE_RELEASE_ENV": "prod"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "channel": "apk-prod"
+    },
+    "apk-dev": {
+      "extends": "preview",
+      "autoIncrement": true,
+      "env": {
+        "KOTHANOTE_RELEASE_ENV": "dev"
+      },
+      "channel": "apk-dev"
+    },
+    "apk-local": {
+      "extends": "preview",
+      "environment": "development",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "local",
+        "KOTHANOTE_RELEASE_ENV": "local"
+      },
+      "channel": "apk-local"
+    }
+  },
+  "submit": {
+    "internal": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "BXW3A78H2C"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "production",
+        "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "BXW3A78H2C"
       }
     }
   }

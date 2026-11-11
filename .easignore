@@ -1,0 +1,60 @@
+# What `eas build` leaves out of the project archive it uploads (apps/native builds from the
+# repository root, as the publisher's other app does, D031). While this file exists eas-cli reads no
+# `.gitignore` at all, so the first half restates every one of them; a rule added to a
+# `.gitignore` belongs here too, or the file it hides is uploaded.
+
+# ── Restated .gitignore rules ────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+out/
+.turbo
+.wrangler/
+.dev.vars
+.env
+.env.local
+.env.*.local
+!.env.example
+!**/.dev.vars.example
+.deploy.env
+.wrangler.deploy.jsonc
+.selfhost.env
+.wrangler.selfhost.jsonc
+.selfhost.secrets.json
+artifacts/
+logs/
+*.log
+.DS_Store
+.idea/
+.vscode/
+.claude/
+*.tsbuildinfo
+.expo/
+apps/web/.tanstack
+apps/web/.nitro
+apps/web/.output
+apps/web/dist-ssr
+
+# The builder runs prebuild itself; a local copy is stale or secret.
+apps/native/ios/
+apps/native/android/
+apps/native/expo-env.d.ts
+apps/native/google-services.json
+apps/native/GoogleService-Info.plist
+*.jsbundle
+*.apk
+*.aab
+*.ipa
+*.tar.gz
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ── Not needed to build the app ──────────────────────────────────────────────────────────────
+/docs/
+/store-assets/
+# eas-cli ships a depth-1 clone of the repository beside the working tree, which doubles every
+# tracked byte. Nothing on the builder reads git.
+/.git

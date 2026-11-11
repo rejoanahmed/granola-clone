@@ -1,6 +1,6 @@
-import { chatEventComponents } from "@gc/domain/Chats/Contract";
-import type { AppEnv } from "@gc/server";
 import type { OpenAPIHono } from "@hono/zod-openapi";
+import { chatEventComponents } from "@kn/domain/Chats/Contract";
+import type { AppEnv } from "@kn/server";
 import { Scalar } from "@scalar/hono-api-reference";
 
 export const API_DOC_PATH = "/api/doc";
@@ -10,6 +10,11 @@ export const API_REFERENCE_PATH = "/api/reference";
 // Order here is Scalar's sidebar order. A name that does not match one in a `Contract.ts`
 // silently creates a second, empty group, so these are copied from the contracts.
 const TAGS = [
+  {
+    description:
+      "This server itself: what it is and how to sign in to it, and pairing the owner's phone on a self-hosted server (D019, D020).",
+    name: "Server",
+  },
   { description: "The signed-in person.", name: "Profile" },
   {
     description:
@@ -48,7 +53,7 @@ const TAGS = [
   },
   {
     description:
-      "Messages to the Notes team (a bug report, feedback) and to the signed-in person (the desktop link), sent through the email provider. Each answers 202 with a receipt.",
+      "Messages to the Kothanote team (a bug report, feedback) and to the signed-in person (the desktop link), sent through the email provider. Each answers 202 with a receipt.",
     name: "Support",
   },
   {
@@ -61,8 +66,8 @@ const TAGS = [
 export const OPENAPI_DOCUMENT = {
   info: {
     description:
-      "The API behind Notes, an iPhone meeting-notes app. Timestamps are epoch milliseconds UTC — there are no date strings anywhere in this API.",
-    title: "Notes API",
+      "The API behind Kothanote, an iPhone meeting-notes app. Timestamps are epoch milliseconds UTC — there are no date strings anywhere in this API.",
+    title: "Kothanote API",
     version: "1.0.0",
   },
   openapi: "3.1.0",
@@ -90,6 +95,6 @@ export const mountOpenApi = (app: OpenAPIHono<AppEnv>): void => {
 
   app.get(
     API_REFERENCE_PATH,
-    Scalar({ pageTitle: "Notes API", url: API_DOC_PATH })
+    Scalar({ pageTitle: "Kothanote API", url: API_DOC_PATH })
   );
 };

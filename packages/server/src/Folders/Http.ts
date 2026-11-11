@@ -1,11 +1,11 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   addFolderNoteRoute,
   createFolderRoute,
   deleteFolderRoute,
   listFoldersRoute,
   removeFolderNoteRoute,
-} from "@gc/domain/Folders/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Folders/Contract";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";

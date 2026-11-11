@@ -1,6 +1,6 @@
-import type { Env } from "@gc/server";
-import { parseConfig } from "@gc/server/Runtime/AppConfig";
-import { makeTestD1, seedD1 } from "@gc/server/Testing";
+import type { Env } from "@kn/server";
+import { parseConfig } from "@kn/server/Runtime/AppConfig";
+import { makeTestD1, seedD1 } from "@kn/server/Testing";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { app } from "./app";
 
@@ -15,7 +15,7 @@ const off = {
   BETTER_AUTH_SECRET: "test-secret-not-used-by-these-routes",
   BETTER_AUTH_URL: "http://localhost:3001",
   DB: {} as D1Database,
-  NATIVE_SCHEME: "gcnotes",
+  NATIVE_SCHEME: "kothanote",
   NODE_ENV: "test",
 } satisfies Env;
 
@@ -76,10 +76,10 @@ describe("the E2E harness, fail-closed", () => {
 
 const AUTH_SECRET = "auth-secret-32-characters-long-000000";
 const API = "http://localhost:3001";
-const NEWCOMER = "e2e-newcomer@gcnotes.test";
-const PERSON = { email: "e2e-person@gcnotes.test", id: "usr_e2e_person" };
-const OTHER = { email: "e2e-other@gcnotes.test", id: "usr_e2e_other" };
-const EMPTY = { email: "e2e-empty@gcnotes.test", id: "usr_e2e_empty" };
+const NEWCOMER = "e2e-newcomer@kothanote.test";
+const PERSON = { email: "e2e-person@kothanote.test", id: "usr_e2e_person" };
+const OTHER = { email: "e2e-other@kothanote.test", id: "usr_e2e_other" };
+const EMPTY = { email: "e2e-empty@kothanote.test", id: "usr_e2e_empty" };
 const SIX_DIGITS = /^\d{6}$/;
 const ANY_SIX_DIGITS = /\d{6}/;
 const SESSION_COOKIE = /better-auth\.session_token=/;
@@ -170,12 +170,12 @@ describe("GET /e2e/otp", () => {
   it("answers the harness's own 404 for an address with no mail, not the router's", async () => {
     await freshWorld();
 
-    const response = await readOtp("nobody@gcnotes.test");
+    const response = await readOtp("nobody@kothanote.test");
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toMatchObject({
       _tag: "NoOutboxMail",
-      details: { email: "nobody@gcnotes.test" },
+      details: { email: "nobody@kothanote.test" },
     });
   });
 
@@ -332,7 +332,7 @@ describe("POST /e2e/seed, phase 3", () => {
         user_id: OTHER.id,
       }),
       {
-        company_name: "Notes E2E",
+        company_name: "Kothanote E2E",
         job_title: "Engineer",
         onboarded_at: expect.any(Number),
         user_id: PERSON.id,
@@ -890,7 +890,8 @@ describe("GET /e2e/support, phase 10", () => {
     };
     expect(items[0]).toMatchObject({
       payload: { includeDiagnostics: "false", receiptId: receipt.id },
-      subject: "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test",
+      subject:
+        "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test",
       to: "support@notes.example",
     });
     expect(items[0]?.body).toContain("Diagnostics: not included");

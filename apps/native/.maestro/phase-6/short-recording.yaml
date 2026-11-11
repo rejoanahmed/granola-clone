@@ -10,7 +10,7 @@ tags:
   - phase-6
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -45,7 +45,7 @@ env:
     text: Not much to transcribe here\. The recording captured only a brief greeting with no substantive discussion, decisions, or follow-ups\.
 - assertVisible:
     id: note-block-1
-    text: Notes works best with real conversations, meetings, or notes to self\. Try recording a call, a catch-up, or even a personal brain dump\.
+    text: Kothanote works best with real conversations, meetings, or notes to self\. Try recording a call, a catch-up, or even a personal brain dump\.
 - assertNotVisible:
     id: note-block-2
 - assertVisible:

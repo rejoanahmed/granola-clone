@@ -1,4 +1,4 @@
-import type { listUpcomingEventsRoute } from "@gc/domain/Calendar/Contract";
+import type { listUpcomingEventsRoute } from "@kn/domain/Calendar/Contract";
 import type { Endpoint } from "./client";
 import { hasTag, type TaggedError } from "./errors";
 
@@ -12,7 +12,7 @@ export const makeCalendarApi = (endpoint: Endpoint) => ({
 });
 
 // The two ways `createRecording { calendarEventId }` fails that the live card answers differently
-// from any other failure. The tags are the error classes' in `@gc/domain/Calendar/Errors`, written
+// from any other failure. The tags are the error classes' in `@kn/domain/Calendar/Errors`, written
 // out because that module is a value import this package keeps out of the client bundles.
 const CALENDAR_EVENT_NOT_FOUND_TAG = "CalendarEventNotFound";
 const CALENDAR_EVENT_HAS_NOTE_TAG = "CalendarEventHasNote";

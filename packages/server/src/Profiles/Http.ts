@@ -1,11 +1,11 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   completeOnboardingRoute,
   deleteMeRoute,
   getDeletionPreviewRoute,
   getMeRoute,
   patchMeRoute,
-} from "@gc/domain/Profile/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Profile/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

@@ -8,9 +8,9 @@ import {
   personMatches,
   sql,
   user,
-} from "@gc/db";
-import type { UserId } from "@gc/domain/Domain/Ids";
-import type { PersonKey } from "@gc/domain/Domain/Person";
+} from "@kn/db";
+import type { UserId } from "@kn/domain/Domain/Ids";
+import type { PersonKey } from "@kn/domain/Domain/Person";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 // A person as the caller has met them. `ownerId` is what the policy compares and is never on the

@@ -6,7 +6,7 @@
 # checked too. A phase that wires a sheet adds its root here.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - assertVisible:
     id: home-screen

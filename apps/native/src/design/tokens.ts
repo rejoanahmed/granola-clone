@@ -1,72 +1,10 @@
+import { color } from "@kn/tokens";
 import type { TextStyle } from "react-native";
 
-// Sampled from the discovery screenshots (docs/spec/phase-2.md §2). The only file in src/ allowed a
-// hex literal: `tokens.test.ts` fails on one anywhere else. Translucent values are #RRGGBBAA, which
-// React Native reads natively, so the alpha travels with the colour instead of a separate opacity.
-export const colors = {
-  accent: {
-    lime: "#B0BF40",
-    limePale: "#E5EACC",
-    limeSwitch: "#B2C248",
-    olive: "#677B00",
-    oliveDark: "#424625",
-  },
-  ask: { pill: "#525252D9", pillEdge: "#717171" },
-  bg: {
-    app: "#262626",
-    // The Chat History sheet (#24), a shade darker than every other sheet.
-    history: "#1C1C1C",
-    iconButton: "#1E1E1E",
-    list: "#1A1A1A",
-    // The lock-screen notification mock on Notifications (#85).
-    preview: "#0F0F0F",
-    scrim: "#00000073",
-    sheet: "#2A2A2A",
-    sheetControl: "#222222",
-    sheetTall: "#252525",
-    tile: "#282828",
-    tileRaised: "#333333",
-  },
-  border: { hairline: "#333333" },
-  // `disabled` is #17's greyed "Add to folder" submit, a solid fill rather than a dimmed light pill.
-  button: { disabled: "#555555", light: "#EAEBE4", lightAlt: "#D2D2D2" },
-  calendar: { bar: "#DB35F2" },
-  destructive: "#FE4346",
-  grabber: "#5A5A5A",
-  // The Get desktop hero (#51): the pink field and the desktop window mock drawn on it.
-  hero: {
-    dotGreen: "#28C840",
-    dotRed: "#FE5F57",
-    dotYellow: "#FEBC2E",
-    line: "#1A1A1A99",
-    meta: "#6B6B6B",
-    pink: "#E78BCE",
-  },
-  // Phone calls (#87): the ring around the phone glyph, and the glyph colour on olive tiles.
-  olive: { glyph: "#8A9A2A", ring: "#515B1F" },
-  // The live card (discovery screens 100–105): the status-bar strip over the card, the olive pause circle, the
-  // meter's bars and the primer's half-black scrim.
-  recording: {
-    meter: "#262626",
-    pauseFill: "#656E2D",
-    scrim: "#00000080",
-    statusStrip: "#1B1B1B",
-  },
-  speaker: { avatar: "#E4CD75", text: "#E8E8E3" },
-  // Chat History's swipe Pin capsule (#73).
-  swipe: { pin: "#525252" },
-  // `off` was never seen in discovery; it is the iOS system off track.
-  switch: { off: "#39393D", on: "#30D159" },
-  text: {
-    // #81's "Learn more" and "Privacy policy".
-    link: "#0A84FF",
-    onLight: "#1A1A1A",
-    primary: "#FCFDF8",
-    secondary: "#A8AAA1",
-    tertiary: "#8A8A8A",
-  },
-  tile: { remind: "#8EBCEC", share: "#ADC06F" },
-} as const;
+// The palette lives in `@kn/tokens` (D031), shared with the landing page and the brand assets. This
+// file stays the native app's only colour door: `tokens.test.ts` fails on a hex literal anywhere
+// else in src/.
+export const colors = color;
 
 // Transcript avatars by speaker (docs/spec/phase-5.md §3.10): A was seen (#13); B, C and D are
 // designed from the discovery palette, then the cycle repeats.

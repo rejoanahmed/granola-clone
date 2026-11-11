@@ -64,7 +64,7 @@ describe("isLowContent", () => {
 describe("the generation constants", () => {
   it("carries the #40 tip verbatim, in italics, naming Notes", () => {
     expect(Gen.LOW_CONTENT_TIP).toBe(
-      "_Notes works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._"
+      "_Kothanote works best with real conversations, meetings, or notes to self. Try recording a call, a catch-up, or even a personal brain dump._"
     );
   });
 

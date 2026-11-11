@@ -9,11 +9,11 @@ import {
   type SQL,
   sql,
   user,
-} from "@gc/db";
-import type { UserId } from "@gc/domain/Domain/Ids";
-import { NoteId, NoteSource } from "@gc/domain/Domain/Note";
-import { type PersonSummary, personKeyOf } from "@gc/domain/Domain/Person";
-import type { SearchNoteHit } from "@gc/domain/Domain/Search";
+} from "@kn/db";
+import type { UserId } from "@kn/domain/Domain/Ids";
+import { NoteId, NoteSource } from "@kn/domain/Domain/Note";
+import { type PersonSummary, personKeyOf } from "@kn/domain/Domain/Person";
+import type { SearchNoteHit } from "@kn/domain/Domain/Search";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 // `instr` rather than `like`: a literal substring, so `%` and `_` in what somebody typed are

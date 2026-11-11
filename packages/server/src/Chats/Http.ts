@@ -1,3 +1,4 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   createChatRoute,
   deleteChatRoute,
@@ -9,9 +10,8 @@ import {
   putChatModelRoute,
   retryChatMessageRoute,
   sendChatMessageRoute,
-} from "@gc/domain/Chats/Contract";
-import type { ChatEvent } from "@gc/domain/Chats/Events";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Chats/Contract";
+import type { ChatEvent } from "@kn/domain/Chats/Events";
 import type { Context, MiddlewareHandler } from "hono";
 import { streamSSE } from "hono/streaming";
 import type { AppEnv } from "../AppEnv";

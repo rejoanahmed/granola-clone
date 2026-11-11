@@ -1,13 +1,16 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC4 (docs/spec/phase-11.md §8, §3.1): with the calendar failing, the card is the designed error
 # state and neither the list nor the empty card; once the calendar is back, a tap on the error card
 # refetches and the meetings appear.
 appId: ${APP_ID}
 name: The events card when the calendar cannot be read
 tags:
+  - unfinished
   - phase-11
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:

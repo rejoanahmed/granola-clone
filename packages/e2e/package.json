@@ -1,5 +1,5 @@
 {
-  "name": "@gc/e2e",
+  "name": "@kn/e2e",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,11 +8,11 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
-    "@gc/domain": "workspace:*",
+    "@kn/domain": "workspace:*",
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@gc/config": "workspace:*",
+    "@kn/config": "workspace:*",
     "@types/node": "26.6.2",
     "bun-types": "1.4.2",
     "typescript": "7.0.2"

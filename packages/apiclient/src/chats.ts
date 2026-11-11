@@ -6,7 +6,7 @@ import type {
   patchChatRoute,
   putChatFeedbackRoute,
   putChatModelRoute,
-} from "@gc/domain/Chats/Contract";
+} from "@kn/domain/Chats/Contract";
 import type { Endpoint } from "./client";
 
 // `import type` only, as in `notes.ts`. The three streaming routes are not here: their body is SSE,

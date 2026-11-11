@@ -1,6 +1,6 @@
-import { NoteNotFound } from "@gc/domain/Notes/Errors";
-import * as RecErrors from "@gc/domain/Recordings/Errors";
-import * as TxErrors from "@gc/domain/Transcription/Errors";
+import { NoteNotFound } from "@kn/domain/Notes/Errors";
+import * as RecErrors from "@kn/domain/Recordings/Errors";
+import * as TxErrors from "@kn/domain/Transcription/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { makeFoldersRepo } from "../Folders/FoldersRepo";
@@ -1198,7 +1198,7 @@ describe("the recordings tables", () => {
 
 describe("RecordingsService.create from a meeting, phase 11", () => {
   const person: Actor = {
-    email: "e2e-person@gcnotes.test",
+    email: "e2e-person@kothanote.test",
     id: "usr_e2e_person" as Actor["id"],
     name: "E2E Person",
   };
@@ -1240,7 +1240,7 @@ describe("RecordingsService.create from a meeting, phase 11", () => {
     attendees: [
       { email: "priya@example.com", name: "Priya Raman" },
       { email: "sam@example.com", name: "Sam Okafor" },
-      { email: "E2E-Person@gcnotes.test", name: "E2E Person" },
+      { email: "E2E-Person@kothanote.test", name: "E2E Person" },
     ],
     color: "#DB35F2",
     endAt: AT + 25 * HOUR,
@@ -1527,7 +1527,7 @@ describe("RecordingsService.create from a meeting, phase 11", () => {
           { email: "priya@example.com", name: "Priya again" },
           { email: null, name: "dana  lee" },
           { email: null, name: null },
-          { email: "e2e-person@gcnotes.test", name: null },
+          { email: "e2e-person@kothanote.test", name: null },
         ],
         id: "cev_mixed",
       },

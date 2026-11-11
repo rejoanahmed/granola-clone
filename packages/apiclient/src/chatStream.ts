@@ -1,4 +1,4 @@
-import { CHAT_EVENT_NAMES, ChatEvent } from "@gc/domain/Chats/Events";
+import { CHAT_EVENT_NAMES, ChatEvent } from "@kn/domain/Chats/Events";
 import { NETWORK_ERROR_TAG, UNEXPECTED_ERROR_TAG } from "./errors";
 
 // The streaming routes answer SSE, not JSON, so they bypass `endpoint`. A caller always gets a

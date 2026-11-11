@@ -17,7 +17,7 @@ serif title over a grouped form card. Each section below says which one it borro
 In scope:
 
 1. **Email sign-in and sign-up in one flow.** This is better-auth's email-OTP plugin, which is
-   already configured in `@gc/auth`. An address that has no account gets one on its first verified
+   already configured in `@kn/auth`. An address that has no account gets one on its first verified
    code. There is no password and no separate "Create account" screen.
 2. **A faked email provider.** OTP mail goes through an `Email` port (`PROVIDER-FAKES.md`). The fake
    writes each message to a dev-only outbox table, and the E2E harness reads the latest code from
@@ -445,7 +445,7 @@ Per `PROVIDER-FAKES.md`: `Port.ts` (`send(message: { to, subject, body, kind, pa
 - `GET /e2e/otp?email=<address>` returns the newest outbox `otp` row for that recipient:
   `{ email, otp, type, sentAt }`. It answers 404 `{ _tag: "NoOutboxMail" }` when there is none — its own tag, so it cannot be mistaken for the router's `NotFound`. It sits
   behind the same guard as the others (404 when disarmed, 401 on a bad secret).
-- `E2E_USERS` gains `newcomer: { email: "e2e-newcomer@gcnotes.test" }`, which is **never seeded**.
+- `E2E_USERS` gains `newcomer: { email: "e2e-newcomer@kothanote.test" }`, which is **never seeded**.
   `POST /e2e/reset` additionally deletes the `user` row with that email (cascading to its
   sessions, accounts and profile), and deletes the `verification` rows better-auth keys to it (`${type}-otp-${email}`, matched exactly, so an address that merely contains it keeps its codes).
   The sign-up flow therefore always meets an unknown address.
@@ -570,7 +570,7 @@ New subflows and scripts:
 
 **AC1. Sign up: a new address goes through onboarding to home.** `phase-3/sign-up.yaml`
 - Given a clean launch and a reset backend
-- When the user signs in with `e2e-newcomer@gcnotes.test` and the code from the outbox
+- When the user signs in with `e2e-newcomer@kothanote.test` and the code from the outbox
 - Then `onboarding-name-screen` is visible, `onboarding-name-input` is empty and
   `onboarding-name-continue` is disabled
 - When they type "Rita Newcomer" and tap `onboarding-name-continue`
@@ -588,7 +588,7 @@ New subflows and scripts:
 
 **AC2. Sign in: a seeded, onboarded user goes straight home.** `phase-3/sign-in.yaml`
 - Given a clean launch and a seeded backend
-- When the user signs in with `e2e-person@gcnotes.test`
+- When the user signs in with `e2e-person@kothanote.test`
 - Then `home-screen` is visible without any `onboarding-*` screen appearing, and
   `home-avatar-initial` reads "E". Maestro samples the screen, so "without appearing" is checked
   twice — straight after the sixth digit, while the session and profile resolve, and again once
@@ -632,7 +632,7 @@ New subflows and scripts:
 - Then `home-screen` is visible (onboarding is not shown twice).
 
 **AC6. A wrong code is refused and recoverable.** `phase-3/sign-in-wrong-code.yaml`
-- Given the code step for `e2e-person@gcnotes.test`
+- Given the code step for `e2e-person@kothanote.test`
 - When the user types `000000` (the flow first asserts that the outbox code is not `000000`,
   re-sending if it is)
 - Then `welcome-error` reads "That code didn’t work. Check it and try again.", `welcome-otp` is
@@ -661,7 +661,7 @@ New subflows and scripts:
 `/onboarding/*`, so a returnTo cannot skip or re-enter onboarding.
 
 **AC10. Resend counts down and sends a fresh code.** `phase-3/sign-in-resend.yaml`
-- Given the code step for `e2e-person@gcnotes.test`, straight after the send
+- Given the code step for `e2e-person@kothanote.test`, straight after the send
 - Then `welcome-resend` is disabled and reads "Resend in 0:{ss}"
 - When the countdown ends
 - Then it reads "Resend code" and is enabled
@@ -722,7 +722,7 @@ removed from `BLOCKERS.md`.
 1. `src/design/TextField.tsx` and `FormRow.tsx` (§2.7), exported from the barrel, added to the
    gallery.
 2. `src/lib/api.ts`: re-add `meQuery`, plus `useUpdateMe` and `useCompleteOnboarding` mutations
-   over `@gc/apiclient`.
+   over `@kn/apiclient`.
 3. `src/features/auth/gate.ts` (pure `gateFor`), `errors.ts` (`welcomeErrorCopy`), and
    `name.ts` (`firstNameOf`), with tests 28–30. `useProtectedRoute` uses `gateFor`. The splash is
    held until the session resolves, and for a signed-in user until `meQuery` resolves. Add the

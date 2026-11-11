@@ -3,7 +3,7 @@
 # not open the action (it started mid-scroll, or the list was still settling) is retried once.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

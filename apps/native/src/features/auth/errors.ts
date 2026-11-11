@@ -14,7 +14,8 @@ const BY_CODE: Readonly<Record<string, string>> = {
 };
 
 const RATE_LIMITED = "Too many tries. Wait a minute and try again.";
-const NETWORK = "Couldn’t reach Notes. Check your connection and try again.";
+const NETWORK =
+  "Couldn’t reach Kothanote. Check your connection and try again.";
 const ANYTHING_ELSE = "Something went wrong. Try again.";
 
 export function welcomeErrorCopy(error: WelcomeError): string {

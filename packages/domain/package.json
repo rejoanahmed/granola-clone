@@ -1,5 +1,5 @@
 {
-  "name": "@gc/domain",
+  "name": "@kn/domain",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -15,7 +15,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
-    "@gc/config": "workspace:*",
+    "@kn/config": "workspace:*",
     "vitest": "5.0.1"
   },
   "peerDependencies": {

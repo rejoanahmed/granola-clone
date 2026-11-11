@@ -1,7 +1,7 @@
 # Let a held answer finish: the chat switch back to `auto` (docs/spec/phase-7.md §6.6).
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-chat-release.js

@@ -7,6 +7,8 @@
 # The shots land in artifacts/parity/<YYYY-MM-DD>/ (gitignored), which is the only place
 # docs/parity/REPORT.md is graded from. Needs what scripts/maestro.sh needs: the dev client on the
 # simulator, Metro on :8081 and the local API on :3001 with the E2E harness armed.
+# Parity compares against every discovery screen, so Metro must run with
+# EXPO_PUBLIC_SHOW_UNFINISHED=true: several of those screens are hidden in a release build (D027).
 #
 # The simulator is named by UDID, never "booted", and this script never names a physical device.
 set -euo pipefail
@@ -14,7 +16,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UDID="${IOS_SIMULATOR_UDID:-351547D8-BD3B-4418-AB30-8568D8FFB8F3}"
 MAESTRO="${MAESTRO:-$(command -v maestro || echo "$HOME/.maestro/bin/maestro")}"
-APP_ID="${APP_ID:-com.rejoan.gcnotes}"
+APP_ID="${APP_ID:-com.rovierr.kothanote}"
 API_URL="${API_URL:-http://localhost:3001}"
 DEV_SERVER_URL="${DEV_SERVER_URL:-http://localhost:8081}"
 FLOWS="$ROOT/apps/native/.maestro"

@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC2, exit criterion (docs/spec/phase-11.md §8, §3.1, §3.2, #102, #105, #16): tapping tomorrow's
 # "Catch up with the team" starts a recording already titled after it, with its guests on the pill.
 # End leads to the note page with the same title and +3; the attendees sheet lists the owner, then
@@ -6,11 +8,11 @@
 appId: ${APP_ID}
 name: A meeting becomes a note with its title and attendees
 tags:
+  - unfinished
   - phase-11
   - regression
-  - smoke
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:

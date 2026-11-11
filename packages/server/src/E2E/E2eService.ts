@@ -1,6 +1,7 @@
-import { folderNameKey } from "@gc/domain/Domain/Folder";
-import { ValidationFailed } from "@gc/domain/Errors";
+import { folderNameKey } from "@kn/domain/Domain/Folder";
+import { ValidationFailed } from "@kn/domain/Errors";
 import { z } from "zod";
+import { secretMatches, sessionCookieFor } from "../Auth/SessionCookie";
 import type {
   GenerationsService,
   InlineSweepResult,
@@ -35,7 +36,6 @@ import {
   isE2eRole,
   type StagedEvent,
 } from "./Fixtures";
-import { secretMatches, sessionCookieFor } from "./Secret";
 
 // better-auth's `session.expiresIn`. A shorter one would expire mid-suite; a longer one would
 // outlive the run for no gain.

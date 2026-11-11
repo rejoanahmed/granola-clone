@@ -19,7 +19,7 @@
 #         MIC: deny            # optional; the microphone permission, see launch-app.yaml
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - stopApp
 - runFlow: e2e-reset.yaml

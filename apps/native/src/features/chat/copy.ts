@@ -1,5 +1,5 @@
 // Every Ask string the app draws itself (docs/spec/phase-7.md §4). The chips and placeholders are
-// not here: they live in `@gc/domain/Domain/Chat`, so the fake, the tests and the app read one list.
+// not here: they live in `@kn/domain/Domain/Chat`, so the fake, the tests and the app read one list.
 export const CHAT_COPY = {
   activity: {
     doneA11y: "All tool activity complete",
@@ -40,7 +40,7 @@ export const CHAT_COPY = {
   history: {
     close: "Close chat history",
     delete: "Delete",
-    emptyBody: "Your conversations with Notes will appear here.",
+    emptyBody: "Your conversations with Kothanote will appear here.",
     emptyTitle: "No chats yet",
     loadFailed: "Couldn’t load your chats.",
     noResults: "No results",

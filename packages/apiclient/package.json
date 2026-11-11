@@ -1,5 +1,5 @@
 {
-  "name": "@gc/apiclient",
+  "name": "@kn/apiclient",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,8 +12,8 @@
     "type-check": "tsc -b"
   },
   "devDependencies": {
-    "@gc/config": "workspace:*",
-    "@gc/domain": "workspace:*",
+    "@kn/config": "workspace:*",
+    "@kn/domain": "workspace:*",
     "bun-types": "1.4.2",
     "hono": "4.13.8",
     "typescript": "7.0.2",

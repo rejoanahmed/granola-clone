@@ -1,0 +1,8 @@
+{
+  "extends": "@kn/config/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    // Source-only, as its consumers (the API Worker and the landing) read it.
+    "noEmit": true
+  }
+}

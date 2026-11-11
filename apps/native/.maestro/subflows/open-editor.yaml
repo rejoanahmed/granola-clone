@@ -2,7 +2,7 @@
 # §2.4, §2.7) and wait for it.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - tapOn:
     id: note-more

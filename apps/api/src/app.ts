@@ -1,23 +1,28 @@
-import { ValidationFailed } from "@gc/domain/Errors";
-import type { AppEnv } from "@gc/server";
-import { calendarRouter } from "@gc/server/Calendar/Http";
-import { chatsRouter } from "@gc/server/Chats/Http";
-import { e2eRouter } from "@gc/server/E2E/Http";
-import { foldersRouter } from "@gc/server/Folders/Http";
-import { generationsRouter } from "@gc/server/Generations/Http";
-import { notesRouter } from "@gc/server/Notes/Http";
-import { peopleRouter } from "@gc/server/People/Http";
-import { profilesRouter } from "@gc/server/Profiles/Http";
-import { recordingsRouter } from "@gc/server/Recordings/Http";
-import { searchRouter } from "@gc/server/Search/Http";
-import { settingsRouter } from "@gc/server/Settings/Http";
-import { supportRouter } from "@gc/server/Support/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { BRAND } from "@kn/domain/Brand";
+import { ValidationFailed } from "@kn/domain/Errors";
+import type { AppEnv } from "@kn/server";
+import { calendarRouter } from "@kn/server/Calendar/Http";
+import { chatsRouter } from "@kn/server/Chats/Http";
+import { e2eRouter } from "@kn/server/E2E/Http";
+import { foldersRouter } from "@kn/server/Folders/Http";
+import { generationsRouter } from "@kn/server/Generations/Http";
+import { notesRouter } from "@kn/server/Notes/Http";
+import { ownersRouter } from "@kn/server/Owners/Http";
+import { peopleRouter } from "@kn/server/People/Http";
+import { profilesRouter } from "@kn/server/Profiles/Http";
+import { recordingsRouter } from "@kn/server/Recordings/Http";
+import { searchRouter } from "@kn/server/Search/Http";
+import { settingsRouter } from "@kn/server/Settings/Http";
+import { supportRouter } from "@kn/server/Support/Http";
+import { privacyPage } from "@kn/shared/legal/markdown";
+import { PRIVACY_MARKDOWN } from "@kn/shared/legal/privacy-source";
 import {
   authRateLimit,
   betterAuthHandler,
   corsPolicy,
   currentActor,
+  ownerOnlySignIn,
   requestContext,
 } from "./middleware";
 import { onError } from "./on-error";
@@ -43,12 +48,20 @@ app.use("*", requestContext);
 app.use("*", currentActor);
 
 app.use("/api/auth/*", authRateLimit);
+app.use("/api/auth/*", ownerOnlySignIn);
+// The pairing token is a password: guesses spend the same per-address budget as sign-in codes.
+app.use("/owner/*", authRateLimit);
 
 // Liveness, not readiness: reading D1 here would take the Worker out of rotation for a slow query.
-app.get("/", (c) => c.json({ ok: true, service: "gcnotes-api" }));
+app.get("/", (c) => c.json({ ok: true, service: `${BRAND.slug}-api` }));
+
+// The privacy policy, from docs/legal/PRIVACY.md (D029). Every server serves it, so the app links
+// the user's own server's copy and the App Store listing links the reference server's.
+app.get("/privacy", (c) => c.html(privacyPage(PRIVACY_MARKDOWN)));
 
 // Mounted at `/` because the paths in each `Contract.ts` are already absolute; a prefix here would
 // desynchronise the served path from the documented one and from the derived client.
+app.route("/", ownersRouter);
 app.route("/", profilesRouter);
 app.route("/", notesRouter);
 app.route("/", recordingsRouter);

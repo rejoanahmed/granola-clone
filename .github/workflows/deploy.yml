@@ -10,7 +10,7 @@ name: Deploy
 # Repository secrets (values never appear in this file or in a log):
 #   CLOUDFLARE_API_TOKEN   Workers Scripts:Edit + D1:Edit
 #   CLOUDFLARE_ACCOUNT_ID
-#   E2E_SECRET             must equal the E2E_SECRET secret set on the gcnotes-api-dev Worker
+#   E2E_SECRET             must equal the E2E_SECRET secret set on the kothanote-api-dev Worker
 #                          (`wrangler secret put E2E_SECRET --env dev`); the suite sends it as
 #                          `x-e2e-secret`. Production has no harness and must never have one.
 #
@@ -41,8 +41,8 @@ env:
   # Must stay equal to API_URL in the matching `env` block of apps/api/wrangler.jsonc. The E2E
   # suite talks to the dev URL; a mismatch here points the gate at the wrong Worker and still goes
   # green.
-  DEV_API_URL: https://api-dev.gcnotes.example.com
-  PROD_API_URL: https://api.gcnotes.example.com
+  DEV_API_URL: https://api-dev.kothanote.example.com
+  PROD_API_URL: https://api.kothanote.example.com
 
 jobs:
   verify:
@@ -147,9 +147,9 @@ jobs:
           1. **Flip the Flagship flag** that gates the change, in the *dev* app. Seconds, no deploy.
           2. **Roll the Worker back:**
              ```
-             bunx wrangler rollback --name gcnotes-api-dev    # or, from apps/api: --env dev
+             bunx wrangler rollback --name kothanote-api-dev    # or, from apps/api: --env dev
              ```
-             `bunx wrangler versions list --name gcnotes-api-dev` picks a specific version-id.
+             `bunx wrangler versions list --name kothanote-api-dev` picks a specific version-id.
           3. **D1 has no rollback.** `wrangler d1 migrations` is create/list/apply and nothing
              else. If a migration landed, roll forward with a new one.
           MD
@@ -195,7 +195,7 @@ jobs:
           the promotion gate cannot run and production must not be deployed.
 
           `docs/TESTING.md` §6 names the journey it has to walk, and the harness it walks it
-          against: `POST /e2e/reset`, `/e2e/seed` and `/e2e/session/:role` on `gcnotes-api-dev`, armed
+          against: `POST /e2e/reset`, `/e2e/seed` and `/e2e/session/:role` on `kothanote-api-dev`, armed
           by `E2E_HARNESS=true` and guarded by the `x-e2e-secret` header.
 
           Do not work around this by removing the gate.
@@ -222,7 +222,7 @@ jobs:
           1. **Flip the Flagship flag** that gates the change, in the *dev* app. Seconds, no deploy.
           2. **Roll dev back** (only if dev needs to be usable again before the fix):
              ```
-             bunx wrangler rollback --name gcnotes-api-dev    # or, from apps/api: --env dev
+             bunx wrangler rollback --name kothanote-api-dev    # or, from apps/api: --env dev
              ```
           3. **D1 has no rollback.** Roll forward with a new migration — and keep it backward
              compatible with the Worker that is deployed, since that is the one still serving.
@@ -291,9 +291,9 @@ jobs:
              no build, no deploy — and it is the only tier that needs nothing from this runner.
           2. **Roll the Worker back:**
              ```
-             bunx wrangler rollback --name gcnotes-api-prod   # or, from apps/api: --env production
+             bunx wrangler rollback --name kothanote-api-prod   # or, from apps/api: --env production
              ```
-             `bunx wrangler versions list --name gcnotes-api-prod` picks a specific version-id;
+             `bunx wrangler versions list --name kothanote-api-prod` picks a specific version-id;
              `wrangler rollback <version-id>` takes it.
           3. **D1 has no rollback.** If the API step got as far as applying a migration, the
              schema is ahead of whatever Worker you roll back to — which serves, because every

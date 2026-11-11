@@ -6,14 +6,14 @@ import {
   FolderId,
   type FolderList,
   folderNameKey,
-} from "@gc/domain/Domain/Folder";
-import { NoteId } from "@gc/domain/Domain/Note";
+} from "@kn/domain/Domain/Folder";
+import { NoteId } from "@kn/domain/Domain/Note";
 import {
   FolderLimitReached,
   FolderNameTaken,
   FolderNotFound,
-} from "@gc/domain/Folders/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
+} from "@kn/domain/Folders/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { type Authorized, ensure } from "../Auth/Policy";
 import type { NoteRecord, NotesRepo } from "../Notes/NotesRepo";

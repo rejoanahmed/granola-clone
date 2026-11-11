@@ -1,7 +1,7 @@
 import type { BetterAuthPlugin } from "@better-auth/core";
 import { expo } from "@better-auth/expo";
-import type { DB } from "@gc/db";
-import * as schema from "@gc/db/schema/auth";
+import type { DB } from "@kn/db";
+import * as schema from "@kn/db/schema/auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 // `better-auth/minimal`, NOT `better-auth`: the barrel eagerly pulls in the Kysely-backed default
 // database layer the drizzle adapter replaces, shipping ~648 KiB of kysely inside the Worker.
@@ -25,7 +25,7 @@ export type AuthConfig = {
   /** Per request, not fixed at deploy time — see `Auth/Sessions.ts` for the dev-tunnel loop. */
   readonly baseURL: string;
   /**
-   * Minus `batch`/`transaction`, which the adapter never calls: `apps/api` may not import `@gc/db`,
+   * Minus `batch`/`transaction`, which the adapter never calls: `apps/api` may not import `@kn/db`,
    * so its only client is `makeDrizzle`'s return type, which subtracts those two. `db: DB` here
    * would make the one legal call site uncompilable. `Omit<DB, …>` so a drizzle upgrade errors here.
    */
@@ -39,7 +39,7 @@ export type AuthConfig = {
   };
   /** Omitted entirely when the GOOGLE_* vars are empty: the provider is then not registered. */
   readonly google?: { clientId: string; clientSecret: string };
-  /** `apps/native`'s deep-link scheme, e.g. `gcnotes`. Becomes a trusted origin. */
+  /** `apps/native`'s deep-link scheme, e.g. `kothanote`. Becomes a trusted origin. */
   readonly nativeScheme: string;
   readonly plugins?: BetterAuthPlugin[];
   readonly secret: string;
@@ -66,7 +66,7 @@ const isLocalBaseUrl = (baseURL: string): boolean => {
   }
 };
 
-/** The one better-auth instance, built per origin by `@gc/server`'s `Auth/Sessions.ts`. */
+/** The one better-auth instance, built per origin by `@kn/server`'s `Auth/Sessions.ts`. */
 export const createAuth = (config: AuthConfig) => {
   const isLocal = isLocalBaseUrl(config.baseURL);
 
@@ -100,7 +100,7 @@ export const createAuth = (config: AuthConfig) => {
       },
     },
     baseURL: config.baseURL,
-    // The four auth tables, not the whole `@gc/db` barrel: better-auth matches tables by this
+    // The four auth tables, not the whole `@kn/db` barrel: better-auth matches tables by this
     // object's keys, so a wider object lets a future rename silently re-target a query.
     database: drizzleAdapter(config.db, { provider: "sqlite", schema }),
     // No `emailAndPassword`: the OTP flow already proves control of the address.
@@ -121,7 +121,7 @@ export const createAuth = (config: AuthConfig) => {
           },
         }
       : {},
-    // Without the deep-link origin, the OAuth round trip back into `gcnotes://` is rejected as
+    // Without the deep-link origin, the OAuth round trip back into `kothanote://` is rejected as
     // untrusted at the last hop, after the user has already consented.
     trustedOrigins: [
       ...config.trustedOrigins,

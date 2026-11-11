@@ -7,7 +7,7 @@ tags:
   - phase-7
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow: ../subflows/open-global-chat.yaml
@@ -65,21 +65,10 @@ env:
       id: toast-message
       text: Copied to clipboard
     timeout: 5000
-# Since phase 12 the paperclip opens #23's menu, both items disabled (docs/spec/phase-12.md W8).
-- tapOn:
+# Attachments and dictation are hidden in a release build since phase 13 (D027): no paperclip, and
+# the empty composer's Send is inert rather than a mic that only says "not available".
+- assertNotVisible:
     id: chat-attach
-- extendedWaitUntil:
-    visible:
-      id: chat-attach-menu
-    timeout: 5000
-- runFlow:
-    file: ../subflows/dismiss-menu.yaml
-    env:
-      MENU: chat-attach-menu
-- tapOn:
+- assertVisible:
     id: chat-send
-- extendedWaitUntil:
-    visible:
-      id: toast-message
-      text: Dictation isn’t available yet\.
-    timeout: 5000
+    enabled: false

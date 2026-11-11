@@ -298,7 +298,7 @@ discovery identifier each one replaces is given for traceability.
 ## 7. API
 
 None. No endpoint, schema or table is added or changed. `GET /me` stays in the API and in
-`@gc/apiclient`; only the home screen stops calling it.
+`@kn/apiclient`; only the home screen stops calling it.
 
 **API-level test cases.** None are new. The regression requirement is that the existing suites
 (`Profiles.test.ts`, `Profiles.http.test.ts`, `E2E.test.ts`, `apps/api` harness tests) still pass

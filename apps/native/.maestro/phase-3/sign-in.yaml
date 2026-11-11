@@ -7,7 +7,7 @@ tags:
   - phase-3
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/start-clean.yaml
 
@@ -15,7 +15,7 @@ env:
 # must fail here.
 - assertVisible:
     id: welcome-title
-    text: Welcome to Notes
+    text: Welcome to Kothanote
 - assertVisible:
     id: welcome-body
     text: "Sign in or create an account with your email. We.ll send you a 6-digit code."
@@ -28,7 +28,7 @@ env:
     enabled: false
 - tapOn:
     id: welcome-email
-- inputText: e2e-person@gcnotes.test
+- inputText: e2e-person@kothanote.test
 - assertVisible:
     id: welcome-submit
     enabled: true
@@ -46,7 +46,7 @@ env:
     text: Check your email
 - assertVisible:
     id: welcome-sent-to
-    text: "We sent a 6-digit code to e2e-person@gcnotes\\.test\\."
+    text: "We sent a 6-digit code to e2e-person@kothanote\\.test\\."
 - assertVisible:
     id: welcome-submit
     text: Verify
@@ -63,7 +63,7 @@ env:
 - runFlow:
     file: ../subflows/enter-code.yaml
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 
 # AC2 says no onboarding screen appears on the way home. Maestro samples the screen rather than
 # watching it, so this checks the transition as early as it can — straight after the sixth digit,

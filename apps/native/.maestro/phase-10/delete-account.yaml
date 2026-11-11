@@ -12,7 +12,7 @@ tags:
   - regression
   - smoke
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -81,7 +81,7 @@ env:
 - runFlow:
     file: ../subflows/sign-in.yaml
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 - extendedWaitUntil:
     visible:
       id: onboarding-name-screen

@@ -1,0 +1,19 @@
+<svg
+  height="512"
+  viewBox="0 0 512 512"
+  width="512"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title>Kothanote</title>
+  <rect fill="#1F3A34" height="512" rx="112" width="512" />
+  <path
+    d="M156 100h200a72 72 0 0 1 72 72v120a72 72 0 0 1-72 72H226l-82 60 14-60a72 72 0 0 1-74-72V172a72 72 0 0 1 72-72z"
+    fill="#5CC8AA"
+  />
+  <rect fill="#1F3A34" height="56" rx="14" width="28" x="172" y="168" />
+  <rect fill="#1F3A34" height="104" rx="14" width="28" x="212" y="144" />
+  <rect fill="#1F3A34" height="140" rx="14" width="28" x="252" y="126" />
+  <rect fill="#1F3A34" height="92" rx="14" width="28" x="292" y="150" />
+  <rect fill="#1F3A34" height="60" rx="14" width="28" x="332" y="166" />
+  <rect fill="#1E7563" height="28" rx="14" width="168" x="172" y="286" />
+</svg>

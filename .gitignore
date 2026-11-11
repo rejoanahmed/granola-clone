@@ -26,6 +26,11 @@ out/
 # in git points every clone at one person's data.
 .deploy.env
 .wrangler.deploy.jsonc
+# scripts/selfhost.sh: your server's remembered settings and its pairing token (a password), the
+# config it generates, and the secrets file it hands to `wrangler secret bulk` and deletes.
+.selfhost.env
+.wrangler.selfhost.jsonc
+.selfhost.secrets.json
 
 # parity capture output (scripts/parity.sh); regenerated, never committed
 artifacts/
@@ -67,3 +72,12 @@ apps/native/ios/
 apps/native/android/
 apps/native/expo-env.d.ts
 *.aab
+
+# apps/web (TanStack Start on Workers, as the publisher's other app): build output and the
+# generated route tree's cache
+apps/web/.tanstack
+apps/web/.nitro
+apps/web/.output
+apps/web/dist-ssr
+.expo/
+*.tsbuildinfo

@@ -1,5 +1,5 @@
 {
-  "name": "@gc/server",
+  "name": "@kn/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,10 +13,11 @@
     "type-check": "tsc -b"
   },
   "dependencies": {
-    "@gc/auth": "workspace:*",
-    "@gc/db": "workspace:*",
-    "@gc/domain": "workspace:*",
+    "@anthropic-ai/sdk": "1.3.0",
     "@hono/zod-openapi": "1.6.3",
+    "@kn/auth": "workspace:*",
+    "@kn/db": "workspace:*",
+    "@kn/domain": "workspace:*",
     "better-auth": "1.7.5",
     "drizzle-orm": "0.45.3",
     "hono": "4.13.8",
@@ -25,7 +26,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
-    "@gc/config": "workspace:*",
+    "@kn/config": "workspace:*",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.2",
     "better-sqlite3": "13.0.3",

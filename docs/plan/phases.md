@@ -50,6 +50,7 @@ moves on. A phase that fails its own exit criteria gets three attempts, then is 
 | 10 | Settings, profile and upsells | done |
 | 11 | Upcoming events (fake calendar) | done |
 | 12 | Parity pass and CI | done |
+| 13 | Bring your own server (`docs/spec/phase-13.md`) | in review |
 
 ### 2 — Design system and app shell
 Tokens from `discovery/README.md` (dark only: `#262626` header, `#1A1A1A` list, `#B0BF40` lime
@@ -139,6 +140,12 @@ the E2E check. Pin Bun to the version in `packageManager`.
 **Exit:** a parity report with no open "must" gaps; CI green for check and unit tests; the full
 Maestro suite green locally.
 
+### 13 — Bring your own server
+The public-release direction (D019–D026): each user deploys the backend into their own Cloudflare
+account (`bun run selfhost`), pairs their phone with a token, and transcription and notes run on
+real providers in their account or on their own keys, all through their AI Gateway with logs off.
+**Exit:** the AC table in `docs/spec/phase-13.md` §6; AC15 (device) is deferred in BLOCKERS.md.
+
 ## Out of scope
-Phone-call recording, Apple Watch, the desktop app, real integrations (Google Calendar, real
-LLM/transcription keys), payments, sharing to other users, photo attachments in chat.
+Phone-call recording, Apple Watch, the desktop app, Google Calendar, payments, sharing to other
+users, photo attachments in chat. (Real LLM and transcription providers arrived in phase 13.)

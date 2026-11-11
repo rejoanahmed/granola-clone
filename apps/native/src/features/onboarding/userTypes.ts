@@ -1,4 +1,4 @@
-import type { UserType } from "@gc/domain/Domain/Profile";
+import type { UserType } from "@kn/domain/Domain/Profile";
 
 // #84's menu, in its order. The values are the API's; the labels are what the menu shows.
 export const USER_TYPES: readonly {

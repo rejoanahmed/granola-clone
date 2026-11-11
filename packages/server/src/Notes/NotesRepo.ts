@@ -16,13 +16,13 @@ import {
   recordings,
   sql,
   user,
-} from "@gc/db";
+} from "@kn/db";
 import {
   GenerationFailure,
   GenerationStatus,
   type NoteGeneration,
-} from "@gc/domain/Domain/Generation";
-import { FolderId, UserId } from "@gc/domain/Domain/Ids";
+} from "@kn/domain/Domain/Generation";
+import { FolderId, UserId } from "@kn/domain/Domain/Ids";
 import {
   AttendeeId,
   type NoteBody,
@@ -31,14 +31,14 @@ import {
   NoteSource,
   type NoteSummary,
   type NoteTitle,
-} from "@gc/domain/Domain/Note";
-import type { PersonKey } from "@gc/domain/Domain/Person";
+} from "@kn/domain/Domain/Note";
+import type { PersonKey } from "@kn/domain/Domain/Person";
 import {
   type NoteRecording,
   RecordingId,
   RecordingStatus,
-} from "@gc/domain/Domain/Recording";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/domain/Domain/Recording";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage } from "../Runtime/UnitOfWork";
 import type { NotesPosition } from "./Cursor";

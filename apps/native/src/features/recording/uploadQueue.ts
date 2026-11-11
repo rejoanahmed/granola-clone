@@ -1,4 +1,4 @@
-import type { AudioContentType } from "@gc/domain/Domain/Recording";
+import type { AudioContentType } from "@kn/domain/Domain/Recording";
 import {
   client,
   hasTag,

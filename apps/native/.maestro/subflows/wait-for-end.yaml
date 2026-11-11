@@ -2,7 +2,7 @@
 # hidden skip moves the recorded time on, so the flow does not sit through ten real seconds.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - tapOn:
     id: recording-skip-ahead

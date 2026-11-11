@@ -16,7 +16,7 @@
 # cold bundle still gets 60 s + 180 s rather than less than before.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

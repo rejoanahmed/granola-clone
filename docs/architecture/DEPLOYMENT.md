@@ -23,7 +23,7 @@ every merge stops being reckless and a long-lived branch stops being useful.
 | CI | `.github/workflows/ci.yml`, on the PR | lint, syncpack, architecture, types, tests, build, both dry runs | the PR does not merge |
 | verify | `deploy.yml`, at the merge SHA | the same four gates against the merge result, not the branch | nothing deploys |
 | deploy dev | `apps/api/scripts/deploy.sh dev` | D1 migrations applied, the Worker uploaded, `GET /` healthy | dev is suspect; production untouched |
-| **E2E** | `packages/e2e`, HTTP against `gcnotes-api-dev` | a real deployed isolate serves the journeys end to end | **production is not deployed** |
+| **E2E** | `packages/e2e`, HTTP against `kothanote-api-dev` | a real deployed isolate serves the journeys end to end | **production is not deployed** |
 | deploy prod | `scripts/deploy.sh production` | the same upload against production ids | reach for §3, in order |
 
 One branch (`main`), two deployed environments (`dev`, `production`), three rollback tiers, and no
@@ -157,7 +157,7 @@ first means choosing a fifteen-minute outage over a fifteen-second one.
 | Tier | Undoes | Command | Time | Does not cover |
 | --- | --- | --- | --- | --- |
 | **1 · Flag flip** | feature behaviour behind a flag | dashboard → Workers & Pages → Feature flags → *that environment's app* → toggle off | seconds | anything not behind a flag; the four failures in §6 |
-| **2 · Worker rollback** | the deployed code and the config baked into that version | `bunx wrangler rollback --name gcnotes-api-prod` | seconds | D1 schema and rows; a secret that was deleted |
+| **2 · Worker rollback** | the deployed code and the config baked into that version | `bunx wrangler rollback --name kothanote-api-prod` | seconds | D1 schema and rows; a secret that was deleted |
 | **3 · D1** | **nothing. There is no rollback.** | — roll forward with a new migration — | a deploy | everything; this is why §4 exists |
 
 Tier 1 first, every time it applies. It needs no runner, no credentials on your laptop, and no
@@ -166,11 +166,11 @@ build, and it is the only tier that is reversible in both directions in seconds.
 Tier 2, in full:
 
 ```bash
-bunx wrangler versions list --name gcnotes-api-prod   # pick a version-id
-bunx wrangler rollback <version-id> --name gcnotes-api-prod
+bunx wrangler versions list --name kothanote-api-prod   # pick a version-id
+bunx wrangler rollback <version-id> --name kothanote-api-prod
 ```
 
-From `apps/api`, `--env production` names the same Worker as `--name gcnotes-api-prod`; `name` is
+From `apps/api`, `--env production` names the same Worker as `--name kothanote-api-prod`; `name` is
 stated explicitly in both `env` blocks of `wrangler.jsonc` precisely so the Worker a rollback names
 is the Worker you think it is. Substitute `-dev` for dev.
 
@@ -315,14 +315,14 @@ why ten minutes is a price worth paying to promote.
 Once per Cloudflare account:
 
 ```bash
-bunx wrangler d1 create gcnotes-db-dev
-bunx wrangler d1 create gcnotes-db-prod
+bunx wrangler d1 create kothanote-db-dev
+bunx wrangler d1 create kothanote-db-prod
 # dashboard -> Workers & Pages -> Feature flags: ONE Flagship app per environment
 ```
 
 **The zone has to be on the account before the first deploy.** Both environments set
-`workers_dev: false` and claim a custom domain (`api-dev.gcnotes.example.com`,
-`api.gcnotes.example.com` — placeholders until a real domain exists), so there is no
+`workers_dev: false` and claim a custom domain (`api-dev.kothanote.example.com`,
+`api.kothanote.example.com` — placeholders until a real domain exists), so there is no
 `*.workers.dev` hostname to fall back to: a Worker deployed without its zone is a Worker nothing can
 reach, and the pipeline's health wait — and then the E2E gate — is what tells you so. The two
 hostnames must stay equal across `apps/api/wrangler.jsonc` (`API_URL` per environment),
@@ -378,3 +378,17 @@ in place.
    or a module-level throw is not flaggable, and the E2E gate is what catches it.
 5. **During an incident: did you run the command before opening the PR?** Tier 1, then tier 2, then
    the revert. Never the revert first. (§3.)
+
+---
+
+## 9 · Self-hosted servers (phase 13, D019)
+
+The product a user installs talks to **their own** server, not to `dev` or `production`. That
+server is the `selfhost` environment of `apps/api/wrangler.jsonc`, deployed into the user's account
+by `bun run selfhost` (`scripts/selfhost.sh`): it creates D1, R2 and both queues when they are
+missing, applies migrations, deploys on `workers.dev`, and stores `BETTER_AUTH_SECRET` and
+`OWNER_TOKEN` with `wrangler secret bulk`. Re-running it is the update path, and the
+expand/contract rules of §4 hold for it: every user's server migrates forward on their next run,
+possibly several releases at once. `deploy:check` dry-runs `selfhost` beside `dev` and
+`production`. The developer's reference server (App Review's demo) is a `selfhost` deployment on
+their personal account. The pipeline in §2 does not deploy it.

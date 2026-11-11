@@ -4,7 +4,7 @@ import * as Retrieval from "./Retrieval";
 
 // docs/spec/phase-7.md §7 case 22: the pure halves of asking. Retrieval is keyword scoring in the
 // service over rows SQL already filtered to the caller, and the fake's answer is a pure function of
-// what it was handed. `personKeyOf` lives in `@gc/domain/Domain/Person` and is pinned there.
+// what it was handed. `personKeyOf` lives in `@kn/domain/Domain/Person` and is pinned there.
 
 type ScoredNote = {
   readonly bodyMarkdown: string;

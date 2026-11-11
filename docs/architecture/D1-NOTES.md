@@ -243,7 +243,7 @@ like a fresh application. Verify once, write down the result, and never wonder a
 ls -t apps/api/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/*.sqlite | head -1
 
 # an ad-hoc query against it
-bunx wrangler d1 execute gcnotes-db-dev --local --command "select id, email from user"
+bunx wrangler d1 execute kothanote-db-dev --local --command "select id, email from user"
 
 # start over
 bun run db:seed        # truncates RESET_ORDER plus the auth tables, and reseeds

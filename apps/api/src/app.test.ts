@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PersonNotFound } from "@gc/domain/People/Errors";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
-import type { AppEnv, Env } from "@gc/server";
-import { buildContainer } from "@gc/server";
-import { makeTestD1 } from "@gc/server/Testing";
+import { PersonNotFound } from "@kn/domain/People/Errors";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
+import type { AppEnv, Env } from "@kn/server";
+import { buildContainer } from "@kn/server";
+import { makeTestD1 } from "@kn/server/Testing";
 import { Hono } from "hono";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { app } from "./app";
@@ -19,7 +19,7 @@ const env = {
   BETTER_AUTH_SECRET: "test-secret-not-used-by-these-routes",
   BETTER_AUTH_URL: "http://localhost:3001",
   DB: {} as D1Database,
-  NATIVE_SCHEME: "gcnotes",
+  NATIVE_SCHEME: "kothanote",
   NODE_ENV: "test",
 } satisfies Env;
 
@@ -30,7 +30,7 @@ describe("the worker's HTTP assembly", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       ok: true,
-      service: "gcnotes-api",
+      service: "kothanote-api",
     });
   });
 
@@ -69,6 +69,9 @@ describe("the worker's HTTP assembly", () => {
         "/notes/{id}",
         "/notes/{id}/trash",
         "/notes/{id}/restore",
+        // Self-hosting (docs/spec/phase-13.md §6.1).
+        "/server",
+        "/owner/session",
         // Phase 5 (docs/spec/phase-5.md §6.1).
         "/notes/{id}/transcript",
         // Phase 6 (docs/spec/phase-6.md §6.1).
@@ -105,6 +108,7 @@ describe("the worker's HTTP assembly", () => {
       ].sort()
     );
     expect(doc.tags.map((tag) => tag.name)).toEqual([
+      "Server",
       "Profile",
       "Notes",
       "Recordings",
@@ -456,7 +460,11 @@ describe("the queue handler", () => {
   it("acks a job that generated", async () => {
     const job = await settledJob("auto");
 
-    const delivered = await deliver(queueEnv, "gcnotes-generation-local", job);
+    const delivered = await deliver(
+      queueEnv,
+      "kothanote-generation-local",
+      job
+    );
 
     expect(delivered).toEqual({ acked: 1, retried: [], retriedAll: 0 });
     expect(await statusOf(job.generationId)).toBe("generated");
@@ -465,7 +473,11 @@ describe("the queue handler", () => {
   it("retries a job the LLM failed, after the generation retry delay", async () => {
     const job = await settledJob("fail");
 
-    const delivered = await deliver(queueEnv, "gcnotes-generation-local", job);
+    const delivered = await deliver(
+      queueEnv,
+      "kothanote-generation-local",
+      job
+    );
 
     expect(delivered).toEqual({
       acked: 0,
@@ -478,7 +490,7 @@ describe("the queue handler", () => {
   it("acks a job that was skipped, such as one naming no generation", async () => {
     await settledJob("auto");
 
-    const delivered = await deliver(queueEnv, "gcnotes-generation-local", {
+    const delivered = await deliver(queueEnv, "kothanote-generation-local", {
       generationId: "gen_0000000000009999",
     });
 
@@ -488,7 +500,7 @@ describe("the queue handler", () => {
   it("dispatches on the queue name's prefix, whichever environment it is", async () => {
     const job = await settledJob("auto");
 
-    const delivered = await deliver(queueEnv, "gcnotes-generation-dev", job);
+    const delivered = await deliver(queueEnv, "kothanote-generation-dev", job);
 
     expect(delivered.acked).toBe(1);
   });
@@ -501,7 +513,7 @@ describe("the queue handler", () => {
       // Silenced as above, whichever level the implementation picks.
     });
 
-    const delivered = await deliver(queueEnv, "gcnotes-something-else", {
+    const delivered = await deliver(queueEnv, "kothanote-something-else", {
       generationId: "gen_0000000000000001",
     });
 
@@ -658,7 +670,11 @@ describe("wrangler.jsonc, the generation queue", () => {
   ];
 
   it("has the environments this test walks", () => {
-    expect(Object.keys(config.env).sort()).toEqual(["dev", "production"]);
+    expect(Object.keys(config.env).sort()).toEqual([
+      "dev",
+      "production",
+      "selfhost",
+    ]);
   });
 
   it.each(environments)(
@@ -668,7 +684,7 @@ describe("wrangler.jsonc, the generation queue", () => {
         (entry) => entry.binding === "GENERATION_QUEUE"
       );
 
-      expect(producer?.queue.startsWith("gcnotes-generation-")).toBe(true);
+      expect(producer?.queue.startsWith("kothanote-generation-")).toBe(true);
       const consumer = block.queues?.consumers?.find(
         (entry) => entry.queue === producer?.queue
       );
@@ -681,10 +697,25 @@ describe("wrangler.jsonc, the generation queue", () => {
     expect(block.vars?.LLM_MODE).toEqual(expect.any(String));
   });
 
-  it("says the mode out loud per environment: fake locally and on dev, live in production", () => {
+  // Phase 13 (D022): a deployed owner server names its live provider; `live` is no longer a mode.
+  it("says the mode out loud per environment: fake locally and on dev, a named provider on owner servers", () => {
     expect(config.vars?.LLM_MODE).toBe("fake");
     expect(config.env.dev?.vars?.LLM_MODE).toBe("fake");
-    expect(config.env.production?.vars?.LLM_MODE).toBe("live");
+    expect(config.env.production?.vars?.LLM_MODE).toBe("workers-ai");
+    expect(config.env.selfhost?.vars?.LLM_MODE).toBe("workers-ai");
+  });
+
+  it("routes both live owner environments' transcription through a queue of its own", () => {
+    for (const name of ["production", "selfhost"] as const) {
+      const block = config.env[name];
+      const producer = block?.queues?.producers?.find(
+        (entry) => entry.binding === "TRANSCRIPTION_QUEUE"
+      );
+      expect(producer?.queue).toContain("-transcription-");
+      expect(
+        block?.queues?.consumers?.some((c) => c.queue === producer?.queue)
+      ).toBe(true);
+    }
   });
 
   it("gives every environment a queue of its own", () => {
@@ -771,13 +802,13 @@ describe("the chats routes, phase 7", () => {
   ] as const)(
     "renders %s through on-error as %i with its details",
     async (tag, status) => {
-      const errors = (await import("@gc/domain/Chats/Errors")) as Record<
+      const errors = (await import("@kn/domain/Chats/Errors")) as Record<
         string,
         ErrorClass
       >;
       const ErrorOf = errors[tag];
       if (ErrorOf === undefined) {
-        throw new Error(`no ${tag} in @gc/domain/Chats/Errors`);
+        throw new Error(`no ${tag} in @kn/domain/Chats/Errors`);
       }
       const failing = new Hono<AppEnv>()
         .get("/", () => {
@@ -823,7 +854,7 @@ describe("the chats routes, phase 7", () => {
 
   it("renders PersonNotFound from People/Errors as a 404, with no second name in Chats", async () => {
     const chats: Record<string, unknown> = await import(
-      "@gc/domain/Chats/Errors"
+      "@kn/domain/Chats/Errors"
     );
     const failing = new Hono<AppEnv>()
       .get("/", () => {
@@ -898,13 +929,13 @@ describe("the folders routes, phase 9", () => {
   ] as const)(
     "renders %s through on-error as %i with its details",
     async (tag, status) => {
-      const errors = (await import("@gc/domain/Folders/Errors")) as Record<
+      const errors = (await import("@kn/domain/Folders/Errors")) as Record<
         string,
         ErrorClass | undefined
       >;
       const ErrorOf = errors[tag];
       if (ErrorOf === undefined) {
-        throw new Error(`no ${tag} in @gc/domain/Folders/Errors`);
+        throw new Error(`no ${tag} in @kn/domain/Folders/Errors`);
       }
       const failing = new Hono<AppEnv>()
         .get("/", () => {
@@ -1025,13 +1056,13 @@ describe("the calendar routes, phase 11", () => {
     ],
   ])("renders %s as %i in the error envelope", async (tag, status, details) => {
     type ErrorClass = new (init: object) => Error;
-    const errors = (await import("@gc/domain/Calendar/Errors")) as Record<
+    const errors = (await import("@kn/domain/Calendar/Errors")) as Record<
       string,
       ErrorClass | undefined
     >;
     const ErrorOf = errors[tag];
     if (ErrorOf === undefined) {
-      throw new Error(`no ${tag} in @gc/domain/Calendar/Errors`);
+      throw new Error(`no ${tag} in @kn/domain/Calendar/Errors`);
     }
     const failing = new Hono<AppEnv>()
       .get("/", () => {

@@ -2,7 +2,7 @@
 # `sign-in.yaml` so a flow that needs the code step itself (a wrong code, a resend) starts here.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - extendedWaitUntil:
     visible:

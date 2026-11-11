@@ -1,5 +1,5 @@
-import { ChatThreadId } from "@gc/domain/Domain/Chat";
-import { Timestamp } from "@gc/domain/Domain/Time";
+import { ChatThreadId } from "@kn/domain/Domain/Chat";
+import { Timestamp } from "@kn/domain/Domain/Time";
 import { z } from "zod";
 
 // The keyset the history list seeks on, the last row of the page just served: pinned first, then

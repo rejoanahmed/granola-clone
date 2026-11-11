@@ -8,7 +8,7 @@
 #         NAME: Product
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: open-folders.yaml
 - extendedWaitUntil:

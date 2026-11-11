@@ -1,5 +1,5 @@
 {
-  "extends": "@gc/config/base.json",
+  "extends": "@kn/config/base.json",
   "include": ["src"],
   "compilerOptions": {
     "declaration": true,
@@ -16,7 +16,7 @@
     "lib": ["ESNext", "DOM"],
     "types": ["bun-types"]
   },
-  // `@gc/domain` only. This package must never reference `@gc/server` or `@gc/db`: the whole
+  // `@kn/domain` only. This package must never reference `@kn/server` or `@kn/db`: the whole
   // point of deriving the client from `<Ctx>/Contract.ts` is that `apps/native` can
   // type-check against the API without depending on the Worker (R1).
   "references": [{ "path": "../domain" }]

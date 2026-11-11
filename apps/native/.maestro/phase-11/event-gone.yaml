@@ -1,13 +1,16 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC5 (docs/spec/phase-11.md §8, §3.2): a meeting removed from the calendar after the card loaded.
 # The tap reaches the server with an event it no longer holds, and the recording bar's error state
 # names why; Close leaves home unobstructed, the card refetched to its empty state, and no note.
 appId: ${APP_ID}
 name: Starting a note from a meeting that has left the calendar
 tags:
+  - unfinished
   - phase-11
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:

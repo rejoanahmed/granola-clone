@@ -1,4 +1,4 @@
-import * as LlmErrors from "@gc/domain/Llm/Errors";
+import * as LlmErrors from "@kn/domain/Llm/Errors";
 import { describe, expect, it } from "vitest";
 import * as Output from "../../Generations/Output";
 import * as Fake from "./LlmFake";
@@ -186,7 +186,7 @@ describe("LlmFake, auto, brief", () => {
   it("never writes the tip itself: that is the server's copy", async () => {
     const { bodyMarkdown } = await generated(brief());
 
-    expect(bodyMarkdown).not.toContain("Notes works best");
+    expect(bodyMarkdown).not.toContain("Kothanote works best");
   });
 });
 

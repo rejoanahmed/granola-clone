@@ -2,7 +2,7 @@
 # (docs/spec/phase-7.md §6.6). Every reset puts it back to `auto`.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-chat.js

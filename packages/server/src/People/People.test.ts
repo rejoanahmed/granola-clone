@@ -1,5 +1,5 @@
-import { domainOf } from "@gc/domain/Domain/Person";
-import { PersonNotFound } from "@gc/domain/People/Errors";
+import { domainOf } from "@kn/domain/Domain/Person";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildContainer } from "../container";
 import { E2E_USERS } from "../E2E/Fixtures";
@@ -39,7 +39,7 @@ beforeEach(async () => {
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   } satisfies Env;
   const harness = buildContainer(env).e2e;
@@ -89,12 +89,12 @@ describe("PeopleService.get", () => {
   // §7 case 14
   it("marks the caller's own key isMe, named from their account", async () => {
     expect(
-      await service().get(person, "email:e2e-person@gcnotes.test")
+      await service().get(person, "email:e2e-person@kothanote.test")
     ).toEqual({
-      domain: "gcnotes.test",
-      email: "e2e-person@gcnotes.test",
+      domain: "kothanote.test",
+      email: "e2e-person@kothanote.test",
       isMe: true,
-      key: "email:e2e-person@gcnotes.test",
+      key: "email:e2e-person@kothanote.test",
       name: "E2E Person",
     });
   });

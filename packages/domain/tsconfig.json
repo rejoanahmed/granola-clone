@@ -1,5 +1,5 @@
 {
-  "extends": "@gc/config/base.json",
+  "extends": "@kn/config/base.json",
   "include": ["src"],
   "compilerOptions": {
     "declaration": true,

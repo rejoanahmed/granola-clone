@@ -1,5 +1,5 @@
 import { tracing } from "cloudflare:workers";
-import type { AppError } from "@gc/domain/Errors";
+import type { AppError } from "@kn/domain/Errors";
 
 // One wrapper instead of a span call per method: `container.ts` wraps each service and repository
 // once, so span names are mechanical and none can be forgotten. The sync path is load-bearing —

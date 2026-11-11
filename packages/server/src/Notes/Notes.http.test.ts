@@ -1,8 +1,8 @@
-import { Note, NoteSummary } from "@gc/domain/Domain/Note";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-import { PageOf } from "@gc/domain/Http";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { Note, NoteSummary } from "@kn/domain/Domain/Note";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
+import { PageOf } from "@kn/domain/Http";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -402,7 +402,7 @@ describe("POST /notes/{id}/generation/retry", () => {
   });
 
   it("answers 200 with the NoteGeneration shape, taking no body", async () => {
-    const shapes = await import("@gc/domain/Domain/Generation");
+    const shapes = await import("@kn/domain/Domain/Generation");
     const { NoteGeneration } = shapes as unknown as {
       NoteGeneration: typeof Note;
     };
@@ -432,7 +432,7 @@ describe("POST /notes/{id}/generation/retry", () => {
   });
 
   it("is 409 GenerationNotRetryable for a generation that has not failed", async () => {
-    const errors = await import("@gc/domain/Generations/Errors");
+    const errors = await import("@kn/domain/Generations/Errors");
     const { GenerationNotRetryable } = errors as unknown as {
       GenerationNotRetryable: typeof NoteTrashed;
     };
@@ -485,13 +485,13 @@ describe("GET /notes?folder= and folderIds, phase 9", () => {
   });
 
   it("is 404 FolderNotFound for a folder the caller does not have", async () => {
-    const errors = (await import("@gc/domain/Folders/Errors")) as Record<
+    const errors = (await import("@kn/domain/Folders/Errors")) as Record<
       string,
       (new (details?: Record<string, unknown>) => Error) | undefined
     >;
     const Missing = errors.FolderNotFound;
     if (Missing === undefined) {
-      throw new Error("no FolderNotFound in @gc/domain/Folders/Errors");
+      throw new Error("no FolderNotFound in @kn/domain/Folders/Errors");
     }
     const { app } = appAs(actor(), {
       list: () => {

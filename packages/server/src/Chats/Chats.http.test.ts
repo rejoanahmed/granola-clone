@@ -1,9 +1,9 @@
-import * as ChatErrors from "@gc/domain/Chats/Errors";
-import * as Events from "@gc/domain/Chats/Events";
-import * as Chat from "@gc/domain/Domain/Chat";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
-import { PersonNotFound } from "@gc/domain/People/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as ChatErrors from "@kn/domain/Chats/Errors";
+import * as Events from "@kn/domain/Chats/Events";
+import * as Chat from "@kn/domain/Domain/Chat";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
+import { PersonNotFound } from "@kn/domain/People/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";

@@ -1,6 +1,6 @@
-import { UserId } from "@gc/domain/Domain/Ids";
-import { Forbidden } from "@gc/domain/Errors";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+import { UserId } from "@kn/domain/Domain/Ids";
+import { Forbidden } from "@kn/domain/Errors";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -366,7 +366,7 @@ describe("ProfilesService deletion, phase 10", () => {
       E2E_HARNESS: "true",
       E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
       FLAGS_MODE: "fake",
-      NATIVE_SCHEME: "gcnotes",
+      NATIVE_SCHEME: "kothanote",
       NODE_ENV: "test",
     } satisfies Env).e2e;
     if (built === null) {

@@ -11,7 +11,7 @@ tags:
   - phase-6
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -38,10 +38,9 @@ env:
     id: recording-minimize
 - assertVisible:
     id: recording-more
-# Drawn but inert this phase (§3.1).
-- assertVisible:
+# Inert since phase 5 and hidden in a release build since phase 13 (D027).
+- assertNotVisible:
     id: recording-attach
-    enabled: false
 - assertVisible:
     id: recording-bar
 - assertVisible:

@@ -1,5 +1,5 @@
 {
-  "name": "@gc/db",
+  "name": "@kn/db",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",
-    "@gc/config": "workspace:*",
+    "@kn/config": "workspace:*",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.2",
     "better-sqlite3": "13.0.3",

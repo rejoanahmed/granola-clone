@@ -1,4 +1,4 @@
-import { CHAT_TITLE_MAX } from "@gc/domain/Domain/Chat";
+import { CHAT_TITLE_MAX } from "@kn/domain/Domain/Chat";
 import { searchTerms, wordsOf } from "../../Chats/Retrieval";
 import type { ChatAnswerRequest, ChatContextNote } from "./Port";
 

@@ -1,5 +1,5 @@
-import { getPersonRoute } from "@gc/domain/People/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { getPersonRoute } from "@kn/domain/People/Contract";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";
 

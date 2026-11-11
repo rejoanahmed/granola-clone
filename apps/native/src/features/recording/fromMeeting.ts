@@ -1,4 +1,4 @@
-import { meetingTitleOf } from "@gc/domain/Domain/Note";
+import { meetingTitleOf } from "@kn/domain/Domain/Note";
 import {
   calendarEventNoteId,
   isCalendarEventNotFound,

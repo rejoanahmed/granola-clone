@@ -1,4 +1,4 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
 import { describe, expect, it } from "vitest";
 import { makeEmailFake } from "./EmailFake";
 
@@ -7,10 +7,10 @@ import { makeEmailFake } from "./EmailFake";
 // `container.ts` hands it the outbox repository, and this file hands it an array.
 
 const MESSAGE = {
-  body: "Your Notes code is 123456.",
+  body: "Your Kothanote code is 123456.",
   kind: "otp",
   payload: { otp: "123456", type: "sign-in" },
-  subject: "Your Notes sign-in code",
+  subject: "Your Kothanote sign-in code",
   to: "rita@example.test",
 } as const;
 
@@ -91,7 +91,7 @@ describe("the email fake", () => {
         body: "Here is the link.",
         kind: "desktop-reminder",
         payload: { link: "https://notes.example/desktop" },
-        subject: "Get Notes for Mac or Windows",
+        subject: "Get Kothanote for Mac or Windows",
         to: "rita@example.test",
       },
     ] as const;

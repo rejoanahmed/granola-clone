@@ -1,12 +1,12 @@
 import {
   GENERATED_TITLE_MAX,
   LOW_CONTENT_TIP,
-} from "@gc/domain/Domain/Generation";
-import { NoteBody } from "@gc/domain/Domain/Note";
+} from "@kn/domain/Domain/Generation";
+import { NoteBody } from "@kn/domain/Domain/Note";
 import {
   GeneratedNoteMalformed,
   GeneratedNoteTruncated,
-} from "@gc/domain/Generations/Errors";
+} from "@kn/domain/Generations/Errors";
 
 export type GeneratedNote = {
   readonly bodyMarkdown: string;

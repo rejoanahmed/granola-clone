@@ -8,7 +8,7 @@ tags:
   - phase-4
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - extendedWaitUntil:
@@ -16,7 +16,7 @@ env:
       id: home-note-not_e2e_launch
     timeout: 30000
 
-- openLink: gcnotes://notes/not_e2e_archived
+- openLink: kothanote://notes/not_e2e_archived
 # iOS may ask before handing a custom-scheme link to the app. That sheet is the system's and has
 # no testID, so it is the one place a flow taps by text.
 - runFlow:

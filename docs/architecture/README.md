@@ -95,13 +95,13 @@ The import rules are the whole architecture. They are worth more than the folder
 | --- | --- | --- |
 | `packages/domain/src/Domain/*.ts` | `zod`, other `Domain/*` | anything in `packages/server` |
 | `packages/domain/src/<Ctx>/Contract.ts` | `Domain/*`, `@hono/zod-openapi` | anything in `packages/server` |
-| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@gc/db`, `drizzle-orm`, `@gc/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
-| `packages/server/src/<Plural>/Policy.ts` | `@gc/domain/*`, `../Auth/Policy` | `@gc/db`, `drizzle-orm`, `hono` |
-| `packages/server/src/<Plural>/<Plural>Service.ts` | `@gc/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos allowed) | `@gc/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
-| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@gc/domain/<Ctx>/Contract`, `../AppEnv` | `@gc/db`, any `*Repo`, any other context |
+| `packages/server/src/<Plural>/<Plural>Repo.ts` | `@kn/db`, `drizzle-orm`, `@kn/domain/*`, `../Runtime/*` | `hono`, other contexts' repos, any service |
+| `packages/server/src/<Plural>/Policy.ts` | `@kn/domain/*`, `../Auth/Policy` | `@kn/db`, `drizzle-orm`, `hono` |
+| `packages/server/src/<Plural>/<Plural>Service.ts` | `@kn/domain/*`, `./Policy`, its own `Deps` types (type-only imports of other repos allowed) | `@kn/db`, `drizzle-orm`, `hono`, `c.env`, `process.env` |
+| `packages/server/src/<Plural>/Http.ts` | `hono`, `@hono/zod-openapi`, `@kn/domain/<Ctx>/Contract`, `../AppEnv` | `@kn/db`, any `*Repo`, any other context |
 | `packages/server/src/container.ts` | everything | — |
 
-Two of those carry the design: **`@gc/db` appears only in `*Repo.ts`, and `hono` never appears in
+Two of those carry the design: **`@kn/db` appears only in `*Repo.ts`, and `hono` never appears in
 a service.** If both hold, the business logic is framework-free and database-free, which is the
 entire claim an effect system makes with its `R` channel. `scripts/check-architecture.mjs` (§7)
 fails `bun run check` if either breaks.
@@ -145,7 +145,7 @@ staging buffer over `D1Database.batch` in either world. Nothing about it is effe
 
 Route definitions — method, path, params, responses, OpenAPI metadata — live in
 `packages/domain/src/<Ctx>/Contract.ts`. Keeping them in `packages/domain` is what lets
-`@gc/apiclient` be *derived* from the contract instead of hand-written, and what lets `apps/native`
+`@kn/apiclient` be *derived* from the contract instead of hand-written, and what lets `apps/native`
 type-check against the API without depending on the Worker.
 
 ```ts
@@ -165,7 +165,7 @@ export const getMeRoute = createRoute({
 ```
 
 Route constants are named `<verb><Noun>Route`. That name is the contract: `Http.ts` imports it,
-`@gc/apiclient` derives a method from it, and nothing renames it on the way through.
+`@kn/apiclient` derives a method from it, and nothing renames it on the way through.
 
 A contract file is worth nothing on its own — the first version of most projects has one and it
 does not help, because the handler still holds the logic. The split only pays off alongside R3.
@@ -251,7 +251,7 @@ Pure, synchronous, no I/O, no clock. `make` returns `Authorized<A>` — a brande
 fails to type-check where it passes the value on. That brand is the one piece of compile-time
 enforcement that survives having no effect system, and it costs four lines.
 
-Policy files never import `@gc/db` and never import `hono`. They take the subject they are deciding
+Policy files never import `@kn/db` and never import `hono`. They take the subject they are deciding
 about as a plain domain value — which means whatever the predicate compares (an owner id, say)
 travels on the subject, so the policy never needs a repository.
 
@@ -388,7 +388,7 @@ Three rules keep this honest:
 
 - **`Profiles.test.ts` imports `ProfilesService`, not the router.** HTTP is covered once per context
   by a thin wire-shape test (`Profiles.http.test.ts`), not per rule.
-- **The seam is `deps`, not the thing behind it.** `ProfilesService` still imports no `@gc/db` and
+- **The seam is `deps`, not the thing behind it.** `ProfilesService` still imports no `@kn/db` and
   still cannot tell what its repo is backed by. Handing it the real repository changes what the
   assertion is worth, not whether the architecture holds.
 - **The guard under test is the statement that ships.** A `WHERE` precondition, a `CHECK`, a unique
@@ -420,10 +420,10 @@ Written against a hypothetical **Notes** context, since that is the product's fi
    suite and a broken deploy.
 5. **`packages/server/src/Notes/NotesRepo.ts`** — Drizzle in, domain types out, `null` for absent,
    `stage*` methods for anything that must be atomic with another write. This is the only file in
-   the context allowed to import `@gc/db`.
+   the context allowed to import `@kn/db`.
 6. **`packages/server/src/Notes/Policy.ts`** — pure predicates, branded results.
 7. **`packages/server/src/Notes/NotesService.ts`** — `makeNotesService(deps)`. No `hono`, no
-   `@gc/db`, every dep `readonly`.
+   `@kn/db`, every dep `readonly`.
 8. **`packages/server/src/Notes/Http.ts`** — one expression per route, exported as `notesRouter`.
 9. **Register in `container.ts`** — construct the repo, wrap both in `traced()`, add the service
    under a key (`notes`), and mount the router in `apps/api/src/app.ts`.
@@ -511,7 +511,7 @@ Half of it is Biome, in `biome.jsonc`:
   {
     "includes": ["packages/server/src/**/*Service.ts", "packages/server/src/**/Policy.ts"],
     "linter": { "rules": { "style": { "noRestrictedImports": { "level": "error", "options": { "paths": {
-      "@gc/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
+      "@kn/db": "Services never touch the database. Put the query in <Plural>Repo.ts.",
       "drizzle-orm": "Services never touch the database. Put the query in <Plural>Repo.ts.",
       "hono": "Services are framework-free. Take the value as a parameter."
     } } } } } }
@@ -519,7 +519,7 @@ Half of it is Biome, in `biome.jsonc`:
   {
     "includes": ["packages/server/src/**/Http.ts"],
     "linter": { "rules": { "style": { "noRestrictedImports": { "level": "error", "options": { "paths": {
-      "@gc/db": "Handlers read c.var.svc, never the database."
+      "@kn/db": "Handlers read c.var.svc, never the database."
     } } } } } }
   }
 ]
@@ -534,8 +534,8 @@ The other half is four checks the linter cannot express, in `scripts/check-archi
    import (`import type { ProfilesRepo }`) is allowed everywhere, which is exactly how a service
    names a cross-context repository dependency without being able to construct one.
 3. **`readonly` on every field of every `*Deps` type** — *"Deps are readonly (R3)."*
-4. **`@gc/db` outside `*Repo.ts`, `Runtime/Drizzle.ts`, `packages/auth` and `packages/db`** —
-   *"@gc/db is imported by <Plural>Repo.ts and Runtime/Drizzle.ts only (R2)."*
+4. **`@kn/db` outside `*Repo.ts`, `Runtime/Drizzle.ts`, `packages/auth` and `packages/db`** —
+   *"@kn/db is imported by <Plural>Repo.ts and Runtime/Drizzle.ts only (R2)."*
 
 Wired into the one command that gates everything:
 

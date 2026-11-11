@@ -1,12 +1,15 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC3 (docs/spec/phase-11.md §8, §3.1, #01, #04): with nothing staged, the card is #01's empty
 # state, unchanged since phase 10 — its label, no list — and it still opens the work-email upsell.
 appId: ${APP_ID}
 name: The events card with no upcoming meetings
 tags:
+  - unfinished
   - phase-11
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 # The base seed stages no events (§6.5), so nothing is staged here.
 - runFlow: ../subflows/open-home.yaml

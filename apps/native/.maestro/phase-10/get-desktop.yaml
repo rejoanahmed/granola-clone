@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC10 (docs/spec/phase-10.md §8, #51, #89): Get desktop opens from home's button and from the
 # settings banner; Done closes it; Remind me later closes it with a toast and mails the caller a link
 # through the fake Email port (designed). Share link opens the system share sheet and is checked by
@@ -5,10 +7,11 @@
 appId: ${APP_ID}
 name: The Get desktop sheet, from home and from settings
 tags:
+  - unfinished
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - tapOn:
@@ -24,7 +27,7 @@ env:
     text: Meeting notes on your computer
 - assertVisible:
     id: desktop-body
-    text: Take notes on video calls with Notes for Mac or Windows\.
+    text: Take notes on video calls with Kothanote for Mac or Windows\.
 - assertVisible:
     id: desktop-share
     text: Share link
@@ -59,10 +62,10 @@ env:
 - extendedWaitUntil:
     visible:
       id: toast-message
-      text: We’ll email you a link to get Notes on your computer\.
+      text: We’ll email you a link to get Kothanote on your computer\.
     timeout: 10000
 - runScript:
     file: ../scripts/e2e-support.js
     env:
       KIND: desktop-reminder
-      EXPECT_SUBJECT: Get Notes for Mac or Windows
+      EXPECT_SUBJECT: Get Kothanote for Mac or Windows

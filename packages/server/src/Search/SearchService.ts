@@ -3,7 +3,7 @@ import {
   SEARCH_PEOPLE_LIMIT,
   type SearchQuery,
   type SearchResults,
-} from "@gc/domain/Domain/Search";
+} from "@kn/domain/Domain/Search";
 import type { Actor } from "../Auth/Actor";
 import type { SearchRepo } from "./SearchRepo";
 

@@ -1,4 +1,4 @@
-import type { ChatFeedback, ChatMessage } from "@gc/domain/Domain/Chat";
+import type { ChatFeedback, ChatMessage } from "@kn/domain/Domain/Chat";
 import {
   colors,
   PillButton,

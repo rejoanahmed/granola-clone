@@ -1,4 +1,4 @@
-import type { Page } from "@gc/domain/Domain/Page";
+import type { Page } from "@kn/domain/Domain/Page";
 import type { ApiClient } from "./client";
 
 // This package must never depend on `@tanstack/react-query`: a copy resolved through it would be a

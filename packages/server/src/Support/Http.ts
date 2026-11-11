@@ -1,9 +1,9 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
 import {
   createBugReportRoute,
   createDesktopReminderRoute,
   createFeedbackRoute,
-} from "@gc/domain/Support/Contract";
-import { OpenAPIHono } from "@hono/zod-openapi";
+} from "@kn/domain/Support/Contract";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";

@@ -1,4 +1,4 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
 import type { EmailMessage, EmailPort } from "./Port";
 
 // There is no live client yet (docs/plan/BLOCKERS.md, "No live email client"), so this is what

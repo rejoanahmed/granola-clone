@@ -72,7 +72,7 @@ const envOver = (db: TestD1) =>
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   }) satisfies Env;
 

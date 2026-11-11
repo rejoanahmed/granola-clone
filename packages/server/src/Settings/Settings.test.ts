@@ -1,4 +1,4 @@
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -51,7 +51,7 @@ const envOver = (db: TestD1) =>
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   }) satisfies Env;
 

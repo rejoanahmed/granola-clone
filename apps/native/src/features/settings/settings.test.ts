@@ -79,14 +79,14 @@ describe("personalEmailProvider and workEmailBody", () => {
     expect(personalEmailProvider("a@live.com")).toBe("Outlook");
     expect(personalEmailProvider("a@me.com")).toBe("iCloud");
     expect(personalEmailProvider("a@yahoo.com")).toBe("Yahoo");
-    expect(personalEmailProvider("e2e-person@gcnotes.test")).toBeNull();
+    expect(personalEmailProvider("e2e-person@kothanote.test")).toBeNull();
     expect(personalEmailProvider("nobody")).toBeNull();
   });
 
   it("picks the body by provider", () => {
     expect(workEmailBody("a@icloud.com")).toContain("connected a iCloud");
-    expect(workEmailBody("e2e-person@gcnotes.test")).toBe(
-      "Sign up with the email you use for work to see your meetings in Notes."
+    expect(workEmailBody("e2e-person@kothanote.test")).toBe(
+      "Sign up with the email you use for work to see your meetings in Kothanote."
     );
   });
 });

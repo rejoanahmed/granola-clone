@@ -12,6 +12,9 @@
   substance: before phase 3, production email sign-in silently logged `provider: "none"` and sent
   nothing. Stubbed: local and the deployed dev Worker run the fake. Unblocked by a phase that picks
   a provider, writes `Integrations/Email/EmailClient.ts`, and adds its credential to `parseConfig`.
+  **Closed in phase 13 (D020).** A self-hosted server pairs its one owner by token and sends no
+  mail (`EMAIL_MODE=off`, allowed in production); a live client exists for multi-person servers
+  (`EMAIL_MODE=resend`). Production boots.
 - **No trash viewer or purge (phase 4, deferred).** Trash is a soft delete (`notes.trashed_at`),
   and a trashed note can be brought back only through the Undo toast or
   `POST /notes/{id}/restore`. Discovery showed no trash screen, so none is designed. Nothing purges
@@ -29,17 +32,23 @@
   `e2e_switches` row scripts it. Unblocked by a phase that picks a vendor, writes
   `Integrations/Transcription/TranscriptionClient.ts` and its webhook route (a `RAW_ROUTE_PREFIXES`
   entry, PROVIDER-FAKES.md rule 8), and adds the credential to `parseConfig`.
+  **Closed in phase 13 (D021).** `workers-ai` (Whisper large-v3 turbo, in the owner's account) and
+  `elevenlabs` (Scribe v3, the owner's key) run behind a queued port; no webhook was needed.
 - **The R2 buckets must exist before a deploy (phase 5).** `wrangler.jsonc` binds `AUDIO` to
-  `gcnotes-audio-dev` and `gcnotes-audio-prod`. They are created by the user
-  (`bunx wrangler r2 bucket create gcnotes-audio-dev`, and the same for prod), not by an agent or
+  `kothanote-audio-dev` and `kothanote-audio-prod`. They are created by the user
+  (`bunx wrangler r2 bucket create kothanote-audio-dev`, and the same for prod), not by an agent or
   by `deploy.sh`. `bun run deploy:check` resolves the binding but does not prove the bucket exists;
   a missing one fails the real deploy. Stubbed: `wrangler dev --local` simulates the bucket, and the
   audio store fails only the calls that need it when the binding is absent.
+  **For self-hosted servers, closed in phase 13:** `scripts/selfhost.sh` creates the bucket and both
+  queues. The `dev`/`production` resources are still the owner's to create by hand.
 - **Audio objects outlive a deleted user (phase 5).** Deleting a user cascades their notes,
   recordings and segments in D1, but nothing deletes the R2 objects under
   `recordings/<ownerId>/`. Discard deletes its own object; nothing else does. Stubbed: nothing.
   Unblocked by a purge (a cron over a service method, R8) that runs with the phase-4 trash purge,
-  whenever that lands, and lists the owner's prefix.
+  whenever that lands, and lists the owner's prefix. Phase 13 adds `transcripts/<jobId>.json` and
+  `.ticket.json` per live transcription, which outlive the recording the same way; the same purge
+  takes them.
 - **An abandoned upload never expires (phase 5).** A recording ended on a device that never comes
   back stays `uploading` on the server forever, and one whose app was killed mid-recording stays
   `recording` (the note page shows "This recording didn’t finish."). `sweep()` only polls
@@ -66,7 +75,7 @@
 
 ## Phase 4 native notes
 
-- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@gcnotes.test` under a
+- **`POST /e2e/seed` 500s on a local D1 that already holds `e2e-empty@kothanote.test` under a
   better-auth id (phase 4) — fixed in review.** `E2eRepo.stageUsers` now deletes a same-email row
   under any other id before inserting the fixed one, so `onConflictDoNothing()` can no longer
   swallow the email conflict. Pinned by "seeds over an address better-auth already signed up under
@@ -189,10 +198,12 @@
   so production fails at startup alongside `EMAIL_MODE` and `TRANSCRIPTION_MODE`. The stub:
   `LlmFake` runs everywhere else. The fake's notes prove the pipeline, the parser and the renderer,
   not note quality, which needs the live client and a hand check.
-- **The generation queues must exist before a deploy.** `gcnotes-generation-dev` and
-  `gcnotes-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
+  **Closed in phase 13 (D022, D024, D025).** Workers AI (Gemma 4 26B), Claude and any
+  OpenAI-compatible endpoint, notes and chat. Note quality was hand-checked on Workers AI only.
+- **The generation queues must exist before a deploy.** `kothanote-generation-dev` and
+  `kothanote-generation-prod` are created by the user (`bunx wrangler queues create …`), never by an
   agent. `deploy:check` does not prove they exist, and a missing one fails the real deploy. The
-  top-level `gcnotes-generation-local` is simulated by `wrangler dev` and never created.
+  top-level `kothanote-generation-local` is simulated by `wrangler dev` and never created.
 
 ## Deferred review items (phase 6)
 
@@ -215,7 +226,7 @@
 
 ## Phase 7 API
 
-- **No live LLM for chat.** `streamAnswer` and `titleChat` exist only in `LlmFake`. A live client
+- **No live LLM for chat — closed in phase 13 (D022).** `streamAnswer` and `titleChat` existed only in `LlmFake`. A live client
   needs a prompt that emits `[k]` markers from the numbered context, a streaming transport, and a
   real model list behind the `ChatModelId` ids; the model list is fake by design, with neutral
   names. The stub: the fake runs everywhere, under the phase-6 `LLM_MODE`, and `live` is still
@@ -271,7 +282,7 @@
 ## Deferred review items (phase 7)
 
 - **SQL case folding is ASCII only.** `personKeyOf` lowercases with JavaScript's full Unicode
-  `toLowerCase`, while the attendee match (`personMatches` in `@gc/db` since phase 8) and retrieval's LIKE prefilter
+  `toLowerCase`, while the attendee match (`personMatches` in `@kn/db` since phase 8) and retrieval's LIKE prefilter
   (`mentionsAny`, `containing`) compare against SQLite's `lower()`, which folds only A–Z. A `name:`
   key for an attendee with no address and a non-ASCII capital ("Élodie") is not found, so person
   Ask answers `PersonNotFound`, and a non-ASCII question term misses a note that capitalises it.
@@ -333,14 +344,14 @@
   settled query on screen for Maestro needs an element that is either visible (a design deviation)
   or a hidden accessibility node (noise for VoiceOver). In practice XCUITest types a word well
   inside the 250 ms debounce, so one request is sent. Recorded, not built.
-- **`personMatches` in `@gc/db` is not `personKeyOf`.** SQL `lower()` folds only A–Z and the
+- **`personMatches` in `@kn/db` is not `personKeyOf`.** SQL `lower()` folds only A–Z and the
   whitespace collapse folds only tab, LF, CR and space, so a `name:` key for "Élodie" (or a name
   holding a non-breaking space) opens a person page that says "isn't in your notes anymore", and
   `/notes?person=` is empty. Search's People section already matches in JavaScript. Fixing the other
   three callers (people, the notes filter, chat scope) means selecting the owner's attendee rows,
   comparing `personKeyOf(row) === key`, and passing the note ids back as one bound
   `json_each(?)` parameter, because D1 caps bound parameters at 100. That reshapes three repos and
-  the notes keyset query, and it moves `personKeyOf` below `@gc/db`. It is not a local fix. Deferred
+  the notes keyset query, and it moves `personKeyOf` below `@kn/db`. It is not a local fix. Deferred
   with the phase-7 entry on person keys.
 - **People and Search tests seed through the E2E harness via `buildContainer`.** `Notes.test.ts`'s
   person cases now seed through `NotesService.create`. A shared fixture helper for the others would
@@ -417,7 +428,8 @@
   that table. `AppConfig` refuses `CALENDAR_MODE=fake` under `NODE_ENV=production` and refuses
   `live`, so production, which sets `live`, fails at startup for this reason too. Stubbed: local and
   the deployed dev Worker run the fake, and `POST /e2e/calendar` with `preset: "demo"` gives a
-  hand-driven session something to show. Unblocked by the OAuth phase, which writes
+  hand-driven session something to show. Phase 13 adds `CALENDAR_MODE=off` (D026), so production
+  no longer fails to start for this; meetings are still not read. Unblocked by the OAuth phase, which writes
   `Integrations/Calendar/CalendarClient.ts`, stores each user's connection and token, and adds its
   credential to `parseConfig`.
 - **Upcoming-meeting notifications are not sent.** The phase-10 toggle (`notifyUpcomingMeetings`)
@@ -435,7 +447,7 @@
   nesting), but the only database under test is `makeTestD1`'s better-sqlite3 shim. A miniflare-backed
   test would pin what real D1 throws; deferred as a new test harness rather than a fix. If D1 ever
   words the constraint differently, the race answers 500 instead of 409.
-- **`makeCalendarApi` stays in the `@gc/apiclient` barrel.** The two tag constants are now
+- **`makeCalendarApi` stays in the `@kn/apiclient` barrel.** The two tag constants are now
   module-private, but every sibling (`makeChatsApi`, `makeNotesApi`, …) is exported the same way
   for a client that wants one context's calls alone, so removing only this one would be the odd one
   out.
@@ -511,3 +523,41 @@
   allowlisted shape (7–40 hex digits), but the script does not resolve it against `git`, because
   CI's checkout is shallow and a squash merge rewrites every sha anyway. Unblocked by recording
   the fix's flow or test name in the status instead of a sha, if that becomes the convention.
+
+## Phase 13 (bring your own server)
+
+- **The repository is private, so nobody else can self-host yet.** `SELF-HOSTING.md` clones it.
+  Stubbed: nothing. Unblocked by making it (or a server-only copy) public; `docs/plan/RELEASE.md` §2.
+- **The connect screen has never run on a device or simulator.** This phase was built on Linux:
+  `connect.ts` is unit-tested, the screen type-checks, and pairing was proven over HTTP against the
+  deployed server, but no iOS build exercised `ConnectServer`, the Keychain write, the reload, or
+  the `connect` deep link. No Maestro flow covers them either: a development build has a server
+  (localhost) and so never shows the step. Unblocked by a dev build with
+  `EXPO_PUBLIC_SERVER_URL=` empty, then flows for AC12/AC15 (`connect-*` testIDs).
+- **Earlier Maestro flows were not re-run.** The welcome change keeps email sign-in for any server
+  that is not an owner server, which every flow uses, but the suite was not run (no simulator here).
+- **Long recordings on Workers AI.** The Whisper client base64-encodes the whole recording in
+  memory (about 1.33× its size, on top of the bytes). The app records 64 kbps mono, about 29 MB an
+  hour, so up to ~1.5 hours is comfortable; a recording near the 100 MB upload cap may exceed the
+  isolate's 128 MB. Measured: 30 minutes (15 MB) in one call, ~80 s. Unblocked by splitting the
+  m4a's AAC frames into ADTS chunks (no decoding needed) and transcribing them in sequence with
+  offset timestamps. ElevenLabs streams and has no such limit.
+- **ElevenLabs, Claude and OpenAI were not called for real.** No vendor keys were available; each
+  client is tested against recorded answers in the documented shape. Unblocked by one recording
+  per provider on a server with a key; record it as a verification in DECISIONS.md.
+- **Uploads through AI Gateway to ElevenLabs are unverified for large files.** If the gateway caps
+  the body below the recording, set `--gateway off` for that owner. Unblocked by one 60+ MB test.
+- **Bengali on the free transcriber is poor.** Published and measured (D021). The setup guide says
+  so and points to ElevenLabs; the app does not.
+- **No app icon.** `app.json` has no `icon`. It waits on the name. The placeholder settings pages
+  that sat beside it in this entry are hidden since D027.
+- **Hidden-feature flows are not run by default** (D027). The `unfinished`-tagged flows need a bundle
+  started with `EXPO_PUBLIC_SHOW_UNFINISHED=true`, and none of the edited or retagged flows were
+  run here (no simulator). Unblocked by one full local Maestro run, in each mode.
+- **Account deletion leaves audio and transcript copies in R2** (the phase-5 entry above). The
+  privacy policy says so (D029). Fixing it removes that sentence.
+- **Pairing tokens do not revoke sessions.** Rotating `OWNER_TOKEN` stops new pairings; existing
+  sessions live until sign-out or 30 days. Unblocked by a "sign out all devices" route that deletes
+  the owner's sessions.
+- **`dev` and `production` still need hand-made resources and a real domain** (`kothanote.example.com`
+  placeholders, Flagship ids). The reference server uses `selfhost`, which needs neither.

@@ -1,10 +1,10 @@
-import { liveEventNotes, notes } from "@gc/db";
-import type { CalendarEventId } from "@gc/domain/Domain/Calendar";
-import type { NoteId, UserId } from "@gc/domain/Domain/Ids";
+import { liveEventNotes, notes } from "@kn/db";
+import type { CalendarEventId } from "@kn/domain/Domain/Calendar";
+import type { NoteId, UserId } from "@kn/domain/Domain/Ids";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 
 // A read of `notes`, not an import of `NotesRepo`: the calendar only needs to know which of its
-// events already have a live note. The predicate is `@gc/db`'s, shared with the recordings create.
+// events already have a live note. The predicate is `@kn/db`'s, shared with the recordings create.
 export const makeCalendarRepo = (db: DrizzleClient) => ({
   liveNoteIdsByEvent: async (
     ownerId: UserId,

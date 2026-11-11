@@ -1,4 +1,4 @@
-import { personKeyOf } from "@gc/domain/Domain/Person";
+import { personKeyOf } from "@kn/domain/Domain/Person";
 import {
   Avatar,
   colors,

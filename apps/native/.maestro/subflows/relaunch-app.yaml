@@ -3,7 +3,7 @@
 # launch arguments are `launch-app.yaml`'s and are explained there.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - stopApp
 - launchApp:

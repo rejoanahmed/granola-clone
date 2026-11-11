@@ -2,7 +2,7 @@ import { LINKS } from "./links";
 
 // Every string on the phase-10 screens (docs/spec/phase-10.md §4), curly quotes throughout.
 export const SETTINGS_COPY = {
-  banner: "Get Notes for Mac or Windows",
+  banner: "Get Kothanote for Mac or Windows",
   chat: {
     autoSend: "Auto-send chat dictation",
     autoSendHint: "Send dictated messages when transcription finishes",
@@ -11,7 +11,7 @@ export const SETTINGS_COPY = {
   },
   comingSoon: "Coming soon",
   data: {
-    body: "Your data is anonymized and used to improve the experience for Notes users",
+    body: "Your data is anonymized and used to improve the experience for Kothanote users",
     heading: "Use my data to improve models for everyone",
     learnMore: "Learn more",
     privacy: "Privacy policy",
@@ -28,20 +28,20 @@ export const SETTINGS_COPY = {
     title: "Delete account?",
   },
   desktop: {
-    body: "Take notes on video calls with Notes for Mac or Windows.",
+    body: "Take notes on video calls with Kothanote for Mac or Windows.",
     done: "Done",
     remind: "Remind me later",
     remindError: "Couldn’t set a reminder. Try again.",
-    reminded: "We’ll email you a link to get Notes on your computer.",
+    reminded: "We’ll email you a link to get Kothanote on your computer.",
     share: "Share link",
-    shareMessage: `Get Notes for Mac or Windows: ${LINKS.desktop}`,
+    shareMessage: `Get Kothanote for Mac or Windows: ${LINKS.desktop}`,
     title: "Meeting notes on your computer",
   },
   notifications: {
     hint: "Notify me for upcoming meetings on the lock screen",
     previewTime: "1:00 PM ‒ 2:00 PM",
     previewTitle: "Catch up with the team",
-    start: "Start Notes",
+    start: "Start Kothanote",
     title: "Notifications",
     upcoming: "Upcoming meetings",
   },
@@ -50,15 +50,15 @@ export const SETTINGS_COPY = {
     header: "Phone Call Settings",
     notes: "Get notes from your outbound phone calls",
     soon: "Phone calls are coming soon.",
-    title: "Make Calls From Notes",
+    title: "Make Calls From Kothanote",
     track: "Keep track of what’s said during your phone calls",
   },
   profile: {
     choose: "Choose",
     deleteAccount: "Delete Account",
     deleteNote:
-      "Deleting your account will permanently remove all your data, including data created in the desktop app. We’ll first check how many notes you’d lose.",
-    lead: "Notes works best when it knows a little about you. Make sure this is correct to get the most out of Notes.",
+      "Deleting your account permanently removes your notes, recordings’ transcripts and settings from your server. We’ll first check how many notes you’d lose.",
+    lead: "Kothanote works best when it knows a little about you. Make sure this is correct to get the most out of Kothanote.",
     linkedinError: "Use 3–100 letters, numbers or hyphens.",
     linkedinPrefix: "linkedin.com/in/",
     nameError: "Your name can’t be empty.",
@@ -75,7 +75,7 @@ export const SETTINGS_COPY = {
     profile: "Profile",
     recover: "Recover Corrupted Notes",
     reportBug: "Report a bug",
-    shareApp: "Share Notes for iPhone",
+    shareApp: "Share Kothanote for iPhone",
     signOut: "Sign out",
     subscription: "Subscription",
     watch: "Watch",
@@ -86,14 +86,14 @@ export const SETTINGS_COPY = {
     features: "Features",
     support: "Support",
   },
-  shareApp: `Notes turns your meetings into notes you can search and ask about. Get it for iPhone: ${LINKS.iphone}`,
+  shareApp: `Kothanote turns your meetings into notes you can search and ask about. Get it for iPhone: ${LINKS.iphone}`,
   title: "Settings",
   toggle: {
     retry: "Retry",
     saveError: "Couldn’t save this setting. Try again.",
   },
   watch: {
-    info: "Pair an Apple Watch with this iPhone to use Notes from your wrist.",
+    info: "Pair an Apple Watch with this iPhone to use Kothanote from your wrist.",
     pair: "Pair a watch to continue.",
     status: "No Apple Watch found",
     title: "Apple Watch",
@@ -102,9 +102,9 @@ export const SETTINGS_COPY = {
     connect: "Connect your notes to your meetings",
     continue: "Continue anyway",
     other:
-      "Sign up with the email you use for work to see your meetings in Notes.",
+      "Sign up with the email you use for work to see your meetings in Kothanote.",
     personal: (provider: string) =>
-      `It looks like you’ve connected a ${provider} account. If you don’t use this for work, you won’t see your meetings in Notes.`,
+      `It looks like you’ve connected a ${provider} account. If you don’t use this for work, you won’t see your meetings in Kothanote.`,
     share: "Quickly share notes with teammates",
     signUp: "Sign up with work email",
     title: "Much better with your work email",

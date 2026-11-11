@@ -1,5 +1,5 @@
-import * as Gen from "@gc/domain/Domain/Generation";
-import * as GenErrors from "@gc/domain/Generations/Errors";
+import * as Gen from "@kn/domain/Domain/Generation";
+import * as GenErrors from "@kn/domain/Generations/Errors";
 import { describe, expect, it } from "vitest";
 import * as Output from "./Output";
 

@@ -8,10 +8,10 @@ import {
   notes,
   type SQL,
   sql,
-} from "@gc/db";
-import { FolderId, UserId } from "@gc/domain/Domain/Ids";
-import type { NoteId } from "@gc/domain/Domain/Note";
-import type { Timestamp } from "@gc/domain/Domain/Time";
+} from "@kn/db";
+import { FolderId, UserId } from "@kn/domain/Domain/Ids";
+import type { NoteId } from "@kn/domain/Domain/Note";
+import type { Timestamp } from "@kn/domain/Domain/Time";
 import type { DrizzleClient } from "../Runtime/Drizzle";
 import type { Stage, StatementRef } from "../Runtime/UnitOfWork";
 

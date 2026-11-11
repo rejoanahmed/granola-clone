@@ -1,4 +1,4 @@
-import type { NoteId, UserId } from "@gc/domain/Domain/Ids";
+import type { NoteId, UserId } from "@kn/domain/Domain/Ids";
 import type { Policy } from "../Auth/Policy";
 
 export const RETRY_GENERATION = "generations.retry";

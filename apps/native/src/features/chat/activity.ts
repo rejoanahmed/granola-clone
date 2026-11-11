@@ -1,4 +1,4 @@
-import type { ActivityStep } from "@gc/domain/Domain/Chat";
+import type { ActivityStep } from "@kn/domain/Domain/Chat";
 import { CHAT_COPY } from "./copy";
 
 // The Activity sheet is a route, and a route takes strings. The steps it draws are whatever the

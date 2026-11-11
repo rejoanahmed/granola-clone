@@ -1,4 +1,4 @@
-import * as TxErrors from "@gc/domain/Transcription/Errors";
+import * as TxErrors from "@kn/domain/Transcription/Errors";
 import { describe, expect, it } from "vitest";
 import * as Fake from "./TranscriptionFake";
 

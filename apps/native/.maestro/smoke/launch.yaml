@@ -6,7 +6,7 @@ name: Launches signed out onto the welcome screen
 tags:
   - smoke
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/launch-app.yaml
 # The first bundle from a cold Metro takes most of this; a warm one takes seconds. Waiting on the

@@ -2,7 +2,7 @@
 # Every reset puts it back to `auto`. The caller relaunches or refetches to see the change.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-calendar-mode.js

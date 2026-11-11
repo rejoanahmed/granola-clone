@@ -1,5 +1,5 @@
-import { listUpcomingEventsRoute } from "@gc/domain/Calendar/Contract";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { listUpcomingEventsRoute } from "@kn/domain/Calendar/Contract";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "../AppEnv";
 import { requireActor } from "../Auth/Actor";

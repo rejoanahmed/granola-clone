@@ -9,7 +9,8 @@ const EXPIRED = "That code has expired. Send a new one.";
 const TOO_MANY_ATTEMPTS = "Too many attempts. Send a new code.";
 const RATE_LIMITED = "Too many tries. Wait a minute and try again.";
 const INVALID_EMAIL = "Enter a valid email address.";
-const NETWORK = "Couldn’t reach Notes. Check your connection and try again.";
+const NETWORK =
+  "Couldn’t reach Kothanote. Check your connection and try again.";
 const ANYTHING_ELSE = "Something went wrong. Try again.";
 
 describe("welcomeErrorCopy", () => {

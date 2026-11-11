@@ -1,13 +1,16 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC5 (docs/spec/phase-10.md §8, #81, #86): Chat's Auto-send dictation and Data & sharing's Use my
 # data are stored like Upcoming meetings, each independently of the others, and both survive a
 # relaunch.
 appId: ${APP_ID}
 name: The chat and data toggles persist
 tags:
+  - unfinished
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:

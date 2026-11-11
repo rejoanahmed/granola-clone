@@ -16,7 +16,7 @@ const schema = (name: string): Schema => {
     name
   ];
   if (found === undefined) {
-    throw new Error(`no ${name} in @gc/domain/Domain/Calendar`);
+    throw new Error(`no ${name} in @kn/domain/Domain/Calendar`);
   }
   return found;
 };

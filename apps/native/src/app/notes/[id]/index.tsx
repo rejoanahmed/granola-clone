@@ -1,4 +1,4 @@
-import { DEFAULT_NOTE_TITLE } from "@gc/domain/Domain/Note";
+import { DEFAULT_NOTE_TITLE } from "@kn/domain/Domain/Note";
 import {
   ActionMenu,
   colors,

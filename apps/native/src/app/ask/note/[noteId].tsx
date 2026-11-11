@@ -1,4 +1,4 @@
-import type { ChatScopeInput } from "@gc/domain/Domain/Chat";
+import type { ChatScopeInput } from "@kn/domain/Domain/Chat";
 import { ChatScreen } from "@native/features/chat/ChatScreen";
 import { findNoteSummary, noteQuery } from "@native/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

@@ -522,7 +522,7 @@ code.
 | id | Role | Title | Start → end | Attendees | Visible on person's card? |
 | --- | --- | --- | --- | --- | --- |
 | `cev_e2e_person_1` | person | Design review | now − 15m → now + 45m | Priya Raman | yes, row 1, **Now** |
-| `cev_e2e_person_2` | person | Catch up with the team | tomorrow 13:00 → 14:00 | Priya Raman `priya@example.com`, Sam Okafor `sam@example.com`, E2E Person `e2e-person@gcnotes.test` | yes, row 2 |
+| `cev_e2e_person_2` | person | Catch up with the team | tomorrow 13:00 → 14:00 | Priya Raman `priya@example.com`, Sam Okafor `sam@example.com`, E2E Person `e2e-person@kothanote.test` | yes, row 2 |
 | `cev_e2e_person_3` | person | Weekly planning | tomorrow 15:00 → 15:30 | none | yes, row 3 |
 | `cev_e2e_person_4` | person | 1:1 with Dana | tomorrow 17:00 → 17:30 | Dana Lee | no: fourth, behind "+1 more" |
 | `cev_e2e_person_5` | person | Morning sync | now − 3h → now − 2h | none | no: ended |
@@ -571,7 +571,7 @@ the real `FakeCalendarRepo`):
    - A 600-character title is cut to 500.
    - Colour `#db35f2` gives `#DB35F2`, and `magenta` gives `DEFAULT_CALENDAR_COLOR`.
    - An attendee with neither a name nor an email is dropped.
-   - `E2E-Person@GCNotes.test` is `isMe: true`.
+   - `E2E-Person@Kothanote.test` is `isMe: true`.
 7. **Linked notes.** With a live note carrying `calendar_event_id = cev_1`, that event has that
    `noteId`. After trashing it, `null`. Another user's live note with the same event id does not
    link.

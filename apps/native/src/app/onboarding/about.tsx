@@ -1,4 +1,4 @@
-import type { UserType } from "@gc/domain/Domain/Profile";
+import type { UserType } from "@kn/domain/Domain/Profile";
 import {
   colors,
   FormDivider,
@@ -109,8 +109,8 @@ export default function OnboardingAboutScreen() {
         Tell us about your work
       </Text>
       <Text style={styles.lead} variant="body">
-        Notes works best when it knows a little about you. Make sure this is
-        correct to get the most out of Notes.
+        Kothanote works best when it knows a little about you. Make sure this is
+        correct to get the most out of Kothanote.
       </Text>
 
       <View style={styles.form}>

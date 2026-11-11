@@ -1,3 +1,5 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # P19-3 (docs/parity/REPORT.md, #19/#23): a toast raised from the chat composer is drawn above the
 # keyboard and the composer docked on it. It used to sit at a fixed height, under the keyboard, so the
 # idle mic's "Dictation isn’t available yet." reached the hierarchy and never the screen. Visibility
@@ -8,10 +10,11 @@
 appId: ${APP_ID}
 name: A toast from the chat composer is visible above the keyboard
 tags:
+  - unfinished
   - phase-12
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:

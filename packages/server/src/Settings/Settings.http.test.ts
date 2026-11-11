@@ -1,6 +1,6 @@
-import * as Shapes from "@gc/domain/Domain/Settings";
-import { isAppError, ValidationFailed } from "@gc/domain/Errors";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import * as Shapes from "@kn/domain/Domain/Settings";
+import { isAppError, ValidationFailed } from "@kn/domain/Errors";
 import { describe, expect, it } from "vitest";
 import type { AppEnv } from "../AppEnv";
 import type { Actor } from "../Auth/Actor";
@@ -77,7 +77,7 @@ const userSettings = (): Schema => {
   const found = (Shapes as unknown as Record<string, Schema | undefined>)
     .UserSettings;
   if (found === undefined) {
-    throw new Error("no UserSettings in @gc/domain/Domain/Settings");
+    throw new Error("no UserSettings in @kn/domain/Domain/Settings");
   }
   return found;
 };

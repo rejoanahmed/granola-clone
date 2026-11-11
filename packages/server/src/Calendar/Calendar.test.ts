@@ -17,7 +17,7 @@ import * as Svc from "./CalendarService";
 // docs/spec/phase-11.md §7 cases 3–9: `CalendarService.upcoming` over `makeTestD1()`, a fixed clock
 // at T, and the calendar fake over the real `FakeCalendarRepo`, so the rows come out of
 // `fake_calendar_events` exactly as the harness writes them. `person` and `other` are the E2E
-// people, because `isMe` compares against the caller's address (`e2e-person@gcnotes.test`).
+// people, because `isMe` compares against the caller's address (`e2e-person@kothanote.test`).
 //
 // Names these tests fix where the spec leaves them open: `makeCalendarRepo(db)`,
 // `makeCalendarService({ calendar, clock, repo })` and `upcoming(actor, { until })` answering
@@ -205,7 +205,7 @@ describe("CalendarService.upcoming", () => {
       {
         attendees: [
           {
-            email: "E2E-Person@GCNotes.test",
+            email: "E2E-Person@Kothanote.test",
             name: "Me, as the vendor has me",
           },
           { email: "priya@example.com", name: "Priya Raman" },
@@ -241,7 +241,7 @@ describe("CalendarService.upcoming", () => {
     expect(blank).toEqual({
       attendees: [
         {
-          email: "E2E-Person@GCNotes.test",
+          email: "E2E-Person@Kothanote.test",
           isMe: true,
           name: "Me, as the vendor has me",
         },
@@ -275,7 +275,7 @@ describe("CalendarService.upcoming", () => {
           { email: "sam@example.com", name: "  " },
           { email: " SAM@example.com ", name: "Sam Again" },
           ...crowd,
-          { email: "e2e-person@gcnotes.test", name: "Me, listed last" },
+          { email: "e2e-person@kothanote.test", name: "Me, listed last" },
         ],
         endAt: T + 2 * HOUR,
         id: "cev_crowd",
@@ -293,7 +293,7 @@ describe("CalendarService.upcoming", () => {
     ]);
     expect(guests).toHaveLength(50);
     expect(event?.attendees.at(-1)).toEqual({
-      email: "e2e-person@gcnotes.test",
+      email: "e2e-person@kothanote.test",
       isMe: true,
       name: "Me, listed last",
     });

@@ -1,4 +1,4 @@
-import type { getPersonRoute } from "@gc/domain/People/Contract";
+import type { getPersonRoute } from "@kn/domain/People/Contract";
 import type { Endpoint } from "./client";
 
 // A person key holds `:`, `@` and `.`; the endpoint URL-encodes every path parameter, so

@@ -69,7 +69,7 @@ const recordings = traced("Recordings", makeRecordingsService({ clock, ids, repo
 | Local `wrangler dev` | fake | fake | fake | top-level `vars` in `wrangler.jsonc`; switch one to `live` in `.dev.vars` to try the real vendor |
 | Maestro on the simulator | fake | fake | fake | the flows must not depend on a vendor being up or on audio quality |
 | Deployed dev (E2E gate) | fake | fake | fake | the gate proves a *deploy* works; a vendor outage must not block a release |
-| Production | live | live | live | set per `env` block — `vars` are not inherited |
+| Production / `selfhost` | `workers-ai` or `elevenlabs` | `workers-ai`, `anthropic` or `openai` | `off` | an owner server (D019–D026); each live mode names its provider |
 
 A per-environment `*_MODE` var is set in **every** `env` block of `wrangler.jsonc`, and production
 must say `live` out loud — the default in `AppConfig` is `fake`, so a forgotten var fails safe
@@ -90,6 +90,15 @@ deterministic: its output depends only on the stored rows and the query. It reco
 it raises `CalendarUnavailable` after recording when told to `failWith("unavailable")` or when the
 harness's `calendar` switch reads `fail` (`POST /e2e/calendar/mode`). A unit test hands it an
 array-backed store instead of the repo.
+
+### Live providers since phase 13
+
+`*_MODE` values now name the provider instead of saying `live`: `TRANSCRIPTION_MODE=workers-ai |
+elevenlabs`, `LLM_MODE=workers-ai | anthropic | openai`, `EMAIL_MODE=off | resend`,
+`CALENDAR_MODE=off`. A live transcriber is not called from the upload request: it sits behind
+`QueuedTranscription` (D021), so rule 7's "completion by a cron sweep" is literal. Every AI call
+goes through AI Gateway with logging off (`Runtime/AiGateway.ts`, D024). The fakes are unchanged
+and still run everywhere a test, a flow or the E2E gate runs.
 
 ## What the fakes do not prove
 

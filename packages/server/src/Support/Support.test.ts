@@ -1,5 +1,5 @@
-import { EmailUnavailable } from "@gc/domain/Email/Errors";
-import { ProfileNotFound } from "@gc/domain/Profile/Errors";
+import { EmailUnavailable } from "@kn/domain/Email/Errors";
+import { ProfileNotFound } from "@kn/domain/Profile/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -56,7 +56,7 @@ const envOver = (db: TestD1) =>
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   }) satisfies Env;
 
@@ -116,15 +116,15 @@ describe("SupportService.createBugReport", () => {
     expect(sent.kind).toBe("bug-report");
     expect(sent.to).toBe("support@notes.example");
     expect(sent.subject).toBe(
-      "Bug report from Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
     );
     expect(sent.body).toContain("Steps: tapped Share twice");
     expect(sent.body).not.toContain("  Steps");
     expect(sent.body).toContain("Diagnostics: included");
-    expect(sent.body).toContain("From: E2E Person e2e-person@gcnotes.test");
+    expect(sent.body).toContain("From: E2E Person e2e-person@kothanote.test");
     expect(sent.payload).toMatchObject({
       appVersion: VERSION,
-      from: "e2e-person@gcnotes.test",
+      from: "e2e-person@kothanote.test",
       includeDiagnostics: "true",
     });
     expect(receipt.id).toMatch(RECEIPT_ID);
@@ -170,13 +170,13 @@ describe("SupportService.createFeedback", () => {
     expect(sent.kind).toBe("feedback");
     expect(sent.to).toBe("support@notes.example");
     expect(sent.subject).toBe(
-      "Feedback on Notes 1.0.0 (1) | e2e-person@gcnotes.test"
+      "Feedback on Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
     );
     expect(sent.body).toContain("Love the search");
     expect(sent.body.endsWith("Sincerely,\nE2E Person")).toBe(true);
     expect(sent.payload).toMatchObject({
       appVersion: VERSION,
-      from: "e2e-person@gcnotes.test",
+      from: "e2e-person@kothanote.test",
     });
     expect(receipt.id).toMatch(RECEIPT_ID);
     expect(sent.payload.receiptId).toBe(receipt.id);
@@ -190,8 +190,8 @@ describe("SupportService.createDesktopReminder", () => {
 
     const sent = onlySent();
     expect(sent.kind).toBe("desktop-reminder");
-    expect(sent.to).toBe("e2e-person@gcnotes.test");
-    expect(sent.subject).toBe("Get Notes for Mac or Windows");
+    expect(sent.to).toBe("e2e-person@kothanote.test");
+    expect(sent.subject).toBe("Get Kothanote for Mac or Windows");
     expect(sent.body).toContain("https://notes.example/desktop");
     expect(sent.payload.link).toBe("https://notes.example/desktop");
     expect(receipt.id).toMatch(RECEIPT_ID);

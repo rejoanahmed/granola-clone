@@ -12,7 +12,7 @@ tags:
   - regression
   - smoke
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -28,7 +28,7 @@ env:
     text: Your profile
 - assertVisible:
     id: profile-email
-    text: e2e-person@gcnotes\.test
+    text: e2e-person@kothanote\.test
 - assertVisible:
     id: profile-avatar
 - assertVisible:
@@ -39,7 +39,7 @@ env:
     text: Engineer
 - assertVisible:
     id: profile-company-name
-    text: Notes E2E
+    text: Kothanote E2E
 - assertVisible:
     id: profile-user-type
     text: Startup/Generalist.*

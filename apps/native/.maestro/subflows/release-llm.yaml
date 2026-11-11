@@ -2,7 +2,7 @@
 # (docs/spec/phase-6.md §6.6).
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runScript:
     file: ../scripts/e2e-llm-release.js

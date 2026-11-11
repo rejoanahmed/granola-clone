@@ -1,8 +1,8 @@
-import type { Segment, SpeakerLetter } from "@gc/domain/Domain/Recording";
+import type { Segment, SpeakerLetter } from "@kn/domain/Domain/Recording";
 import {
   TranscriptionRejected,
   TranscriptionUnavailable,
-} from "@gc/domain/Transcription/Errors";
+} from "@kn/domain/Transcription/Errors";
 import type {
   TranscriptionAnswer,
   TranscriptionMode,

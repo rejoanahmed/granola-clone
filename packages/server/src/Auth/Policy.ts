@@ -1,7 +1,7 @@
-import { Forbidden } from "@gc/domain/Errors";
+import { Forbidden } from "@kn/domain/Errors";
 import type { Actor } from "./Actor";
 
-export { Forbidden } from "@gc/domain/Errors";
+export { Forbidden } from "@kn/domain/Errors";
 
 declare const AuthorizedTypeId: unique symbol;
 

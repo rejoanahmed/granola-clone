@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Notes",
-    "slug": "gcnotes",
+    "name": "Kothanote",
+    "slug": "kothanote",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-    "platforms": ["ios"],
+    "platforms": ["ios", "android"],
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
-    "scheme": "gcnotes",
+    "scheme": "kothanote",
     "experiments": {
       "tsconfigPaths": true,
       "typedRoutes": true
@@ -29,7 +29,8 @@
         "expo-audio",
         {
           "enableBackgroundRecording": true,
-          "microphonePermission": "Notes needs microphone access to transcribe your meeting"
+          "microphonePermission": "Kothanote needs microphone access to transcribe your meeting",
+          "recordAudioAndroid": true
         }
       ],
       "expo-secure-store",
@@ -37,7 +38,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#262626",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 120,
+          "backgroundColor": "#24262A",
           "resizeMode": "contain"
         }
       ]
@@ -45,16 +48,54 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "buildNumber": "1",
-      "bundleIdentifier": "com.rejoan.gcnotes",
+      "bundleIdentifier": "com.rovierr.kothanote",
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "icon": {
+        "light": "./assets/images/icon.png",
+        "dark": "./assets/images/icon-dark.png",
+        "tinted": "./assets/images/icon-tinted.png"
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "ef6e816a-4832-4e7c-95f1-0491955541c1"
       }
+    },
+    "owner": "rovierr",
+    "icon": "./assets/images/icon.png",
+    "android": {
+      "package": "com.kothanote.app",
+      "softwareKeyboardLayoutMode": "resize",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-foreground.png",
+        "backgroundImage": "./assets/images/adaptive-background.png",
+        "monochromeImage": "./assets/images/adaptive-monochrome.png"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+      ]
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ef6e816a-4832-4e7c-95f1-0491955541c1"
     }
   }
 }

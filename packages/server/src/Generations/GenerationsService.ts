@@ -3,16 +3,16 @@ import {
   GenerationId,
   isLowContent,
   type NoteGeneration,
-} from "@gc/domain/Domain/Generation";
-import { NoteId } from "@gc/domain/Domain/Note";
-import { groupUtterances } from "@gc/domain/Domain/Recording";
+} from "@kn/domain/Domain/Generation";
+import { NoteId } from "@kn/domain/Domain/Note";
+import { groupUtterances } from "@kn/domain/Domain/Recording";
 import {
   GeneratedNoteMalformed,
   GeneratedNoteTruncated,
   GenerationNotRetryable,
-} from "@gc/domain/Generations/Errors";
-import { LlmRateLimited, LlmRejected, LlmTimeout } from "@gc/domain/Llm/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
+} from "@kn/domain/Generations/Errors";
+import { LlmRateLimited, LlmRejected, LlmTimeout } from "@kn/domain/Llm/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import type { Actor } from "../Auth/Actor";
 import { ensure } from "../Auth/Policy";
 import type { NoteAnswer, NoteLlmPort } from "../Integrations/Llm/Port";

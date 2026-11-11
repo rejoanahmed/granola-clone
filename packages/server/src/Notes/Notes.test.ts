@@ -1,5 +1,5 @@
-import { ValidationFailed } from "@gc/domain/Errors";
-import { NoteNotFound, NoteTrashed } from "@gc/domain/Notes/Errors";
+import { ValidationFailed } from "@kn/domain/Errors";
+import { NoteNotFound, NoteTrashed } from "@kn/domain/Notes/Errors";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Actor } from "../Auth/Actor";
 import { buildContainer } from "../container";
@@ -863,7 +863,7 @@ describe("NotesService with folders, phase 9", () => {
       E2E_HARNESS: "true",
       E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
       FLAGS_MODE: "fake",
-      NATIVE_SCHEME: "gcnotes",
+      NATIVE_SCHEME: "kothanote",
       NODE_ENV: "test",
     } satisfies Env).e2e;
     if (harness === null) {

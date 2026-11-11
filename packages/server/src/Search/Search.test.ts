@@ -36,7 +36,7 @@ beforeEach(async () => {
     E2E_HARNESS: "true",
     E2E_SECRET: "e2e-secret-long-enough-to-be-accepted",
     FLAGS_MODE: "fake",
-    NATIVE_SCHEME: "gcnotes",
+    NATIVE_SCHEME: "kothanote",
     NODE_ENV: "test",
   } satisfies Env;
   const harness = buildContainer(env).e2e;
@@ -185,9 +185,9 @@ describe("SearchService.search: people", () => {
   it("finds the caller as themselves, named from their account, and follows a rename", async () => {
     expect((await search(person, "e2e")).people).toEqual([
       {
-        email: "e2e-person@gcnotes.test",
+        email: "e2e-person@kothanote.test",
         isMe: true,
-        key: "email:e2e-person@gcnotes.test",
+        key: "email:e2e-person@kothanote.test",
         name: "E2E Person",
       },
     ]);

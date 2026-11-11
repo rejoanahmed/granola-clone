@@ -6,20 +6,20 @@ tags:
   - phase-3
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/start-clean.yaml
 - runFlow:
     file: ../subflows/request-code.yaml
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 
 # 000000 must really be wrong: one real code in a million is exactly that. Resend if so — the
 # button counts down 30s after a send, so wait for it rather than sleeping.
 - runScript:
     file: ../scripts/read-otp.js
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 - runFlow:
     when:
       true: ${output.otp == '000000'}
@@ -34,7 +34,7 @@ env:
       - runScript:
           file: ../scripts/read-otp.js
           env:
-            EMAIL: e2e-person@gcnotes.test
+            EMAIL: e2e-person@kothanote.test
 - assertTrue: ${output.otp != '000000'}
 
 - tapOn:
@@ -74,7 +74,7 @@ env:
     timeout: 10000
 - assertVisible:
     id: welcome-email
-    text: e2e-person@gcnotes.test
+    text: e2e-person@kothanote.test
 
 # A new code, from a new send, signs in. The keyboard swaps the number pad for the email layout as
 # the field comes back, moving Continue; a tap aimed mid-swap could land on a key and change the
@@ -90,7 +90,7 @@ env:
 - runFlow:
     file: ../subflows/enter-code.yaml
     env:
-      EMAIL: e2e-person@gcnotes.test
+      EMAIL: e2e-person@kothanote.test
 - extendedWaitUntil:
     visible:
       id: home-screen

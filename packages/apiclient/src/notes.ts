@@ -7,7 +7,7 @@ import type {
   restoreNoteRoute,
   retryNoteGenerationRoute,
   trashNoteRoute,
-} from "@gc/domain/Notes/Contract";
+} from "@kn/domain/Notes/Contract";
 import type { Endpoint } from "./client";
 
 // `import type` only, as in `profiles.ts`: the route constants are read for their types, and a

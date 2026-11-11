@@ -3,7 +3,7 @@
 # signed-out launch must land on. MIC passes through to `launch-app.yaml`.
 appId: ${APP_ID}
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow:
     file: launch-app.yaml

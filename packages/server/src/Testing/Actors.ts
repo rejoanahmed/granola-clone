@@ -1,4 +1,4 @@
-import { UserId } from "@gc/domain/Domain/Ids";
+import { UserId } from "@kn/domain/Domain/Ids";
 import type { Actor, SystemActor } from "../Auth/Actor";
 
 const person = (

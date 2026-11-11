@@ -1,13 +1,16 @@
+# Tagged `unfinished` (D027): it drives an entry point a release build hides. It runs only against a
+# bundle started with EXPO_PUBLIC_SHOW_UNFINISHED=true (scripts/maestro.sh includes the tag then).
 # AC12 (docs/spec/phase-10.md §8, #87, #88): Phone calls and Watch are static pages. Get Started
 # answers with a coming-soon toast (designed); Watch says no watch was found; Back returns to
 # Settings from each.
 appId: ${APP_ID}
 name: The Phone calls and Watch pages
 tags:
+  - unfinished
   - phase-10
   - regression
 env:
-  APP_ID: com.rejoan.gcnotes
+  APP_ID: com.rovierr.kothanote
 ---
 - runFlow: ../subflows/open-home.yaml
 - runFlow:
@@ -20,7 +23,7 @@ env:
     timeout: 10000
 - assertVisible:
     id: phone-calls-title
-    text: Make Calls From Notes
+    text: Make Calls From Kothanote
 - assertVisible:
     id: phone-calls-get-started
 - takeScreenshot: phase-10-phone-calls
@@ -62,7 +65,7 @@ env:
     text: No Apple Watch found
 - assertVisible:
     id: watch-info
-    text: Pair an Apple Watch with this iPhone to use Notes from your wrist\.
+    text: Pair an Apple Watch with this iPhone to use Kothanote from your wrist\.
 - takeScreenshot: phase-10-watch
 - tapOn:
     id: watch-back
