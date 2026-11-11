@@ -37,6 +37,17 @@ export const RECORDING_COPY = {
   startFailedClose: "Close",
 } as const;
 
+// The lock-screen Live Activity and Dynamic Island (D037). Short: the banner has one line for each.
+export const ACTIVITY_COPY = {
+  interrupted: "Interrupted",
+  pause: "Pause",
+  paused: "Paused",
+  recording: "Recording",
+  resume: "Resume",
+  stop: "Stop",
+  untitled: "Untitled note",
+} as const;
+
 export const NOTE_STATUS_COPY = {
   generating: "Generating notes...",
   generationFailed: "Couldn’t generate notes.",

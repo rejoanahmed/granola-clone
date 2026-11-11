@@ -34,6 +34,13 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.rovierr.kothanote.LiveActivity",
+          "groupIdentifier": "group.com.rovierr.kothanote"
+        }
+      ],
       "expo-web-browser",
       [
         "expo-splash-screen",

@@ -54,6 +54,17 @@
   `recording` (the note page shows "This recording didn’t finish."). `sweep()` only polls
   `transcribing` rows. Stubbed: nothing; the note can be trashed. Unblocked by giving the sweep an
   age cutoff that fails such rows, once the client's resume-on-launch has had a release to settle.
+- **Background recording is verified only on paper (D037).** Linux can prebuild and type-check the
+  Live Activity extension but not compile or run it; the phone checklist in the D037 PR is the test.
+  Three things only a device can answer: that Workers AI Whisper transcribes the new ADTS `.aac`
+  uploads (if not, `LIVE_AUDIO_EXTENSION` back to `.m4a`); that iOS lets the Live Activity's Resume
+  restart a recorder from the background after an interruption (if not, the activity stays
+  "Interrupted" until the app is opened, which resumes it); and that a phone call's end delivers
+  "may resume" to a backgrounded recorder. A media-services reset (rare) makes expo-audio start a
+  new file, and the audio before it is lost; not handled.
+- **Android background recording untested (D037).** `allowsBackgroundRecording` starts expo-audio's
+  microphone foreground service with its own ongoing notification; nothing Android is built or
+  tested yet, and there is no Android counterpart to the Live Activity's buttons.
 
 ## Deferred review items (phase 3)
 

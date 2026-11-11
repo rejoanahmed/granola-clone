@@ -729,6 +729,60 @@ name what they forbid.
 
 ---
 
+## D037 · Recording survives the background, the lock screen and a kill; a Live Activity shows it — **STANDING**
+
+The TestFlight build stopped recording the moment the app was backgrounded or the phone locked.
+The cause was one missing flag: `UIBackgroundModes: audio` was already set (the expo-audio plugin's
+`enableBackgroundRecording`), but expo-audio 57 pauses every recorder on `didEnterBackground` unless
+`setAudioModeAsync` is also given **`allowsBackgroundRecording: true`**, and resumes it on return —
+so a locked phone recorded nothing and the timer looked fine. `ExpoAudioRecorder.start` now passes
+it. What came with the fix:
+
+- **Interruptions.** A call or Siri takes the microphone; expo-audio pauses the recorder and, when
+  iOS ends the interruption with "may resume", restarts it. The store (`liveRecording.ts`) reconciles
+  every tick: a recorder not capturing while the user did not pause is shown as *interrupted*; one
+  the system resumed although the user had paused is paused again (expo-audio resumes every stopped
+  recorder). An interruption iOS ends without "may resume" (an answered call, usually) is resumed
+  the next time the app comes to the foreground. expo-audio marks its recorder recording even when
+  `AVAudioRecorder.record()` fails, so `isCapturing()` also treats three seconds at the meter's
+  no-signal floor (-160 dB, not a quiet room) as not capturing.
+- **A kill no longer loses the meeting.** The recorder writes **ADTS AAC (`.aac`) instead of
+  MPEG-4 (`.m4a`)**, into the document directory. An `.m4a` has its index written at `stop()`, so
+  a killed recording was an undecodable file; ADTS frames are self-describing, so the file is valid
+  up to the last frame on disk. When the recording goes live the store writes
+  `recordings/<id>.live.json` (the file name, not the path: iOS can move the container), removed by
+  End and Discard. At launch, `recoverKilledRecordings` turns any leftover journal into an ordinary
+  pending upload, its duration counted from the ADTS frame headers, and the existing resume-uploads
+  pass ends and uploads it (the server row is still `recording`). Uploads now carry `audio/aac`
+  (already in `AUDIO_CONTENT_TYPES`); older pending `.m4a` files still go as `audio/mp4`, and
+  ElevenLabs gets a filename matching the container. Nothing here relies on a JS timer for
+  persistence: the journal is written once, the audio by the native recorder.
+  **Unverified from Linux:** that Workers AI Whisper decodes ADTS as it does m4a (D021 measured
+  m4a). If it does not, `LIVE_AUDIO_EXTENSION` back to `.m4a` restores the old format; only kill
+  recovery is lost (the parser answers 0 for a non-ADTS file and the note stays "didn't finish").
+- **The Live Activity** is **expo-widgets** (SDK 57, first party) rather than `@bacons/apple-targets`
+  with hand-written Swift or a bespoke config plugin: it ships the ActivityKit widget extension, the
+  App Group, `NSSupportsLiveActivities`, the EAS `appExtensions` entry, and `LiveActivityIntent`
+  buttons (iOS 17+) that iOS runs in the app's own process, where the store hears them through
+  `addUserInteractionListener`. The layout (`liveActivity/RecordingActivity.tsx`) is a `'widget'`
+  function the extension evaluates on its own, so it cannot import anything: copy and the palette
+  (`@kn/tokens`; `Brand.ts` holds no colours) arrive as props from `activityProps.ts`. The timer is
+  `Text(timerInterval:)`, which the system advances itself, frozen with `pauseTime` while paused; the
+  app updates the activity only when the state changes. Buttons: Pause/Resume and Stop. Stop runs
+  the same `endRecording` as the card's End (one in flight at a time); End now stops the microphone
+  before saving the notes. Tapping the banner opens `kothanote://record/<session>`. An activity left
+  over from a killed process is ended at launch.
+- **Identifiers.** The extension target is `ExpoWidgetsTarget` (fixed by expo-widgets), bundle id
+  `com.rovierr.kothanote.LiveActivity`, App Group `group.com.rovierr.kothanote` on both, derived from
+  `BRAND.bundleId` in `app.config.ts`. EAS's remote credentials create the extension's App ID,
+  App Group and profile on the first build. expo-widgets 57 writes `aps-environment` even with push
+  off; `plugins/withoutPushEntitlement.ts` removes it, since nothing here is pushed.
+- **Android** gets the same flag, which makes expo-audio run its microphone foreground service with
+  an ongoing notification (the service and permissions were already declared); notification
+  permission is requested before recording. Untested, like the rest of Android (BLOCKERS).
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.

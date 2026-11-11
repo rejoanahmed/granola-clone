@@ -1,4 +1,3 @@
-import type { AudioContentType } from "@kn/domain/Domain/Recording";
 import {
   client,
   hasTag,
@@ -7,6 +6,7 @@ import {
   type QueryInvalidator,
 } from "@native/lib/api";
 import { useSyncExternalStore } from "react";
+import { contentTypeOf } from "./audioFormat";
 import { withBackoff } from "./backoff";
 import {
   forgetRecordingFile,
@@ -14,9 +14,8 @@ import {
   type PendingUpload,
   readRecordingBytes,
 } from "./files";
+import { recoverKilledRecordings } from "./recovery";
 import type { UploadState } from "./status";
-
-const CONTENT_TYPE: AudioContentType = "audio/mp4";
 
 // Per recording, what this device is doing with its audio. Module scope, not a component's: an
 // upload outlives the live card that started it and the note page that watches it.
@@ -79,10 +78,10 @@ async function send(job: PendingUpload): Promise<void> {
       throw error;
     }
   }
-  const bytes = await readRecordingBytes(job.recordingId);
+  const bytes = await readRecordingBytes(job);
   await client.uploadRecordingAudio({
     body: bytes as unknown as BodyInit,
-    contentType: CONTENT_TYPE,
+    contentType: contentTypeOf(job.extension ?? ".m4a"),
     params: { id: job.recordingId },
   });
 }
@@ -97,12 +96,12 @@ async function run(job: PendingUpload): Promise<void> {
     await withBackoff(() => send(job), {
       shouldRetry: (error) => !isFinal(error),
     });
-    forgetRecordingFile(job.recordingId);
+    forgetRecordingFile(job);
     pending.delete(job.recordingId);
     setState(job.recordingId, null);
   } catch (error) {
     if (isFinal(error)) {
-      forgetRecordingFile(job.recordingId);
+      forgetRecordingFile(job);
       pending.delete(job.recordingId);
       setState(job.recordingId, null);
     } else {
@@ -139,6 +138,7 @@ export async function resumeUploads(): Promise<void> {
     return;
   }
   resumed = true;
+  await recoverKilledRecordings();
   for (const job of listPendingUploads()) {
     try {
       const recording = await client.getRecording({
@@ -150,11 +150,11 @@ export async function resumeUploads(): Promise<void> {
       ) {
         enqueueUpload(job);
       } else {
-        forgetRecordingFile(job.recordingId);
+        forgetRecordingFile(job);
       }
     } catch (error) {
       if (isFinal(error)) {
-        forgetRecordingFile(job.recordingId);
+        forgetRecordingFile(job);
       } else {
         // Offline at launch: keep the file, and let the note page's Retry send it.
         pending.set(job.recordingId, job);
