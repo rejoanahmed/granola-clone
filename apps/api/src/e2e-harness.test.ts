@@ -892,7 +892,7 @@ describe("GET /e2e/support, phase 10", () => {
       payload: { includeDiagnostics: "false", receiptId: receipt.id },
       subject:
         "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test",
-      to: "support@notes.example",
+      to: "kothanote@rovierr.com",
     });
     expect(items[0]?.body).toContain("Diagnostics: not included");
     expect(otp.status).toBe(422);

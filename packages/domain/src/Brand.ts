@@ -19,14 +19,17 @@ export const BRAND = {
   bundleId: "com.rovierr.kothanote",
   // What the home screen and the system dialogs call the app. Chosen 2026-11-11 (D030).
   displayName: "Kothanote",
-  // The public site and the address the privacy policy lives at.
-  domain: "kothanote.app",
   // The deep-link scheme. better-auth's expo plugin derives the session cookie's origin from it,
   // and the API trusts `<scheme>://`, so the server's NATIVE_SCHEME defaults to this value too.
   scheme: "kothanote",
+  // The public site, a page of the publisher's own site rather than a domain of its own (D035); the
+  // privacy policy lives under it at `/privacy`.
+  siteUrl: "https://rovierr.com/kothanote",
   // Expo's project slug and the prefix of every self-hosted resource name (`<slug>-server`,
   // `<slug>-db`, `<slug>-audio`, …).
   slug: "kothanote",
+  // Where people write to the publisher about the app: support, privacy, feedback (D035).
+  supportEmail: "kothanote@rovierr.com",
 } as const;
 
 export type Brand = typeof BRAND;

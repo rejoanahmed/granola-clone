@@ -57,8 +57,9 @@ conflicts.
 
 Rejected for clear conflicts: Ownscribe (open-source meeting transcriber of the same name), NoteCove,
 MinuteOwl, Hushnote/HushScribe, Lekho/Lekhapad, Shunly (`.com` taken). Most short real words in
-Bengali or English (Lekha, Khata, Shuno, Kotha, Smriti, Lipi…) are taken in both TLDs. Register the
-domain the day the name is chosen. Before submitting, also search App Store Connect's name field,
+Bengali or English (Lekha, Khata, Shuno, Kotha, Smriti, Lipi…) are taken in both TLDs. No domain
+was registered in the end: the site is https://rovierr.com/kothanote and the address is
+kothanote@rovierr.com (D035). Before submitting, also search App Store Connect's name field,
 which rejects a name another developer already holds.
 
 ## 2. Make the server code public: done (2026-11-11). Rename the repository next.
@@ -70,7 +71,7 @@ the site so its links resolve:
 ```bash
 gh repo rename kothanote --repo rejoanahmed/granola-clone   # GitHub redirects the old URL
 git remote set-url origin https://github.com/rejoanahmed/kothanote.git
-bun run deploy:web   # KOTHANOTE_SITE_URL=https://kothanote-web.bold-breeze-539b.workers.dev until the domain is live
+bun run deploy:web   # serves https://rovierr.com/kothanote (D035)
 ```
 
 
@@ -100,8 +101,8 @@ Run these from `apps/native`, in order:
    distribution certificate (Chapterly's). Let EAS register the App ID and create a new
    provisioning profile for `com.rovierr.kothanote`: profiles are always per bundle id.
 4. Create the App Store Connect record (Apps → + → New App, bundle id `com.rovierr.kothanote`).
-   Then put its numeric Apple ID into `eas.json` → `submit.{internal,production}.ios.ascAppId`, as
-   Chapterly has `6826753742`.
+   Done: EAS auto-submit created it, and its numeric Apple ID **6833328794** is
+   `eas.json` → `submit.{internal,production}.ios.ascAppId` (Chapterly's is `6826753742`).
 5. `bunx eas-cli submit -p ios --latest --profile production`. Pick the account's existing **App
    Store Connect API key** when asked; it is the one Chapterly submits with.
 
@@ -129,10 +130,9 @@ Android is configured but not built or tested (see §9). When you want it:
   sheet, Ask with citations, the connect screen.
 - **Privacy policy URL** (required). The draft is `docs/legal/PRIVACY.md`, and every server serves
   it at `/privacy` (D029). Fill in its `TODO(Rex)` lines, run `bun scripts/render-privacy.ts`, and
-  redeploy (`bun run selfhost`). Until a domain exists, the listing's URL is
-  `https://kothanote-server.bold-breeze-539b.workers.dev/privacy`.
-- **Support URL** and a real support address: set `LINKS.help` and `LINKS.supportEmail`.
-- Replace every `notes.example` link in `features/settings/links.ts`.
+  redeploy (`bun run selfhost`). The listing's URL is `https://rovierr.com/kothanote/privacy`.
+- **Support URL**: `https://rovierr.com/kothanote/#support`; the address is kothanote@rovierr.com.
+  `LINKS` in `features/settings/links.ts` points at the site (D035): no `notes.example` is left.
 
 ## 5. Build and submit
 
@@ -196,4 +196,5 @@ The config is ready; the app is not. Before a Play release:
 - **Store.** A Play listing, the Data safety form (the same facts as the privacy policy), a
   feature graphic, Android screenshots, and the first manual upload.
 - **Deep links.** The `kothanote://connect` setup link works through the scheme. App Links over
-  `https://kothanote.app` would need `assetlinks.json` on the site.
+  `https://rovierr.com` would need `assetlinks.json` at that origin's `/.well-known/`, which is the
+  rovierr.com Worker's, not this site's (D035).

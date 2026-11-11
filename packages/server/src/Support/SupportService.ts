@@ -12,7 +12,7 @@ import type { ProfilesRepo } from "../Profiles/ProfilesRepo";
 import type { Ids } from "../Runtime/Ids";
 import { canSendSupport } from "./Policy";
 
-export const DESKTOP_LINK = "https://notes.example/desktop";
+export const DESKTOP_LINK = "https://rovierr.com/kothanote/";
 
 export type SupportDeps = {
   readonly email: EmailPort;

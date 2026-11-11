@@ -4,23 +4,23 @@
   "icons": [
     {
       "sizes": "192x192",
-      "src": "/icon-192.png",
+      "src": "/kothanote/icon-192.png",
       "type": "image/png"
     },
     {
       "sizes": "512x512",
-      "src": "/icon-512.png",
+      "src": "/kothanote/icon-512.png",
       "type": "image/png"
     },
     {
       "purpose": "maskable",
       "sizes": "512x512",
-      "src": "/icon-maskable-512.png",
+      "src": "/kothanote/icon-maskable-512.png",
       "type": "image/png"
     }
   ],
   "name": "Kothanote",
   "short_name": "Kothanote",
-  "start_url": "/",
+  "start_url": "/kothanote/",
   "theme_color": "#24262A"
 }

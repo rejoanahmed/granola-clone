@@ -449,7 +449,7 @@ These must exist. The names are the specification; the phrasing in the test file
 
 ### `Support/Support.test.ts`, `Support/Support.http.test.ts`, `Domain/Support.test.ts` (phase 10)
 
-- a bug report is one `bug-report` message to `support@notes.example`, subject
+- a bug report is one `bug-report` message to `kothanote@rovierr.com`, subject
   `Bug report from Notes 1.0.0 (1) | e2e-person@kothanote.test`, the trimmed message, the
   diagnostics line (`included` / `not included`) and `From: E2E Person e2e-person@kothanote.test`,
   with a `sup_` receipt id equal to `payload.receiptId`

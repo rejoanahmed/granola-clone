@@ -1,13 +1,19 @@
-// Designed placeholders (docs/spec/phase-10.md §4, BLOCKERS.md): `notes.example` does not resolve,
-// and this is the one object to change when real pages exist.
+import { BRAND } from "@kn/domain/Brand";
+
+// The public pages the app links to, all under the product's page on rovierr.com (D035). The site
+// has no desktop or iPhone download page yet, so both go to its front page; `selfHosting` is a
+// stable address on the site that redirects to SELF-HOSTING.md, so the guide can move without an
+// app release.
+const SITE = BRAND.siteUrl;
+
 export const LINKS = {
-  desktop: "https://notes.example/desktop",
-  help: "https://notes.example/help",
-  iphone: "https://notes.example/iphone",
-  learnMore: "https://notes.example/data",
-  privacy: "https://notes.example/privacy",
+  desktop: `${SITE}/`,
+  help: `${SITE}/#faq`,
+  iphone: `${SITE}/`,
+  learnMore: `${SITE}/#privacy`,
+  privacy: `${SITE}/privacy`,
   // SELF-HOSTING.md, rendered: where a new user learns to deploy their own server (D019).
-  selfHosting: "https://notes.example/self-hosting",
+  selfHosting: `${SITE}/self-hosting`,
   // Where feedback goes when the user's server sends no mail: the phone's own mail app (D020).
-  supportEmail: "support@notes.example",
+  supportEmail: BRAND.supportEmail,
 } as const;

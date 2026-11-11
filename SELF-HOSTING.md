@@ -121,6 +121,9 @@ bun run selfhost -- --llm openai --llm-base-url https://generativelanguage.googl
 - **Outside vendors.** If you add an ElevenLabs or Anthropic key, the audio or transcript for each
   meeting goes to that company to be processed, under *your* account with them. With the defaults,
   nothing leaves Cloudflare.
+- **The policy.** The full privacy policy is at https://rovierr.com/kothanote/privacy, and your
+  own server serves the same text at `<your server URL>/privacy`. Questions go to
+  kothanote@rovierr.com.
 
 ## Everyday things
 
