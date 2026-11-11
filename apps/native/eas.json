@@ -62,14 +62,16 @@
       },
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "apk-prod"
     },
     "apk-dev": {
       "extends": "preview",
       "autoIncrement": true,
       "env": {
         "KOTHANOTE_RELEASE_ENV": "dev"
-      }
+      },
+      "channel": "apk-dev"
     },
     "apk-local": {
       "extends": "preview",
@@ -78,7 +80,8 @@
       "env": {
         "EXPO_PUBLIC_APP_ENV": "local",
         "KOTHANOTE_RELEASE_ENV": "local"
-      }
+      },
+      "channel": "apk-local"
     }
   },
   "submit": {
