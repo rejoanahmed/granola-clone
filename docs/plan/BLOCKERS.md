@@ -549,9 +549,13 @@
   the body below the recording, set `--gateway off` for that owner. Unblocked by one 60+ MB test.
 - **Bengali on the free transcriber is poor.** Published and measured (D021). The setup guide says
   so and points to ElevenLabs; the app does not.
-- **No app icon, and placeholder settings pages.** `app.json` has no `icon`, and Settings still
-  shows "coming soon" pages, a desktop-app sheet and a work-email upsell. These are review risks
-  (RELEASE.md §6), left for the owner because the name and the design are theirs.
+- **No app icon.** `app.json` has no `icon`. It waits on the name. The placeholder settings pages
+  that sat beside it in this entry are hidden since D027.
+- **Hidden-feature flows are not run by default** (D027). The `unfinished`-tagged flows need a bundle
+  started with `EXPO_PUBLIC_SHOW_UNFINISHED=true`, and none of the edited or retagged flows were
+  run here (no simulator). Unblocked by one full local Maestro run, in each mode.
+- **Account deletion leaves audio and transcript copies in R2** (the phase-5 entry above). The
+  privacy policy says so (D029). Fixing it removes that sentence.
 - **Pairing tokens do not revoke sessions.** Rotating `OWNER_TOKEN` stops new pairings; existing
   sessions live until sign-out or 30 days. Unblocked by a "sign out all devices" route that deletes
   the owner's sessions.

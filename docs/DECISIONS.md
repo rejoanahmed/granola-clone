@@ -485,6 +485,79 @@ and notes start by hand. It is the only production calendar mode until the OAuth
 
 ---
 
+## D027 · Entry points to unbuilt features are hidden, not deleted — **STANDING**
+
+App Review rejects dead ends and placeholders (guidelines 2.1 and 2.3.1), and several of the
+discovery-faithful screens lead nowhere on a self-hosted server. `Config.SHOW_UNFINISHED`
+(`EXPO_PUBLIC_SHOW_UNFINISHED=true`, off by default, so every store build has it off) gates their
+entry points:
+
+- **Settings:** the "Get Notes for Mac or Windows" banner (there is no desktop app),
+  Notifications (its one toggle needs a calendar and push), Subscription ("Coming soon"), the
+  Features section (Chat's one setting is dictation; Phone calls and Watch are "coming soon"
+  pages), Share (no store link yet), Recover Corrupted Notes (it only ever answered a canned
+  toast), and Data & sharing ("use my data to improve models" is untrue when nothing reaches the
+  developer). A plain **Privacy policy** row replaces the card it lived in.
+- **Home:** the Get desktop pill, the Phone button (it had no action), and the upcoming-meetings
+  card (with `CALENDAR_MODE=off` it could only ever show its empty state and the work-email
+  upsell).
+- **Chat composer:** the paperclip (both attachment kinds were disabled, "Coming soon"; its room is
+  kept so the model pill does not move) and the dictation mic (its only answer was "Dictation
+  isn't available yet"). An empty composer now shows Send, inert.
+- **Live recording card:** the always-disabled paperclip.
+
+The screens, routes and their code are kept for the phases that finish them. Maestro flows that
+drive a hidden entry point are tagged `unfinished`, and `scripts/maestro.sh` excludes that tag
+unless `EXPO_PUBLIC_SHOW_UNFINISHED=true`. Flows that only passed one on the way now assert that it
+is absent. The parity pass (`bun run parity`) needs the flag on, because it compares against
+discovery.
+
+Reverse cost: one environment variable, per build.
+
+---
+
+## D028 · A slight palette shift away from the reference product — **STANDING**
+
+The tokens were sampled from another product's screenshots, and a public app should not read as
+a copy of it. Only colour changed. Layout, typography, radii and the dark style are untouched, and
+the change is confined to `apps/native/src/design/tokens.ts` (plus the splash background in
+`app.json`):
+
+- the yellow-green accent family became sea-green: `lime #B0BF40 → #5CC8AA`,
+  `limePale #E5EACC → #CFEEE4`, `limeSwitch #B2C248 → #5ECBAD`, `olive #677B00 → #1E7563`,
+  `oliveDark #424625 → #1F3A34`, `olive.glyph #8A9A2A → #3FA88C`, `olive.ring #515B1F → #1E5246`,
+  `recording.pauseFill #656E2D → #2C6B5C`, `tile.share #ADC06F → #8FCFB8`;
+- the neutral greys took a slight cool tint, at the same lightness: `bg.app #262626 → #24262A`,
+  `bg.list #1A1A1A → #181A1D`, `bg.sheet #2A2A2A → #282A2E`, `bg.tile #282828 → #26282C`,
+  `bg.tileRaised`/`border.hairline #333333 → #313438`, and the other near-black surfaces alike;
+- text was cooled to match: `primary #FCFDF8 → #F7F9FB`, `secondary #A8AAA1 → #A4A9AF`, and
+  `tertiary #8A8A8A → #90959B`, which is *lighter*, so tertiary text passes AA on every surface.
+
+Contrast, WCAG 2.1: primary on the app background 14.4:1; secondary on the list 7.4:1; tertiary
+5.0:1 on the app background and 4.8:1 on sheets, up from 4.4 on the old palette (tertiary appears on a raised tile only as an icon, at 4.1:1,
+above the 3:1 non-text bar); the dark glyph
+on the bright accent 8.5:1; white on the deep accent (Send) 5.3:1, up from 4.7. The `lime`/`olive`
+key names are kept as role names, because renaming them would touch every screen for no change in
+behaviour. The phase-12 parity report's colour rows describe the old palette and are not rewritten.
+
+---
+
+## D029 · The privacy policy is served by every server at `/privacy` — **STANDING**
+
+`docs/legal/PRIVACY.md` is the source. `bun scripts/render-privacy.ts` embeds it in
+`apps/api/src/legal/privacy-source.ts`, and the Worker renders it at `GET /privacy` (public HTML,
+the app's colours). A test fails if the embedded copy and the file differ. Chosen over GitHub
+Pages because the repository is private, which puts Pages behind a paid plan, and because a page
+on every server means the app can open **the user's own server's** copy (Settings → Privacy
+policy). The App Store listing's privacy URL is the reference server's,
+`https://gcnotes-server.bold-breeze-539b.workers.dev/privacy`, until a real domain exists. The
+policy is written against the code: what each optional vendor receives is taken from the request
+builders (`Prompts.ts`, `ElevenLabsScribe.ts`, `ResendClient.ts`), not from boilerplate. It also
+states the current gap that deleting an account leaves the audio in R2. `TODO(Rex)` marks what
+only the publisher can fill in.
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.

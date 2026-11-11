@@ -32,6 +32,25 @@ WIPO, Bangladesh DPDT and App Store Connect name reservations were **not** check
 | **OwnMinutes** | your own minutes, on your own server | crowded "Minutes" category (Minutes AI, MinuteKeep…) | free | free | med |
 | **Minutehold** | where your minutes are held | same "Minute*" crowd | free | free | med |
 
+**A second round** (the own-server / private angle, 2026-11-11, same method) found these with
+both domains free and no matching app or company: **Minuteden** (a den for your minutes),
+**Tacinote** (Latin *tacitus*, kept quiet), **Minukeep** (minutes you keep), Clausanote (Latin
+*clausa*, sealed), Sealminute, Sigilnote, Minuvault ("vault" is crowded). Keepmeet, Coffernote and
+Ownroom have only `.app` free.
+
+**Combined ranking:**
+1. Minuteden
+2. Shonanote
+3. Tacinote
+4. Kothanote
+5. Minukeep
+6. Kothly
+7. Sigilnote
+8. Memokhata
+
+The top three are the shortest names that are easy to say, have both domains free, and showed no
+conflicts.
+
 Rejected for clear conflicts: Ownscribe (open-source meeting transcriber of the same name), NoteCove,
 MinuteOwl, Hushnote/HushScribe, Lekho/Lekhapad, Shunly (`.com` taken). Most short real words in
 Bengali or English (Lekha, Khata, Shuno, Kotha, Smriti, Lipi…) are taken in both TLDs. Register the
@@ -70,10 +89,10 @@ exists. A GitHub-rendered `SELF-HOSTING.md` is enough.
 - **Screenshots**: 6.9" (1320×2868 or 1290×2796) at least, 3 to 10 of them. Take them from a dev
   build connected to the reference server: home with notes, a note with AI notes, the transcript
   sheet, Ask with citations, the connect screen.
-- **Privacy policy URL** (required). It must say that the developer receives **no** user data: the
-  app talks only to the server address the user enters, and that server runs in the user's own
-  Cloudflare account. It must also say what the optional vendors (ElevenLabs, Anthropic, OpenAI)
-  receive when the user configures them. Host it at the new domain, then set `LINKS.privacy`.
+- **Privacy policy URL** (required). The draft is `docs/legal/PRIVACY.md`, and every server serves
+  it at `/privacy` (D029). Fill in its `TODO(Rex)` lines, run `bun scripts/render-privacy.ts`, and
+  redeploy (`bun run selfhost`). Until a domain exists, the listing's URL is
+  `https://gcnotes-server.bold-breeze-539b.workers.dev/privacy`.
 - **Support URL** and a real support address: set `LINKS.help` and `LINKS.supportEmail`.
 - Replace every `notes.example` link in `features/settings/links.ts`.
 
@@ -94,7 +113,7 @@ before submitting for review.
 | Guideline | Risk | Answer prepared |
 | --- | --- | --- |
 | **2.1 App completeness** | A reviewer cannot use an app that needs a server they don't have. | The **reference server** (deployed from this branch to the owner's personal account) is the demo. Put its URL and pairing token in *App Review Information → Notes* (§7). Keep it running and its token unrotated during review. |
-| **2.1 / 2.3 Placeholder content** | Settings shows "coming soon" pages (Phone calls, Watch, Subscription), a "Get desktop" sheet for an app that does not exist, and a work-email upsell. | Not changed here (the visual design is the owner's call). Hide those rows before submitting, or expect a rejection under 2.1/2.3.1. |
+| **2.1 / 2.3 Placeholder content** | "Coming soon" pages, a desktop-app sheet, a work-email upsell, disabled attachments and dictation. | Hidden in release builds since D027. Check no other dead end has appeared before each submission. |
 | **4.2 Minimum functionality** | "A front end to a server" can read as a thin client. | The app records natively (background audio), shows transcripts, writes AI notes and offers search, folders and Ask. Say so in the review notes. |
 | **5.1.1 Privacy** | The app must explain data use and offer account deletion. | Delete account exists (Settings), and it deletes the data on the user's own server. The privacy policy (§4) states that no data reaches the developer. In App Store Connect's privacy section, **Data Not Collected** is accurate *for the developer*. Say in the notes that data goes only to the user's server. |
 | **5.1.2 Data use** | Recordings of other people. | The mic permission string and the first-run copy say what is recorded. Note-taking consent is the user's responsibility, as with any recorder. Consider an "inform participants" line in onboarding. |
