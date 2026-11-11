@@ -7,15 +7,18 @@ import {
   queryDefaults,
   queryKeys,
 } from "@gc/apiclient";
-import Config from "@native/config";
 import { useToast } from "@native/design";
+import { mailtoUrl } from "@native/features/server/mailto";
+import { LINKS } from "@native/features/settings/links";
 import { authClient, EXPO_AUTH_SCHEME } from "@native/lib/auth-client";
+import { SERVER_URL, serverSendsEmail } from "@native/lib/server";
 import {
   type QueryClient,
   type UseMutationOptions,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
+import * as Linking from "expo-linking";
 import { createURL } from "expo-linking";
 
 export {
@@ -25,7 +28,8 @@ export {
   hasTag,
 } from "@gc/apiclient";
 
-export const API_URL = Config.API_URL;
+// The chosen server (D019). Empty until one is chosen; nothing signed out calls the API.
+export const API_URL = SERVER_URL ?? "";
 
 /**
  * A native app has no browser origin: the API rewrites it from this header, and dropping it throws
@@ -489,15 +493,33 @@ export type Feedback = NonNullable<
   NonNullable<Parameters<typeof client.createFeedback>[0]>["body"]
 >;
 
+// A self-hosted owner server sends no mail (D020), so a report would only fail there. The phone's
+// own mail app takes it instead, addressed to the app's support, with the user seeing exactly what
+// is sent and choosing to send it; nothing reaches the developer otherwise.
+const viaMailApp = async (subject: string, body: string) => {
+  const url = mailtoUrl(LINKS.supportEmail, subject, body);
+  if (!(await Linking.canOpenURL(url))) {
+    throw new Error("No mail app");
+  }
+  await Linking.openURL(url);
+  return { id: "mail-app" };
+};
+
 export function useBugReport() {
   return useMutation({
-    mutationFn: (body: BugReport) => client.createBugReport({ body }),
+    mutationFn: (body: BugReport) =>
+      serverSendsEmail()
+        ? client.createBugReport({ body })
+        : viaMailApp(`Bug report (${body.appVersion})`, body.message),
   });
 }
 
 export function useFeedback() {
   return useMutation({
-    mutationFn: (body: Feedback) => client.createFeedback({ body }),
+    mutationFn: (body: Feedback) =>
+      serverSendsEmail()
+        ? client.createFeedback({ body })
+        : viaMailApp(`Feedback (${body.appVersion})`, body.message),
   });
 }
 

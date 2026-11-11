@@ -6,9 +6,18 @@ import {
 } from "@native/features/auth/errors";
 import { PinnedFooter } from "@native/features/auth/PinnedFooter";
 import { TextButton } from "@native/features/auth/TextButton";
+import { ConnectServer } from "@native/features/server/ConnectServer";
+import { connectParamsOf } from "@native/features/server/connect";
 import { authClient } from "@native/lib/auth-client";
 import { useAuth } from "@native/lib/auth-provider";
-import { useRouter } from "expo-router";
+import {
+  forgetServer,
+  hasServer,
+  isOwnerServer,
+  reloadApp,
+  SERVER_INFO,
+} from "@native/lib/server";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, type TextInput, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -42,9 +51,26 @@ function useCountdown() {
   return [remaining, () => setRemaining(RESEND_COOLDOWN_S)] as const;
 }
 
+// The signed-out entry (D019, D020). With no server chosen, or on an owner's own server, it is the
+// connect step: address and pairing token. On a server that signs people in by email code (local
+// development, the E2E gate) it is the code flow below, unchanged.
+export default function WelcomeScreen() {
+  const params = useLocalSearchParams<{ server?: string; token?: string }>();
+  const fromLink = connectParamsOf(params);
+  if (!hasServer() || isOwnerServer() || fromLink.server !== "") {
+    return (
+      <ConnectServer
+        initialServer={fromLink.server}
+        initialToken={fromLink.token}
+      />
+    );
+  }
+  return <EmailWelcome />;
+}
+
 // Email OTP, sign-in and sign-up in one flow: an unknown address gets an account on its first
 // verified code. Both steps are one screen's state, so a failed verify never loses the address.
-export default function WelcomeScreen() {
+function EmailWelcome() {
   const router = useRouter();
   const { refetchSession } = useAuth();
   const codeRef = useRef<TextInput>(null);
@@ -248,6 +274,17 @@ export default function WelcomeScreen() {
             testID="welcome-submit"
             tone="light"
           />
+          {SERVER_INFO !== null && step === "email" ? (
+            <TextButton
+              label="Use a different server"
+              onPress={() => {
+                forgetServer()
+                  .then(reloadApp)
+                  .catch(() => undefined);
+              }}
+              testID="welcome-different-server"
+            />
+          ) : null}
           {__DEV__ && step === "email" ? (
             <TextButton
               label="Component gallery"

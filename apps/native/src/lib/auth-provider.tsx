@@ -109,6 +109,10 @@ export function welcomeHrefWithReturn(returnPath: string): Href {
 // Home is not public: every note belongs to somebody, so a signed-out launch lands on welcome.
 export function isPublicNativeRoute(segments: readonly string[]): boolean {
   const root = segments[0];
+  // The setup link only forwards to welcome's connect step.
+  if (root === "connect") {
+    return true;
+  }
   // Decides what we render, never what is allowed — the server authorises regardless.
   // Read at call time, not captured at import, so the Release answer is testable on node.
   if (root === "dev") {

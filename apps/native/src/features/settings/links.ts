@@ -6,4 +6,8 @@ export const LINKS = {
   iphone: "https://notes.example/iphone",
   learnMore: "https://notes.example/data",
   privacy: "https://notes.example/privacy",
+  // SELF-HOSTING.md, rendered: where a new user learns to deploy their own server (D019).
+  selfHosting: "https://notes.example/self-hosting",
+  // Where feedback goes when the user's server sends no mail: the phone's own mail app (D020).
+  supportEmail: "support@notes.example",
 } as const;
