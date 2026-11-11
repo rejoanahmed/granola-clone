@@ -99,7 +99,7 @@ export const renderMarkdown = (source: string): string => {
 
 const STYLE = `body{margin:0;background:#24262A;color:#F7F9FB;font:17px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 main{max-width:720px;margin:0 auto;padding:32px 20px 64px}h1{font:400 34px/1.2 Georgia,serif}
-h2{margin-top:2em;font-size:21px}a{color:#5CC8AA}code{font-size:15px}
+h2{margin-top:2em;font-size:21px}h3{margin-top:1.6em;font-size:18px}a{color:#5CC8AA}code{font-size:15px}
 table{border-collapse:collapse;width:100%;font-size:15px;margin:1em 0}th,td{border:1px solid #313438;padding:8px;text-align:left;vertical-align:top}
 th{color:#A4A9AF;font-weight:600}`;
 

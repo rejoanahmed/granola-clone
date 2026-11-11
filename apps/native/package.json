@@ -20,6 +20,7 @@
     "@kn/apiclient": "workspace:*",
     "@kn/auth": "workspace:*",
     "@kn/domain": "workspace:*",
+    "@kn/tokens": "workspace:*",
     "@tanstack/react-query": "5.103.2",
     "babel-preset-expo": "57.0.12",
     "expo": "~57.0.24",

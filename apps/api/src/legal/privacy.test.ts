@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { privacyPage, renderMarkdown } from "@kn/shared/legal/markdown";
+import { PRIVACY_MARKDOWN } from "@kn/shared/legal/privacy-source";
 import { describe, expect, it } from "vitest";
 import { app } from "../app";
-import { privacyPage, renderMarkdown } from "./markdown";
-import { PRIVACY_MARKDOWN } from "./privacy-source";
 
 // D029: every server serves the privacy policy at /privacy, from the one source file.
 

@@ -20,6 +20,7 @@
     "@hono/zod-openapi": "1.6.3",
     "@kn/domain": "workspace:*",
     "@kn/server": "workspace:*",
+    "@kn/shared": "workspace:*",
     "@scalar/hono-api-reference": "0.12.4",
     "hono": "4.13.8",
     "hono-rate-limiter": "0.5.4"

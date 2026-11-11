@@ -15,8 +15,8 @@ import { recordingsRouter } from "@kn/server/Recordings/Http";
 import { searchRouter } from "@kn/server/Search/Http";
 import { settingsRouter } from "@kn/server/Settings/Http";
 import { supportRouter } from "@kn/server/Support/Http";
-import { privacyPage } from "./legal/markdown";
-import { PRIVACY_MARKDOWN } from "./legal/privacy-source";
+import { privacyPage } from "@kn/shared/legal/markdown";
+import { PRIVACY_MARKDOWN } from "@kn/shared/legal/privacy-source";
 import {
   authRateLimit,
   betterAuthHandler,

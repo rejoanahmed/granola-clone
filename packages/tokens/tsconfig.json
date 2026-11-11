@@ -1,0 +1,10 @@
+{
+  "extends": "@kn/config/base.json",
+  "include": ["src", "scripts"],
+  "compilerOptions": {
+    // Source-only, as its consumers read it: nothing references this project with `tsc -b`.
+    "noEmit": true,
+    // `node` for the emitter's `node:fs`.
+    "types": ["node"]
+  }
+}
