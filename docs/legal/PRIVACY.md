@@ -1,9 +1,11 @@
 # Privacy Policy
 
-Effective date: TODO(Rex): the date the app is first published
+Last updated: 11 November 2026
 
-This policy covers the iPhone app Kothanote (the "app") and the server software it
-connects to, both published by TODO(Rex): your legal name or company ("we", "us").
+Kothanote is a product of Rovierr (https://rovierr.com). This policy covers the iPhone app
+Kothanote (the "app") and the server software it connects to, both published by Rovierr ("we",
+"us"). It explains what happens to your data, who can see it, and the choices you have. Questions:
+kothanote@rovierr.app.
 
 ## The short version
 
@@ -76,15 +78,17 @@ key.
 
 If you send feedback or a bug report from the app while your server is not set up to send email,
 the app opens your phone's own Mail app with a pre-filled message addressed to us. We receive it
-only if you choose to send it. We use it only to reply and to fix problems. Delete-on-request:
-TODO(Rex): how long you keep support emails.
+only if you choose to send it. We use it only to reply and to fix problems, and we never add it to a mailing list. We
+keep a support email for no longer than 12 months after the conversation ends, and we delete it
+sooner if you ask.
 
 ## The demo server
 
 For App Store review and evaluation, we run one demo server in our own Cloudflare account. If you
 connect the app to **our demo server** rather than your own, what you record there is stored in our
-account. TODO(Rex): state who may use the demo server (for example, App Review only) and how often
-its data is deleted. Do not record real meetings on the demo server.
+account. The demo server is for Apple's App Review and for people we invite to try the app; its
+pairing token is not published. We delete everything recorded on it after each review and at least
+every 30 days. Do not record real meetings on the demo server.
 
 ## Keeping, deleting and exporting your data
 
@@ -111,9 +115,10 @@ You are responsible for telling participants and getting any consent the law req
 
 ## Children
 
-The app is not directed to children under 13 (TODO(Rex): or the higher age your App Store rating
-and target markets require), and we do not knowingly collect data from children. We collect no
-data from anyone.
+Kothanote is made for adults recording their own meetings. It is not directed to children under
+13, and, as with all of Rovierr's products, anyone under 18 should use it only with a parent's or
+guardian's knowledge. We do not knowingly collect data from children; we collect no data from
+anyone.
 
 ## Security
 
@@ -123,10 +128,11 @@ your pairing token private. If it leaks, change it with the setup tool.
 
 ## Changes to this policy
 
-If this policy changes, we will update the effective date above and publish the new version at the
-same address. TODO(Rex): add a link to the public copy, once you choose where it lives.
+If this policy changes, we will update the date above and publish the new version at
+https://kothanote.app/privacy. Every Kothanote server also shows the version it was built with at
+its own `/privacy` address.
 
 ## Contact
 
-TODO(Rex): contact email
-TODO(Rex): postal address / jurisdiction, if your App Store seller profile requires one
+Kothanote is published by Rovierr (https://rovierr.com). For questions about this policy, or
+about anything you sent us, write to kothanote@rovierr.app.

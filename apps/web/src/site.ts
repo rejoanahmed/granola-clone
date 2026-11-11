@@ -10,7 +10,7 @@ export const SITE = {
   repo: "https://github.com/rejoanahmed/kothanote",
   selfHosting:
     "https://github.com/rejoanahmed/kothanote/blob/main/SELF-HOSTING.md",
-  supportEmail: "TODO(Rex)@kothanote.app",
+  supportEmail: "kothanote@rovierr.app",
   url: (import.meta.env.VITE_SITE_URL ?? `https://${BRAND.domain}`).replace(
     /\/$/,
     ""
