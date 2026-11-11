@@ -15,6 +15,8 @@ import { searchRouter } from "@gc/server/Search/Http";
 import { settingsRouter } from "@gc/server/Settings/Http";
 import { supportRouter } from "@gc/server/Support/Http";
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { privacyPage } from "./legal/markdown";
+import { PRIVACY_MARKDOWN } from "./legal/privacy-source";
 import {
   authRateLimit,
   betterAuthHandler,
@@ -52,6 +54,10 @@ app.use("/owner/*", authRateLimit);
 
 // Liveness, not readiness: reading D1 here would take the Worker out of rotation for a slow query.
 app.get("/", (c) => c.json({ ok: true, service: `${BRAND.slug}-api` }));
+
+// The privacy policy, from docs/legal/PRIVACY.md (D029). Every server serves it, so the app links
+// the user's own server's copy and the App Store listing links the reference server's.
+app.get("/privacy", (c) => c.html(privacyPage(PRIVACY_MARKDOWN)));
 
 // Mounted at `/` because the paths in each `Contract.ts` are already absolute; a prefix here would
 // desynchronise the served path from the documented one and from the derived client.
