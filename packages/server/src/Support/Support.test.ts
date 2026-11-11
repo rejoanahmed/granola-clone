@@ -114,7 +114,7 @@ describe("SupportService.createBugReport", () => {
     const sent = onlySent();
     expect(email.calls).toHaveLength(1);
     expect(sent.kind).toBe("bug-report");
-    expect(sent.to).toBe("support@notes.example");
+    expect(sent.to).toBe("kothanote@rovierr.com");
     expect(sent.subject).toBe(
       "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
     );
@@ -168,7 +168,7 @@ describe("SupportService.createFeedback", () => {
 
     const sent = onlySent();
     expect(sent.kind).toBe("feedback");
-    expect(sent.to).toBe("support@notes.example");
+    expect(sent.to).toBe("kothanote@rovierr.com");
     expect(sent.subject).toBe(
       "Feedback on Kothanote 1.0.0 (1) | e2e-person@kothanote.test"
     );
@@ -192,8 +192,8 @@ describe("SupportService.createDesktopReminder", () => {
     expect(sent.kind).toBe("desktop-reminder");
     expect(sent.to).toBe("e2e-person@kothanote.test");
     expect(sent.subject).toBe("Get Kothanote for Mac or Windows");
-    expect(sent.body).toContain("https://notes.example/desktop");
-    expect(sent.payload.link).toBe("https://notes.example/desktop");
+    expect(sent.body).toContain("https://rovierr.com/kothanote/");
+    expect(sent.payload.link).toBe("https://rovierr.com/kothanote/");
     expect(receipt.id).toMatch(RECEIPT_ID);
     expect(sent.payload.receiptId).toBe(receipt.id);
   });

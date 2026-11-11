@@ -42,7 +42,7 @@ service.** `bun run check` fails if either breaks — Biome covers the import pa
 apps/
   api/                 the Worker: fetch, OpenAPI doc at /api/doc, Scalar at /api/reference   :3001
   native/              Expo app for iPhone (Kothanote) — connect, record, notes, Ask           Metro
-  web/                 the landing page and /privacy: TanStack Start on a Worker (D033)       :3043
+  web/                 rovierr.com/kothanote and /privacy: TanStack Start on a Worker (D033, D035) :3043
     .maestro/          UI flows on the iOS simulator
 packages/
   domain/    @kn/domain     schemas, route contracts, error classes. Isomorphic; the app imports it.

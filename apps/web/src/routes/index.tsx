@@ -6,7 +6,14 @@ import { SITE } from "@web/site";
 // The landing page (D033). Section order and rhythm follow a common product-page pattern: hero,
 // three promises, features, how it works, a closer look, privacy, open source, FAQ, support. Every
 // word and picture here is original.
-export const Route = createFileRoute("/")({ component: Landing });
+// Canonical and og:url per page, not in the root, or every page would claim to be the home page.
+export const Route = createFileRoute("/")({
+  component: Landing,
+  head: () => ({
+    links: [{ href: `${SITE.url}/`, rel: "canonical" }],
+    meta: [{ content: `${SITE.url}/`, property: "og:url" }],
+  }),
+});
 
 const PROMISES = [
   {

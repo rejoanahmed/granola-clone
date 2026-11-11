@@ -1083,7 +1083,7 @@ describe("the E2E harness, phase 10", () => {
       .bind(
         id,
         kind,
-        "support@notes.example",
+        "kothanote@rovierr.com",
         subject,
         `Body ${id}`,
         JSON.stringify({ receiptId: `sup_${id}` }),
@@ -1117,7 +1117,7 @@ describe("the E2E harness, phase 10", () => {
       payload: { receiptId: "sup_out_2" },
       subject:
         "Bug report from Kothanote 1.0.0 (1) | e2e-person@kothanote.test",
-      to: "support@notes.example",
+      to: "kothanote@rovierr.com",
     });
     expect((await support()("feedback")).items).toHaveLength(1);
     expect((await support()("desktop-reminder")).items).toEqual([]);

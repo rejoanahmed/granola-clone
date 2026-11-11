@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { SITE } from "@web/site";
+import { at, SITE } from "@web/site";
 
 export function Logo() {
   return (
     <Link className="flex items-center gap-2.5 font-serif text-xl" to="/">
-      <img alt="" height={32} src="/icon.svg" width={32} />
+      <img alt="" height={32} src={at("/icon.svg")} width={32} />
       {SITE.name}
     </Link>
   );
@@ -16,16 +16,16 @@ export function SiteHeader() {
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5">
         <Logo />
         <div className="hidden items-center gap-7 text-sm text-text-secondary md:flex">
-          <a className="hover:text-text-primary" href="/#features">
+          <a className="hover:text-text-primary" href={at("/#features")}>
             Features
           </a>
-          <a className="hover:text-text-primary" href="/#how">
+          <a className="hover:text-text-primary" href={at("/#how")}>
             How it works
           </a>
-          <a className="hover:text-text-primary" href="/#privacy">
+          <a className="hover:text-text-primary" href={at("/#privacy")}>
             Privacy
           </a>
-          <a className="hover:text-text-primary" href="/#faq">
+          <a className="hover:text-text-primary" href={at("/#faq")}>
             FAQ
           </a>
         </div>
@@ -55,7 +55,7 @@ export function SiteFooter() {
           <a className="hover:text-text-primary" href={SITE.repo}>
             Source code
           </a>
-          <a className="hover:text-text-primary" href="/#support">
+          <a className="hover:text-text-primary" href={at("/#support")}>
             Support
           </a>
         </div>

@@ -112,8 +112,8 @@ describe("FeedbackCreate", () => {
 });
 
 describe("the support constants", () => {
-  it("addresses support@notes.example", () => {
-    expect(Support.SUPPORT_ADDRESS).toBe("support@notes.example");
+  it("addresses kothanote@rovierr.com", () => {
+    expect(Support.SUPPORT_ADDRESS).toBe("kothanote@rovierr.com");
   });
 
   it("parses a receipt with a non-empty id", () => {

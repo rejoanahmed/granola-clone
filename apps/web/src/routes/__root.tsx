@@ -4,7 +4,7 @@ import {
   Link,
   Scripts,
 } from "@tanstack/react-router";
-import { SITE } from "@web/site";
+import { at, SITE } from "@web/site";
 import type { ReactNode } from "react";
 import appCss from "../styles.css?url";
 
@@ -15,10 +15,10 @@ export const Route = createRootRoute({
   head: () => ({
     links: [
       { href: appCss, rel: "stylesheet" },
-      { href: "/favicon.ico", rel: "icon", sizes: "32x32" },
-      { href: "/icon.svg", rel: "icon", type: "image/svg+xml" },
-      { href: "/apple-touch-icon.png", rel: "apple-touch-icon" },
-      { href: "/site.webmanifest", rel: "manifest" },
+      { href: at("/favicon.ico"), rel: "icon", sizes: "32x32" },
+      { href: at("/icon.svg"), rel: "icon", type: "image/svg+xml" },
+      { href: at("/apple-touch-icon.png"), rel: "apple-touch-icon" },
+      { href: at("/site.webmanifest"), rel: "manifest" },
     ],
     meta: [
       { charSet: "utf-8" },

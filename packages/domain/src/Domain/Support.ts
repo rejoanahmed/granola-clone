@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const SUPPORT_MESSAGE_MAX = 5000;
-export const SUPPORT_ADDRESS = "support@notes.example";
+export const SUPPORT_ADDRESS = "kothanote@rovierr.com";
 
 // Trimmed before the length check, so a message of spaces is empty rather than sent to a person.
 const SupportMessage = z.string().trim().min(1).max(SUPPORT_MESSAGE_MAX);

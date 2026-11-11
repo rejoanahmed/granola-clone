@@ -395,8 +395,9 @@
 - **Support messages have no rate limit.** A signed-in caller can send as many as they like to the
   fake outbox. A live email client (the phase-3 blocker) should add one per user per hour before
   production.
-- **Placeholder links.** `notes.example/*` does not resolve. The help, data and privacy content is
-  not part of the app, and the URLs are one constant object (`features/settings/links.ts`).
+- **Placeholder links: resolved (D035).** `features/settings/links.ts` points at
+  `rovierr.com/kothanote` and kothanote@rovierr.com. There is no desktop or iPhone download page
+  yet, so those two links open the front page.
 - **"Remind me later" is an email, not a calendar or notification reminder.** Discovery never
   tapped it, and the fake email port is the clone's only outbound channel.
 - **"Sign up with work email" signs out.** Discovery never tapped it. Signing out is the only route

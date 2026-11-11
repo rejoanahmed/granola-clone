@@ -640,8 +640,8 @@ phone, the icon and the social card are original. No text, image, logo or code w
 held to the code's facts: speaker labels only with ElevenLabs, Bengali rough on the free default,
 one owner per server, iPhone first. `TODO(Rex)` marks the support address and the App Store link
 (`apps/web/src/site.ts`). The domain is not attached: `kothanote.app` was not registered at the
-registry when checked (RDAP 404) and is not a zone on the account. Once it is, add the custom-domain
-route in `apps/web/wrangler.jsonc` and redeploy (`docs/plan/RELEASE.md`).
+registry when checked (RDAP 404) and is not a zone on the account. **Superseded on the address by
+D035:** there is no `kothanote.app`; the site is `rovierr.com/kothanote`.
 
 ---
 
@@ -658,8 +658,9 @@ route in `apps/web/wrangler.jsonc` and redeploy (`docs/plan/RELEASE.md`).
   `RECORD_AUDIO`, expo-audio's `recordAudioAndroid`). The app stays iPhone-first: `supportsTablet:
   false`, and no Android-specific work was done.
 - Apple team **BXW3A78H2C**: Chapterly's, read from its latest EAS iOS build log, because no config
-  file in that repo names it. It is set as `submit.*.ios.appleTeamId`. `ascAppId` is left out until
-  the App Store Connect record exists (Chapterly's is a number only that record gives).
+  file in that repo names it. It is set as `submit.*.ios.appleTeamId`. `ascAppId` is
+  **6833328794**, the App Store Connect record EAS auto-submit created (2026-11-11), in both submit
+  profiles.
 - Credentials are EAS-managed and remote: the default when `credentialsSource` is unset, which is
   what Chapterly does. On the first build, EAS offers the `rovierr` account's existing iOS
   distribution certificate (one per team, shared across apps). It creates the App ID and a new
@@ -670,6 +671,41 @@ route in `apps/web/wrangler.jsonc` and redeploy (`docs/plan/RELEASE.md`).
   Nothing was generated, uploaded or deleted from here.
 - `extra.eas.projectId` and `updates.url` are absent until `eas init`. See RELEASE.md §3 for where
   they land.
+
+---
+
+## D035 · No domain of its own: the site is rovierr.com/kothanote, served by a Worker route — **STANDING**
+
+The owner decided (2026-11-11) there will be no `kothanote.app`. The landing page and the privacy
+policy live at **https://rovierr.com/kothanote** and `/kothanote/privacy`, and the address for
+support, privacy and feedback is **kothanote@rovierr.com** (`BRAND.siteUrl`, `BRAND.supportEmail`).
+Chapterly, the publisher's other app, has its own `chapterly.app`; this one is a page of the
+publisher's site.
+
+rovierr.com is the `rovierr-site-prod` Worker (repo `rejoanahmed/rovierr`), attached as a custom
+domain on a zone in this same account. Three ways to put this site under it were weighed:
+
+- **(a) A Worker route, chosen.** `kothanote-web` declares `rovierr.com/kothanote*` in
+  `apps/web/wrangler.jsonc`. The route wins over the custom domain for that path, so every other
+  path on rovierr.com still reaches the rovierr Worker, untouched. This repo still deploys its own
+  site (`bun run deploy:web`), and the rovierr repo has no code for it.
+- (b) The rovierr Worker proxying `/kothanote/*` over a service binding. It works, but it puts
+  this site's routing into the other repo, and a rovierr deploy could break it.
+- (c) Building the pages into the rovierr site. Rejected: the privacy page is rendered from this
+  repo's `docs/legal/PRIVACY.md` (D029) and would drift.
+
+The sub-path has one trap. The Workers asset handler matches the request path to a file path before
+any code runs, so Vite's `base` alone emits `/kothanote/assets/…` URLs for files uploaded at
+`/assets/…` (404s). Instead the router gets `basepath: "/kothanote"` (`src/base-path.ts`), the
+built assets go to `assetsDir: kothanote/assets`, and the public files live in `public/kothanote/`:
+everything is physically where its URL says. Plain `href`/`src` (icons, the manifest, in-page
+anchors) go through `at()` in `site.ts`; router `Link`s take the basepath themselves. Canonical and
+`og:url` are per page. `/kothanote/self-hosting` redirects to `SELF-HOSTING.md`, so the app links to
+an address this site owns.
+
+The old `kothanote-web.bold-breeze-539b.workers.dev` stays on and 301s every page to the same path
+under rovierr.com/kothanote (`src/server.ts`), as `www.rovierr.com` folds into the apex. Android's
+`com.kothanote.app` package id is an identifier, not a domain, and is unchanged.
 
 ---
 

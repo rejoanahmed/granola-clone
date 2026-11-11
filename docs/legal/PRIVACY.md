@@ -5,7 +5,7 @@ Last updated: 11 November 2026
 Kothanote is a product of Rovierr (https://rovierr.com). This policy covers the iPhone app
 Kothanote (the "app") and the server software it connects to, both published by Rovierr ("we",
 "us"). It explains what happens to your data, who can see it, and the choices you have. Questions:
-kothanote@rovierr.app.
+kothanote@rovierr.com.
 
 ## The short version
 
@@ -129,10 +129,10 @@ your pairing token private. If it leaks, change it with the setup tool.
 ## Changes to this policy
 
 If this policy changes, we will update the date above and publish the new version at
-https://kothanote.app/privacy. Every Kothanote server also shows the version it was built with at
-its own `/privacy` address.
+https://rovierr.com/kothanote/privacy. Every Kothanote server also shows the version it was built
+with at its own `/privacy` address.
 
 ## Contact
 
 Kothanote is published by Rovierr (https://rovierr.com). For questions about this policy, or
-about anything you sent us, write to kothanote@rovierr.app.
+about anything you sent us, write to kothanote@rovierr.com.

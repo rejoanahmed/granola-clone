@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "deploy:check": "VITE_SITE_URL=https://kothanote.app bun run build && wrangler deploy --dry-run",
-    "deploy:prod": "VITE_SITE_URL=${KOTHANOTE_SITE_URL:-https://kothanote.app} bun run build && wrangler deploy",
+    "deploy:check": "bun run build && wrangler deploy --dry-run",
+    "deploy:prod": "bun run build && wrangler deploy",
     "dev": "vite dev --port 3043",
     "preview": "bun run build && vite preview",
     "type-check": "tsc -b"

@@ -9,7 +9,9 @@ import { SITE } from "@web/site";
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
   head: () => ({
+    links: [{ href: `${SITE.url}/privacy`, rel: "canonical" }],
     meta: [
+      { content: `${SITE.url}/privacy`, property: "og:url" },
       { title: `Privacy policy · ${SITE.name}` },
       {
         content: `How ${SITE.name} handles your data: it never reaches us.`,
