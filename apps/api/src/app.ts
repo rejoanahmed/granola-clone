@@ -7,6 +7,7 @@ import { chatsRouter } from "@kn/server/Chats/Http";
 import { e2eRouter } from "@kn/server/E2E/Http";
 import { foldersRouter } from "@kn/server/Folders/Http";
 import { generationsRouter } from "@kn/server/Generations/Http";
+import { mcpRouter } from "@kn/server/Mcp/Http";
 import { notesRouter } from "@kn/server/Notes/Http";
 import { ownersRouter } from "@kn/server/Owners/Http";
 import { peopleRouter } from "@kn/server/People/Http";
@@ -78,6 +79,10 @@ app.route("/", calendarRouter);
 // per request by `container.e2e`, and a disarmed one answers the 404 below before reading a header.
 // It is absent from `mountOpenApi` on purpose — the harness is not part of the contract.
 app.route("/", e2eRouter);
+
+// The read-only MCP endpoint (D038). Beside the harness for the same reason: whether it exists is
+// decided per request by `container.mcp`, and it is not part of the OpenAPI contract.
+app.route("/", mcpRouter);
 
 app.all("/api/auth/*", betterAuthHandler);
 

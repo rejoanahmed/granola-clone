@@ -19,7 +19,9 @@ import { rateLimiter } from "hono-rate-limiter";
 // bytes sent — anything that parses and re-serialises the body makes every signature check fail as
 // if the secret were wrong. Consult this list before adding any global request rewriting; today it
 // only suppresses session lookup.
-export const RAW_ROUTE_PREFIXES = ["/api/auth/"] as const;
+// `/mcp` is here because its bearer is not a session: without this every MCP call would pay a D1
+// round trip to learn that, and the SDK reads the body itself.
+export const RAW_ROUTE_PREFIXES = ["/api/auth/", "/mcp"] as const;
 
 const onARawRoute = (path: string): boolean =>
   RAW_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));

@@ -132,10 +132,33 @@ bun run selfhost -- --llm openai --llm-base-url https://generativelanguage.googl
 | See my server URL and pairing token again | `bun run selfhost -- --show` |
 | Update my server to the newest version | `git pull && bun install && bun run selfhost` |
 | Change the pairing token (e.g. it leaked) | `bun run selfhost -- --rotate-token` |
+| Let my AI agents read my notes | `bun run selfhost -- --mcp on` (see below) |
 | Connect a second iPhone | open the app on it and connect with the same URL and token |
 
 Your choices (language, providers) are remembered in `apps/api/.selfhost.env`, so a later
 `bun run selfhost` keeps them. That file holds your pairing token. Don't share it or commit it.
+
+## Let your AI agents read your notes (optional)
+
+Your server can answer AI agents (Claude Code, for example) over MCP, so an agent can list your
+meetings, read a note or a transcript, and search them. It is off until you turn it on:
+
+```bash
+bun run selfhost -- --mcp on
+```
+
+It prints an address ending in `/mcp`, a separate **MCP token**, and the command that connects
+Claude Code:
+
+```bash
+claude mcp add --transport http kothanote https://<your server>/mcp \
+  --header "Authorization: Bearer <your MCP token>"
+```
+
+- The MCP token can **read** every note and transcript. It cannot change or delete anything, and
+  it cannot pair a phone.
+- Anyone who has it can read your notes, so keep it as private as the pairing token.
+- If it leaks: `bun run selfhost -- --mcp rotate`. To close the endpoint: `--mcp off`.
 
 ## What it costs
 
