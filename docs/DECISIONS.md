@@ -783,6 +783,45 @@ it. What came with the fix:
 
 ---
 
+## D038 · Agents read notes over MCP: one stateless route, one read-only token — **STANDING**
+
+Notes and transcripts are the input to work that agents do (tickets from a meeting, a follow-up, a
+report), so a server can serve them over the Model Context Protocol at `POST /mcp`.
+
+- **Off by default.** `MCP_TOKEN` unset means `container.mcp` is `null` and `/mcp` answers the
+  app's own 404, before a header is read, as the E2E harness does. `bun run selfhost -- --mcp on`
+  generates the token and prints the `claude mcp add` line; `--mcp rotate` replaces it; `--mcp off`
+  deletes the secret.
+- **Auth is a static bearer, not OAuth.** `Authorization: Bearer <MCP_TOKEN>`, compared in constant
+  time, resolves to the server's one owner (`usr_owner`, D020). There is no session, cookie or row,
+  so revoking is replacing the secret. `AppConfig` refuses the token outside `AUTH_MODE=owner`,
+  under 24 characters, or equal to `OWNER_TOKEN`: the pairing token mints a session that can write
+  and delete, and it must not be the one sitting in an agent's config. OAuth (discovery documents,
+  dynamic client registration, a consent page, token storage) is some thousands of lines for a
+  server with one user, and was left out for that reason. What that costs: a hosted client that can
+  only add a connector through OAuth cannot connect; clients that send a header (Claude Code, the
+  Agent SDK, Cursor) can.
+- **Read-only.** Four tools: `list_notes`, `get_note`, `get_transcript`, `search_notes`. Each calls
+  the same service the HTTP route calls, as the owner, so the ownership rules are the existing
+  ones. A tool that writes is a new decision, because it changes what a leaked token can do.
+- **The SDK's stateless handler, and nothing else.** `createMcpHandler` from
+  `@modelcontextprotocol/server` builds a server per request: no session id, no Durable Object, no
+  KV. It answers both protocol eras (clients that open with `initialize` and those that do not),
+  which is why the protocol is not hand-written here: that part moves with every spec revision and
+  is the library's to track. Cloudflare's `agents` package wraps the same handler and was not
+  added: it brings nothing this route uses.
+- **No rate limit on `/mcp`.** The auth limiter's budget (20 a minute) is smaller than one agent
+  session, and 24 random bytes make guessing pointless. `/mcp` is in `RAW_ROUTE_PREFIXES`, so a
+  bearer is never looked up as a session.
+- **Failures.** A domain error (`NoteNotFound`, `TranscriptNotFound`) is a tool result with
+  `isError`, which an agent can act on; anything else answers `Internal` and is logged.
+
+Evidence: `packages/server/src/Mcp/*`; `apps/api/src/mcp.test.ts` (404 unarmed, 401 for no token, a
+wrong one and the pairing token, `initialize` without a session, four read-only tools, a note read
+back after pairing).
+
+---
+
 ## Open choices
 
 Record the choice here as a new numbered entry when it is made.

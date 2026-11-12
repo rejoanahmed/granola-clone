@@ -96,6 +96,8 @@ const EnvSettings = z
     LLM_BASE_URL: z.url().optional(),
     LLM_MODE: LlmMode.default("fake"),
     LLM_MODEL: optionalSecret,
+    // Unset is the disarmed shape: `/mcp` then answers the app's own 404 (D038).
+    MCP_TOKEN: optionalSecret,
     // Defaults to the brand's scheme (D023), so a rename is one edit and not one per env block.
     NATIVE_SCHEME: z.string().min(1).default(BRAND.scheme),
     NODE_ENV: z.enum(["development", "production", "test"]),
@@ -200,6 +202,26 @@ const EnvSettings = z
       );
     }
 
+    if (settings.MCP_TOKEN !== undefined) {
+      if (settings.AUTH_MODE !== "owner") {
+        refuse(
+          "MCP_TOKEN",
+          "MCP_TOKEN needs AUTH_MODE=owner: the token reads as the server's one owner, and an email-otp server has none"
+        );
+      }
+      if (settings.MCP_TOKEN.length < MIN_OWNER_TOKEN_LENGTH) {
+        refuse(
+          "MCP_TOKEN",
+          `MCP_TOKEN must be at least ${MIN_OWNER_TOKEN_LENGTH} characters (bun run selfhost -- --mcp generates one)`
+        );
+      }
+      // The pairing token mints a session that can write and delete; the MCP token only reads.
+      // One value for both would hand an agent's config file the stronger credential.
+      if (settings.MCP_TOKEN === settings.OWNER_TOKEN) {
+        refuse("MCP_TOKEN", "MCP_TOKEN must differ from OWNER_TOKEN");
+      }
+    }
+
     if (settings.E2E_HARNESS !== "true") {
       return;
     }
@@ -282,6 +304,8 @@ export type AppConfig = {
   readonly email: EmailConfig;
   readonly isDevelopment: boolean;
   readonly llm: LlmConfig;
+  // `null` is the disarmed shape, as `e2e` above: no token, no `/mcp` route (D038).
+  readonly mcp: { readonly token: string } | null;
   readonly nativeScheme: string;
   readonly transcription: TranscriptionConfig;
 };
@@ -384,6 +408,8 @@ export const parseConfig = (env: Env): AppConfig => {
           },
     isDevelopment: settings.NODE_ENV === "development",
     llm: llmOf(settings),
+    mcp:
+      settings.MCP_TOKEN === undefined ? null : { token: settings.MCP_TOKEN },
     nativeScheme: settings.NATIVE_SCHEME,
     transcription: transcriptionOf(settings),
   };

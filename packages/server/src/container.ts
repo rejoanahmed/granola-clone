@@ -76,6 +76,7 @@ import {
 } from "./Integrations/Transcription/QueuedTranscription";
 import { makeTranscriptionFake } from "./Integrations/Transcription/TranscriptionFake";
 import { makeWorkersAiWhisper } from "./Integrations/Transcription/WorkersAiWhisper";
+import { type McpService, makeMcpService } from "./Mcp/McpService";
 import { makeNotesRepo } from "./Notes/NotesRepo";
 import { makeNotesService, type NotesService } from "./Notes/NotesService";
 import { makeOutboxRepo } from "./Outbox/OutboxRepo";
@@ -539,6 +540,20 @@ export const buildContainer = (
     })
   );
 
+  // Armed only by MCP_TOKEN, which `parseConfig` refuses outside owner mode (D038).
+  const mcp =
+    config.mcp !== null && config.auth.mode === "owner"
+      ? traced(
+          "Mcp",
+          makeMcpService({
+            ownerEmail: config.auth.ownerEmail,
+            ownerName: config.auth.ownerName,
+            repo: traced("OwnersRepo", makeOwnersRepo(db)),
+            token: config.mcp.token,
+          })
+        )
+      : null;
+
   return {
     authEmails,
     calendar,
@@ -547,6 +562,7 @@ export const buildContainer = (
     flags,
     folders,
     generations,
+    mcp,
     notes,
     owners,
     people,
@@ -570,6 +586,8 @@ export type Container = {
   flags: FeatureFlagsPort;
   folders: FoldersService;
   generations: GenerationsService;
+  // `null` unless MCP_TOKEN is set: `/mcp` then answers the app's own 404.
+  mcp: McpService | null;
   notes: NotesService;
   owners: OwnersService;
   people: PeopleService;

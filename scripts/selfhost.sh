@@ -13,6 +13,8 @@
 #   bun run selfhost -- --gateway-logs on    # keep prompts and answers in your AI Gateway's logs (off by default)
 #   bun run selfhost -- --gateway off        # call AI providers directly instead of through AI Gateway
 #   bun run selfhost -- --rotate-token       # new pairing token; every paired phone must pair again
+#   bun run selfhost -- --mcp on             # let your AI agents read your notes and transcripts over MCP (off by default)
+#   bun run selfhost -- --mcp rotate         # new MCP token; --mcp off removes the endpoint
 #   bun run selfhost -- --show               # print the server URL and pairing link again
 #
 # Re-running is safe and is how you update: every resource is created only if missing, migrations
@@ -45,6 +47,8 @@ wr() { bunx wrangler "$@"; }
 D1_ID=""
 OWNER_TOKEN=""
 AUTH_SECRET=""
+MCP="off"
+MCP_TOKEN=""
 SERVER_URL=""
 LANGUAGE="auto"
 TRANSCRIPTION="workers-ai"
@@ -61,6 +65,7 @@ fi
 
 ROTATE=0
 SHOW=0
+MCP_CHOICE=""
 SAVED_LLM="$LLM"
 MODEL_GIVEN=0
 while [[ $# -gt 0 ]]; do
@@ -73,8 +78,9 @@ while [[ $# -gt 0 ]]; do
     --gateway) GATEWAY="$2"; shift 2 ;;
     --gateway-logs) GATEWAY_LOGS="$2"; shift 2 ;;
     --rotate-token) ROTATE=1; shift ;;
+    --mcp) MCP_CHOICE="$2"; shift 2 ;;
     --show) SHOW=1; shift ;;
-    -h | --help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,26p' "$0"; exit 0 ;;
     *) die "Unknown option: $1 (try --help)" ;;
   esac
 done
@@ -90,6 +96,7 @@ fi
 [[ "$LLM" =~ ^(workers-ai|openai|anthropic)$ ]] || die "--llm is workers-ai, anthropic or openai"
 [[ "$GATEWAY" =~ ^[a-z0-9][a-z0-9_-]{0,63}$ ]] || die "--gateway is a gateway id (default) or off"
 [[ "$GATEWAY_LOGS" =~ ^(on|off)$ ]] || die "--gateway-logs is on or off"
+[[ "$MCP_CHOICE" =~ ^(|on|off|rotate)$ ]] || die "--mcp is on, off or rotate"
 if [[ "$LLM" == "openai" && -z "$LLM_MODEL" ]]; then
   die "--llm openai needs --llm-model (the model id your endpoint expects)"
 fi
@@ -115,6 +122,13 @@ show() {
   fi
   echo
   echo "  Keep the token private: it is the password to your notes."
+  if [[ "$MCP" == "on" ]]; then
+    echo
+    echo "  MCP (read-only) for your agents:  $SERVER_URL/mcp"
+    echo "    claude mcp add --transport http kothanote $SERVER_URL/mcp \\"
+    echo "      --header \"Authorization: Bearer $MCP_TOKEN\""
+    echo "  The MCP token reads every note and transcript. It cannot pair a phone or change anything."
+  fi
 }
 
 if [[ "$SHOW" == 1 ]]; then
@@ -185,6 +199,17 @@ fi
 if [[ -z "$AUTH_SECRET" ]]; then
   AUTH_SECRET="$(random)$(random)"
 fi
+# MCP (D038) is off until asked for. `rotate` replaces the token; `off` forgets it and, below,
+# deletes the secret, which is what makes /mcp answer 404 again.
+MCP_WAS="$MCP"
+case "$MCP_CHOICE" in
+  on) MCP="on" ;;
+  off) MCP="off"; MCP_TOKEN="" ;;
+  rotate) MCP="on"; MCP_TOKEN="" ;;
+esac
+if [[ "$MCP" == "on" && -z "$MCP_TOKEN" ]]; then
+  MCP_TOKEN="$(random)"
+fi
 
 save_state() {
   umask 077
@@ -193,6 +218,8 @@ save_state() {
 D1_ID="$D1_ID"
 OWNER_TOKEN="$OWNER_TOKEN"
 AUTH_SECRET="$AUTH_SECRET"
+MCP="$MCP"
+MCP_TOKEN="$MCP_TOKEN"
 SERVER_URL="$SERVER_URL"
 LANGUAGE="$LANGUAGE"
 TRANSCRIPTION="$TRANSCRIPTION"
@@ -275,10 +302,18 @@ SECRETS_FILE="$API/.selfhost.secrets.json"
   if [[ "$LLM" == "openai" || "$LLM" == "anthropic" ]]; then
     printf ',"LLM_API_KEY":%s' "$(bun -e 'console.log(JSON.stringify(process.argv[1]))' "$(ask_key LLM_API_KEY "your $LLM API key")")"
   fi
+  if [[ "$MCP" == "on" ]]; then
+    printf ',"MCP_TOKEN":%s' "$(bun -e 'console.log(JSON.stringify(process.argv[1]))' "$MCP_TOKEN")"
+  fi
   printf '}'
 } >"$SECRETS_FILE"
 chmod 600 "$SECRETS_FILE"
 wr secret bulk "$SECRETS_FILE" --env selfhost --config "$GENERATED" >/dev/null
+# `secret bulk` only adds, so turning MCP off has to remove the secret itself.
+if [[ "$MCP" == "off" && "$MCP_WAS" == "on" ]]; then
+  echo y | wr secret delete MCP_TOKEN --env selfhost --config "$GENERATED" >/dev/null 2>&1 ||
+    echo "  Could not remove MCP_TOKEN: delete it in the Cloudflare dashboard to close /mcp."
+fi
 echo "  Stored."
 
 # ── 8. Check ──────────────────────────────────────────────────────────────────────────────────
